@@ -1,14 +1,21 @@
 import pytest
 from fastapi import status
+<<<<<<< HEAD
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.auth import UserRole
+=======
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
 
 def test_get_current_user(client, test_user, test_user_token):
     """Test getting current user information."""
     response = client.get(
+<<<<<<< HEAD
         "/api/users/me",
+=======
+        "/users/me",
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
         headers={"Authorization": f"Bearer {test_user_token}"}
     )
     assert response.status_code == status.HTTP_200_OK
@@ -24,7 +31,11 @@ def test_get_user_clients_as_trainer(client, test_trainer, test_trainer_token, t
     db_session.commit()
 
     response = client.get(
+<<<<<<< HEAD
         "/api/users/clients",
+=======
+        "/users/clients",
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
         headers={"Authorization": f"Bearer {test_trainer_token}"}
     )
     assert response.status_code == status.HTTP_200_OK
@@ -35,7 +46,11 @@ def test_get_user_clients_as_trainer(client, test_trainer, test_trainer_token, t
 def test_get_user_clients_as_client(client, test_user_token):
     """Test that clients cannot access client list."""
     response = client.get(
+<<<<<<< HEAD
         "/api/users/clients",
+=======
+        "/users/clients",
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
         headers={"Authorization": f"Bearer {test_user_token}"}
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -43,7 +58,11 @@ def test_get_user_clients_as_client(client, test_user_token):
 def test_assign_client_to_trainer(client, test_trainer, test_trainer_token, test_user):
     """Test assigning a client to a trainer."""
     response = client.post(
+<<<<<<< HEAD
         f"/api/users/trainer/{test_trainer.id}/clients/{test_user.id}",
+=======
+        f"/users/trainer/{test_trainer.id}/clients/{test_user.id}",
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
         headers={"Authorization": f"Bearer {test_trainer_token}"}
     )
     assert response.status_code == status.HTTP_200_OK
@@ -53,7 +72,11 @@ def test_assign_client_to_trainer(client, test_trainer, test_trainer_token, test
 def test_assign_client_unauthorized(client, test_user_token, test_trainer, test_user):
     """Test that clients cannot assign other clients."""
     response = client.post(
+<<<<<<< HEAD
         f"/api/users/trainer/{test_trainer.id}/clients/{test_user.id}",
+=======
+        f"/users/trainer/{test_trainer.id}/clients/{test_user.id}",
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
         headers={"Authorization": f"Bearer {test_user_token}"}
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -65,7 +88,11 @@ def test_remove_client_from_trainer(client, test_trainer, test_trainer_token, te
     db_session.commit()
 
     response = client.delete(
+<<<<<<< HEAD
         f"/api/users/trainer/{test_trainer.id}/clients/{test_user.id}",
+=======
+        f"/users/trainer/{test_trainer.id}/clients/{test_user.id}",
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
         headers={"Authorization": f"Bearer {test_trainer_token}"}
     )
     assert response.status_code == status.HTTP_200_OK
@@ -79,7 +106,11 @@ def test_remove_client_unauthorized(client, test_user_token, test_trainer, test_
     db_session.commit()
 
     response = client.delete(
+<<<<<<< HEAD
         f"/api/users/trainer/{test_trainer.id}/clients/{test_user.id}",
+=======
+        f"/users/trainer/{test_trainer.id}/clients/{test_user.id}",
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
         headers={"Authorization": f"Bearer {test_user_token}"}
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -87,7 +118,11 @@ def test_remove_client_unauthorized(client, test_user_token, test_trainer, test_
 def test_get_user_profile(client, test_user, test_user_token):
     """Test getting user profile."""
     response = client.get(
+<<<<<<< HEAD
         f"/api/users/{test_user.id}",
+=======
+        f"/users/{test_user.id}",
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
         headers={"Authorization": f"Bearer {test_user_token}"}
     )
     assert response.status_code == status.HTTP_200_OK
@@ -98,7 +133,11 @@ def test_get_user_profile(client, test_user, test_user_token):
 def test_update_user_profile(client, test_user, test_user_token):
     """Test updating user profile."""
     response = client.put(
+<<<<<<< HEAD
         f"/api/users/{test_user.id}",
+=======
+        f"/users/{test_user.id}",
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
         headers={"Authorization": f"Bearer {test_user_token}"},
         json={
             "full_name": "Updated Name",
@@ -112,13 +151,18 @@ def test_update_user_profile(client, test_user, test_user_token):
 def test_update_other_user_profile(client, test_user_token, test_trainer):
     """Test that users cannot update other users' profiles."""
     response = client.put(
+<<<<<<< HEAD
         f"/api/users/{test_trainer.id}",
+=======
+        f"/users/{test_trainer.id}",
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
         headers={"Authorization": f"Bearer {test_user_token}"},
         json={
             "full_name": "Hacked Name",
             "email": test_trainer.email
         }
     )
+<<<<<<< HEAD
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 class TestUserManagement:
@@ -297,3 +341,6 @@ class TestUserManagement:
         user_response = response.json()
         assert "password" not in user_response
         assert "hashed_password" not in user_response 
+=======
+    assert response.status_code == status.HTTP_403_FORBIDDEN 
+>>>>>>> e7ee85d4e4b297f901fe29f2e4e5f6d4468c8e89
