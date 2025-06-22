@@ -6,17 +6,27 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
+    netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
+# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
+# Copy application code
 COPY . .
 
 # Create uploads directory
 RUN mkdir -p uploads
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 
+# Create test directory if it doesn't exist
+RUN mkdir -p tests
+
+# Set environment variable for testing
+ENV PYTHONPATH=/app
+
+# Create entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"] 
