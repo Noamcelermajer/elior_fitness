@@ -13,9 +13,20 @@ services:
       - JWT_SECRET=your-secret-key-here
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - TEST_MODE=${TEST_MODE:-false}
     depends_on:
       db:
         condition: service_healthy
+    command: >
+      sh -c "
+        if [ \"$$TEST_MODE\" = \"true\" ]; then
+          echo 'Starting in TEST MODE...'
+          sleep 10
+          python -m pytest tests/ -v --cov=app --cov-report=term-missing
+        else
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+        fi
+      "
 
   db:
     image: postgres:15

@@ -21,10 +21,10 @@ class User(Base):
     trainer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     clients = relationship("User", backref="trainer", remote_side=[id])
 
-    # Relationships with other tables will be added here
-    workouts = relationship("Workout", back_populates="user")
-    nutrition_plans = relationship("NutritionPlan", back_populates="user")
-    progress_records = relationship("ProgressRecord", back_populates="user")
+    # Relationships with other tables will be added here when models are implemented
+    # workouts = relationship("Workout", back_populates="user")
+    # nutrition_plans = relationship("NutritionPlan", back_populates="user")
+    # progress_records = relationship("ProgressRecord", back_populates="user")
 
 class TrainerProfile(Base):
     __tablename__ = "trainer_profiles"

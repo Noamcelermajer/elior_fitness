@@ -31,6 +31,11 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 async def health_check():
     return {"status": "healthy"}
 
+# Add OPTIONS handler for health endpoint
+@app.options("/health")
+async def health_check_options():
+    return {"status": "healthy"}
+
 # Import and include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])

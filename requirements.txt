@@ -8,4 +8,11 @@ passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 pydantic[email]==2.4.2
 python-dotenv==1.0.0
-aiofiles==23.2.1 
+aiofiles==23.2.1
+# Testing dependencies
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
+pytest-cov==4.1.0
+factory-boy==3.3.0
+PyJWT==2.8.0 

@@ -6,9 +6,7 @@ from fastapi import HTTPException, status
 from app.models.user import User
 from app.schemas.auth import UserCreate, UserResponse
 from app.auth.utils import get_password_hash, verify_password, create_access_token
-
-async def get_user_by_email(db: Session, email: str) -> Optional[User]:
-    return db.query(User).filter(User.email == email).first()
+from app.services.user_service import get_user_by_email
 
 async def create_user(db: Session, user: UserCreate) -> User:
     # Check if user already exists

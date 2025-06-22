@@ -2,11 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.schemas.auth import UserResponse, UserRole
+from app.schemas.auth import UserResponse, UserRole, UserUpdate
 from app.services import user_service
 from app.auth.utils import get_current_user
 
 router = APIRouter()
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """
+    Get current user information.
+    """
+    return current_user
 
 @router.get("/", response_model=List[UserResponse])
 async def get_users(
@@ -53,7 +62,7 @@ async def assign_client(
             detail="Only trainers can assign clients"
         )
     
-    success = await user_service.assign_client_to_trainer(db, client_id, current_user.id)
+    success = await user_service.assign_client_to_trainer(db, current_user.id, client_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -77,14 +86,14 @@ async def remove_client(
         )
     
     # Verify the client belongs to this trainer
-    client = await user_service.get_user(db, client_id)
+    client = await user_service.get_user_by_id(db, client_id)
     if not client or client.trainer_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Client not found or not assigned to you"
         )
     
-    success = await user_service.remove_client_from_trainer(db, client_id)
+    success = await user_service.remove_client_from_trainer(db, current_user.id, client_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -106,7 +115,7 @@ async def get_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied"
         )
-    user = await user_service.get_user(db, user_id)
+    user = await user_service.get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -132,7 +141,7 @@ async def delete_user(
     
     # If trainer is deleting a client, verify the client belongs to them
     if current_user.role == UserRole.TRAINER and current_user.id != user_id:
-        client = await user_service.get_user(db, user_id)
+        client = await user_service.get_user_by_id(db, user_id)
         if not client or client.trainer_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -148,11 +157,17 @@ async def delete_user(
 
 @router.put("/me", response_model=UserResponse)
 async def update_user_me(
-    user_update: dict,
+    user_update: UserUpdate,
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Update current user's information.
     """
-    return await user_service.update_user(db, current_user.id, user_update) 
+    updated_user = await user_service.update_user(db, current_user.id, user_update)
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return updated_user 

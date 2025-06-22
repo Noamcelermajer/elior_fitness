@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, constr
 from typing import Optional
 from enum import Enum
+from datetime import datetime
 
 class UserRole(str, Enum):
     TRAINER = "trainer"
@@ -13,6 +14,12 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: constr(min_length=8)
+
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    role: Optional[UserRole] = None
+    is_active: Optional[bool] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -29,6 +36,8 @@ class TokenData(BaseModel):
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True 
