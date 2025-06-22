@@ -1,11 +1,9 @@
-from sqlalchemy import Boolean, Column, Integer, String, Enum, DateTime
+from sqlalchemy import Boolean, Column, Integer, String, Enum, DateTime, ForeignKey
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
-
-class UserRole(str, enum.Enum):
-    TRAINER = "trainer"
-    CLIENT = "client"
+from app.schemas.auth import UserRole
 
 class User(Base):
     __tablename__ = "users"
@@ -14,10 +12,19 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     full_name = Column(String)
-    role = Column(Enum(UserRole), nullable=False)
+    role = Column(String)  # 'TRAINER' or 'CLIENT'
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Trainer-Client relationship
+    trainer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    clients = relationship("User", backref="trainer", remote_side=[id])
+
+    # Relationships with other tables will be added here
+    workouts = relationship("Workout", back_populates="user")
+    nutrition_plans = relationship("NutritionPlan", back_populates="user")
+    progress_records = relationship("ProgressRecord", back_populates="user")
 
 class TrainerProfile(Base):
     __tablename__ = "trainer_profiles"
