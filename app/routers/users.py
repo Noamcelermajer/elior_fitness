@@ -101,6 +101,85 @@ async def remove_client(
         )
     return {"message": "Client removed successfully"}
 
+# Add missing endpoints that tests expect
+@router.post("/trainer/{trainer_id}/clients/{client_id}", status_code=status.HTTP_200_OK)
+async def assign_client_to_trainer(
+    trainer_id: int,
+    client_id: int,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Assign a client to a specific trainer.
+    """
+    if current_user.role != UserRole.TRAINER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers can assign clients"
+        )
+    
+    # Verify the trainer exists and current user is the trainer
+    trainer = await user_service.get_user_by_id(db, trainer_id)
+    if not trainer or trainer.id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Trainer not found"
+        )
+    
+    success = await user_service.assign_client_to_trainer(db, trainer_id, client_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not assign client to trainer"
+        )
+    
+    # Return the updated client
+    client = await user_service.get_user_by_id(db, client_id)
+    return client
+
+@router.delete("/trainer/{trainer_id}/clients/{client_id}", status_code=status.HTTP_200_OK)
+async def remove_client_from_trainer(
+    trainer_id: int,
+    client_id: int,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Remove a client from a specific trainer.
+    """
+    if current_user.role != UserRole.TRAINER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers can remove clients"
+        )
+    
+    # Verify the trainer exists and current user is the trainer
+    trainer = await user_service.get_user_by_id(db, trainer_id)
+    if not trainer or trainer.id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Trainer not found"
+        )
+    
+    # Verify the client belongs to this trainer
+    client = await user_service.get_user_by_id(db, client_id)
+    if not client or client.trainer_id != trainer_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not found or not assigned to you"
+        )
+    
+    success = await user_service.remove_client_from_trainer(db, trainer_id, client_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not remove client from trainer"
+        )
+    
+    # Return the updated client
+    updated_client = await user_service.get_user_by_id(db, client_id)
+    return updated_client
+
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: int,
@@ -122,6 +201,30 @@ async def get_user(
             detail="User not found"
         )
     return user
+
+@router.put("/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: int,
+    user_update: UserUpdate,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update user by ID. Users can only update themselves.
+    """
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only update your own profile"
+        )
+    
+    updated_user = await user_service.update_user(db, user_id, user_update)
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return updated_user
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
