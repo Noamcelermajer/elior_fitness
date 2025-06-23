@@ -19,11 +19,20 @@ services:
         condition: service_healthy
     command: >
       sh -c "
+        echo 'Waiting for database to be ready...'
+        while ! nc -z db 5432; do
+          sleep 0.1
+        done
+        echo 'Database is ready!'
+        echo 'Running database migrations...'
+        alembic upgrade head
         if [ \"$$TEST_MODE\" = \"true\" ]; then
           echo 'Starting in TEST MODE...'
-          sleep 10
+          echo 'Cleaning up test database...'
+          python -c 'import psycopg2; conn = psycopg2.connect(\"postgresql://postgres:postgres@db:5432/elior_fitness\"); cur = conn.cursor(); cur.execute(\"DELETE FROM users WHERE email LIKE \\\"%test.com\\\"\"); conn.commit(); cur.close(); conn.close(); print(\"Test database cleaned up\")'
           python -m pytest tests/ -v --cov=app --cov-report=term-missing
         else
+          echo 'Starting the application...'
           uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
         fi
       "
