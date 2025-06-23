@@ -30,36 +30,38 @@ def generate_unique_email():
     random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
     return f"test_{random_suffix}@test.com"
 
+def cleanup_test_data(session):
+    """Clean up all test data from the database."""
+    try:
+        # Delete all test users (those with @test.com emails)
+        session.query(User).filter(User.email.like("%test.com")).delete()
+        session.commit()
+    except Exception as e:
+        print(f"Warning: Could not clean up test data: {e}")
+        session.rollback()
+
 @pytest.fixture(scope="function")
 def db_session():
     """Create a database session for each test using the current database."""
     # Use the current database session
     session = SessionLocal()
     
+    # Clean up before the test
+    cleanup_test_data(session)
+    
     try:
         yield session
     finally:
-        # Clean up all test data before closing
-        try:
-            # Delete all test users (those with @test.com emails)
-            session.query(User).filter(User.email.like("%@test.com")).delete()
-            session.commit()
-        except Exception:
-            session.rollback()
-        finally:
-            session.close()
+        # Clean up after the test
+        cleanup_test_data(session)
+        session.close()
 
 @pytest.fixture(autouse=True)
 def cleanup_database(db_session):
     """Clean up test data after each test."""
     yield
     # Clean up any test data
-    try:
-        # Delete all test users
-        db_session.query(User).filter(User.email.like("%@test.com")).delete()
-        db_session.commit()
-    except Exception:
-        db_session.rollback()
+    cleanup_test_data(db_session)
 
 @pytest.fixture(scope="function")
 def client(db_session) -> Generator:
