@@ -3,6 +3,13 @@ from sqlalchemy.orm import Session
 from app.models.user import User, TrainerProfile, ClientProfile
 from app.schemas.auth import UserRole
 from app.services.auth_service import get_password_hash
+import random
+import string
+
+def generate_unique_email():
+    """Generate a unique email for testing."""
+    random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    return f"test_{random_suffix}@test.com"
 
 class TestDatabaseOperations:
     """Test database operations and models."""
@@ -10,7 +17,7 @@ class TestDatabaseOperations:
     def test_user_creation(self, db_session: Session):
         """Test creating a user in the database."""
         user_data = {
-            "email": "test@example.com",
+            "email": generate_unique_email(),
             "hashed_password": get_password_hash("testpassword"),
             "full_name": "Test User",
             "role": UserRole.CLIENT,
@@ -33,7 +40,7 @@ class TestDatabaseOperations:
         """Test creating a trainer profile."""
         # First create a trainer user
         trainer = User(
-            email="trainer@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Test Trainer",
             role=UserRole.TRAINER
@@ -63,7 +70,7 @@ class TestDatabaseOperations:
         """Test creating a client profile."""
         # First create a trainer and client
         trainer = User(
-            email="trainer@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Test Trainer",
             role=UserRole.TRAINER
@@ -73,7 +80,7 @@ class TestDatabaseOperations:
         db_session.refresh(trainer)
         
         client = User(
-            email="client@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Test Client",
             role=UserRole.CLIENT,
@@ -107,7 +114,7 @@ class TestDatabaseOperations:
         """Test trainer-client relationship."""
         # Create trainer
         trainer = User(
-            email="trainer@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Test Trainer",
             role=UserRole.TRAINER
@@ -118,14 +125,14 @@ class TestDatabaseOperations:
         
         # Create clients
         client1 = User(
-            email="client1@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Client 1",
             role=UserRole.CLIENT,
             trainer_id=trainer.id
         )
         client2 = User(
-            email="client2@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Client 2",
             role=UserRole.CLIENT,
@@ -146,13 +153,13 @@ class TestDatabaseOperations:
     def test_user_role_enum(self, db_session: Session):
         """Test user role enum values."""
         trainer = User(
-            email="trainer@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Test Trainer",
             role=UserRole.TRAINER
         )
         client = User(
-            email="client@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Test Client",
             role=UserRole.CLIENT
@@ -169,7 +176,7 @@ class TestDatabaseOperations:
     def test_user_timestamps(self, db_session: Session):
         """Test that user timestamps are automatically set."""
         user = User(
-            email="timestamp@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Timestamp User",
             role=UserRole.CLIENT
@@ -191,7 +198,7 @@ class TestDatabaseOperations:
     def test_user_email_uniqueness(self, db_session: Session):
         """Test that email addresses must be unique."""
         user1 = User(
-            email="unique@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="User 1",
             role=UserRole.CLIENT
@@ -201,7 +208,7 @@ class TestDatabaseOperations:
         
         # Try to create another user with the same email
         user2 = User(
-            email="unique@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="User 2",
             role=UserRole.CLIENT
@@ -214,7 +221,7 @@ class TestDatabaseOperations:
     def test_user_deletion(self, db_session: Session):
         """Test user deletion."""
         user = User(
-            email="delete@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Delete User",
             role=UserRole.CLIENT
@@ -234,7 +241,7 @@ class TestDatabaseOperations:
     def test_user_query_by_email(self, db_session: Session):
         """Test querying user by email."""
         user = User(
-            email="query@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Query User",
             role=UserRole.CLIENT
@@ -243,7 +250,7 @@ class TestDatabaseOperations:
         db_session.commit()
         
         # Query by email
-        found_user = db_session.query(User).filter(User.email == "query@example.com").first()
+        found_user = db_session.query(User).filter(User.email == user.email).first()
         assert found_user is not None
         assert found_user.id == user.id
         assert found_user.full_name == "Query User"
@@ -251,13 +258,13 @@ class TestDatabaseOperations:
     def test_user_query_by_role(self, db_session: Session):
         """Test querying users by role."""
         trainer = User(
-            email="trainer@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Test Trainer",
             role=UserRole.TRAINER
         )
         client = User(
-            email="client@example.com",
+            email=generate_unique_email(),
             hashed_password=get_password_hash("password"),
             full_name="Test Client",
             role=UserRole.CLIENT
@@ -269,9 +276,9 @@ class TestDatabaseOperations:
         # Query trainers
         trainers = db_session.query(User).filter(User.role == UserRole.TRAINER).all()
         assert len(trainers) == 1
-        assert trainers[0].email == "trainer@example.com"
+        assert trainers[0].email == trainer.email
         
         # Query clients
         clients = db_session.query(User).filter(User.role == UserRole.CLIENT).all()
         assert len(clients) == 1
-        assert clients[0].email == "client@example.com" 
+        assert clients[0].email == client.email 
