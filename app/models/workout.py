@@ -48,6 +48,7 @@ class WorkoutSession(Base):
     # Relationships
     workout_plan = relationship("WorkoutPlan", back_populates="sessions")
     exercises = relationship("WorkoutExercise", back_populates="workout_session", cascade="all, delete-orphan")
+    completions = relationship("SessionCompletion", cascade="all, delete-orphan")
 
 class WorkoutExercise(Base):
     __tablename__ = "workout_exercises"
@@ -79,4 +80,33 @@ class ExerciseCompletion(Base):
     notes = Column(String)
 
     # Relationships
-    workout_exercise = relationship("WorkoutExercise", back_populates="completions") 
+    workout_exercise = relationship("WorkoutExercise", back_populates="completions")
+
+class SessionCompletion(Base):
+    __tablename__ = "session_completions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    workout_session_id = Column(Integer, ForeignKey("workout_sessions.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    completed_at = Column(DateTime(timezone=True), server_default=func.now())
+    duration_minutes = Column(Integer)  # How long the session took
+    difficulty_rating = Column(Integer)  # 1-5 overall session difficulty
+    notes = Column(String)
+    
+    # Relationships
+    workout_session = relationship("WorkoutSession", overlaps="completions")
+
+class ProgressRecord(Base):
+    __tablename__ = "progress_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    workout_plan_id = Column(Integer, ForeignKey("workout_plans.id"), nullable=False)
+    date = Column(DateTime(timezone=True), server_default=func.now())
+    weight = Column(Integer)  # in grams
+    body_fat_percentage = Column(Integer)  # in tenths of percent (e.g., 150 = 15.0%)
+    muscle_mass = Column(Integer)  # in grams
+    notes = Column(String)
+    
+    # Relationships
+    workout_plan = relationship("WorkoutPlan") 
