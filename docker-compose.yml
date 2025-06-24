@@ -14,28 +14,44 @@ services:
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - TEST_MODE=${TEST_MODE:-false}
+      - TEST_UNIT=${TEST_UNIT:-1}
     depends_on:
       db:
         condition: service_healthy
     command: >
-      sh -c "
-        echo 'Waiting for database to be ready...'
+      sh -c '
+        echo "Waiting for database to be ready..."
         while ! nc -z db 5432; do
           sleep 0.1
         done
-        echo 'Database is ready!'
-        echo 'Running database migrations...'
+        echo "Database is ready!"
+        echo "Running database migrations..."
         alembic upgrade head
-        if [ \"$$TEST_MODE\" = \"true\" ]; then
-          echo 'Starting in TEST MODE...'
-          echo 'Cleaning up test database...'
-          python -c 'import psycopg2; conn = psycopg2.connect(\"postgresql://postgres:postgres@db:5432/elior_fitness\"); cur = conn.cursor(); cur.execute(\"DELETE FROM users WHERE email LIKE \\\"%test.com\\\"\"); conn.commit(); cur.close(); conn.close(); print(\"Test database cleaned up\")'
-          python -m pytest tests/ -v --cov=app --cov-report=term-missing
+        if [ "$TEST_MODE" = "true" ]; then
+          echo "Purging test database..."
+          echo "Installing psql client..."
+          apt-get update -qq && apt-get install -y -qq postgresql-client
+          echo "Dropping database..."
+          PGPASSWORD=postgres psql -h db -U postgres -d postgres -c "DROP DATABASE IF EXISTS elior_fitness;"
+          echo "Creating fresh database..."
+          PGPASSWORD=postgres psql -h db -U postgres -d postgres -c "CREATE DATABASE elior_fitness;"
+          echo "Running database migrations..."
+          alembic upgrade head
+          if [ "$TEST_UNIT" = "1" ]; then
+            echo "Running ALL old tests (unit 1)"
+            python -m pytest tests/ -v --cov=app --cov-report=term-missing
+          elif [ "$TEST_UNIT" = "2" ]; then
+            echo "Running Sprint 2 tests (unit 2)"
+            python -m pytest tests/test_exercises.py tests/test_workouts.py -v --cov=app --cov-report=term-missing
+          else
+            echo "Running ALL tests (default)"
+            python -m pytest tests/ -v --cov=app --cov-report=term-missing
+          fi
         else
-          echo 'Starting the application...'
+          echo "Starting the application..."
           uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
         fi
-      "
+      '
 
   db:
     image: postgres:15
