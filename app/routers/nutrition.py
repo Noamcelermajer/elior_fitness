@@ -18,11 +18,33 @@ from app.auth.utils import get_current_user
 
 router = APIRouter()
 
-# Test endpoint
+# Test endpoint (no authentication required)
 @router.get("/test")
 async def test_nutrition_router():
-    """Test endpoint for nutrition router."""
+    """Test endpoint for nutrition router - no authentication required."""
     return {"message": "Nutrition router working"}
+
+# Test recipe creation endpoint (no authentication required for testing)
+@router.post("/test-recipe", response_model=RecipeResponse)
+async def create_test_recipe(
+    recipe_data: RecipeCreate,
+    nutrition_service: NutritionService = Depends(get_nutrition_service)
+):
+    """Create a test recipe without authentication (for development/testing only)."""
+    # Create a mock user for testing
+    mock_user = UserResponse(
+        id=1,
+        email="test@example.com",
+        first_name="Test",
+        last_name="Trainer",
+        role=UserRole.TRAINER,
+        is_active=True,
+        created_at=datetime.now(),
+        updated_at=datetime.now()
+    )
+    
+    recipe = nutrition_service.create_recipe(recipe_data, mock_user.id)
+    return recipe
 
 # Helper function to get nutrition service
 def get_nutrition_service(db: Session = Depends(get_db)) -> NutritionService:
@@ -144,7 +166,7 @@ async def create_recipe(
     current_user: UserResponse = Depends(get_current_user),
     nutrition_service: NutritionService = Depends(get_nutrition_service)
 ):
-    """Create a new recipe."""
+    """Create a new recipe. Requires trainer authentication."""
     if current_user.role != UserRole.TRAINER:
         raise HTTPException(status_code=403, detail="Only trainers can create recipes")
     
