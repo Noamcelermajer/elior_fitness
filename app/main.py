@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.utils import get_openapi
 
 from app.database import engine, Base
 from app.routers import auth, users, exercises, workouts, nutrition, progress
@@ -10,8 +11,34 @@ from app.routers import auth, users, exercises, workouts, nutrition, progress
 
 app = FastAPI(
     title="Elior Fitness API",
-    description="Backend API for personal trainer management system",
-    version="1.0.0"
+    description="Backend API for personal trainer management system with JWT authentication",
+    version="1.0.0",
+    openapi_tags=[
+        {
+            "name": "Authentication",
+            "description": "User authentication and authorization endpoints"
+        },
+        {
+            "name": "Users",
+            "description": "User management and profile operations"
+        },
+        {
+            "name": "Exercises",
+            "description": "Exercise library and management"
+        },
+        {
+            "name": "Workouts",
+            "description": "Workout planning and tracking"
+        },
+        {
+            "name": "Nutrition",
+            "description": "Nutrition plans, recipes, and meal tracking"
+        },
+        {
+            "name": "Progress",
+            "description": "Progress tracking and analytics"
+        }
+    ]
 )
 
 # CORS middleware configuration
@@ -25,6 +52,39 @@ app.add_middleware(
 
 # Mount static files for uploads
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    
+    # Add JWT Bearer authentication
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "Enter your JWT token in the format: Bearer <token>"
+        }
+    }
+    
+    # Add global security requirement
+    openapi_schema["security"] = [
+        {
+            "BearerAuth": []
+        }
+    ]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # Health check endpoint
 @app.get("/health")
