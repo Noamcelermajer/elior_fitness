@@ -13,21 +13,22 @@ services:
       - JWT_SECRET=your-secret-key-here
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - TEST_MODE=${TEST_MODE:-false}
+      - TEST_UNIT=${TEST_UNIT:-1}
     depends_on:
       db:
         condition: service_healthy
     command: >
-      sh -c "
-        echo 'Waiting for database to be ready...'
+      sh -c '
+        echo "Waiting for database to be ready..."
         while ! nc -z db 5432; do
           sleep 0.1
         done
-        echo 'Database is ready!'
-        echo 'Running database migrations...'
+        echo "Database is ready!"
+        echo "Running database migrations..."
         alembic upgrade head
         echo 'Starting the application...'
         uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-      "
 
   db:
     image: postgres:15

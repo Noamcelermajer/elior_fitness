@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get database URL from environment variable, or use default for development
+# Get database URL from environment variable, or use SQLite for local development
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@db:5432/elior_fitness"
+    "sqlite:///./test.db"  # Use SQLite for local development
 )
 
 # Create SQLAlchemy engine

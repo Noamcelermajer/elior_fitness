@@ -46,6 +46,12 @@ async def create_test_recipe(
     recipe = nutrition_service.create_recipe(recipe_data, mock_user.id)
     return recipe
 
+# Test endpoint
+@router.get("/test")
+async def test_nutrition_router():
+    """Test endpoint for nutrition router."""
+    return {"message": "Nutrition router working"}
+
 # Helper function to get nutrition service
 def get_nutrition_service(db: Session = Depends(get_db)) -> NutritionService:
     return NutritionService(db)
@@ -166,7 +172,7 @@ async def create_recipe(
     current_user: UserResponse = Depends(get_current_user),
     nutrition_service: NutritionService = Depends(get_nutrition_service)
 ):
-    """Create a new recipe. Requires trainer authentication."""
+    """Create a new recipe."""
     if current_user.role != UserRole.TRAINER:
         raise HTTPException(status_code=403, detail="Only trainers can create recipes")
     
