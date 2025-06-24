@@ -33,9 +33,11 @@ ENV/
 
 # Testing
 .coverage
+.coverage.*
 .tox/
 .pytest_cache/
 htmlcov/
+.pytest_cache/
 
 # Logs
 *.log
@@ -44,10 +46,35 @@ htmlcov/
 .env
 .env.local
 *.sqlite3
+test.db
 
 # Docker
 .docker/
 
 # Uploads
 uploads/*
-!uploads/.gitkeep 
+!uploads/.gitkeep
+
+# Additional cache and binary files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+*.dll
+*.dylib
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup 
