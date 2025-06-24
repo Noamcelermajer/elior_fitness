@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from app.services.auth_service import create_access_token, get_password_hash
@@ -17,7 +18,7 @@ class TestSecurity:
     def test_password_hashing(self, client: TestClient):
         """Test that passwords are properly hashed and not stored in plain text."""
         user_data = {
-            "email": "security@test.com",
+            "email": f"security_{uuid.uuid4().hex}@test.com",
             "password": "plaintextpassword",
             "full_name": "Security User",
             "role": "client"
@@ -40,7 +41,7 @@ class TestSecurity:
     def test_jwt_token_structure(self, client: TestClient):
         """Test JWT token structure and content."""
         user_data = {
-            "email": "jwt@test.com",
+            "email": f"jwt_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
             "full_name": "JWT User",
             "role": "trainer"
@@ -69,7 +70,7 @@ class TestSecurity:
     def test_jwt_token_expiration(self, client: TestClient):
         """Test that JWT tokens expire properly."""
         user_data = {
-            "email": "expire@test.com",
+            "email": f"expire_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
             "full_name": "Expire User",
             "role": "client"
@@ -160,7 +161,7 @@ class TestSecurity:
         
         for xss_input in xss_inputs:
             user_data = {
-                "email": f"xss{xss_input}@test.com",
+                "email": f"xss_{uuid.uuid4().hex}@test.com",
                 "password": "securepassword123",
                 "full_name": xss_input,
                 "role": "client"
@@ -192,7 +193,7 @@ class TestSecurity:
     def test_sensitive_data_exposure(self, client: TestClient):
         """Test that sensitive data is not exposed in responses."""
         user_data = {
-            "email": "sensitive@test.com",
+            "email": f"sensitive_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
             "full_name": "Sensitive User",
             "role": "client"

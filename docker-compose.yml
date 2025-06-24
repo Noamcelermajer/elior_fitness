@@ -13,8 +13,11 @@ services:
       - JWT_SECRET=your-secret-key-here
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
+<<<<<<< HEAD
+=======
       - TEST_MODE=${TEST_MODE:-false}
       - TEST_UNIT=${TEST_UNIT:-1}
+>>>>>>> origin/dev
     depends_on:
       db:
         condition: service_healthy
@@ -27,6 +30,11 @@ services:
         echo "Database is ready!"
         echo "Running database migrations..."
         alembic upgrade head
+<<<<<<< HEAD
+        echo 'Starting the application...'
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+=======
         if [ "$TEST_MODE" = "true" ]; then
           echo "Purging test database..."
           echo "Installing psql client..."
@@ -52,6 +60,7 @@ services:
           uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
         fi
       '
+>>>>>>> origin/dev
 
   db:
     image: postgres:15
