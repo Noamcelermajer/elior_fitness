@@ -59,6 +59,27 @@ show_usage() {
 run_docker_tests() {
     print_status "Running tests in Docker container..."
     
+    # Clean up test database first
+    print_status "Cleaning up test database..."
+    docker-compose exec api python -c "
+import psycopg2
+try:
+    conn = psycopg2.connect('postgresql://postgres:postgres@db:5432/elior_fitness')
+    cur = conn.cursor()
+    cur.execute('DELETE FROM users WHERE email LIKE \"%test.com\"')
+    cur.execute('DELETE FROM nutrition_plans WHERE name LIKE \"%test%\"')
+    cur.execute('DELETE FROM recipes WHERE name LIKE \"%test%\"')
+    cur.execute('DELETE FROM planned_meals WHERE notes LIKE \"%test%\"')
+    cur.execute('DELETE FROM meal_completions WHERE notes LIKE \"%test%\"')
+    cur.execute('DELETE FROM weigh_ins WHERE notes LIKE \"%test%\"')
+    conn.commit()
+    cur.close()
+    conn.close()
+    print('✅ Test database cleaned up successfully')
+except Exception as e:
+    print(f'⚠️  Warning: Could not clean up test database: {e}')
+"
+    
     if [ "$1" = "all" ] || [ -z "$1" ]; then
         docker-compose exec api python -m pytest -v --cov=app --cov-report=term-missing
     elif [ "$1" = "coverage" ]; then
@@ -185,4 +206,29 @@ case "${1:-all}" in
         ;;
 esac
 
-print_success "Test execution completed!" 
+print_success "Test execution completed!"
+
+echo "📊 Cleaning up test database..."
+
+# Clean up test data
+python -c "
+import psycopg2
+try:
+    conn = psycopg2.connect('postgresql://postgres:postgres@db:5432/elior_fitness')
+    cur = conn.cursor()
+    cur.execute('DELETE FROM users WHERE email LIKE \"%test.com\"')
+    cur.execute('DELETE FROM nutrition_plans WHERE name LIKE \"%test%\"')
+    cur.execute('DELETE FROM recipes WHERE name LIKE \"%test%\"')
+    cur.execute('DELETE FROM planned_meals WHERE notes LIKE \"%test%\"')
+    cur.execute('DELETE FROM meal_completions WHERE notes LIKE \"%test%\"')
+    cur.execute('DELETE FROM weigh_ins WHERE notes LIKE \"%test%\"')
+    conn.commit()
+    cur.close()
+    conn.close()
+    print('✅ Test database cleaned up successfully')
+except Exception as e:
+    print(f'⚠️  Warning: Could not clean up test database: {e}')
+"
+
+echo "📈 Test execution completed!"
+echo "📁 Coverage report available in htmlcov/index.html" 

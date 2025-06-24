@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, DateTime, Float, Enum
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
 import enum
@@ -31,6 +32,9 @@ class NutritionPlan(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # Relationships
+    planned_meals = relationship("PlannedMeal", back_populates="nutrition_plan", cascade="all, delete-orphan")
+
 class Recipe(Base):
     __tablename__ = "recipes"
 
@@ -46,6 +50,9 @@ class Recipe(Base):
     preparation_time = Column(Integer)  # in minutes
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # Relationships
+    planned_meals = relationship("PlannedMeal", back_populates="recipe")
+
 class PlannedMeal(Base):
     __tablename__ = "planned_meals"
 
@@ -57,6 +64,11 @@ class PlannedMeal(Base):
     time_of_day = Column(String)
     notes = Column(String)
 
+    # Relationships
+    nutrition_plan = relationship("NutritionPlan", back_populates="planned_meals")
+    recipe = relationship("Recipe", back_populates="planned_meals")
+    meal_completions = relationship("MealCompletion", back_populates="planned_meal", cascade="all, delete-orphan")
+
 class MealCompletion(Base):
     __tablename__ = "meal_completions"
 
@@ -67,6 +79,9 @@ class MealCompletion(Base):
     photo_path = Column(String)
     completed_at = Column(DateTime(timezone=True), server_default=func.now())
     notes = Column(String)
+
+    # Relationships
+    planned_meal = relationship("PlannedMeal", back_populates="meal_completions")
 
 class WeighIn(Base):
     __tablename__ = "weigh_ins"

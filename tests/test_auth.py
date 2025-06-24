@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+import uuid
 
 class TestAuthentication:
     """Test authentication endpoints."""
@@ -8,12 +9,14 @@ class TestAuthentication:
     def test_register_trainer_success(self, client: TestClient):
         """Test successful trainer registration."""
         trainer_data = {
-            "email": "newtrainer@test.com",
+            "email": f"newtrainer_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
             "full_name": "New Trainer",
             "role": "trainer"
         }
         response = client.post("/api/auth/register", json=trainer_data)
+        if response.status_code != 201:
+            print("Register trainer error:", response.json())
         assert response.status_code == 201
         data = response.json()
         assert data["email"] == trainer_data["email"]
@@ -25,12 +28,14 @@ class TestAuthentication:
     def test_register_client_success(self, client: TestClient):
         """Test successful client registration."""
         client_data = {
-            "email": "newclient@test.com",
+            "email": f"newclient_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
             "full_name": "New Client",
             "role": "client"
         }
         response = client.post("/api/auth/register", json=client_data)
+        if response.status_code != 201:
+            print("Register client error:", response.json())
         assert response.status_code == 201
         data = response.json()
         assert data["email"] == client_data["email"]
@@ -63,7 +68,7 @@ class TestAuthentication:
     def test_register_weak_password(self, client: TestClient):
         """Test registration with weak password."""
         weak_password_data = {
-            "email": "weak@test.com",
+            "email": f"weak_{uuid.uuid4().hex}@test.com",
             "password": "123",
             "full_name": "Weak User",
             "role": "client"
@@ -73,7 +78,14 @@ class TestAuthentication:
 
     def test_login_success_json(self, client: TestClient, test_trainer_data):
         """Test successful login with JSON."""
+        # First register the user
+        register_response = client.post("/api/auth/register", json=test_trainer_data)
+        if register_response.status_code != 201:
+            print("Register for login error:", register_response.json())
+        
         response = client.post("/api/auth/login", json=test_trainer_data)
+        if response.status_code != 200:
+            print("Login error:", response.json())
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
@@ -82,11 +94,18 @@ class TestAuthentication:
 
     def test_login_success_form(self, client: TestClient, test_trainer_data):
         """Test successful login with form data."""
+        # First register the user
+        register_response = client.post("/api/auth/register", json=test_trainer_data)
+        if register_response.status_code != 201:
+            print("Register for form login error:", register_response.json())
+        
         form_data = {
             "username": test_trainer_data["email"],
             "password": test_trainer_data["password"]
         }
         response = client.post("/api/auth/token", data=form_data)
+        if response.status_code != 200:
+            print("Form login error:", response.json())
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
@@ -95,7 +114,7 @@ class TestAuthentication:
     def test_login_invalid_credentials(self, client: TestClient):
         """Test login with invalid credentials."""
         invalid_data = {
-            "email": "nonexistent@test.com",
+            "email": f"nonexistent_{uuid.uuid4().hex}@test.com",
             "password": "wrongpassword"
         }
         response = client.post("/api/auth/login", json=invalid_data)

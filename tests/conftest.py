@@ -2,7 +2,7 @@ import pytest
 import asyncio
 from typing import Generator, AsyncGenerator
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 import os
@@ -15,6 +15,7 @@ import string
 from app.main import app
 from app.database import Base, get_db, SessionLocal
 from app.models.user import User, TrainerProfile, ClientProfile
+from app.models.nutrition import NutritionPlan, Recipe, PlannedMeal, MealCompletion, WeighIn
 from app.schemas.auth import UserRole
 from app.services.auth_service import get_password_hash
 
@@ -33,12 +34,38 @@ def generate_unique_email():
 def cleanup_test_data(session):
     """Clean up all test data from the database."""
     try:
+        # Delete nutrition data first (due to foreign key constraints)
+        # Delete in reverse order of dependencies
+        session.query(MealCompletion).delete()
+        session.query(PlannedMeal).delete()
+        session.query(WeighIn).delete()
+        session.query(Recipe).delete()
+        session.query(NutritionPlan).delete()
+        
+        # Delete workout-related data that might reference users
+        session.execute(text("DELETE FROM exercises WHERE created_by IN (SELECT id FROM users WHERE email LIKE '%test.com')"))
+        session.execute(text("DELETE FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com')"))
+        session.execute(text("DELETE FROM workout_sessions WHERE workout_plan_id IN (SELECT id FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com'))"))
+        
         # Delete all test users (those with @test.com emails)
         session.query(User).filter(User.email.like("%test.com")).delete()
         session.commit()
     except Exception as e:
         print(f"Warning: Could not clean up test data: {e}")
         session.rollback()
+
+def cleanup_uploaded_files():
+    """Clean up uploaded files from test runs."""
+    try:
+        upload_dir = "uploads/meal_photos"
+        if os.path.exists(upload_dir):
+            for filename in os.listdir(upload_dir):
+                if filename.startswith("test_"):
+                    file_path = os.path.join(upload_dir, filename)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+    except Exception as e:
+        print(f"Warning: Could not clean up uploaded files: {e}")
 
 @pytest.fixture(scope="function")
 def db_session():
@@ -48,12 +75,14 @@ def db_session():
     
     # Clean up before the test
     cleanup_test_data(session)
+    cleanup_uploaded_files()
     
     try:
         yield session
     finally:
         # Clean up after the test
         cleanup_test_data(session)
+        cleanup_uploaded_files()
         session.close()
 
 @pytest.fixture(autouse=True)
@@ -62,6 +91,7 @@ def cleanup_database(db_session):
     yield
     # Clean up any test data
     cleanup_test_data(db_session)
+    cleanup_uploaded_files()
 
 @pytest.fixture(scope="function")
 def client(db_session) -> Generator:

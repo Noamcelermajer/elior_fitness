@@ -1,63 +1,60 @@
 #!/usr/bin/env python3
 """
-Test script to verify database fixes
+Quick test script to verify fixes are working.
 """
-import psycopg2
-import random
-import string
 
-def generate_unique_email():
-    """Generate a unique email for testing."""
-    random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-    return f"test_{random_suffix}@test.com"
+import requests
+import json
 
-def test_database_connection():
-    """Test database connection and cleanup."""
+# Test the basic endpoints
+def test_basic_endpoints():
+    base_url = "http://localhost:8000"
+    
+    # Test health endpoint
     try:
-        # Connect to database
-        conn = psycopg2.connect("postgresql://postgres:postgres@localhost:5432/elior_fitness")
-        cur = conn.cursor()
-        
-        # Check if users table exists
-        cur.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users')")
-        table_exists = cur.fetchone()[0]
-        
-        if table_exists:
-            print("✓ Users table exists")
-            
-            # Clean up any existing test data
-            cur.execute("DELETE FROM users WHERE email LIKE '%@test.com'")
-            conn.commit()
-            print("✓ Test data cleaned up")
-            
-            # Test unique email generation
-            emails = [generate_unique_email() for _ in range(5)]
-            unique_emails = set(emails)
-            print(f"✓ Generated {len(emails)} unique emails: {len(unique_emails)} are unique")
-            
-            # Test inserting a user
-            test_email = generate_unique_email()
-            cur.execute(
-                "INSERT INTO users (email, hashed_password, full_name, role, is_active) VALUES (%s, %s, %s, %s, %s)",
-                (test_email, "hashed_password", "Test User", "client", True)
-            )
-            conn.commit()
-            print(f"✓ Successfully inserted user with email: {test_email}")
-            
-            # Clean up
-            cur.execute("DELETE FROM users WHERE email = %s", (test_email,))
-            conn.commit()
-            print("✓ Test user cleaned up")
-            
-        else:
-            print("✗ Users table does not exist")
-            
-        cur.close()
-        conn.close()
-        print("✓ Database connection test completed successfully")
-        
+        response = requests.get(f"{base_url}/health")
+        print(f"Health check: {response.status_code}")
     except Exception as e:
-        print(f"✗ Database test failed: {e}")
+        print(f"Health check failed: {e}")
+        return
+    
+    # Test registration
+    try:
+        user_data = {
+            "email": "test_user@example.com",
+            "password": "securepassword123",
+            "full_name": "Test User",
+            "role": "client"
+        }
+        response = requests.post(f"{base_url}/api/auth/register", json=user_data)
+        print(f"Registration: {response.status_code}")
+        if response.status_code == 201:
+            print("Registration successful")
+        else:
+            print(f"Registration failed: {response.json()}")
+    except Exception as e:
+        print(f"Registration test failed: {e}")
+    
+    # Test login
+    try:
+        login_data = {
+            "email": "test_user@example.com",
+            "password": "securepassword123"
+        }
+        response = requests.post(f"{base_url}/api/auth/login", json=login_data)
+        print(f"Login: {response.status_code}")
+        if response.status_code == 200:
+            token = response.json()["access_token"]
+            print("Login successful")
+            
+            # Test protected endpoint
+            headers = {"Authorization": f"Bearer {token}"}
+            response = requests.get(f"{base_url}/api/auth/me", headers=headers)
+            print(f"Protected endpoint: {response.status_code}")
+        else:
+            print(f"Login failed: {response.json()}")
+    except Exception as e:
+        print(f"Login test failed: {e}")
 
 if __name__ == "__main__":
-    test_database_connection() 
+    test_basic_endpoints() 

@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from fastapi.testclient import TestClient
 
 class TestIntegrationFlows:
@@ -8,7 +9,7 @@ class TestIntegrationFlows:
         """Test complete flow: register user -> login -> get profile."""
         # Step 1: Register a new trainer
         trainer_data = {
-            "email": "integration@test.com",
+            "email": f"integration_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
             "full_name": "Integration Trainer",
             "role": "trainer"
@@ -39,7 +40,7 @@ class TestIntegrationFlows:
         """Test complete flow: register trainer and client -> assign client -> manage relationship."""
         # Step 1: Register trainer
         trainer_data = {
-            "email": "trainer@integration.com",
+            "email": f"trainer_{uuid.uuid4().hex}@integration.com",
             "password": "securepassword123",
             "full_name": "Integration Trainer",
             "role": "trainer"
@@ -50,7 +51,7 @@ class TestIntegrationFlows:
         
         # Step 2: Register client
         client_data = {
-            "email": "client@integration.com",
+            "email": f"client_{uuid.uuid4().hex}@integration.com",
             "password": "securepassword123",
             "full_name": "Integration Client",
             "role": "client"
@@ -106,13 +107,13 @@ class TestIntegrationFlows:
         """Test authentication and authorization flow with different user roles."""
         # Step 1: Register trainer and client
         trainer_data = {
-            "email": "auth@trainer.com",
+            "email": f"auth_{uuid.uuid4().hex}@trainer.com",
             "password": "securepassword123",
             "full_name": "Auth Trainer",
             "role": "trainer"
         }
         client_data = {
-            "email": "auth@client.com",
+            "email": f"auth_{uuid.uuid4().hex}@client.com",
             "password": "securepassword123",
             "full_name": "Auth Client",
             "role": "client"
@@ -162,7 +163,7 @@ class TestIntegrationFlows:
         """Test complete password management flow."""
         # Step 1: Register user
         user_data = {
-            "email": "password@test.com",
+            "email": f"password_{uuid.uuid4().hex}@test.com",
             "password": "initialpassword123",
             "full_name": "Password User",
             "role": "client"
@@ -210,7 +211,7 @@ class TestIntegrationFlows:
         
         # Test 2: Duplicate email registration
         user_data = {
-            "email": "duplicate@test.com",
+            "email": f"duplicate_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
             "full_name": "First User",
             "role": "client"
@@ -219,7 +220,7 @@ class TestIntegrationFlows:
         assert first_response.status_code == 201
         
         duplicate_data = {
-            "email": "duplicate@test.com",
+            "email": user_data["email"],  # Use the same email to test duplicate
             "password": "securepassword123",
             "full_name": "Second User",
             "role": "client"
@@ -249,7 +250,7 @@ class TestIntegrationFlows:
         # Register multiple users concurrently
         users_data = [
             {
-                "email": f"concurrent{i}@test.com",
+                "email": f"concurrent_{i}_{uuid.uuid4().hex}@test.com",
                 "password": "securepassword123",
                 "full_name": f"Concurrent User {i}",
                 "role": "client"

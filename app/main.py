@@ -5,8 +5,8 @@ from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base
 from app.routers import auth, users, exercises, workouts, nutrition, progress
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Note: Database tables are managed by Alembic migrations
+# Base.metadata.create_all(bind=engine)  # Removed - use Alembic instead
 
 app = FastAPI(
     title="Elior Fitness API",

@@ -1,5 +1,6 @@
 import pytest
 import time
+import uuid
 from fastapi.testclient import TestClient
 
 class TestPerformance:
@@ -18,7 +19,7 @@ class TestPerformance:
     def test_registration_performance(self, client: TestClient):
         """Test user registration performance."""
         user_data = {
-            "email": "perf@test.com",
+            "email": f"perf_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
             "full_name": "Performance User",
             "role": "client"
@@ -36,7 +37,7 @@ class TestPerformance:
         """Test login performance."""
         # First register a user
         user_data = {
-            "email": "loginperf@test.com",
+            "email": f"loginperf_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
             "full_name": "Login Performance User",
             "role": "client"
@@ -61,7 +62,7 @@ class TestPerformance:
         
         def register_user(user_id):
             user_data = {
-                "email": f"concurrent{user_id}@test.com",
+                "email": f"concurrent_{user_id}_{uuid.uuid4().hex}@test.com",
                 "password": "securepassword123",
                 "full_name": f"Concurrent User {user_id}",
                 "role": "client"
@@ -95,7 +96,7 @@ class TestPerformance:
         # Create multiple users first
         users_data = [
             {
-                "email": f"queryperf{i}@test.com",
+                "email": f"queryperf_{i}_{uuid.uuid4().hex}@test.com",
                 "password": "securepassword123",
                 "full_name": f"Query Performance User {i}",
                 "role": "client"
@@ -107,8 +108,15 @@ class TestPerformance:
         for user_data in users_data:
             client.post("/api/auth/register", json=user_data)
         
-        # Login as one user to get token
-        login_response = client.post("/api/auth/login", json=users_data[0])
+        # Create and login as a trainer to access users endpoint
+        trainer_data = {
+            "email": f"trainer_{uuid.uuid4().hex}@test.com",
+            "password": "securepassword123",
+            "full_name": "Performance Trainer",
+            "role": "trainer"
+        }
+        client.post("/api/auth/register", json=trainer_data)
+        login_response = client.post("/api/auth/login", json=trainer_data)
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         
@@ -126,7 +134,7 @@ class TestPerformance:
         # Perform multiple operations to simulate memory usage
         for i in range(50):
             user_data = {
-                "email": f"memory{i}@test.com",
+                "email": f"memory_{i}_{uuid.uuid4().hex}@test.com",
                 "password": "securepassword123",
                 "full_name": f"Memory Test User {i}",
                 "role": "client"
@@ -149,7 +157,7 @@ class TestPerformance:
     def test_response_size_optimization(self, client: TestClient):
         """Test that responses are reasonably sized."""
         user_data = {
-            "email": "size@test.com",
+            "email": f"size_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
             "full_name": "Size Test User",
             "role": "client"
@@ -176,7 +184,7 @@ class TestPerformance:
         """Test that error responses are also fast."""
         # Test invalid login performance
         invalid_data = {
-            "email": "nonexistent@test.com",
+            "email": f"nonexistent_{uuid.uuid4().hex}@test.com",
             "password": "wrongpassword"
         }
         
@@ -220,15 +228,15 @@ class TestPerformance:
     @pytest.mark.slow
     def test_stress_test(self, client: TestClient):
         """Stress test the application with many requests."""
-        # Create a user for testing
-        user_data = {
-            "email": "stress@test.com",
+        # Create a trainer for testing
+        trainer_data = {
+            "email": f"stress_{uuid.uuid4().hex}@test.com",
             "password": "securepassword123",
-            "full_name": "Stress Test User",
-            "role": "client"
+            "full_name": "Stress Test Trainer",
+            "role": "trainer"
         }
-        client.post("/api/auth/register", json=user_data)
-        login_response = client.post("/api/auth/login", json=user_data)
+        client.post("/api/auth/register", json=trainer_data)
+        login_response = client.post("/api/auth/login", json=trainer_data)
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         
