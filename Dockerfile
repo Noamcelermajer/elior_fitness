@@ -2,28 +2,35 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for Sprint 5 file management
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
     netcat-traditional \
+    libmagic1 \
+    libmagic-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first to leverage Docker cache
+# Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
-# Create uploads directory
+# Create necessary directories
 RUN mkdir -p uploads
-
-# Create test directory if it doesn't exist
 RUN mkdir -p tests
 
-# Set environment variable for testing
+# Set environment variables
 ENV PYTHONPATH=/app
 
-# Default command
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
+
+# Expose port
+EXPOSE 8000
+
+# Run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 

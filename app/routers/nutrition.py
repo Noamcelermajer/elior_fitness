@@ -327,19 +327,60 @@ async def upload_meal_photo(
     current_user: UserResponse = Depends(get_current_user),
     nutrition_service: NutritionService = Depends(get_nutrition_service)
 ):
-    """Upload a photo for a meal completion."""
+    """Upload a photo for a meal completion with enhanced file management."""
+    from app.services.file_service import FileService
+    from app.services.websocket_service import websocket_service
+    
     if current_user.role != UserRole.CLIENT:
         raise HTTPException(status_code=403, detail="Only clients can upload meal photos")
     
-    # Validate file type
-    if not file.content_type.startswith('image/'):
-        raise HTTPException(status_code=400, detail="File must be an image")
-    
-    photo_path = nutrition_service.update_meal_photo(meal_completion_id, file)
-    if not photo_path:
+    # Verify meal completion exists and belongs to user
+    meal_completion = nutrition_service.get_meal_completion(meal_completion_id)
+    if not meal_completion:
         raise HTTPException(status_code=404, detail="Meal completion not found")
     
-    return {"photo_path": photo_path, "message": "Photo uploaded successfully"}
+    if meal_completion.client_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    try:
+        # Use FileService for enhanced file handling
+        file_service = FileService()
+        
+        # Save file with proper organization and processing
+        file_result = await file_service.save_file(
+            file=file,
+            category="meal_photo",
+            entity_id=meal_completion_id,
+            process_image=True
+        )
+        
+        # Update meal completion with photo path
+        photo_path = nutrition_service.update_meal_photo(meal_completion_id, file_result["original_path"])
+        
+        # Send WebSocket notification
+        await websocket_service.notify_file_upload(
+            user_id=current_user.id,
+            file_data={
+                "filename": file_result["filename"],
+                "file_size": file_result["file_size"],
+                "mime_type": file_result["mime_type"],
+                "meal_completion_id": meal_completion_id,
+                "thumbnail_path": file_result.get("thumbnail_path"),
+                "medium_path": file_result.get("medium_path")
+            },
+            file_type="meal_photo"
+        )
+        
+        return {
+            "photo_path": photo_path,
+            "file_info": file_result,
+            "message": "Photo uploaded and processed successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error uploading photo: {str(e)}")
 
 # Weigh In Endpoints
 @router.post("/weigh-ins", response_model=WeighInResponse)
@@ -498,4 +539,142 @@ async def get_weekly_nutrition_summary(
     """Get weekly nutrition summary for a client."""
     target_client_id = client_id or current_user.id
     summaries = nutrition_service.get_weekly_nutrition_summary(target_client_id, start_date)
-    return summaries 
+    return summaries
+
+# Enhanced File Upload Endpoints for Sprint 5
+@router.post("/photos/upload")
+async def upload_nutrition_photo(
+    file: UploadFile = File(...),
+    meal_completion_id: Optional[int] = Query(None, description="Meal completion ID for meal photos"),
+    progress_id: Optional[int] = Query(None, description="Progress record ID for progress photos"),
+    current_user: UserResponse = Depends(get_current_user),
+    nutrition_service: NutritionService = Depends(get_nutrition_service)
+):
+    """
+    Enhanced photo upload endpoint for nutrition-related photos.
+    Supports meal photos and progress photos with proper file management.
+    """
+    from app.services.file_service import FileService
+    from app.services.websocket_service import websocket_service
+    
+    if current_user.role != UserRole.CLIENT:
+        raise HTTPException(status_code=403, detail="Only clients can upload nutrition photos")
+    
+    # Determine photo type and entity
+    if meal_completion_id:
+        category = "meal_photo"
+        entity_id = meal_completion_id
+        
+        # Verify meal completion exists and belongs to user
+        meal_completion = nutrition_service.get_meal_completion(meal_completion_id)
+        if not meal_completion:
+            raise HTTPException(status_code=404, detail="Meal completion not found")
+        if meal_completion.client_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+            
+    elif progress_id:
+        category = "progress_photo"
+        entity_id = progress_id
+        
+        # Note: You might want to add progress record verification here
+        # For now, assuming progress records exist in your system
+        
+    else:
+        raise HTTPException(status_code=400, detail="Must specify either meal_completion_id or progress_id")
+    
+    try:
+        # Use FileService for enhanced file handling
+        file_service = FileService()
+        
+        # Save file with proper organization and processing
+        file_result = await file_service.save_file(
+            file=file,
+            category=category,
+            entity_id=entity_id,
+            process_image=True
+        )
+        
+        # Update the relevant record with photo path
+        if category == "meal_photo":
+            nutrition_service.update_meal_photo(entity_id, file_result["original_path"])
+        
+        # Send WebSocket notification
+        await websocket_service.notify_file_upload(
+            user_id=current_user.id,
+            file_data={
+                "filename": file_result["filename"],
+                "file_size": file_result["file_size"],
+                "mime_type": file_result["mime_type"],
+                "entity_id": entity_id,
+                "category": category,
+                "thumbnail_path": file_result.get("thumbnail_path"),
+                "medium_path": file_result.get("medium_path")
+            },
+            file_type=category
+        )
+        
+        return {
+            "success": True,
+            "file_info": file_result,
+            "message": f"{category.replace('_', ' ').title()} uploaded and processed successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error uploading photo: {str(e)}")
+
+@router.get("/photos/list")
+async def list_nutrition_photos(
+    meal_completion_id: Optional[int] = Query(None),
+    client_id: Optional[int] = Query(None),
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """List nutrition-related photos for a user."""
+    import os
+    from pathlib import Path
+    
+    # Determine target client
+    if current_user.role == UserRole.TRAINER and client_id:
+        target_client_id = client_id
+    else:
+        target_client_id = current_user.id
+    
+    photo_list = []
+    
+    # List meal photos
+    meal_photos_dir = "uploads/meal_photos"
+    if os.path.exists(meal_photos_dir):
+        for filename in os.listdir(meal_photos_dir):
+            if filename.startswith(f"meal_photo_{target_client_id}_") or (
+                meal_completion_id and filename.startswith(f"meal_photo_{meal_completion_id}_")
+            ):
+                file_path = os.path.join(meal_photos_dir, filename)
+                photo_info = {
+                    "filename": filename,
+                    "category": "meal_photo",
+                    "size": os.path.getsize(file_path),
+                    "created_at": os.path.getctime(file_path),
+                    "url": f"/api/files/media/meal_photos/{filename}"
+                }
+                photo_list.append(photo_info)
+    
+    # List progress photos
+    progress_photos_dir = "uploads/progress_photos"
+    if os.path.exists(progress_photos_dir):
+        for filename in os.listdir(progress_photos_dir):
+            if filename.startswith(f"progress_photo_{target_client_id}_"):
+                file_path = os.path.join(progress_photos_dir, filename)
+                photo_info = {
+                    "filename": filename,
+                    "category": "progress_photo",
+                    "size": os.path.getsize(file_path),
+                    "created_at": os.path.getctime(file_path),
+                    "url": f"/api/files/media/progress_photos/{filename}"
+                }
+                photo_list.append(photo_info)
+    
+    return {
+        "photos": photo_list,
+        "total": len(photo_list)
+    } 
