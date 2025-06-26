@@ -234,7 +234,7 @@ async def get_media_stats(
     Get media storage statistics (admin/trainer only).
     """
     
-    if current_user.role not in [UserRole.TRAINER, UserRole.ADMIN]:
+    if current_user.role != UserRole.TRAINER:
         raise HTTPException(status_code=403, detail="Access denied")
     
     try:

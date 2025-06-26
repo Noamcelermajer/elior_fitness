@@ -11,6 +11,7 @@ import shutil
 import uuid
 import random
 import string
+import time
 
 from app.main import app
 from app.database import Base, get_db, SessionLocal
@@ -28,8 +29,9 @@ def event_loop():
 
 def generate_unique_email():
     """Generate a unique email for testing."""
+    timestamp = str(int(time.time() * 1000))  # milliseconds
     random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-    return f"test_{random_suffix}@test.com"
+    return f"test_{timestamp}_{random_suffix}@test.com"
 
 def cleanup_test_data(session):
     """Clean up all test data from the database."""
@@ -43,9 +45,11 @@ def cleanup_test_data(session):
         session.query(NutritionPlan).delete()
         
         # Delete workout-related data that might reference users
+        # FIXED: Delete in correct order - child tables first
+        session.execute(text("DELETE FROM workout_exercises WHERE workout_session_id IN (SELECT id FROM workout_sessions WHERE workout_plan_id IN (SELECT id FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com')))"))
+        session.execute(text("DELETE FROM workout_sessions WHERE workout_plan_id IN (SELECT id FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com'))"))
         session.execute(text("DELETE FROM exercises WHERE created_by IN (SELECT id FROM users WHERE email LIKE '%test.com')"))
         session.execute(text("DELETE FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com')"))
-        session.execute(text("DELETE FROM workout_sessions WHERE workout_plan_id IN (SELECT id FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com'))"))
         
         # Delete all test users (those with @test.com emails)
         session.query(User).filter(User.email.like("%test.com")).delete()

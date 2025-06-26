@@ -1,7 +1,7 @@
 import pytest
 import os
 import tempfile
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import UploadFile
 from io import BytesIO
@@ -35,9 +35,9 @@ class TestFileService:
         mock_file = Mock(spec=UploadFile)
         mock_file.filename = "test_image.jpg"
         mock_file.content_type = "image/jpeg"
-        mock_file.file = img_bytes
         mock_file.read = Mock(return_value=img_bytes.getvalue())
-        mock_file.seek = Mock()
+        mock_file.file = Mock()
+        mock_file.file.seek = Mock()
         
         return mock_file
     
@@ -49,16 +49,22 @@ class TestFileService:
         mock_file = Mock(spec=UploadFile)
         mock_file.filename = "test_document.pdf"
         mock_file.content_type = "application/pdf"
-        mock_file.file = BytesIO(doc_content)
         mock_file.read = Mock(return_value=doc_content)
-        mock_file.seek = Mock()
+        mock_file.file = Mock()
+        mock_file.file.seek = Mock()
         
         return mock_file
     
     @pytest.mark.asyncio
     async def test_validate_image_file_success(self, file_service, mock_image_file):
         """Test successful image file validation."""
-        with patch('magic.from_buffer', return_value='image/jpeg'):
+        with patch('magic.from_buffer', return_value='image/jpeg'), \
+             patch('PIL.Image.open') as mock_image:
+            
+            mock_img = Mock()
+            mock_img.verify = Mock()
+            mock_image.return_value = mock_img
+            
             is_valid, message = await file_service.validate_file(mock_image_file, "image")
             assert is_valid is True
             assert "validation successful" in message.lower()
@@ -73,7 +79,8 @@ class TestFileService:
         mock_file.filename = "large_image.jpg"
         mock_file.content_type = "image/jpeg"
         mock_file.read = Mock(return_value=large_content)
-        mock_file.seek = Mock()
+        mock_file.file = Mock()
+        mock_file.file.seek = Mock()
         
         is_valid, message = await file_service.validate_file(mock_file, "image")
         assert is_valid is False
@@ -86,7 +93,8 @@ class TestFileService:
         mock_file.filename = "test.txt"
         mock_file.content_type = "text/plain"
         mock_file.read = Mock(return_value=b"test content")
-        mock_file.seek = Mock()
+        mock_file.file = Mock()
+        mock_file.file.seek = Mock()
         
         with patch('magic.from_buffer', return_value='text/plain'):
             is_valid, message = await file_service.validate_file(mock_file, "image")
@@ -124,7 +132,7 @@ class TestFileService:
         with patch('os.path.exists', return_value=True), \
              patch('os.listdir', return_value=['old_file.jpg', 'new_file.jpg']), \
              patch('os.path.isfile', return_value=True), \
-             patch('datetime.fromtimestamp') as mock_timestamp, \
+             patch('datetime.datetime.fromtimestamp') as mock_timestamp, \
              patch('os.remove') as mock_remove:
             
             from datetime import datetime, timedelta
@@ -152,10 +160,10 @@ class TestWebSocketService:
     async def test_connect_user(self, websocket_service):
         """Test user connection to WebSocket."""
         mock_websocket = Mock()
-        mock_websocket.accept = Mock()
+        mock_websocket.accept = AsyncMock()
         user_id = 123
         
-        with patch.object(websocket_service, 'send_personal_message'):
+        with patch.object(websocket_service, 'send_personal_message', new_callable=AsyncMock):
             await websocket_service.connect(mock_websocket, user_id)
             
             assert user_id in websocket_service.active_connections
@@ -228,39 +236,50 @@ class TestFileEndpoints:
     
     def test_media_stats_endpoint(self, auth_headers):
         """Test media statistics endpoint."""
-        with patch('app.auth.utils.get_current_user') as mock_auth:
-            mock_auth.return_value = Mock(
-                id=1,
-                role="trainer"
-            )
-            
+        # Create a mock dependency override
+        def mock_get_current_user():
+            return Mock(id=1, role="trainer")
+        
+        # Override the dependency
+        from app.main import app
+        from app.auth.utils import get_current_user
+        app.dependency_overrides[get_current_user] = mock_get_current_user
+        
+        try:
             with patch('os.path.exists', return_value=True), \
                  patch('os.listdir', return_value=['file1.jpg', 'file2.jpg']), \
                  patch('os.path.isfile', return_value=True), \
                  patch('os.path.getsize', return_value=1024):
                 
-                response = client.get("/api/files/media/stats", headers=auth_headers)
+                response = client.get("/api/files/media/stats")
                 
                 assert response.status_code == 200
                 data = response.json()
                 assert "total_size_bytes" in data
                 assert "file_counts" in data
+        finally:
+            # Clean up dependency override
+            app.dependency_overrides.clear()
     
     def test_media_access_control(self, auth_headers):
         """Test media file access control."""
-        with patch('app.auth.utils.get_current_user') as mock_auth:
-            mock_auth.return_value = Mock(
-                id=1,
-                role="client"
-            )
-            
+        # Create a mock dependency override
+        def mock_get_current_user():
+            return Mock(id=1, role="client")
+        
+        # Override the dependency
+        from app.main import app
+        from app.auth.utils import get_current_user
+        app.dependency_overrides[get_current_user] = mock_get_current_user
+        
+        try:
             # Test accessing non-existent file
-            response = client.get(
-                "/api/files/media/meal_photos/nonexistent.jpg",
-                headers=auth_headers
-            )
+            response = client.get("/api/files/media/meal_photos/nonexistent.jpg")
             
             assert response.status_code == 404
+        finally:
+            # Clean up dependency override
+            app.dependency_overrides.clear()
 
 class TestNutritionFileIntegration:
     """Test nutrition router file upload integration."""
@@ -272,90 +291,106 @@ class TestNutritionFileIntegration:
     
     def test_meal_photo_upload_integration(self, auth_headers):
         """Test meal photo upload with nutrition integration."""
-        with patch('app.auth.utils.get_current_user') as mock_auth, \
-             patch('app.services.nutrition_service.NutritionService') as mock_nutrition_service, \
-             patch('app.services.file_service.FileService') as mock_file_service, \
-             patch('app.services.websocket_service.websocket_service') as mock_websocket:
-            
-            # Setup mocks
-            mock_auth.return_value = Mock(
-                id=1,
-                role="client"
-            )
-            
-            mock_meal_completion = Mock()
-            mock_meal_completion.client_id = 1
-            mock_nutrition_service.return_value.get_meal_completion.return_value = mock_meal_completion
-            
-            mock_file_result = {
-                "filename": "meal_photo_123_uuid.jpg",
-                "file_size": 1024,
-                "mime_type": "image/jpeg",
-                "original_path": "uploads/meal_photos/meal_photo_123_uuid.jpg",
-                "thumbnail_path": "uploads/thumbnails/meal_photo_123_uuid_thumb.jpg"
-            }
-            mock_file_service.return_value.save_file.return_value = mock_file_result
-            
-            # Create test file
-            test_image = Image.new('RGB', (100, 100), color='red')
-            img_bytes = BytesIO()
-            test_image.save(img_bytes, format='JPEG')
-            img_bytes.seek(0)
-            
-            # Test upload
-            response = client.post(
-                "/api/nutrition/meal-completions/123/photo",
-                headers=auth_headers,
-                files={"file": ("test.jpg", img_bytes, "image/jpeg")}
-            )
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert "file_info" in data
-            assert "message" in data
+        # Create a mock dependency override for authentication
+        def mock_get_current_user():
+            return Mock(id=1, role="client")
+        
+        # Override the authentication dependency
+        from app.main import app
+        from app.auth.utils import get_current_user
+        app.dependency_overrides[get_current_user] = mock_get_current_user
+        
+        try:
+            with patch('app.services.nutrition_service.NutritionService') as mock_nutrition_service_class, \
+                 patch('app.services.file_service.FileService') as mock_file_service_class:
+                
+                # Setup service mocks
+                mock_nutrition_service = Mock()
+                mock_meal_completion = Mock()
+                mock_meal_completion.client_id = 1
+                mock_nutrition_service.get_meal_completion.return_value = mock_meal_completion
+                mock_nutrition_service_class.return_value = mock_nutrition_service
+                
+                mock_file_service = Mock()
+                mock_file_service.save_file = AsyncMock(return_value={
+                    "filename": "meal_photo_123_uuid.jpg",
+                    "file_size": 1024,
+                    "mime_type": "image/jpeg",
+                    "original_path": "uploads/meal_photos/meal_photo_123_uuid.jpg",
+                    "thumbnail_path": "uploads/thumbnails/meal_photo_123_uuid_thumb.jpg"
+                })
+                mock_file_service_class.return_value = mock_file_service
+                
+                # Create test file
+                test_image = Image.new('RGB', (100, 100), color='red')
+                img_bytes = BytesIO()
+                test_image.save(img_bytes, format='JPEG')
+                img_bytes.seek(0)
+                
+                # Test upload
+                response = client.post(
+                    "/api/nutrition/meal-completions/123/photo",
+                    files={"file": ("test.jpg", img_bytes, "image/jpeg")}
+                )
+                
+                assert response.status_code == 200
+                data = response.json()
+                assert "file_info" in data
+                assert "message" in data
+        finally:
+            # Clean up dependency overrides
+            app.dependency_overrides.clear()
     
     def test_enhanced_photo_upload(self, auth_headers):
         """Test enhanced photo upload endpoint."""
-        with patch('app.auth.utils.get_current_user') as mock_auth, \
-             patch('app.services.nutrition_service.NutritionService') as mock_nutrition_service, \
-             patch('app.services.file_service.FileService') as mock_file_service, \
-             patch('app.services.websocket_service.websocket_service') as mock_websocket:
-            
-            # Setup mocks
-            mock_auth.return_value = Mock(
-                id=1,
-                role="client"
-            )
-            
-            mock_meal_completion = Mock()
-            mock_meal_completion.client_id = 1
-            mock_nutrition_service.return_value.get_meal_completion.return_value = mock_meal_completion
-            
-            mock_file_result = {
-                "filename": "meal_photo_123_uuid.jpg",
-                "file_size": 1024,
-                "mime_type": "image/jpeg",
-                "original_path": "uploads/meal_photos/meal_photo_123_uuid.jpg"
-            }
-            mock_file_service.return_value.save_file.return_value = mock_file_result
-            
-            # Create test file
-            test_image = Image.new('RGB', (100, 100), color='red')
-            img_bytes = BytesIO()
-            test_image.save(img_bytes, format='JPEG')
-            img_bytes.seek(0)
-            
-            # Test upload
-            response = client.post(
-                "/api/nutrition/photos/upload?meal_completion_id=123",
-                headers=auth_headers,
-                files={"file": ("test.jpg", img_bytes, "image/jpeg")}
-            )
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert data["success"] is True
-            assert "file_info" in data
+        # Create a mock dependency override for authentication
+        def mock_get_current_user():
+            return Mock(id=1, role="client")
+        
+        # Override the authentication dependency
+        from app.main import app
+        from app.auth.utils import get_current_user
+        app.dependency_overrides[get_current_user] = mock_get_current_user
+        
+        try:
+            with patch('app.services.nutrition_service.NutritionService') as mock_nutrition_service_class, \
+                 patch('app.services.file_service.FileService') as mock_file_service_class:
+                
+                # Setup service mocks
+                mock_nutrition_service = Mock()
+                mock_meal_completion = Mock()
+                mock_meal_completion.client_id = 1
+                mock_nutrition_service.get_meal_completion.return_value = mock_meal_completion
+                mock_nutrition_service_class.return_value = mock_nutrition_service
+                
+                mock_file_service = Mock()
+                mock_file_service.save_file = AsyncMock(return_value={
+                    "filename": "meal_photo_123_uuid.jpg",
+                    "file_size": 1024,
+                    "mime_type": "image/jpeg",
+                    "original_path": "uploads/meal_photos/meal_photo_123_uuid.jpg"
+                })
+                mock_file_service_class.return_value = mock_file_service
+                
+                # Create test file
+                test_image = Image.new('RGB', (100, 100), color='red')
+                img_bytes = BytesIO()
+                test_image.save(img_bytes, format='JPEG')
+                img_bytes.seek(0)
+                
+                # Test upload
+                response = client.post(
+                    "/api/nutrition/photos/upload?meal_completion_id=123",
+                    files={"file": ("test.jpg", img_bytes, "image/jpeg")}
+                )
+                
+                assert response.status_code == 200
+                data = response.json()
+                assert data["success"] is True
+                assert "file_info" in data
+        finally:
+            # Clean up dependency overrides
+            app.dependency_overrides.clear()
 
 class TestWebSocketEndpoints:
     """Test WebSocket API endpoints."""

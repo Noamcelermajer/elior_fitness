@@ -70,7 +70,7 @@ class FileService:
         try:
             # Read file content for validation
             content = await file.read()
-            await file.seek(0)  # Reset file pointer
+            file.file.seek(0)  # Reset file pointer
             
             # Check file size
             file_size = len(content)
@@ -97,9 +97,10 @@ class FileService:
                 
                 # Additional image validation using PIL
                 try:
-                    image = Image.open(file.file)
+                    from io import BytesIO
+                    image = Image.open(BytesIO(content))
                     image.verify()
-                    await file.seek(0)  # Reset after PIL check
+                    file.file.seek(0)  # Reset after PIL check
                 except Exception as e:
                     return False, f"Invalid image file: {str(e)}"
                     
