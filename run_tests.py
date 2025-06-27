@@ -49,12 +49,17 @@ import psycopg2
 try:
     conn = psycopg2.connect('postgresql://postgres:postgres@db:5432/elior_fitness')
     cur = conn.cursor()
-    cur.execute("DELETE FROM users WHERE email LIKE '%test.com'")
-    cur.execute("DELETE FROM nutrition_plans WHERE name LIKE '%test%'")
-    cur.execute("DELETE FROM recipes WHERE name LIKE '%test%'")
-    cur.execute("DELETE FROM planned_meals WHERE notes LIKE '%test%'")
+    # Delete in correct order to avoid foreign key violations
+    cur.execute("DELETE FROM workout_exercises WHERE workout_session_id IN (SELECT id FROM workout_sessions WHERE workout_plan_id IN (SELECT id FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com')))")
+    cur.execute("DELETE FROM workout_sessions WHERE workout_plan_id IN (SELECT id FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com'))")
+    cur.execute("DELETE FROM exercises WHERE created_by IN (SELECT id FROM users WHERE email LIKE '%test.com')")
+    cur.execute("DELETE FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com')")
     cur.execute("DELETE FROM meal_completions WHERE notes LIKE '%test%'")
+    cur.execute("DELETE FROM planned_meals WHERE notes LIKE '%test%'")
     cur.execute("DELETE FROM weigh_ins WHERE notes LIKE '%test%'")
+    cur.execute("DELETE FROM recipes WHERE name LIKE '%test%'")
+    cur.execute("DELETE FROM nutrition_plans WHERE name LIKE '%test%'")
+    cur.execute("DELETE FROM users WHERE email LIKE '%test.com'")
     conn.commit()
     cur.close()
     conn.close()
@@ -97,8 +102,10 @@ def run_tests(test_files: Dict[str, str], selection: str):
             if 0 <= test_index < len(options):
                 test_name = options[test_index]
                 test_file = test_files[test_name]
+                # Convert Windows path separators to Unix for Docker
+                test_file_unix = test_file.replace("\\", "/")
                 print(f"🧪 Running {test_name} tests...")
-                cmd = ["docker", "compose", "exec", "-T", "api", "python", "-m", "pytest", test_file, "-v"]
+                cmd = ["docker", "compose", "exec", "-T", "api", "python", "-m", "pytest", test_file_unix, "-v"]
             else:
                 print("❌ Invalid selection!")
                 return

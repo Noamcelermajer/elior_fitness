@@ -78,4 +78,47 @@ async def get_current_user(
             updated_at=user.updated_at
         )
     except JWTError:
+        raise credentials_exception
+
+async def get_current_user_websocket(token: str) -> UserResponse:
+    """
+    WebSocket version of get_current_user that doesn't use Depends.
+    Used for WebSocket authentication where FastAPI Depends doesn't work.
+    """
+    from app.database import SessionLocal
+    
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+        
+        # Create database session
+        db = SessionLocal()
+        try:
+            # Get the full user object from database
+            user = await get_user_by_id(db, int(user_id))
+            if user is None:
+                raise credentials_exception
+            
+            # Convert to UserResponse
+            return UserResponse(
+                id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                role=user.role,
+                is_active=user.is_active,
+                created_at=user.created_at,
+                updated_at=user.updated_at
+            )
+        finally:
+            db.close()
+            
+    except JWTError:
         raise credentials_exception 
