@@ -20,6 +20,13 @@ wheels/
 .installed.cfg
 *.egg
 
+# Python cache files (all locations)
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.Python
+
 # Virtual Environment
 venv/
 env/
@@ -50,4 +57,8 @@ htmlcov/
 
 # Uploads
 uploads/*
-!uploads/.gitkeep 
+!uploads/.gitkeep
+
+# Database
+*.db
+test.db 
