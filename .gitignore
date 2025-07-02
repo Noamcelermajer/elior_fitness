@@ -61,4 +61,5 @@ uploads/*
 
 # Database
 *.db
-test.db 
+test.db
+data/ 

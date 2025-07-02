@@ -27,10 +27,10 @@ class NutritionPlan(Base):
     protein_target = Column(Integer)  # in grams
     carbs_target = Column(Integer)    # in grams
     fat_target = Column(Integer)      # in grams
-    start_date = Column(DateTime(timezone=True))
-    end_date = Column(DateTime(timezone=True))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    start_date = Column(DateTime)  # SQLite compatible
+    end_date = Column(DateTime)  # SQLite compatible
+    created_at = Column(DateTime, default=func.now())  # SQLite compatible
+    updated_at = Column(DateTime, onupdate=func.now())  # SQLite compatible
 
     # Relationships
     planned_meals = relationship("PlannedMeal", back_populates="nutrition_plan", cascade="all, delete-orphan")
@@ -48,7 +48,7 @@ class Recipe(Base):
     carbs = Column(Integer)
     fat = Column(Integer)
     preparation_time = Column(Integer)  # in minutes
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime, default=func.now())  # SQLite compatible
 
     # Relationships
     planned_meals = relationship("PlannedMeal", back_populates="recipe")
@@ -77,7 +77,7 @@ class MealCompletion(Base):
     client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(Enum(MealStatus), nullable=False)
     photo_path = Column(String)
-    completed_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime, default=func.now())  # SQLite compatible
     notes = Column(String)
 
     # Relationships
@@ -91,4 +91,4 @@ class WeighIn(Base):
     weight = Column(Float, nullable=False)  # in kg
     body_fat = Column(Float)  # percentage
     notes = Column(String)
-    recorded_at = Column(DateTime(timezone=True), server_default=func.now()) 
+    recorded_at = Column(DateTime, default=func.now())  # SQLite compatible 

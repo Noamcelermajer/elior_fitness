@@ -4,10 +4,12 @@ from enum import Enum
 from datetime import datetime
 
 class UserRole(str, Enum):
+    ADMIN = "admin"
     TRAINER = "trainer"
     CLIENT = "client"
 
 class UserBase(BaseModel):
+    username: str
     email: EmailStr
     full_name: str
     role: UserRole
@@ -16,13 +18,14 @@ class UserCreate(UserBase):
     password: constr(min_length=8)
 
 class UserUpdate(BaseModel):
+    username: Optional[str] = None
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    username: str
     password: str
 
 class Token(BaseModel):

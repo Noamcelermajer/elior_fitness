@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 from app.models.user import User
 from app.schemas.auth import UserCreate, UserResponse
 from app.auth.utils import get_password_hash, verify_password, create_access_token
-from app.services.user_service import get_user_by_email
+from app.services.user_service import get_user_by_email, get_user_by_username
 
 async def create_user(db: Session, user: UserCreate) -> User:
     # Check if user already exists
@@ -17,9 +17,18 @@ async def create_user(db: Session, user: UserCreate) -> User:
             detail="Email already registered"
         )
     
+    # Check if username already exists
+    db_user = await get_user_by_username(db, user.username)
+    if db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered"
+        )
+    
     # Create new user
     hashed_password = get_password_hash(user.password)
     db_user = User(
+        username=user.username,
         email=user.email,
         hashed_password=hashed_password,
         full_name=user.full_name,
@@ -31,8 +40,12 @@ async def create_user(db: Session, user: UserCreate) -> User:
     db.refresh(db_user)
     return db_user
 
-async def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
-    user = await get_user_by_email(db, email)
+async def authenticate_user(db: Session, username_or_email: str, password: str) -> Optional[User]:
+    # Try to find user by username first, then by email
+    user = await get_user_by_username(db, username_or_email)
+    if not user:
+        user = await get_user_by_email(db, username_or_email)
+    
     if not user:
         return None
     if not verify_password(password, user.hashed_password):

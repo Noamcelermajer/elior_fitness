@@ -11,16 +11,17 @@ RUN apt-get update && apt-get install -y \
     libmagic-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Copy requirements first for better caching
 COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy only the application code (not test files, frontend, etc.)
+COPY app/ ./app/
 
 # Create necessary directories
-RUN mkdir -p uploads
-RUN mkdir -p tests
+RUN mkdir -p uploads data
 
 # Set environment variables
 ENV PYTHONPATH=/app

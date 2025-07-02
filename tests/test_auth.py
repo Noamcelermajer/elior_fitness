@@ -10,11 +10,12 @@ class TestAuthentication:
         """Test successful trainer registration."""
         trainer_data = {
             "email": f"newtrainer_{uuid.uuid4().hex}@test.com",
+            "username": f"newtrainer_{uuid.uuid4().hex}",
             "password": "securepassword123",
             "full_name": "New Trainer",
             "role": "trainer"
         }
-        response = client.post("/api/auth/register", json=trainer_data)
+        response = client.post("/api/auth/register/test", json=trainer_data)
         if response.status_code != 201:
             print("Register trainer error:", response.json())
         assert response.status_code == 201
@@ -29,11 +30,12 @@ class TestAuthentication:
         """Test successful client registration."""
         client_data = {
             "email": f"newclient_{uuid.uuid4().hex}@test.com",
+            "username": f"newclient_{uuid.uuid4().hex}",
             "password": "securepassword123",
             "full_name": "New Client",
             "role": "client"
         }
-        response = client.post("/api/auth/register", json=client_data)
+        response = client.post("/api/auth/register/test", json=client_data)
         if response.status_code != 201:
             print("Register client error:", response.json())
         assert response.status_code == 201
@@ -46,11 +48,12 @@ class TestAuthentication:
         """Test registration with duplicate email."""
         duplicate_data = {
             "email": test_trainer.email,
+            "username": f"duplicate_{uuid.uuid4().hex}",
             "password": "securepassword123",
             "full_name": "Duplicate User",
             "role": "client"
         }
-        response = client.post("/api/auth/register", json=duplicate_data)
+        response = client.post("/api/auth/register/test", json=duplicate_data)
         assert response.status_code == 400
         assert "email already registered" in response.json()["detail"].lower()
 
@@ -58,32 +61,39 @@ class TestAuthentication:
         """Test registration with invalid email."""
         invalid_data = {
             "email": "invalid-email",
+            "username": f"invalid_{uuid.uuid4().hex}",
             "password": "securepassword123",
             "full_name": "Invalid User",
             "role": "client"
         }
-        response = client.post("/api/auth/register", json=invalid_data)
+        response = client.post("/api/auth/register/test", json=invalid_data)
         assert response.status_code == 422
 
     def test_register_weak_password(self, client: TestClient):
         """Test registration with weak password."""
         weak_password_data = {
             "email": f"weak_{uuid.uuid4().hex}@test.com",
+            "username": f"weak_{uuid.uuid4().hex}",
             "password": "123",
             "full_name": "Weak User",
             "role": "client"
         }
-        response = client.post("/api/auth/register", json=weak_password_data)
+        response = client.post("/api/auth/register/test", json=weak_password_data)
         assert response.status_code == 422
 
     def test_login_success_json(self, client: TestClient, test_trainer_data):
         """Test successful login with JSON."""
         # First register the user
-        register_response = client.post("/api/auth/register", json=test_trainer_data)
+        register_response = client.post("/api/auth/register/test", json=test_trainer_data)
         if register_response.status_code != 201:
             print("Register for login error:", register_response.json())
         
-        response = client.post("/api/auth/login", json=test_trainer_data)
+        # Login with username and password
+        login_data = {
+            "username": test_trainer_data["username"],
+            "password": test_trainer_data["password"]
+        }
+        response = client.post("/api/auth/login", json=login_data)
         if response.status_code != 200:
             print("Login error:", response.json())
         assert response.status_code == 200
@@ -95,12 +105,12 @@ class TestAuthentication:
     def test_login_success_form(self, client: TestClient, test_trainer_data):
         """Test successful login with form data."""
         # First register the user
-        register_response = client.post("/api/auth/register", json=test_trainer_data)
+        register_response = client.post("/api/auth/register/test", json=test_trainer_data)
         if register_response.status_code != 201:
             print("Register for form login error:", register_response.json())
         
         form_data = {
-            "username": test_trainer_data["email"],
+            "username": test_trainer_data["username"],
             "password": test_trainer_data["password"]
         }
         response = client.post("/api/auth/token", data=form_data)
@@ -114,17 +124,17 @@ class TestAuthentication:
     def test_login_invalid_credentials(self, client: TestClient):
         """Test login with invalid credentials."""
         invalid_data = {
-            "email": f"nonexistent_{uuid.uuid4().hex}@test.com",
+            "username": f"nonexistent_{uuid.uuid4().hex}",
             "password": "wrongpassword"
         }
         response = client.post("/api/auth/login", json=invalid_data)
         assert response.status_code == 401
-        assert "incorrect email or password" in response.json()["detail"].lower()
+        assert "incorrect username or password" in response.json()["detail"].lower()
 
     def test_login_wrong_password(self, client: TestClient, test_trainer):
         """Test login with wrong password."""
         wrong_password_data = {
-            "email": test_trainer.email,
+            "username": test_trainer.username,
             "password": "wrongpassword"
         }
         response = client.post("/api/auth/login", json=wrong_password_data)

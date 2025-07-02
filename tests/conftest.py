@@ -45,11 +45,43 @@ def cleanup_test_data(session):
         session.query(NutritionPlan).delete()
         
         # Delete workout-related data that might reference users
-        # FIXED: Delete in correct order - child tables first
-        session.execute(text("DELETE FROM workout_exercises WHERE workout_session_id IN (SELECT id FROM workout_sessions WHERE workout_plan_id IN (SELECT id FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com')))"))
-        session.execute(text("DELETE FROM workout_sessions WHERE workout_plan_id IN (SELECT id FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com'))"))
-        session.execute(text("DELETE FROM exercises WHERE created_by IN (SELECT id FROM users WHERE email LIKE '%test.com')"))
-        session.execute(text("DELETE FROM workout_plans WHERE trainer_id IN (SELECT id FROM users WHERE email LIKE '%test.com')"))
+        # FIXED: Use SQLAlchemy ORM instead of raw SQL for SQLite compatibility
+        # First, get all test user IDs
+        test_users = session.query(User).filter(User.email.like("%test.com")).all()
+        test_user_ids = [user.id for user in test_users]
+        
+        if test_user_ids:
+            # Delete workout-related data using ORM
+            from app.models.workout import WorkoutExercise, WorkoutSession, Exercise, WorkoutPlan
+            
+            # Delete in correct order - child tables first
+            session.query(WorkoutExercise).filter(
+                WorkoutExercise.workout_session_id.in_(
+                    session.query(WorkoutSession.id).filter(
+                        WorkoutSession.workout_plan_id.in_(
+                            session.query(WorkoutPlan.id).filter(
+                                WorkoutPlan.trainer_id.in_(test_user_ids)
+                            )
+                        )
+                    )
+                )
+            ).delete(synchronize_session=False)
+            
+            session.query(WorkoutSession).filter(
+                WorkoutSession.workout_plan_id.in_(
+                    session.query(WorkoutPlan.id).filter(
+                        WorkoutPlan.trainer_id.in_(test_user_ids)
+                    )
+                )
+            ).delete(synchronize_session=False)
+            
+            session.query(Exercise).filter(
+                Exercise.created_by.in_(test_user_ids)
+            ).delete(synchronize_session=False)
+            
+            session.query(WorkoutPlan).filter(
+                WorkoutPlan.trainer_id.in_(test_user_ids)
+            ).delete(synchronize_session=False)
         
         # Delete all test users (those with @test.com emails)
         session.query(User).filter(User.email.like("%test.com")).delete()
@@ -120,6 +152,7 @@ def test_trainer_data():
     """Sample trainer data for testing."""
     return {
         "email": generate_unique_email(),
+        "username": f"trainer_{generate_unique_email().split('@')[0]}",
         "password": "testpassword123",
         "full_name": "Test Trainer",
         "role": "trainer"
@@ -130,6 +163,7 @@ def test_client_data():
     """Sample client data for testing."""
     return {
         "email": generate_unique_email(),
+        "username": f"client_{generate_unique_email().split('@')[0]}",
         "password": "testpassword123",
         "full_name": "Test Client",
         "role": "client"
@@ -140,6 +174,7 @@ def test_user_data():
     """Sample user data for testing."""
     return {
         "email": generate_unique_email(),
+        "username": f"user_{generate_unique_email().split('@')[0]}",
         "password": "testpassword123",
         "full_name": "Test User",
         "role": "client"
@@ -149,6 +184,7 @@ def test_user_data():
 def test_trainer(db_session, test_trainer_data):
     """Create a test trainer in the database."""
     trainer = User(
+        username=test_trainer_data["username"],
         email=test_trainer_data["email"],
         hashed_password=get_password_hash(test_trainer_data["password"]),
         full_name=test_trainer_data["full_name"],
@@ -164,6 +200,7 @@ def test_trainer(db_session, test_trainer_data):
 def test_client(db_session, test_client_data):
     """Create a test client in the database."""
     client = User(
+        username=test_client_data["username"],
         email=test_client_data["email"],
         hashed_password=get_password_hash(test_client_data["password"]),
         full_name=test_client_data["full_name"],
@@ -179,6 +216,7 @@ def test_client(db_session, test_client_data):
 def test_user(db_session, test_user_data):
     """Create a test user in the database."""
     user = User(
+        username=test_user_data["username"],
         email=test_user_data["email"],
         hashed_password=get_password_hash(test_user_data["password"]),
         full_name=test_user_data["full_name"],
@@ -193,37 +231,53 @@ def test_user(db_session, test_user_data):
 @pytest.fixture
 def trainer_token(client, test_trainer_data):
     """Get authentication token for trainer."""
-    # First register the trainer
-    client.post("/api/auth/register", json=test_trainer_data)
-    # Then login
-    response = client.post("/api/auth/login", json=test_trainer_data)
+    # First register the trainer using test endpoint
+    client.post("/api/auth/register/test", json=test_trainer_data)
+    # Then login with only username and password
+    login_data = {
+        "username": test_trainer_data["username"],
+        "password": test_trainer_data["password"]
+    }
+    response = client.post("/api/auth/login", json=login_data)
     return response.json()["access_token"]
 
 @pytest.fixture
 def client_token(client, test_client_data):
     """Get authentication token for client."""
-    # First register the client
-    client.post("/api/auth/register", json=test_client_data)
-    # Then login
-    response = client.post("/api/auth/login", json=test_client_data)
+    # First register the client using test endpoint
+    client.post("/api/auth/register/test", json=test_client_data)
+    # Then login with only username and password
+    login_data = {
+        "username": test_client_data["username"],
+        "password": test_client_data["password"]
+    }
+    response = client.post("/api/auth/login", json=login_data)
     return response.json()["access_token"]
 
 @pytest.fixture
 def test_user_token(client, test_user_data):
     """Get authentication token for test user."""
-    # First register the user
-    client.post("/api/auth/register", json=test_user_data)
-    # Then login
-    response = client.post("/api/auth/login", json=test_user_data)
+    # First register the user using test endpoint
+    client.post("/api/auth/register/test", json=test_user_data)
+    # Then login with only username and password
+    login_data = {
+        "username": test_user_data["username"],
+        "password": test_user_data["password"]
+    }
+    response = client.post("/api/auth/login", json=login_data)
     return response.json()["access_token"]
 
 @pytest.fixture
 def test_trainer_token(client, test_trainer_data):
     """Get authentication token for test trainer."""
-    # First register the trainer
-    client.post("/api/auth/register", json=test_trainer_data)
-    # Then login
-    response = client.post("/api/auth/login", json=test_trainer_data)
+    # First register the trainer using test endpoint
+    client.post("/api/auth/register/test", json=test_trainer_data)
+    # Then login with only username and password
+    login_data = {
+        "username": test_trainer_data["username"],
+        "password": test_trainer_data["password"]
+    }
+    response = client.post("/api/auth/login", json=login_data)
     return response.json()["access_token"]
 
 @pytest.fixture

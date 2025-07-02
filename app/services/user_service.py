@@ -19,6 +19,10 @@ async def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Get user by email."""
     return db.query(User).filter(User.email == email).first()
 
+async def get_user_by_username(db: Session, username: str) -> Optional[User]:
+    """Get user by username."""
+    return db.query(User).filter(User.username == username).first()
+
 async def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
     """Get all users with pagination."""
     return db.query(User).offset(skip).limit(limit).all()

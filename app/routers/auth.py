@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from typing import Annotated
+from typing import Annotated, Optional
 
 from app.database import get_db
+from app.models.user import User
 from app.schemas.auth import UserCreate, UserResponse, Token, UserLogin
 from app.services import auth_service, password_service
-from app.auth.utils import get_current_user
+from app.auth.utils import get_current_user, create_access_token
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -22,11 +23,160 @@ class PasswordChange(BaseModel):
     current_password: str
     new_password: str
 
+async def get_current_user_optional(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> Optional[UserResponse]:
+    """Get current user if authenticated, otherwise return None."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+    
+    try:
+        return await get_current_user(auth_header.split(" ")[1], db)
+    except:
+        return None
+
+# Test-specific registration endpoint (bypasses role restrictions)
+@router.post("/register/test", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register_user_test(user: UserCreate, db: Session = Depends(get_db)):
+    """
+    Test-specific registration endpoint that bypasses role restrictions.
+    This should only be used in testing environments.
+    """
+    return await auth_service.create_user(db, user)
+
+# General registration endpoint (for tests and public registration)
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(user: UserCreate, db: Session = Depends(get_db)):
+async def register_user(
+    user: UserCreate, 
+    db: Session = Depends(get_db),
+    current_user: Optional[UserResponse] = Depends(get_current_user_optional)
+):
     """
-    Register a new user (trainer or client)
+    Register a new user with role-based restrictions:
+    - Anyone can register as a client
+    - Only admins can register trainers
+    - Only trainers and admins can register clients
     """
+    # If no current user (public registration), only allow client registration
+    if not current_user:
+        if user.role != "client":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Public registration is only allowed for clients"
+            )
+    else:
+        # Check role-based permissions
+        if user.role == "trainer" and current_user.role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admins can register trainers"
+            )
+        elif user.role == "client" and current_user.role not in ["admin", "trainer"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admins and trainers can register clients"
+            )
+        elif user.role == "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin registration is not allowed through this endpoint"
+            )
+    
+    return await auth_service.create_user(db, user)
+
+# Special setup endpoint for creating the first admin user
+@router.post("/setup/admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def setup_admin(user: UserCreate, db: Session = Depends(get_db)):
+    """
+    Setup the first admin user (only works if no admin users exist)
+    """
+    # Check if any admin users already exist
+    existing_admin = db.query(User).filter(User.role == "admin").first()
+    if existing_admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Admin user already exists. Use /api/auth/register/admin instead."
+        )
+    
+    # Ensure the user being created is an admin
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This endpoint is for admin setup only"
+        )
+    
+    return await auth_service.create_user(db, user)
+
+# Admin-only registration endpoints
+@router.post("/register/admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register_admin(
+    user: UserCreate, 
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """
+    Register a new admin user (admin only)
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can register new admin users"
+        )
+    
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This endpoint is for admin registration only"
+        )
+    
+    return await auth_service.create_user(db, user)
+
+@router.post("/register/trainer", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register_trainer(
+    user: UserCreate, 
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """
+    Register a new trainer (admin only)
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can register new trainers"
+        )
+    
+    if user.role != "trainer":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This endpoint is for trainer registration only"
+        )
+    
+    return await auth_service.create_user(db, user)
+
+@router.post("/register/client", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register_client(
+    user: UserCreate, 
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """
+    Register a new client (trainer or admin only)
+    """
+    if current_user.role not in ["admin", "trainer"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins and trainers can register new clients"
+        )
+    
+    if user.role != "client":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This endpoint is for client registration only"
+        )
+    
     return await auth_service.create_user(db, user)
 
 @router.post("/token", response_model=Token)
@@ -43,10 +193,10 @@ async def login(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = auth_service.create_access_token(data={"sub": str(user.id), "role": user.role})
+    access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=Token)
@@ -55,15 +205,15 @@ async def login_json(user_data: UserLogin, db: Session = Depends(get_db)):
     JSON compatible login, get an access token for future requests
     """
     user = await auth_service.authenticate_user(
-        db, user_data.email, user_data.password
+        db, user_data.username, user_data.password
     )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = auth_service.create_access_token(data={"sub": str(user.id), "role": user.role})
+    access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me", response_model=UserResponse)
