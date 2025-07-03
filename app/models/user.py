@@ -25,7 +25,7 @@ class User(Base):
     # Relationships with other tables will be added here when models are implemented
     # workouts = relationship("Workout", back_populates="user")
     # nutrition_plans = relationship("NutritionPlan", back_populates="user")
-    # progress_records = relationship("ProgressRecord", back_populates="user")
+    progress_entries = relationship("ProgressEntry", back_populates="client")
 
 class TrainerProfile(Base):
     __tablename__ = "trainer_profiles"

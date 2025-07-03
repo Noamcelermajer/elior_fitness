@@ -21,7 +21,7 @@ except Exception as e:
     raise
 
 try:
-    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans
     logger.info("Router modules imported successfully")
 except Exception as e:
     logger.error(f"Failed to import router modules: {e}")
@@ -90,6 +90,7 @@ try:
     app.include_router(exercises.router, prefix="/api/exercises", tags=["Exercises"])
     app.include_router(workouts.router, prefix="/api/workouts", tags=["Workouts"])
     app.include_router(nutrition.router, prefix="/api/nutrition", tags=["Nutrition"])
+    app.include_router(meal_plans.router, prefix="/api/meal-plans", tags=["Meal Plans"])
     app.include_router(progress.router, prefix="/api/progress", tags=["Progress"])
     app.include_router(files.router, prefix="/api/files", tags=["File Management"])
     app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
@@ -104,13 +105,15 @@ async def root():
     return {
         "message": "Welcome to Elior Fitness API", 
         "version": "1.0.0",
-        "sprint": "5 - File Management & Storage with Real-time Updates",
+        "sprint": "6 - Advanced Meal Plan System",
         "features": [
+            "Advanced meal plan management",
+            "Meal entries with components (protein, carbs, fats, vegetables)",
+            "Client meal photo uploads with approval system",
+            "Macronutrient tracking and goals",
+            "Real-time WebSocket notifications",
             "Secure file uploads with validation",
-            "Image processing and thumbnails",
-            "Storage optimization",
-            "Access control on media endpoints",
-            "Real-time WebSocket notifications"
+            "Image processing and thumbnails"
         ]
     }
 

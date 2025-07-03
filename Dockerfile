@@ -5,7 +5,6 @@ WORKDIR /app
 # Install system dependencies for Sprint 5 file management
 RUN apt-get update && apt-get install -y \
     gcc \
-    libpq-dev \
     netcat-traditional \
     libmagic1 \
     libmagic-dev \

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -15,8 +15,8 @@ from app.schemas.auth import UserResponse
 load_dotenv()
 
 # JWT Configuration
-SECRET_KEY = os.getenv("JWT_SECRET")
-ALGORITHM = os.getenv("JWT_ALGORITHM")
+SECRET_KEY = os.getenv("JWT_SECRET", "your-secret-key-here")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 # Password hashing
@@ -33,7 +33,7 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if expires_delta:
         expire = now + expires_delta
     else:
