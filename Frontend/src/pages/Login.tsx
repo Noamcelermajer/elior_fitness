@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Dumbbell, User, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -21,19 +20,22 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    // Simulate loading delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const success = login(email, password);
-    if (!success) {
-      setError('Invalid email or password');
+    try {
+      const success = await login(username, password);
+      if (!success) {
+        setError('Invalid username or password');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('An error occurred during login. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const testCredentials = [
-    { role: 'Trainer', email: 'trainer@test.com', password: 'trainer123', color: 'gradient-orange' },
-    { role: 'Client', email: 'client@test.com', password: 'client123', color: 'bg-blue-500' }
+    { role: 'Trainer', username: 'trainer', password: 'trainer123', color: 'gradient-orange' },
+    { role: 'Client', username: 'client', password: 'client123', color: 'bg-blue-500' }
   ];
 
   return (
@@ -63,16 +65,16 @@ const Login = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
+                <Label htmlFor="username" className="text-foreground font-medium">Username</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     className="pl-10 bg-secondary/50 border-border/50 focus:border-primary transition-colors"
-                    placeholder="Enter your email"
+                    placeholder="Enter your username"
                     required
                   />
                 </div>
@@ -142,7 +144,7 @@ const Login = () => {
                   </Badge>
                 </div>
                 <div className="space-y-1 text-sm">
-                  <p><span className="text-muted-foreground">Email:</span> <span className="text-foreground font-mono">{cred.email}</span></p>
+                  <p><span className="text-muted-foreground">Username:</span> <span className="text-foreground font-mono">{cred.username}</span></p>
                   <p><span className="text-muted-foreground">Password:</span> <span className="text-foreground font-mono">{cred.password}</span></p>
                 </div>
               </div>

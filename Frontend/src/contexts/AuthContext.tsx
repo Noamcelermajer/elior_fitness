@@ -1,78 +1,132 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
-import React, { createContext, useContext, useState } from 'react';
-
-export type UserRole = 'client' | 'trainer';
+export type UserRole = 'admin' | 'trainer' | 'client';
 
 export interface User {
-  id: string;
-  name: string;
+  id: number;
+  username: string;
   email: string;
+  full_name: string;
   role: UserRole;
-  avatar?: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Static test users
-const TEST_USERS: User[] = [
-  {
-    id: '1',
-    name: 'Coach Mike',
-    email: 'trainer@test.com',
-    role: 'trainer',
-    avatar: '👨‍💼'
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    email: 'client@test.com',
-    role: 'client',
-    avatar: '👩‍💪'
-  }
-];
-
-const TEST_CREDENTIALS = [
-  { email: 'trainer@test.com', password: 'trainer123' },
-  { email: 'client@test.com', password: 'client123' }
-];
+// API base URL - adjust this based on your backend configuration
+const API_BASE_URL = 'http://localhost:8000/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (email: string, password: string): boolean => {
-    const credentials = TEST_CREDENTIALS.find(
-      cred => cred.email === email && cred.password === password
-    );
-    
-    if (credentials) {
-      const userData = TEST_USERS.find(u => u.email === email);
-      if (userData) {
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-        return true;
+  // Function to get stored token
+  const getToken = (): string | null => {
+    return localStorage.getItem('access_token');
+  };
+
+  // Function to set token
+  const setToken = (token: string): void => {
+    localStorage.setItem('access_token', token);
+  };
+
+  // Function to remove token
+  const removeToken = (): void => {
+    localStorage.removeItem('access_token');
+  };
+
+  // Function to fetch current user data
+  const fetchCurrentUser = async (): Promise<User | null> => {
+    const token = getToken();
+    if (!token) return null;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        return userData;
+      } else {
+        // Token is invalid, remove it
+        removeToken();
+        return null;
       }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      removeToken();
+      return null;
     }
+  };
+
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Login successful, token received:', data);
+        setToken(data.access_token);
+        
+        // Fetch user data
+        const userData = await fetchCurrentUser();
+        console.log('User data fetched:', userData);
+        if (userData) {
+          setUser(userData);
+          console.log('User set in context:', userData);
+          return true;
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('Login failed:', errorData);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+    }
+    
     return false;
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
+    removeToken();
   };
 
-  // Check for stored user on mount
-  React.useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+  // Check for stored token and fetch user data on mount
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const token = getToken();
+      if (token) {
+        const userData = await fetchCurrentUser();
+        setUser(userData);
+      }
+      setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   return (
@@ -80,7 +134,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       login,
       logout,
-      isAuthenticated: !!user
+      isAuthenticated: !!user,
+      loading
     }}>
       {children}
     </AuthContext.Provider>

@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Dumbbell, Home, Utensils, Target, TrendingUp, Menu, X, LogOut, User } from 'lucide-react';
+import { Dumbbell, Home, Utensils, Target, TrendingUp, Menu, X, LogOut, User, Shield, Settings, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,14 +14,20 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const navigationItems = [
+  const isTrainer = user?.role === 'trainer';
+  const isAdmin = user?.role === 'admin';
+
+  const navigationItems = isAdmin ? [
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
+    { id: 'users', label: 'Users', icon: User, href: '/users' },
+    { id: 'system', label: 'System', icon: Settings, href: '/system' }
+  ] : [
+    { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
+    ...(isTrainer ? [{ id: 'clients', label: 'Clients', icon: Users, href: '/clients' }] : []),
     { id: 'meals', label: 'Meals', icon: Utensils, href: '/meals' },
     { id: 'training', label: 'Training', icon: Target, href: '/training' }, 
     { id: 'progress', label: 'Progress', icon: TrendingUp, href: '/progress' }
   ];
-
-  const isTrainer = user?.role === 'trainer';
 
   const handleNavigation = (href: string) => {
     navigate(href);
@@ -35,22 +40,24 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50 lg:hidden">
         <div className="flex items-center justify-between px-4 h-16">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 gradient-orange rounded-lg flex items-center justify-center shadow-lg">
-              <Dumbbell className="w-5 h-5 text-background" />
+            <div className={`w-8 h-8 ${isAdmin ? 'bg-gradient-to-r from-red-500 to-red-600' : 'gradient-orange'} rounded-lg flex items-center justify-center shadow-lg`}>
+              {isAdmin ? <Shield className="w-5 h-5 text-background" /> : <Dumbbell className="w-5 h-5 text-background" />}
             </div>
             <div>
               <h1 className="text-lg font-bold text-gradient">FitTrainer Pro</h1>
-              <p className="text-xs text-muted-foreground">{isTrainer ? 'Trainer Dashboard' : 'Client Portal'}</p>
+              <p className="text-xs text-muted-foreground">
+                {isAdmin ? 'Admin Panel' : isTrainer ? 'Trainer Dashboard' : 'Client Portal'}
+              </p>
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-2 mr-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-sm">
-                {user?.avatar || '👤'}
+                          <div className="flex items-center space-x-2 mr-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-sm">
+                  👤
+                </div>
+                <span className="text-sm font-medium text-foreground hidden sm:inline">{user?.full_name}</span>
               </div>
-              <span className="text-sm font-medium text-foreground hidden sm:inline">{user?.name}</span>
-            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -101,13 +108,13 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 gradient-orange rounded-xl flex items-center justify-center shadow-xl transform hover:scale-110 transition-transform duration-300">
-                <Dumbbell className="w-7 h-7 text-background" />
+              <div className={`w-12 h-12 ${isAdmin ? 'bg-gradient-to-r from-red-500 to-red-600' : 'gradient-orange'} rounded-xl flex items-center justify-center shadow-xl transform hover:scale-110 transition-transform duration-300`}>
+                {isAdmin ? <Shield className="w-7 h-7 text-background" /> : <Dumbbell className="w-7 h-7 text-background" />}
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gradient">FitTrainer Pro</h1>
                 <p className="text-sm text-muted-foreground">
-                  {isTrainer ? 'Client Management System' : 'Personal Fitness Portal'}
+                  {isAdmin ? 'Administrative Control Panel' : isTrainer ? 'Client Management System' : 'Personal Fitness Portal'}
                 </p>
               </div>
             </div>
@@ -136,10 +143,10 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
               <div className="flex items-center space-x-3 pl-4 border-l border-border/30">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-lg shadow-lg">
-                    {user?.avatar || '👤'}
+                    👤
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-foreground">{user?.name}</p>
+                    <p className="text-sm font-semibold text-foreground">{user?.full_name}</p>
                     <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
                   </div>
                 </div>
