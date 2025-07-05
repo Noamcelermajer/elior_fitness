@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from typing import Annotated, Optional
+from typing import Annotated, Optional, List
 
 from app.database import get_db
 from app.models.user import User
 from app.schemas.auth import UserCreate, UserResponse, Token, UserLogin
-from app.services import auth_service, password_service
+from app.services import auth_service, password_service, user_service
 from app.auth.utils import get_current_user, create_access_token
 from pydantic import BaseModel
 
@@ -14,6 +14,13 @@ router = APIRouter()
 
 class PasswordResetRequest(BaseModel):
     email: str
+
+class UserLoginInfo(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
+    full_name: str
 
 class PasswordReset(BaseModel):
     token: str
@@ -37,6 +44,24 @@ async def get_current_user_optional(
     except:
         return None
 
+@router.get("/registered-users", response_model=List[UserLoginInfo])
+async def get_registered_users(db: Session = Depends(get_db)):
+    """
+    Get all registered users for login page display.
+    This endpoint is public and doesn't require authentication.
+    """
+    users = user_service.get_users(db)
+    return [
+        UserLoginInfo(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            role=user.role,
+            full_name=user.full_name
+        )
+        for user in users
+    ]
+
 # Test-specific registration endpoint (bypasses role restrictions)
 @router.post("/register/test", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_user_test(user: UserCreate, db: Session = Depends(get_db)):
@@ -44,7 +69,7 @@ async def register_user_test(user: UserCreate, db: Session = Depends(get_db)):
     Test-specific registration endpoint that bypasses role restrictions.
     This should only be used in testing environments.
     """
-    return await auth_service.create_user(db, user)
+    return auth_service.create_user(db, user)
 
 # General registration endpoint (for tests and public registration)
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -84,7 +109,7 @@ async def register_user(
                 detail="Admin registration is not allowed through this endpoint"
             )
     
-    return await auth_service.create_user(db, user)
+    return auth_service.create_user(db, user)
 
 # Special setup endpoint for creating the first admin user
 @router.post("/setup/admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -107,7 +132,7 @@ async def setup_admin(user: UserCreate, db: Session = Depends(get_db)):
             detail="This endpoint is for admin setup only"
         )
     
-    return await auth_service.create_user(db, user)
+    return auth_service.create_user(db, user)
 
 # Admin-only registration endpoints
 @router.post("/register/admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -131,7 +156,7 @@ async def register_admin(
             detail="This endpoint is for admin registration only"
         )
     
-    return await auth_service.create_user(db, user)
+    return auth_service.create_user(db, user)
 
 @router.post("/register/trainer", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_trainer(
@@ -154,7 +179,7 @@ async def register_trainer(
             detail="This endpoint is for trainer registration only"
         )
     
-    return await auth_service.create_user(db, user)
+    return auth_service.create_user(db, user)
 
 @router.post("/register/client", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_client(
@@ -177,7 +202,7 @@ async def register_client(
             detail="This endpoint is for client registration only"
         )
     
-    return await auth_service.create_user(db, user)
+    return auth_service.create_user(db, user)
 
 @router.post("/token", response_model=Token)
 async def login(
@@ -187,7 +212,7 @@ async def login(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    user = await auth_service.authenticate_user(
+    user = auth_service.authenticate_user(
         db, form_data.username, form_data.password
     )
     if not user:
@@ -204,7 +229,7 @@ async def login_json(user_data: UserLogin, db: Session = Depends(get_db)):
     """
     JSON compatible login, get an access token for future requests
     """
-    user = await auth_service.authenticate_user(
+    user = auth_service.authenticate_user(
         db, user_data.username, user_data.password
     )
     if not user:
@@ -224,6 +249,19 @@ async def read_users_me(
     Get current user information
     """
     return current_user
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(
+    current_user: Annotated[UserResponse, Depends(get_current_user)]
+):
+    """
+    Refresh the access token.
+    """
+    # Create a new token with the same user data
+    access_token = create_access_token(
+        data={"sub": str(current_user.id), "role": current_user.role}
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/password-reset/request")
 async def request_password_reset(

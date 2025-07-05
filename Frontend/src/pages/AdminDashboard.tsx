@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,53 @@ const AdminDashboard = () => {
     full_name: ''
   });
   const [loading, setLoading] = useState(false);
+
+  // --- New state for real stats ---
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalTrainers: 0,
+    totalClients: 0,
+    systemHealth: '100%',
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState('');
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setStatsLoading(true);
+      setStatsError('');
+      try {
+        const token = localStorage.getItem('access_token');
+        // Fetch all users
+        const usersRes = await fetch('http://localhost:8000/api/users/', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const trainersRes = await fetch('http://localhost:8000/api/users/trainers', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const clientsRes = await fetch('http://localhost:8000/api/users/clients', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!usersRes.ok || !trainersRes.ok || !clientsRes.ok) {
+          throw new Error('Failed to fetch user stats');
+        }
+        const users = await usersRes.json();
+        const trainers = await trainersRes.json();
+        const clients = await clientsRes.json();
+        setStats({
+          totalUsers: users.length,
+          totalTrainers: trainers.length,
+          totalClients: clients.length,
+          systemHealth: '100%', // Placeholder, can be dynamic if backend provides
+        });
+      } catch (err: any) {
+        setStatsError(err.message || 'Failed to load stats');
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
 
   const statsCards = [
     {
@@ -218,19 +265,62 @@ const AdminDashboard = () => {
         <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6 space-y-8">
           {/* Stats Overview */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {statsCards.map((stat, index) => (
-              <Card key={index} className={`${stat.gradient} border-0 shadow-xl transform hover:scale-105 transition-all duration-300`}>
-                <CardContent className="p-4 lg:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-2xl lg:text-3xl font-bold text-background">{stat.value}</p>
-                      <p className="text-background/80 text-xs lg:text-sm font-medium">{stat.label}</p>
-                    </div>
-                    <stat.icon className="w-8 h-8 lg:w-10 lg:h-10 text-background/90" />
+            {/* Total Users */}
+            <Card className="bg-gradient-to-r from-blue-500 to-blue-600 border-0 shadow-xl transform hover:scale-105 transition-all duration-300">
+              <CardContent className="p-4 lg:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl lg:text-3xl font-bold text-background">
+                      {statsLoading ? '...' : stats.totalUsers}
+                    </p>
+                    <p className="text-background/80 text-xs lg:text-sm font-medium">Total Users</p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <Users className="w-8 h-8 lg:w-10 lg:h-10 text-background/90" />
+                </div>
+              </CardContent>
+            </Card>
+            {/* Active Trainers */}
+            <Card className="bg-gradient-to-r from-green-500 to-green-600 border-0 shadow-xl transform hover:scale-105 transition-all duration-300">
+              <CardContent className="p-4 lg:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl lg:text-3xl font-bold text-background">
+                      {statsLoading ? '...' : stats.totalTrainers}
+                    </p>
+                    <p className="text-background/80 text-xs lg:text-sm font-medium">Active Trainers</p>
+                  </div>
+                  <Shield className="w-8 h-8 lg:w-10 lg:h-10 text-background/90" />
+                </div>
+              </CardContent>
+            </Card>
+            {/* Total Clients */}
+            <Card className="bg-gradient-to-r from-purple-500 to-purple-600 border-0 shadow-xl transform hover:scale-105 transition-all duration-300">
+              <CardContent className="p-4 lg:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl lg:text-3xl font-bold text-background">
+                      {statsLoading ? '...' : stats.totalClients}
+                    </p>
+                    <p className="text-background/80 text-xs lg:text-sm font-medium">Total Clients</p>
+                  </div>
+                  <Users className="w-8 h-8 lg:w-10 lg:h-10 text-background/90" />
+                </div>
+              </CardContent>
+            </Card>
+            {/* System Health */}
+            <Card className="bg-gradient-to-r from-emerald-500 to-emerald-600 border-0 shadow-xl transform hover:scale-105 transition-all duration-300">
+              <CardContent className="p-4 lg:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl lg:text-3xl font-bold text-background">
+                      {stats.systemHealth}
+                    </p>
+                    <p className="text-background/80 text-xs lg:text-sm font-medium">System Health</p>
+                  </div>
+                  <CheckCircle className="w-8 h-8 lg:w-10 lg:h-10 text-background/90" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Quick Actions */}
@@ -246,13 +336,13 @@ const AdminDashboard = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-bold text-foreground">
-                    156 Total Users
+                    {statsLoading ? '...' : `${stats.totalUsers} Total Users`}
                   </span>
                   <Badge className="gradient-orange text-background">
-                    23 Trainers
+                    {statsLoading ? '...' : `${stats.totalTrainers} Trainers`}
                   </Badge>
                 </div>
-                <Progress value={85} className="h-3 bg-secondary" />
+                <Progress value={stats.totalUsers ? Math.round((stats.totalTrainers / stats.totalUsers) * 100) : 0} className="h-3 bg-secondary" />
                 <Button 
                   onClick={() => navigate('/users')}
                   className="w-full gradient-orange text-background font-semibold transform hover:scale-105 transition-all duration-200"
@@ -319,6 +409,9 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
+          {statsError && (
+            <div className="text-red-500 font-semibold text-center mt-4">{statsError}</div>
+          )}
         </div>
       </div>
     </Layout>

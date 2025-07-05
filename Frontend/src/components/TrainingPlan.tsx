@@ -167,13 +167,23 @@ const TrainingPlan = () => {
               </p>
             </div>
             {isTrainer && (
-              <Button 
-                onClick={() => navigate('/create-workout')}
-                className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
-              >
-                <Dumbbell className="w-4 h-4 mr-2" />
-                Create Workout
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                  onClick={() => navigate('/create-exercise')}
+                  variant="outline"
+                  className="border-primary/30 text-primary hover:bg-primary/10 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                >
+                  <Dumbbell className="w-4 h-4 mr-2" />
+                  Create Exercise
+                </Button>
+                <Button 
+                  onClick={() => navigate('/create-workout')}
+                  className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
+                >
+                  <Dumbbell className="w-4 h-4 mr-2" />
+                  Create Workout
+                </Button>
+              </div>
             )}
           </div>
         </div>

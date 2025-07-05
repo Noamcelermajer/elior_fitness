@@ -17,7 +17,7 @@ load_dotenv()
 # JWT Configuration
 SECRET_KEY = os.getenv("JWT_SECRET", "your-secret-key-here")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -63,7 +63,7 @@ async def get_current_user(
             raise credentials_exception
         
         # Get the full user object from database
-        user = await get_user_by_id(db, int(user_id))
+        user = get_user_by_id(db, int(user_id))
         if user is None:
             raise credentials_exception
         
@@ -104,7 +104,7 @@ async def get_current_user_websocket(token: str) -> UserResponse:
         db = SessionLocal()
         try:
             # Get the full user object from database
-            user = await get_user_by_id(db, int(user_id))
+            user = get_user_by_id(db, int(user_id))
             if user is None:
                 raise credentials_exception
             

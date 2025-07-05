@@ -279,6 +279,7 @@ class WorkoutService:
             order=workout_exercise_data.order,
             sets=workout_exercise_data.sets,
             reps=workout_exercise_data.reps,
+            weight=workout_exercise_data.weight,
             rest_time=workout_exercise_data.rest_time,
             notes=workout_exercise_data.notes
         )
@@ -300,6 +301,7 @@ class WorkoutService:
                 order=exercise_data.order,
                 sets=exercise_data.sets,
                 reps=exercise_data.reps,
+                weight=exercise_data.weight,
                 rest_time=exercise_data.rest_time,
                 notes=exercise_data.notes
             )

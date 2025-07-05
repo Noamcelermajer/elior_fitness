@@ -45,15 +45,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('access_token');
   };
 
+  // Function to decode JWT token and get expiration
+  const decodeToken = (token: string): any => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      return null;
+    }
+  };
+
+  // Function to check if token is expired or will expire soon (within 5 minutes)
+  const isTokenExpired = (token: string): boolean => {
+    const decoded = decodeToken(token);
+    if (!decoded || !decoded.exp) return true;
+    
+    const now = Math.floor(Date.now() / 1000);
+    const expiresIn = decoded.exp - now;
+    
+    // Consider token expired if it expires within 5 minutes
+    return expiresIn < 300;
+  };
+
+  // Function to refresh token
+  const refreshToken = async (): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setToken(data.access_token);
+        return true;
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+    }
+    return false;
+  };
+
   // Function to fetch current user data
   const fetchCurrentUser = async (): Promise<User | null> => {
     const token = getToken();
     if (!token) return null;
 
+    // Check if token is expired or will expire soon
+    if (isTokenExpired(token)) {
+      const refreshed = await refreshToken();
+      if (!refreshed) {
+        removeToken();
+        return null;
+      }
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json',
         },
       });
@@ -61,8 +118,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.ok) {
         const userData = await response.json();
         return userData;
+      } else if (response.status === 401) {
+        // Token is invalid, try to refresh
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          // Retry the request with new token
+          const retryResponse = await fetch(`${API_BASE_URL}/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${getToken()}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (retryResponse.ok) {
+            const userData = await retryResponse.json();
+            return userData;
+          }
+        }
+        removeToken();
+        return null;
       } else {
-        // Token is invalid, remove it
         removeToken();
         return null;
       }
@@ -128,6 +202,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initializeAuth();
   }, []);
+
+  // Set up periodic token refresh (every 20 minutes)
+  useEffect(() => {
+    if (!user) return;
+
+    const refreshInterval = setInterval(async () => {
+      const token = getToken();
+      if (token && isTokenExpired(token)) {
+        const refreshed = await refreshToken();
+        if (!refreshed) {
+          logout();
+        }
+      }
+    }, 20 * 60 * 1000); // 20 minutes
+
+    return () => clearInterval(refreshInterval);
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{

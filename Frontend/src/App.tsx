@@ -10,11 +10,14 @@ import MealsPage from "./pages/MealsPage";
 import TrainingPage from "./pages/TrainingPage";
 import ProgressPage from "./pages/ProgressPage";
 import CreateWorkoutPage from "./pages/CreateWorkoutPage";
+import CreateExercisePage from "./pages/CreateExercisePage";
 import CreateMealPlanPage from "./pages/CreateMealPlanPage";
 import WorkoutDetailPage from "./pages/WorkoutDetailPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import ClientsPage from "./pages/ClientsPage";
 import NotFound from "./pages/NotFound";
+import UsersPage from './pages/UsersPage';
+import SystemPage from './pages/SystemPage';
 
 const queryClient = new QueryClient();
 
@@ -45,9 +48,11 @@ const AppRoutes = () => {
     console.log('User is admin, showing admin dashboard');
     return (
       <Routes>
-        <Route path="/" element={<AdminDashboard />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="*" element={<NotFound />} />
+                  <Route path="/" element={<AdminDashboard />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/system" element={<SystemPage />} />
+          <Route path="*" element={<NotFound />} />
       </Routes>
     );
   }
@@ -61,10 +66,13 @@ const AppRoutes = () => {
       <Route path="/training" element={<TrainingPage />} />
       <Route path="/progress" element={<ProgressPage />} />
       <Route path="/create-workout" element={<CreateWorkoutPage />} />
+      <Route path="/create-exercise" element={<CreateExercisePage />} />
       <Route path="/create-meal-plan" element={<CreateMealPlanPage />} />
-      <Route path="/workout/:id" element={<WorkoutDetailPage />} />
-      <Route path="/clients" element={<ClientsPage />} />
-      <Route path="*" element={<NotFound />} />
+              <Route path="/workout/:id" element={<WorkoutDetailPage />} />
+        <Route path="/clients" element={<ClientsPage />} />
+        <Route path="/users" element={<UsersPage />} />
+        <Route path="/system" element={<SystemPage />} />
+        <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

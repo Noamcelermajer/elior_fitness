@@ -21,7 +21,7 @@ except Exception as e:
     raise
 
 try:
-    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system
     logger.info("Router modules imported successfully")
 except Exception as e:
     logger.error(f"Failed to import router modules: {e}")
@@ -99,6 +99,7 @@ try:
     app.include_router(progress.router, prefix="/api/progress", tags=["Progress"])
     app.include_router(files.router, prefix="/api/files", tags=["File Management"])
     app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
+    app.include_router(system.router, prefix="/api/system", tags=["System"])
     logger.info("All routers included successfully")
 except Exception as e:
     logger.error(f"Failed to include routers: {e}")

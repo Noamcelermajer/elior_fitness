@@ -6,11 +6,11 @@ from app.models.workout import MuscleGroup
 # Exercise Schemas
 class ExerciseBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, description="General description of the exercise")
     video_url: Optional[str] = None
     muscle_group: MuscleGroup
     equipment_needed: Optional[str] = None
-    instructions: Optional[str] = None
+    instructions: Optional[str] = Field(None, description="Step-by-step instructions on how to perform the exercise correctly")
 
 class ExerciseCreate(ExerciseBase):
     pass
@@ -82,8 +82,9 @@ class WorkoutExerciseBase(BaseModel):
     order: int = Field(ge=1)
     sets: Optional[int] = Field(None, ge=1)
     reps: Optional[str] = None  # e.g., "8-12", "30 seconds", "to failure"
+    weight: Optional[int] = Field(None, ge=0, description="Target weight in kg")
     rest_time: Optional[int] = Field(None, ge=0)  # in seconds
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(None, description="Client-specific modifications or notes (e.g., 'Avoid overhead movements due to rotator cuff injury', 'Use resistance band instead of weights')")
 
 class WorkoutExerciseCreate(WorkoutExerciseBase):
     pass
@@ -93,8 +94,9 @@ class WorkoutExerciseUpdate(BaseModel):
     order: Optional[int] = Field(None, ge=1)
     sets: Optional[int] = Field(None, ge=1)
     reps: Optional[str] = None
+    weight: Optional[int] = Field(None, ge=0, description="Target weight in kg")
     rest_time: Optional[int] = Field(None, ge=0)
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(None, description="Client-specific modifications or notes (e.g., 'Avoid overhead movements due to rotator cuff injury', 'Use resistance band instead of weights')")
 
 class WorkoutExerciseResponse(WorkoutExerciseBase):
     id: int

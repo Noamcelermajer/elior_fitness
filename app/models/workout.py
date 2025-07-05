@@ -71,6 +71,7 @@ class WorkoutExercise(Base):
     order = Column(Integer, nullable=False)  # Order in the workout
     sets = Column(Integer)
     reps = Column(String)  # Can be "8-12", "30 seconds", "to failure", etc.
+    weight = Column(Integer)  # Target weight in kg
     rest_time = Column(Integer)  # in seconds
     notes = Column(String)  # Specific notes for this exercise in this workout
 

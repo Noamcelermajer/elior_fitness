@@ -8,9 +8,9 @@ from app.schemas.auth import UserCreate, UserResponse
 from app.auth.utils import get_password_hash, verify_password, create_access_token
 from app.services.user_service import get_user_by_email, get_user_by_username
 
-async def create_user(db: Session, user: UserCreate) -> User:
+def create_user(db: Session, user: UserCreate) -> User:
     # Check if user already exists
-    db_user = await get_user_by_email(db, user.email)
+    db_user = get_user_by_email(db, user.email)
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -18,7 +18,7 @@ async def create_user(db: Session, user: UserCreate) -> User:
         )
     
     # Check if username already exists
-    db_user = await get_user_by_username(db, user.username)
+    db_user = get_user_by_username(db, user.username)
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -40,11 +40,11 @@ async def create_user(db: Session, user: UserCreate) -> User:
     db.refresh(db_user)
     return db_user
 
-async def authenticate_user(db: Session, username_or_email: str, password: str) -> Optional[User]:
+def authenticate_user(db: Session, username_or_email: str, password: str) -> Optional[User]:
     # Try to find user by username first, then by email
-    user = await get_user_by_username(db, username_or_email)
+    user = get_user_by_username(db, username_or_email)
     if not user:
-        user = await get_user_by_email(db, username_or_email)
+        user = get_user_by_email(db, username_or_email)
     
     if not user:
         return None
@@ -52,5 +52,5 @@ async def authenticate_user(db: Session, username_or_email: str, password: str) 
         return None
     return user
 
-async def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     return db.query(User).filter(User.id == user_id).first() 

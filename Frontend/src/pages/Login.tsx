@@ -1,11 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dumbbell, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { Dumbbell, User, Lock, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+
+interface UserLoginInfo {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  full_name: string;
+}
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -13,7 +21,31 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registeredUsers, setRegisteredUsers] = useState<UserLoginInfo[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const { login } = useAuth();
+
+  // Fetch registered users from the server
+  const fetchRegisteredUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const response = await fetch('http://localhost:8000/api/auth/registered-users');
+      if (response.ok) {
+        const users = await response.json();
+        setRegisteredUsers(users);
+      } else {
+        console.error('Failed to fetch registered users');
+      }
+    } catch (error) {
+      console.error('Error fetching registered users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRegisteredUsers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,10 +65,22 @@ const Login = () => {
     }
   };
 
-  const testCredentials = [
-    { role: 'Trainer', username: 'trainer', password: 'trainer123', color: 'gradient-orange' },
-    { role: 'Client', username: 'client', password: 'client123', color: 'bg-blue-500' }
-  ];
+  const getRoleColor = (role: string) => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return 'bg-gradient-to-r from-red-500 to-red-600';
+      case 'trainer':
+        return 'gradient-orange';
+      case 'client':
+        return 'bg-blue-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
+  const getRoleDisplayName = (role: string) => {
+    return role.charAt(0).toUpperCase() + role.slice(1);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4">
@@ -129,26 +173,59 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        {/* Test Credentials */}
+        {/* Registered Users */}
         <Card className="mt-6 glass-effect border-border/50">
           <CardHeader>
-            <CardTitle className="text-lg text-foreground">Test Credentials</CardTitle>
-            <CardDescription>Use these credentials to test the application</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg text-foreground">Registered Users</CardTitle>
+                <CardDescription>Available users for testing the application</CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchRegisteredUsers}
+                disabled={loadingUsers}
+                className="hover:bg-secondary/50"
+              >
+                <RefreshCw className={`w-4 h-4 ${loadingUsers ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {testCredentials.map((cred, index) => (
-              <div key={index} className="p-4 bg-secondary/30 rounded-xl border border-border/30">
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={cred.color === 'gradient-orange' ? 'gradient-orange text-background' : `${cred.color} text-white`}>
-                    {cred.role}
-                  </Badge>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <p><span className="text-muted-foreground">Username:</span> <span className="text-foreground font-mono">{cred.username}</span></p>
-                  <p><span className="text-muted-foreground">Password:</span> <span className="text-foreground font-mono">{cred.password}</span></p>
-                </div>
+            {loadingUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                <span className="ml-2 text-muted-foreground">Loading users...</span>
               </div>
-            ))}
+            ) : registeredUsers.length > 0 ? (
+              registeredUsers.map((user, index) => (
+                <div key={user.id} className="p-4 bg-secondary/30 rounded-xl border border-border/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge className={
+                      getRoleColor(user.role) === 'gradient-orange' ? 'gradient-orange text-background' : 
+                      getRoleColor(user.role) === 'bg-gradient-to-r from-red-500 to-red-600' ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' :
+                      `${getRoleColor(user.role)} text-white`
+                    }>
+                      {getRoleDisplayName(user.role)}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="text-muted-foreground">Name:</span> <span className="text-foreground font-medium">{user.full_name}</span></p>
+                    <p><span className="text-muted-foreground">Username:</span> <span className="text-foreground font-mono">{user.username}</span></p>
+                    <p><span className="text-muted-foreground">Email:</span> <span className="text-foreground font-mono">{user.email}</span></p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Note: Passwords are not displayed for security reasons
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No registered users found</p>
+                <p className="text-sm">Please register users through the admin panel</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
