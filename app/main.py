@@ -1,18 +1,54 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 import logging
 import sys
 import time
 import asyncio
+import os
 from contextlib import asynccontextmanager
 
-# Configure logging with performance focus
+# Environment-based configuration (define before logging)
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+DOMAIN = os.getenv("DOMAIN", "localhost")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+
+# Configure logging with comprehensive output
+import os
+from datetime import datetime
+
+# Create logs directory if it doesn't exist
+os.makedirs("logs", exist_ok=True)
+
+# Configure logging with both file and console output
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+enable_debug = os.getenv("ENABLE_DEBUG_LOGGING", "false").lower() == "true"
+
+if enable_debug:
+    log_level = "DEBUG"
+
 logging.basicConfig(
-    level=logging.INFO,  # Changed from DEBUG to INFO for better performance
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=getattr(logging, log_level),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(f"logs/elior_api_{datetime.now().strftime('%Y%m%d')}.log"),
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 logger = logging.getLogger(__name__)
+
+# Log startup information
+logger.info("=" * 60)
+logger.info("ELIOR FITNESS API STARTUP")
+logger.info("=" * 60)
+logger.info(f"Timestamp: {datetime.now()}")
+logger.info(f"Environment: {ENVIRONMENT}")
+logger.info(f"Log Level: {log_level}")
+logger.info(f"Debug Logging: {enable_debug}")
+logger.info(f"Domain: {DOMAIN}")
+logger.info(f"CORS Origins: {CORS_ORIGINS}")
+logger.info("=" * 60)
 
 logger.info("Starting Elior Fitness API application...")
 
@@ -24,48 +60,94 @@ except Exception as e:
     raise
 
 try:
-    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system
-    logger.info("Router modules imported successfully")
+    logger.info("Importing router modules...")
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+    logger.info("✅ Router modules imported successfully")
+    logger.info("📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications")
 except Exception as e:
-    logger.error(f"Failed to import router modules: {e}")
+    logger.error(f"❌ Failed to import router modules: {e}")
+    logger.error(f"Error type: {type(e).__name__}")
+    logger.error(f"Error details: {str(e)}")
+    import traceback
+    logger.error(f"Stack trace: {traceback.format_exc()}")
     raise
 
 # Import all models to ensure they're registered with Base.metadata
 try:
+    logger.info("Importing model modules...")
     from app.models import user as user_models, workout as workout_models, nutrition as nutrition_models
-    logger.info("Model modules imported successfully")
+    logger.info("✅ Model modules imported successfully")
+    logger.info("📋 Available models: user, workout, nutrition, progress, notification")
 except Exception as e:
-    logger.error(f"Failed to import model modules: {e}")
+    logger.error(f"❌ Failed to import model modules: {e}")
+    logger.error(f"Error type: {type(e).__name__}")
+    logger.error(f"Error details: {str(e)}")
+    import traceback
+    logger.error(f"Stack trace: {traceback.format_exc()}")
     raise
 
 # Application lifespan management for performance optimization
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("Application startup initiated...")
+    logger.info("=" * 40)
+    logger.info("APPLICATION STARTUP INITIATED")
+    logger.info("=" * 40)
     
     # Check database connection health
+    logger.info("Checking database connection...")
     if not check_db_connection():
-        logger.error("Database connection failed on startup")
+        logger.error("❌ Database connection failed on startup")
         raise Exception("Database connection failed")
+    logger.info("✅ Database connection successful")
     
     # Initialize database tables
+    logger.info("Initializing database tables...")
     if not init_database():
-        logger.error("Database initialization failed")
+        logger.error("❌ Database initialization failed")
         raise Exception("Database initialization failed")
+    logger.info("✅ Database tables initialized successfully")
     
     # Log database pool statistics
     pool_stats = get_db_pool_stats()
-    logger.info(f"Database pool initialized: {pool_stats}")
+    logger.info(f"📊 Database pool initialized: {pool_stats}")
     
-    logger.info("Application startup completed successfully")
+    # Start notification scheduler
+    logger.info("Starting notification scheduler...")
+    try:
+        from app.services.scheduler_service import start_notification_scheduler
+        await start_notification_scheduler()
+        logger.info("✅ Notification scheduler started successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to start notification scheduler: {e}")
+        logger.error(f"Stack trace: {e.__traceback__}")
+    
+    logger.info("=" * 40)
+    logger.info("✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY")
+    logger.info("=" * 40)
     yield
     
     # Shutdown
-    logger.info("Application shutdown initiated...")
+    logger.info("=" * 40)
+    logger.info("APPLICATION SHUTDOWN INITIATED")
+    logger.info("=" * 40)
+    
+    # Stop notification scheduler
+    logger.info("Stopping notification scheduler...")
+    try:
+        from app.services.scheduler_service import stop_notification_scheduler
+        await stop_notification_scheduler()
+        logger.info("✅ Notification scheduler stopped successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to stop notification scheduler: {e}")
+    
     # Close database connections gracefully
+    logger.info("Closing database connections...")
     engine.dispose()
-    logger.info("Application shutdown completed")
+    logger.info("✅ Database connections closed")
+    logger.info("=" * 40)
+    logger.info("✅ APPLICATION SHUTDOWN COMPLETED")
+    logger.info("=" * 40)
 
 # Create FastAPI app with performance optimizations
 app = FastAPI(
@@ -122,17 +204,26 @@ async def performance_monitoring_middleware(request: Request, call_next):
         )
         raise
 
-# Enhanced CORS middleware configuration for frontend integration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# Environment-based CORS middleware configuration
+if ENVIRONMENT == "production":
+    # Production: Only allow specified origins
+    cors_origins = CORS_ORIGINS
+    logger.info(f"Production CORS origins: {cors_origins}")
+else:
+    # Development: Allow all localhost origins
+    cors_origins = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8080",
         "http://127.0.0.1:8080",
         "http://localhost:5173",  # Vite default port
         "http://127.0.0.1:5173"
-    ],
+    ]
+    logger.info("Development CORS origins configured")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*", "Authorization", "Content-Type", "X-Request-ID"],
@@ -164,6 +255,8 @@ async def health_check():
     health_status = {
         "status": "healthy" if db_healthy else "unhealthy",
         "version": "1.0.0",
+        "environment": ENVIRONMENT,
+        "domain": DOMAIN,
         "sprint": "6 - Advanced Meal Plan System",
         "timestamp": time.time(),
         "database": {
@@ -197,21 +290,16 @@ async def get_performance_metrics():
         pool_stats = get_db_pool_stats()
         db_healthy = check_db_connection()
         
-        # Basic application metrics
         metrics = {
             "timestamp": time.time(),
+            "environment": ENVIRONMENT,
             "database": {
                 "healthy": db_healthy,
                 "pool_stats": pool_stats
             },
-            "system": {
-                "python_version": sys.version,
-                "platform": sys.platform
-            },
-            "performance": {
-                "slow_query_threshold_ms": 100,
-                "slow_request_threshold_ms": 1000,
-                "moderate_request_threshold_ms": 500
+            "application": {
+                "version": "1.0.0",
+                "uptime": time.time() - app.startup_time if hasattr(app, 'startup_time') else 0
             }
         }
         
@@ -219,7 +307,7 @@ async def get_performance_metrics():
         
     except Exception as e:
         logger.error(f"Failed to get metrics: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve metrics")
+        raise HTTPException(status_code=500, detail="Failed to get metrics")
 
 # Database status endpoint for detailed database information
 @app.get("/status/database")
@@ -248,20 +336,63 @@ async def get_database_status():
 
 # Include routers with error handling
 try:
-    logger.info("Including routers...")
+    logger.info("=" * 40)
+    logger.info("INCLUDING ROUTERS")
+    logger.info("=" * 40)
+    
+    logger.info("Including auth router...")
     app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+    logger.info("✅ Auth router included")
+    
+    logger.info("Including users router...")
     app.include_router(users.router, prefix="/api/users", tags=["Users"])
+    logger.info("✅ Users router included")
+    
+    logger.info("Including exercises router...")
     app.include_router(exercises.router, prefix="/api/exercises", tags=["Exercises"])
+    logger.info("✅ Exercises router included")
+    
+    logger.info("Including workouts router...")
     app.include_router(workouts.router, prefix="/api/workouts", tags=["Workouts"])
+    logger.info("✅ Workouts router included")
+    
+    logger.info("Including nutrition router...")
     app.include_router(nutrition.router, prefix="/api/nutrition", tags=["Nutrition"])
+    logger.info("✅ Nutrition router included")
+    
+    logger.info("Including meal_plans router...")
     app.include_router(meal_plans.router, prefix="/api/meal-plans", tags=["Meal Plans"])
+    logger.info("✅ Meal plans router included")
+    
+    logger.info("Including progress router...")
     app.include_router(progress.router, prefix="/api/progress", tags=["Progress"])
+    logger.info("✅ Progress router included")
+    
+    logger.info("Including files router...")
     app.include_router(files.router, prefix="/api/files", tags=["File Management"])
+    logger.info("✅ Files router included")
+    
+    logger.info("Including websocket router...")
     app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
+    logger.info("✅ WebSocket router included")
+    
+    logger.info("Including system router...")
     app.include_router(system.router, prefix="/api/system", tags=["System"])
-    logger.info("All routers included successfully")
+    logger.info("✅ System router included")
+    
+    logger.info("Including notifications router...")
+    app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+    logger.info("✅ Notifications router included")
+    
+    logger.info("=" * 40)
+    logger.info("✅ ALL ROUTERS INCLUDED SUCCESSFULLY")
+    logger.info("=" * 40)
 except Exception as e:
-    logger.error(f"Failed to include routers: {e}")
+    logger.error(f"❌ Failed to include routers: {e}")
+    logger.error(f"Error type: {type(e).__name__}")
+    logger.error(f"Error details: {str(e)}")
+    import traceback
+    logger.error(f"Stack trace: {traceback.format_exc()}")
     raise
 
 @app.get("/")

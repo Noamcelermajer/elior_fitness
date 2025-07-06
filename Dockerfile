@@ -19,8 +19,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy only the application code (not test files, frontend, etc.)
 COPY app/ ./app/
 
+# Copy test script
+COPY test_notifications.py .
+
 # Create necessary directories
-RUN mkdir -p uploads data
+RUN mkdir -p uploads data logs
 
 # Set environment variables
 ENV PYTHONPATH=/app

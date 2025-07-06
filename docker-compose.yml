@@ -1,22 +1,38 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     ports:
-      - "8000:8000"
+      - "3000:80"  # Frontend on port 3000
+      - "8000:8000"  # API on port 8000
     volumes:
-      - ./:/app
       - ./uploads:/app/uploads
       - sqlite_data:/app/data  # Mount volume for SQLite database
+      - ./logs:/app/logs  # Mount logs directory
     environment:
       - DATABASE_URL=sqlite:///./data/elior_fitness.db
       - JWT_SECRET=your-secret-key-here
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - LOG_LEVEL=DEBUG
+      - ENABLE_DEBUG_LOGGING=true
     command: >
       sh -c "
-        echo 'Starting the application with SQLite...'
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+        echo '=== ELIOR FITNESS DEV STARTUP ==='
+        echo 'Timestamp: $(date)'
+        echo 'Environment: Development'
+        echo 'Database: SQLite'
+        echo 'Frontend: Port 3000'
+        echo 'API: Port 8000'
+        echo 'Starting Nginx and FastAPI...'
+        /app/start.sh
       "
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   sqlite_data: 

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dumbbell, Target, Utensils, TrendingUp, Plus, Calendar, Clock, CheckCircle, Users, Trophy, Flame, UserPlus, Shield, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config/api';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -40,13 +41,13 @@ const AdminDashboard = () => {
       try {
         const token = localStorage.getItem('access_token');
         // Fetch all users
-        const usersRes = await fetch('http://localhost:8000/api/users/', {
+        const usersRes = await fetch(`${API_BASE_URL}/users/`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        const trainersRes = await fetch('http://localhost:8000/api/users/trainers', {
+        const trainersRes = await fetch(`${API_BASE_URL}/users/trainers`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        const clientsRes = await fetch('http://localhost:8000/api/users/clients', {
+        const clientsRes = await fetch(`${API_BASE_URL}/users/clients`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!usersRes.ok || !trainersRes.ok || !clientsRes.ok) {
@@ -127,7 +128,7 @@ const AdminDashboard = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/auth/register/trainer', {
+      const response = await fetch(`${API_BASE_URL}/auth/register/trainer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

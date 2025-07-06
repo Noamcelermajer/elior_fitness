@@ -8,6 +8,7 @@ from app.models.user import User
 from app.schemas.auth import UserCreate, UserResponse, Token, UserLogin
 from app.services import auth_service, password_service, user_service
 from app.auth.utils import get_current_user, create_access_token
+from app.services.notification_triggers import NotificationTriggers
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -179,7 +180,17 @@ async def register_trainer(
             detail="This endpoint is for trainer registration only"
         )
     
-    return auth_service.create_user(db, user)
+    created_user = auth_service.create_user(db, user)
+    
+    # Notify admin about new trainer registration
+    NotificationTriggers.notify_admin_on_user_activity(
+        db=db,
+        activity_type="Trainer Registration",
+        user_id=created_user.id,
+        details=f"New trainer registered: {user.username}"
+    )
+    
+    return created_user
 
 @router.post("/register/client", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_client(
@@ -202,7 +213,25 @@ async def register_client(
             detail="This endpoint is for client registration only"
         )
     
-    return auth_service.create_user(db, user)
+    created_user = auth_service.create_user(db, user)
+    
+    # If registered by a trainer, notify the trainer about the new client
+    if current_user.role == "trainer":
+        NotificationTriggers.notify_trainer_on_client_registration(
+            db=db,
+            client_id=created_user.id,
+            trainer_id=current_user.id
+        )
+    
+    # Notify admin about new client registration
+    NotificationTriggers.notify_admin_on_user_activity(
+        db=db,
+        activity_type="Client Registration",
+        user_id=created_user.id,
+        details=f"New client registered by {current_user.role}: {user.username}"
+    )
+    
+    return created_user
 
 @router.post("/token", response_model=Token)
 async def login(

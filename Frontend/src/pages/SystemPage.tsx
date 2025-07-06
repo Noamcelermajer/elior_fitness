@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
+import { API_BASE_URL } from '../config/api';
 import { 
   Activity, 
   Database, 
@@ -99,14 +100,14 @@ const SystemPage: React.FC = () => {
     try {
       setLoading(true);
       const [statusRes, logsRes] = await Promise.all([
-        fetch('/api/system/status', {
+        fetch(`${API_BASE_URL}/system/status`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           }
         }),
-        fetch('/api/system/logs', {
+        fetch(`${API_BASE_URL}/system/logs`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           }
         })
       ]);
@@ -145,10 +146,10 @@ const SystemPage: React.FC = () => {
     }, 500);
 
     try {
-      const response = await fetch('/api/system/run-tests', {
+      const response = await fetch(`${API_BASE_URL}/system/run-tests`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
       });
 
@@ -183,10 +184,10 @@ const SystemPage: React.FC = () => {
 
   const performQuickAction = async (action: string) => {
     try {
-      const response = await fetch(`/api/system/${action}`, {
+      const response = await fetch(`${API_BASE_URL}/system/${action}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
       });
 

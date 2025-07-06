@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
 import logging
@@ -167,10 +167,7 @@ def check_db_connection() -> bool:
     """Check if database connection is healthy."""
     try:
         with engine.connect() as conn:
-            if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
-                result = conn.execute("SELECT 1")
-            else:
-                result = conn.execute("SELECT 1")
+            result = conn.execute(text("SELECT 1"))
             result.fetchone()
         return True
     except Exception as e:
@@ -182,13 +179,18 @@ def get_db_pool_stats() -> dict:
     """Get database connection pool statistics."""
     try:
         pool = engine.pool
-        return {
+        stats = {
             "pool_size": pool.size(),
             "checked_in_connections": pool.checkedin(),
             "checked_out_connections": pool.checkedout(),
-            "overflow_connections": pool.overflow(),
-            "invalid_connections": pool.invalid()
+            "overflow_connections": pool.overflow()
         }
+        
+        # Add invalid connections if available (PostgreSQL only)
+        if hasattr(pool, 'invalid'):
+            stats["invalid_connections"] = pool.invalid()
+        
+        return stats
     except Exception as e:
         logger.error(f"Failed to get pool stats: {e}")
         return {"error": str(e)}

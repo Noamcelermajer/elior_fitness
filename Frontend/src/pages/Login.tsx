@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dumbbell, User, Lock, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE_URL } from '../config/api';
 
 interface UserLoginInfo {
   id: number;
@@ -23,13 +25,15 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [registeredUsers, setRegisteredUsers] = useState<UserLoginInfo[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Fetch registered users from the server
   const fetchRegisteredUsers = async () => {
     try {
       setLoadingUsers(true);
-      const response = await fetch('http://localhost:8000/api/auth/registered-users');
+      const response = await fetch(`${API_BASE_URL}/auth/registered-users`);
       if (response.ok) {
         const users = await response.json();
         setRegisteredUsers(users);
@@ -54,7 +58,15 @@ const Login = () => {
 
     try {
       const success = await login(username, password);
-      if (!success) {
+      if (success) {
+        // Redirect to appropriate dashboard based on user role
+        const from = location.state?.from?.pathname || '/';
+        if (user?.role === 'admin') {
+          navigate('/admin', { replace: true });
+        } else {
+          navigate(from, { replace: true });
+        }
+      } else {
         setError('Invalid username or password');
       }
     } catch (error) {

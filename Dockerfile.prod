@@ -1,4 +1,13 @@
-FROM python:3.11-slim
+# --- Frontend build stage ---
+FROM node:20-alpine AS frontend-build
+WORKDIR /frontend
+COPY Frontend/package.json Frontend/package-lock.json ./
+RUN npm ci
+COPY Frontend/ ./
+RUN npm run build
+
+# --- Backend build stage ---
+FROM python:3.11-slim AS backend
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -18,24 +27,29 @@ RUN apt-get update && apt-get install -y \
     curl \
     libmagic1 \
     libmagic-dev \
+    nginx \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
 # Set work directory
 WORKDIR /app
 
-# Install Python dependencies
+# Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY ./app /app/app
-COPY ./alembic /app/alembic
-COPY ./alembic.ini /app/alembic.ini
+
+# Copy built frontend from previous stage
+COPY --from=frontend-build /frontend/dist /var/www/html
+
+# Copy Nginx config
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
 
 # Create necessary directories with proper permissions
-RUN mkdir -p /app/uploads /app/data /app/logs && \
-    chown -R appuser:appuser /app
+RUN mkdir -p /app/uploads /app/data /app/logs /var/www/html && \
+    chown -R appuser:appuser /app /var/www/html
 
 # Switch to non-root user
 USER appuser
@@ -45,7 +59,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:8000/health || exit 1
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8000 80 443
 
-# Production command with optimized settings
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--loop", "uvloop", "--http", "httptools"]
+# Start both backend and Nginx
+CMD ["sh", "-c", "nginx && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4 --loop uvloop --http httptools"]

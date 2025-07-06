@@ -8,6 +8,7 @@ from app.auth.utils import get_current_user
 from app.schemas.auth import UserResponse
 from app.models.progress import ProgressEntry
 from app.services.file_service import FileService
+from app.services.notification_triggers import check_client_goals
 
 router = APIRouter(tags=["progress"])
 
@@ -40,6 +41,9 @@ async def add_weight_entry(
     db.add(progress_entry)
     db.commit()
     db.refresh(progress_entry)
+    
+    # Check for goal achievements
+    check_client_goals(db, current_user.id)
     
     return {
         "id": progress_entry.id,

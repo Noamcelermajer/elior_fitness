@@ -26,6 +26,10 @@ class User(Base):
     # workouts = relationship("Workout", back_populates="user")
     # nutrition_plans = relationship("NutritionPlan", back_populates="user")
     progress_entries = relationship("ProgressEntry", back_populates="client")
+    
+    # Notification relationships
+    received_notifications = relationship("Notification", foreign_keys="Notification.recipient_id", back_populates="recipient")
+    sent_notifications = relationship("Notification", foreign_keys="Notification.sender_id", back_populates="sender")
 
 class TrainerProfile(Base):
     __tablename__ = "trainer_profiles"
