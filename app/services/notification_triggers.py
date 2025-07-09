@@ -7,6 +7,7 @@ from app.models.progress import ProgressEntry
 from app.models.workout import WorkoutExercise, ExerciseCompletion
 from app.models.nutrition import MealPlan, MealUpload
 from app.services.notification_service import notification_service
+from app.schemas.notification import NotificationCreate
 
 class NotificationTriggers:
     @staticmethod
@@ -16,17 +17,20 @@ class NotificationTriggers:
         message: str,
         notification_type: str = "error"
     ):
-        """Send critical notifications to all admin users"""
-        admin_users = db.query(User).filter(User.role == "admin").all()
-        admin_ids = [user.id for user in admin_users]
+        """Send critical notifications to all admins"""
+        admins = db.query(User).filter(User.role == "admin").all()
         
-        if admin_ids:
-            notification_service.create_system_notification(
-                db=db,
+        for admin in admins:
+            notification_data = NotificationCreate(
                 title=title,
                 message=message,
-                notification_type=notification_type,
-                recipient_ids=admin_ids
+                type=notification_type,
+                recipient_id=admin.id
+            )
+            notification_service.create_notification(
+                db=db,
+                notification_data=notification_data,
+                sender_id=None  # System notification
             )
 
     @staticmethod
@@ -48,14 +52,15 @@ class NotificationTriggers:
         # Check weight goal achievement
         if latest_progress.target_weight and latest_progress.current_weight:
             if latest_progress.current_weight <= latest_progress.target_weight:
+                notification_data = NotificationCreate(
+                    title="Goal Achievement! 🎉",
+                    message=f"Client {client.full_name} has reached their target weight goal!",
+                    type="success",
+                    recipient_id=client.trainer_id
+                )
                 notification_service.create_notification(
                     db=db,
-                    notification_data={
-                        "title": "Goal Achievement! 🎉",
-                        "message": f"Client {client.full_name} has reached their target weight goal!",
-                        "type": "success",
-                        "recipient_id": client.trainer_id
-                    },
+                    notification_data=notification_data,
                     sender_id=None  # System notification
                 )
 
@@ -98,14 +103,15 @@ class NotificationTriggers:
             
             # If missed 2 or more exercises, notify trainer
             if missed_exercises >= 2:
+                notification_data = NotificationCreate(
+                    title="Missed Exercises Alert ⚠️",
+                    message=f"Client {client.full_name} missed {missed_exercises} exercises this week. Consider reaching out to provide support.",
+                    type="warning",
+                    recipient_id=client.trainer_id
+                )
                 notification_service.create_notification(
                     db=db,
-                    notification_data={
-                        "title": "Missed Exercises Alert ⚠️",
-                        "message": f"Client {client.full_name} missed {missed_exercises} exercises this week. Consider reaching out to provide support.",
-                        "type": "warning",
-                        "recipient_id": client.trainer_id
-                    },
+                    notification_data=notification_data,
                     sender_id=None
                 )
 
@@ -153,14 +159,15 @@ class NotificationTriggers:
             
             # If missed 4 or more meals, notify trainer
             if missed_meals >= 4:
+                notification_data = NotificationCreate(
+                    title="Missed Meals Alert 🍽️",
+                    message=f"Client {client.full_name} missed {missed_meals} meals this week. They may need nutritional guidance or support.",
+                    type="warning",
+                    recipient_id=client.trainer_id
+                )
                 notification_service.create_notification(
                     db=db,
-                    notification_data={
-                        "title": "Missed Meals Alert 🍽️",
-                        "message": f"Client {client.full_name} missed {missed_meals} meals this week. They may need nutritional guidance or support.",
-                        "type": "warning",
-                        "recipient_id": client.trainer_id
-                    },
+                    notification_data=notification_data,
                     sender_id=None
                 )
 
@@ -169,14 +176,15 @@ class NotificationTriggers:
         """Notify trainer when a new client is assigned"""
         client = db.query(User).filter(User.id == client_id).first()
         if client:
+            notification_data = NotificationCreate(
+                title="New Client Assigned 👤",
+                message=f"New client {client.full_name} has been assigned to you. Welcome them and start their fitness journey!",
+                type="info",
+                recipient_id=trainer_id
+            )
             notification_service.create_notification(
                 db=db,
-                notification_data={
-                    "title": "New Client Assigned 👤",
-                    "message": f"New client {client.full_name} has been assigned to you. Welcome them and start their fitness journey!",
-                    "type": "info",
-                    "recipient_id": trainer_id
-                },
+                notification_data=notification_data,
                 sender_id=None
             )
 

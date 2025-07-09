@@ -47,25 +47,25 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
         }
     )
     
-    # SQLite performance optimizations
+    # SQLite performance optimizations - OPTIMIZED FOR MINIMAL RESOURCES
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
-        """Set SQLite-specific performance optimizations."""
+        """Set SQLite-specific performance optimizations for minimal resource usage."""
         cursor = dbapi_connection.cursor()
         # Enable WAL mode for better concurrency
         cursor.execute("PRAGMA journal_mode=WAL")
-        # Increase cache size (negative value = KB)
-        cursor.execute("PRAGMA cache_size=-64000")  # 64MB cache
+        # REDUCED cache size for minimal memory usage (was 64MB, now 8MB)
+        cursor.execute("PRAGMA cache_size=-8192")  # 8MB cache
         # Enable foreign keys
         cursor.execute("PRAGMA foreign_keys=ON")
-        # Optimize synchronous mode
+        # Optimize synchronous mode for better performance
         cursor.execute("PRAGMA synchronous=NORMAL")
         # Set temp store to memory
         cursor.execute("PRAGMA temp_store=MEMORY")
         # Optimize page size
         cursor.execute("PRAGMA page_size=4096")
-        # Enable memory mapping
-        cursor.execute("PRAGMA mmap_size=268435456")  # 256MB
+        # REDUCED memory mapping for minimal memory usage (was 256MB, now 32MB)
+        cursor.execute("PRAGMA mmap_size=33554432")  # 32MB
         cursor.close()
     
     logger.info("SQLite engine created with performance optimizations")
@@ -106,18 +106,18 @@ else:
     
     logger.info("PostgreSQL engine created with performance optimizations")
 
-# Add connection performance monitoring
-@event.listens_for(engine, "before_cursor_execute")
-def receive_before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-    """Monitor query execution time."""
-    context._query_start_time = time.time()
+# REMOVED: Expensive query monitoring for minimal resource usage
+# @event.listens_for(engine, "before_cursor_execute")
+# def receive_before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+#     """Monitor query execution time."""
+#     context._query_start_time = time.time()
 
-@event.listens_for(engine, "after_cursor_execute")
-def receive_after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-    """Log slow queries."""
-    total = time.time() - context._query_start_time
-    if total > 0.1:  # Log queries taking more than 100ms
-        logger.warning(f"Slow query: {total:.3f}s - {statement[:100]}...")
+# @event.listens_for(engine, "after_cursor_execute")
+# def receive_after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+#     """Log slow queries."""
+#     total = time.time() - context._query_start_time
+#     if total > 0.1:  # Log queries taking more than 100ms
+#         logger.warning(f"Slow query: {total:.3f}s - {statement[:100]}...")
 
 # Create SessionLocal class with optimized configuration
 SessionLocal = sessionmaker(

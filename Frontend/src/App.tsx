@@ -22,6 +22,11 @@ import ClientsPage from "./pages/ClientsPage";
 import NotFound from "./pages/NotFound";
 import UsersPage from './pages/UsersPage';
 import SystemPage from './pages/SystemPage';
+import TrainerDashboard from './pages/TrainerDashboard';
+import ClientProfile from './pages/ClientProfile';
+import CreateExercise from './pages/CreateExercise';
+import CreateWorkout from './pages/CreateWorkout';
+import CreateMealPlan from './pages/CreateMealPlan';
 
 const queryClient = new QueryClient();
 
@@ -64,6 +69,48 @@ const AppRoutes = () => {
         } 
       />
 
+      {/* Trainer routes */}
+      <Route 
+        path="/trainer-dashboard" 
+        element={
+          <ProtectedRoute requiredRole="trainer">
+            <TrainerDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/client/:clientId" 
+        element={
+          <ProtectedRoute requiredRole="trainer">
+            <ClientProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/create-exercise" 
+        element={
+          <ProtectedRoute requiredRole="trainer">
+            <CreateExercise />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/create-workout" 
+        element={
+          <ProtectedRoute requiredRole="trainer">
+            <CreateWorkout />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/create-meal-plan" 
+        element={
+          <ProtectedRoute requiredRole="trainer">
+            <CreateMealPlan />
+          </ProtectedRoute>
+        } 
+      />
+
       {/* Trainer/Client routes */}
       <Route 
         path="/" 
@@ -98,7 +145,7 @@ const AppRoutes = () => {
         } 
       />
       <Route 
-        path="/create-workout" 
+        path="/create-workout-old" 
         element={
           <ProtectedRoute>
             <CreateWorkoutPage />
@@ -106,7 +153,7 @@ const AppRoutes = () => {
         } 
       />
       <Route 
-        path="/create-exercise" 
+        path="/create-exercise-old" 
         element={
           <ProtectedRoute>
             <CreateExercisePage />
@@ -114,7 +161,7 @@ const AppRoutes = () => {
         } 
       />
       <Route 
-        path="/create-meal-plan" 
+        path="/create-meal-plan-old" 
         element={
           <ProtectedRoute>
             <CreateMealPlanPage />

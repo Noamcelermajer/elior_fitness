@@ -112,15 +112,15 @@ async def lifespan(app: FastAPI):
     pool_stats = get_db_pool_stats()
     logger.info(f"📊 Database pool initialized: {pool_stats}")
     
-    # Start notification scheduler
-    logger.info("Starting notification scheduler...")
-    try:
-        from app.services.scheduler_service import start_notification_scheduler
-        await start_notification_scheduler()
-        logger.info("✅ Notification scheduler started successfully")
-    except Exception as e:
-        logger.error(f"❌ Failed to start notification scheduler: {e}")
-        logger.error(f"Stack trace: {e.__traceback__}")
+    # REMOVED: Notification scheduler for minimal resource usage
+    # logger.info("Starting notification scheduler...")
+    # try:
+    #     from app.services.scheduler_service import start_notification_scheduler
+    #     await start_notification_scheduler()
+    #     logger.info("✅ Notification scheduler started successfully")
+    # except Exception as e:
+    #     logger.error(f"❌ Failed to start notification scheduler: {e}")
+    #     logger.error(f"Stack trace: {e.__traceback__}")
     
     logger.info("=" * 40)
     logger.info("✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY")
@@ -132,14 +132,14 @@ async def lifespan(app: FastAPI):
     logger.info("APPLICATION SHUTDOWN INITIATED")
     logger.info("=" * 40)
     
-    # Stop notification scheduler
-    logger.info("Stopping notification scheduler...")
-    try:
-        from app.services.scheduler_service import stop_notification_scheduler
-        await stop_notification_scheduler()
-        logger.info("✅ Notification scheduler stopped successfully")
-    except Exception as e:
-        logger.error(f"❌ Failed to stop notification scheduler: {e}")
+    # REMOVED: Notification scheduler shutdown for minimal resource usage
+    # logger.info("Stopping notification scheduler...")
+    # try:
+    #     from app.services.scheduler_service import stop_notification_scheduler
+    #     await stop_notification_scheduler()
+    #     logger.info("✅ Notification scheduler stopped successfully")
+    # except Exception as e:
+    #     logger.error(f"❌ Failed to stop notification scheduler: {e}")
     
     # Close database connections gracefully
     logger.info("Closing database connections...")
@@ -163,14 +163,11 @@ app = FastAPI(
 
 logger.info("FastAPI application created with performance optimizations")
 
-# Performance monitoring middleware
+# Performance monitoring middleware - OPTIMIZED FOR MINIMAL RESOURCES
 @app.middleware("http")
 async def performance_monitoring_middleware(request: Request, call_next):
-    """Monitor request performance and add metrics headers."""
+    """Monitor request performance with minimal overhead."""
     start_time = time.time()
-    
-    # Add request ID for tracking
-    request_id = f"{int(start_time * 1000)}"
     
     try:
         response = await call_next(request)
@@ -178,30 +175,18 @@ async def performance_monitoring_middleware(request: Request, call_next):
         # Calculate processing time
         process_time = time.time() - start_time
         
-        # Add performance headers
+        # Add performance headers (minimal overhead)
         response.headers["X-Process-Time"] = f"{process_time:.3f}"
-        response.headers["X-Request-ID"] = request_id
         
-        # Log slow requests for monitoring
-        if process_time > 1.0:  # Log requests taking more than 1 second
-            logger.warning(
-                f"Slow request detected: {request.method} {request.url} "
-                f"took {process_time:.3f}s (ID: {request_id})"
-            )
-        elif process_time > 0.5:  # Log moderately slow requests
-            logger.info(
-                f"Moderate response time: {request.method} {request.url} "
-                f"took {process_time:.3f}s (ID: {request_id})"
-            )
+        # Only log very slow requests (>2s) to reduce logging overhead
+        if process_time > 2.0:
+            logger.warning(f"Very slow request: {request.method} {request.url} took {process_time:.3f}s")
         
         return response
         
     except Exception as e:
         process_time = time.time() - start_time
-        logger.error(
-            f"Request failed: {request.method} {request.url} "
-            f"after {process_time:.3f}s - Error: {str(e)} (ID: {request_id})"
-        )
+        logger.error(f"Request failed: {request.method} {request.url} after {process_time:.3f}s - Error: {str(e)}")
         raise
 
 # Environment-based CORS middleware configuration

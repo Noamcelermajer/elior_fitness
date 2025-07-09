@@ -33,6 +33,13 @@ const Index = () => {
   const navigate = useNavigate();
   const isTrainer = user?.role === 'trainer';
   
+  // Redirect trainers to trainer dashboard
+  useEffect(() => {
+    if (isTrainer) {
+      navigate('/trainer-dashboard');
+    }
+  }, [isTrainer, navigate]);
+  
   const [stats, setStats] = useState<DashboardStats>({
     totalClients: 0,
     totalWorkoutPlans: 0,
