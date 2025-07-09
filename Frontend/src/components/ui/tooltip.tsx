@@ -1,7 +1,10 @@
 import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
-import { cn } from "@/lib/utils"
+// Inline utility function to avoid import issues
+function cn(...classes: (string | undefined | null | false)[]): string {
+  return classes.filter(Boolean).join(' ');
+}
 
 const TooltipProvider = TooltipPrimitive.Provider
 

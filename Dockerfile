@@ -21,11 +21,19 @@ COPY Frontend/tsconfig*.json ./
 COPY Frontend/tailwind.config.ts ./
 COPY Frontend/postcss.config.js ./
 
-# Ensure lib directory is properly copied
-RUN ls -la src/ && echo "=== LIB CONTENTS ===" && ls -la src/lib/ || echo "lib directory not found"
+# Explicitly copy lib directory with verbose output
+COPY Frontend/src/lib ./src/lib
 
-# Debug: List what we have
-RUN ls -la && echo "=== SRC CONTENTS ===" && ls -la src/ && echo "=== LIB CONTENTS ===" && if [ -d "src/lib" ]; then ls -la src/lib/; else echo "lib directory doesn't exist"; fi
+# Debug: Verify everything is copied correctly
+RUN echo "=== DEBUGGING FILE STRUCTURE ===" && \
+    ls -la && \
+    echo "=== SRC CONTENTS ===" && \
+    ls -la src/ && \
+    echo "=== LIB CONTENTS ===" && \
+    ls -la src/lib/ && \
+    echo "=== UTILS FILE ===" && \
+    cat src/lib/utils.ts && \
+    echo "=== END DEBUG ==="
 
 # Build frontend for production with optimizations
 # Added error handling and verbose output
