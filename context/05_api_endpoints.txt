@@ -1,0 +1,89 @@
+API ENDPOINTS (FastAPI)
+
+AUTHENTICATION (/api/auth):
+POST /register - User registration (trainer/client)
+POST /login - User login (JSON and form-based)
+POST /change-password - Password change
+GET /me - Current user profile
+
+USER MANAGEMENT (/api/users):
+GET /users - List users (with filtering)
+GET /users/{user_id} - Get user details
+PUT /users/{user_id} - Update user
+DELETE /users/{user_id} - Delete user
+POST /users/{trainer_id}/clients/{client_id} - Assign client to trainer
+DELETE /users/{trainer_id}/clients/{client_id} - Remove client assignment
+
+WORKOUT MANAGEMENT (/api/workouts):
+POST /exercises - Create exercise in trainer's bank
+GET /exercises - Get exercises (with filtering)
+PUT /exercises/{exercise_id} - Update exercise
+DELETE /exercises/{exercise_id} - Delete exercise
+POST /plans - Create workout plan
+GET /plans - Get workout plans
+GET /plans/{plan_id}/complete - Get complete workout plan
+POST /plans/{plan_id}/sessions - Create workout session
+POST /sessions/{session_id}/exercises - Add exercise to session
+POST /sessions/{session_id}/exercises/bulk - Bulk add exercises
+POST /completions - Log exercise completion
+POST /completions/bulk - Bulk log completions
+GET /plans/{plan_id}/summary - Get workout summary
+GET /exercises/{exercise_id}/progress - Get exercise progress
+
+NUTRITION MANAGEMENT (/api/nutrition):
+POST /entries - Create nutrition entry
+GET /entries - Get nutrition entries
+PUT /entries/{entry_id} - Update nutrition entry
+DELETE /entries/{entry_id} - Delete nutrition entry
+GET /analytics/daily - Daily nutrition analytics
+GET /analytics/weekly - Weekly nutrition analytics
+
+MEAL PLANS (/api/meal-plans):
+POST / - Create meal plan
+GET / - Get meal plans
+GET /{plan_id} - Get meal plan details
+PUT /{plan_id} - Update meal plan
+DELETE /{plan_id} - Delete meal plan
+POST /{plan_id}/meals - Add meal to plan
+GET /{plan_id}/meals - Get meals in plan
+PUT /{plan_id}/meals/{meal_id} - Update meal
+DELETE /{plan_id}/meals/{meal_id} - Delete meal
+POST /{plan_id}/meals/{meal_id}/components - Add component to meal
+GET /{plan_id}/meals/{meal_id}/components - Get meal components
+POST /{plan_id}/meals/{meal_id}/uploads - Upload meal photo
+GET /{plan_id}/meals/{meal_id}/uploads - Get meal uploads
+PUT /uploads/{upload_id}/approve - Approve meal upload
+GET /analytics/{plan_id} - Get meal plan analytics
+
+FILE MANAGEMENT (/api/files):
+POST /upload - Upload file
+GET /files - List files
+GET /files/{file_id} - Get file details
+DELETE /files/{file_id} - Delete file
+GET /files/{file_id}/download - Download file
+GET /files/{file_id}/thumbnail - Get file thumbnail
+
+PROGRESS TRACKING (/api/progress):
+POST /entries - Create progress entry
+GET /entries - Get progress entries
+PUT /entries/{entry_id} - Update progress entry
+DELETE /entries/{entry_id} - Delete progress entry
+GET /analytics - Get progress analytics
+
+WEBSOCKET (/api/ws):
+GET /notifications - WebSocket endpoint for real-time notifications
+
+SYSTEM (/api/system):
+GET /health - Health check
+GET /metrics - Performance metrics
+GET /status/database - Database status
+
+NOTIFICATIONS (/api/notifications):
+GET / - Get user notifications
+PUT /{notification_id}/read - Mark notification as read
+DELETE /{notification_id} - Delete notification
+
+AUTHENTICATION: JWT tokens required for all endpoints except /login and /register
+ROLE-BASED ACCESS: Different permissions for admin, trainer, and client roles
+ERROR HANDLING: Consistent error responses with appropriate HTTP status codes
+VALIDATION: Pydantic schemas for request/response validation 

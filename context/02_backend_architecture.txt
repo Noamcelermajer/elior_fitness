@@ -1,0 +1,63 @@
+BACKEND ARCHITECTURE (FastAPI/Python)
+
+MAIN APPLICATION: app/main.py
+- FastAPI app with lifespan management
+- CORS middleware configuration
+- Performance monitoring middleware
+- Health check endpoints
+- Static file serving
+
+DATABASE LAYER: app/database.py
+- SQLAlchemy ORM with SQLite
+- Connection pooling and optimization
+- Database initialization and health checks
+
+MODELS (app/models/):
+user.py: User, TrainerProfile, ClientProfile
+workout.py: Exercise, WorkoutPlan, WorkoutSession, WorkoutExercise, ExerciseCompletion
+nutrition.py: MealPlan, MealEntry, MealComponent, MealUpload, NutritionEntry, Recipe
+progress.py: ProgressEntry
+notification.py: Notification
+
+ROUTERS (app/routers/):
+auth.py: JWT authentication, registration, password management
+users.py: User CRUD, trainer-client relationships
+workouts.py: Exercise bank, workout plans, progress tracking
+nutrition.py: Nutrition entries, analytics
+meal_plans.py: Advanced meal planning with components
+files.py: File uploads, image processing, access control
+websocket.py: Real-time notifications
+progress.py: Progress tracking and analytics
+system.py: System management (admin)
+notifications.py: Notification management
+
+SERVICES (app/services/):
+auth_service.py: Authentication business logic
+user_service.py: User management operations
+workout_service.py: Workout planning and tracking
+nutrition_service.py: Nutrition management
+meal_plan_service.py: Advanced meal planning
+file_service.py: File uploads, processing, validation
+websocket_service.py: Real-time communication
+notification_service.py: Notification management
+password_service.py: Password operations
+scheduler_service.py: Background task scheduling
+
+SCHEMAS (app/schemas/):
+Pydantic models for request/response validation
+auth.py: Authentication schemas
+workout.py: Workout-related schemas
+nutrition.py: Nutrition schemas
+notification.py: Notification schemas
+
+KEY FEATURES:
+- JWT authentication with role-based access
+- SQLAlchemy ORM with relationship management
+- File upload with security validation
+- Image processing with Pillow
+- WebSocket real-time notifications
+- Comprehensive error handling
+- Performance monitoring
+- Health checks and metrics
+
+DEPLOYMENT: Docker containerized with Nginx reverse proxy 

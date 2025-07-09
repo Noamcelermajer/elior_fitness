@@ -1,0 +1,200 @@
+DEVELOPMENT GUIDELINES
+
+CODE STANDARDS:
+
+Python (Backend):
+- Type hints for all functions and parameters
+- Docstrings for all functions, classes, and modules
+- Black code formatting for consistency
+- Flake8 linting for code quality
+- Pydantic for data validation
+- SQLAlchemy for database operations
+- FastAPI for API development
+
+TypeScript/React (Frontend):
+- TypeScript for type safety
+- React functional components with hooks
+- ESLint for code quality
+- Prettier for code formatting
+- shadcn/ui for component consistency
+- React Query for server state management
+- Tailwind CSS for styling
+
+ARCHITECTURE PATTERNS:
+
+Backend Architecture:
+- Service layer pattern for business logic
+- Repository pattern for data access
+- Dependency injection for loose coupling
+- Middleware for cross-cutting concerns
+- Router-based API organization
+- Schema-based validation
+
+Frontend Architecture:
+- Component-based architecture
+- Context for state management
+- Custom hooks for reusable logic
+- Service layer for API communication
+- Route-based page organization
+- Type-safe API integration
+
+DATABASE DESIGN:
+
+Schema Design:
+- Normalized database structure
+- Proper foreign key relationships
+- Indexed fields for performance
+- Enum types for constrained values
+- Timestamps for audit trails
+- Soft deletes where appropriate
+
+Migration Strategy:
+- Version-controlled schema changes
+- Backward compatibility maintenance
+- Data migration scripts
+- Rollback procedures
+- Testing with sample data
+
+TESTING STRATEGY:
+
+Test Pyramid:
+- Unit tests for individual functions
+- Integration tests for component interactions
+- End-to-end tests for complete workflows
+- Performance tests for scalability
+- Security tests for vulnerability prevention
+
+Test Coverage:
+- Minimum 90% code coverage
+- Critical path testing
+- Edge case handling
+- Error condition testing
+- Performance benchmarking
+
+SECURITY GUIDELINES:
+
+Authentication:
+- JWT tokens with secure algorithms
+- Password hashing with bcrypt
+- Role-based access control
+- Session management
+- Token expiration and refresh
+
+Data Protection:
+- Input validation and sanitization
+- SQL injection prevention
+- XSS protection
+- File upload security
+- Secure error handling
+
+DEPLOYMENT GUIDELINES:
+
+Docker Best Practices:
+- Multi-stage builds for optimization
+- Minimal base images
+- Security scanning
+- Resource limits
+- Health checks
+
+Environment Management:
+- Environment-specific configurations
+- Secret management
+- Configuration validation
+- Feature flags
+- Monitoring and logging
+
+PERFORMANCE GUIDELINES:
+
+Optimization Principles:
+- Efficient algorithms and data structures
+- Database query optimization
+- Caching strategies
+- Resource management
+- Async operations
+
+Monitoring:
+- Performance metrics collection
+- Error tracking and reporting
+- Resource usage monitoring
+- User experience metrics
+- Automated alerting
+
+DOCUMENTATION STANDARDS:
+
+Code Documentation:
+- Comprehensive docstrings
+- API documentation with OpenAPI
+- Database schema documentation
+- Architecture decision records
+- Deployment guides
+
+User Documentation:
+- User guides and tutorials
+- API reference documentation
+- Troubleshooting guides
+- FAQ and support resources
+- Video tutorials
+
+VERSION CONTROL:
+
+Git Workflow:
+- Feature branch development
+- Pull request reviews
+- Semantic versioning
+- Commit message standards
+- Release management
+
+Code Review:
+- Automated checks (linting, testing)
+- Manual code review process
+- Security review requirements
+- Performance review
+- Documentation review
+
+QUALITY ASSURANCE:
+
+Code Quality:
+- Automated linting and formatting
+- Static code analysis
+- Dependency vulnerability scanning
+- Code complexity metrics
+- Technical debt tracking
+
+Testing Quality:
+- Automated test execution
+- Coverage reporting
+- Performance testing
+- Security testing
+- User acceptance testing
+
+MAINTENANCE GUIDELINES:
+
+Code Maintenance:
+- Regular dependency updates
+- Security patches
+- Performance optimization
+- Bug fixes and improvements
+- Technical debt reduction
+
+Monitoring and Support:
+- Application monitoring
+- Error tracking and resolution
+- User support and feedback
+- Performance optimization
+- Security updates
+
+DEVELOPMENT WORKFLOW:
+
+Development Process:
+1. Feature planning and design
+2. Implementation with tests
+3. Code review and approval
+4. Testing and validation
+5. Deployment and monitoring
+
+Tools and Infrastructure:
+- IDE configuration and extensions
+- Development environment setup
+- Testing frameworks and tools
+- CI/CD pipeline configuration
+- Monitoring and logging tools 

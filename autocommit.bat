@@ -89,26 +89,21 @@ for /f "tokens=*" %%i in ('git branch --show-current') do set current_branch=%%i
 
 echo 🌿 Current branch: !current_branch!
 
-REM Ask if user wants to push
-set /p push_choice="Push to remote repository? (y/n): "
-if /i "!push_choice!"=="y" (
-    echo 🚀 Pushing to remote repository...
-    git push origin !current_branch!
-    if %errorlevel% neq 0 (
-        echo ❌ Failed to push changes
-        echo This might be due to:
-        echo   - Network issues
-        echo   - Authentication problems
-        echo   - Remote repository not accessible
-        echo.
-        echo Try pushing manually: git push origin !current_branch!
-        pause
-        exit /b 1
-    )
-    echo ✅ Changes pushed successfully!
-) else (
-    echo ℹ️  Skipping push
+REM Automatically push to remote repository
+echo 🚀 Pushing to remote repository...
+git push origin !current_branch!
+if %errorlevel% neq 0 (
+    echo ❌ Failed to push changes
+    echo This might be due to:
+    echo   - Network issues
+    echo   - Authentication problems
+    echo   - Remote repository not accessible
+    echo.
+    echo Try pushing manually: git push origin !current_branch!
+    pause
+    exit /b 1
 )
+echo ✅ Changes pushed successfully!
 
 echo.
 echo ========================================
@@ -117,11 +112,7 @@ echo ========================================
 echo 📅 Timestamp: %date% %time%
 echo 🌿 Branch: !current_branch!
 echo 📝 Last commit: !commit_message!
-if /i "!push_choice!"=="y" (
-    echo 🚀 Status: Pushed to remote
-) else (
-    echo 🚀 Status: Committed locally only
-)
+echo 🚀 Status: Pushed to remote
 echo.
 
 REM Show recent commits

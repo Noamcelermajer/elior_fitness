@@ -1,0 +1,99 @@
+ELIOR FITNESS PROJECT - LLM CONTEXT INDEX
+
+This directory contains comprehensive context files for LLM consumption about the Elior Fitness project. Each file focuses on a specific aspect of the project and is optimized for efficient information retrieval.
+
+CONTEXT FILES OVERVIEW:
+
+01_project_overview.txt
+- High-level project description and purpose
+- Technology stack and architecture overview
+- User roles and key features
+- Project status and completion level
+
+02_backend_architecture.txt
+- FastAPI application structure and components
+- Database layer and ORM configuration
+- Models, routers, services, and schemas
+- Key backend features and capabilities
+
+03_frontend_architecture.txt
+- React/TypeScript application structure
+- Pages, components, and routing
+- State management and services
+- UI framework and styling approach
+
+04_database_schema.txt
+- Complete database schema with all tables
+- Relationships and foreign keys
+- Enums and data types
+- Database features and optimization
+
+05_api_endpoints.txt
+- Complete API endpoint documentation
+- Authentication and authorization
+- Request/response patterns
+- Error handling and validation
+
+06_development_sprints.txt
+- 6-sprint development history
+- Feature evolution and implementation
+- Technical decisions and migrations
+- Current status and achievements
+
+07_deployment_infrastructure.txt
+- Docker configuration and deployment
+- Nginx setup and configuration
+- Environment management
+- Resource optimization and monitoring
+
+08_testing_framework.txt
+- Comprehensive testing strategy
+- Test categories and coverage
+- Testing tools and execution
+- Quality assurance processes
+
+09_security_features.txt
+- Authentication and authorization
+- Data protection and validation
+- File upload security
+- API security and monitoring
+
+10_performance_optimization.txt
+- Resource management and limits
+- Database and API optimization
+- File processing and caching
+- Performance monitoring and targets
+
+11_business_logic.txt
+- User management workflows
+- Workout and nutrition management
+- File management and notifications
+- Business rules and constraints
+
+12_development_guidelines.txt
+- Code standards and patterns
+- Architecture and design principles
+- Testing and security guidelines
+- Deployment and maintenance practices
+
+USAGE GUIDELINES:
+
+For LLM Context Loading:
+- Load specific files based on the task at hand
+- Use index to identify relevant context files
+- Combine multiple files for comprehensive understanding
+- Focus on the most relevant aspects for the current task
+
+File Format:
+- Plain text format for efficient processing
+- Structured information with clear sections
+- Concise but comprehensive coverage
+- Optimized for LLM consumption
+
+Project Status:
+- All 6 development sprints completed
+- Production-ready application
+- Comprehensive testing and documentation
+- Full feature set implemented and tested
+
+This context structure enables efficient LLM understanding of the entire Elior Fitness project without needing to explore the codebase structure or individual files. 

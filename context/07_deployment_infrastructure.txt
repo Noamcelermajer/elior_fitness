@@ -1,0 +1,75 @@
+DEPLOYMENT & INFRASTRUCTURE
+
+DOCKER CONFIGURATION:
+docker-compose.yml: Main deployment configuration
+- API service on port 8000
+- Frontend served via Nginx on port 3000
+- SQLite database with persistent volume
+- Resource limits: 512MB memory, 1 CPU core
+- Automatic restart policy
+- Log rotation with size limits
+
+Dockerfile: Multi-stage build
+- Python 3.11 base image
+- Nginx for frontend serving
+- Optimized for minimal resource usage
+- Health checks and monitoring
+
+NGINX CONFIGURATION:
+nginx/nginx.conf: Production configuration
+nginx/nginx.dev.conf: Development configuration
+- Reverse proxy for API requests
+- Static file serving for frontend
+- SSL/TLS support (production)
+- CORS headers and security
+
+ENVIRONMENT CONFIGURATION:
+env.production.example: Production environment template
+- Database URL configuration
+- JWT secret and algorithm settings
+- File upload limits and directories
+- CORS origins and domain settings
+- Logging levels and debug settings
+
+RESOURCE OPTIMIZATION:
+- Memory limit: 512MB (hard), 256MB (reserved)
+- CPU limit: 1.0 core (hard), 0.5 core (reserved)
+- File upload size: 5MB (reduced for minimal storage)
+- Log file size: 5MB max, 2 files max
+- Database: SQLite for simplicity and portability
+
+SECURITY FEATURES:
+- JWT authentication with secure tokens
+- Role-based access control
+- File upload validation and virus scanning
+- CORS configuration for cross-origin requests
+- Input validation and SQL injection prevention
+- XSS protection and secure error handling
+
+MONITORING & HEALTH CHECKS:
+- Application health endpoint: /health
+- Database status endpoint: /status/database
+- Performance metrics endpoint: /metrics
+- Logging with different levels (WARNING in production)
+- Error tracking and reporting
+
+DEPLOYMENT COMMANDS:
+docker-compose up --build: Build and start services
+docker-compose down: Stop services
+docker-compose logs: View service logs
+docker-compose restart: Restart services
+
+PRODUCTION CONSIDERATIONS:
+- Environment variables for sensitive data
+- SSL/TLS certificates for HTTPS
+- Database backups and persistence
+- Monitoring and alerting setup
+- Performance optimization and caching
+- Security hardening and access controls
+
+DEVELOPMENT SETUP:
+- Local development with hot reload
+- Test database with sample data
+- Debug logging and error reporting
+- Development-specific configurations
+- Testing environment with pytest 
