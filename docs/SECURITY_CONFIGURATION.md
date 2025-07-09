@@ -86,9 +86,10 @@ curl http://localhost:3000
 ### API Access (Should Fail)
 ```bash
 # Should return 404 - API blocked externally
-curl http://localhost:3000/api/users
 curl http://localhost:3000/health
 curl http://localhost:3000/docs
+# API endpoints accessible for frontend requests (same origin)
+curl http://localhost:3000/api/users  # Should work for frontend
 ```
 
 ### Internal Access (Should Work)
