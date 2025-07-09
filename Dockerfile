@@ -21,7 +21,7 @@ COPY Frontend/tailwind.config.ts ./
 COPY Frontend/postcss.config.js ./
 
 # Debug: List what we have
-RUN ls -la && echo "=== SRC CONTENTS ===" && ls -la src/ && echo "=== LIB CONTENTS ===" && ls -la src/lib/
+RUN ls -la && echo "=== SRC CONTENTS ===" && ls -la src/ && echo "=== LIB CONTENTS ===" && if [ -d "src/lib" ]; then ls -la src/lib/; else echo "lib directory doesn't exist"; fi
 
 # Build frontend for production with optimizations
 RUN npm run build
