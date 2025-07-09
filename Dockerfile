@@ -11,12 +11,20 @@ COPY Frontend/package*.json ./
 RUN npm ci --legacy-peer-deps && \
     npm cache clean --force
 
-# Copy frontend source code
-COPY Frontend/ ./
+# Copy frontend source code - be explicit about what we're copying
+COPY Frontend/src ./src
+COPY Frontend/public ./public
+COPY Frontend/index.html ./
+COPY Frontend/vite.config.ts ./
+COPY Frontend/tsconfig*.json ./
+COPY Frontend/tailwind.config.ts ./
+COPY Frontend/postcss.config.js ./
 
-# Verify vite is available and build frontend
-RUN npm list vite && \
-    npm run build
+# Debug: List what we have
+RUN ls -la && echo "=== SRC CONTENTS ===" && ls -la src/ && echo "=== LIB CONTENTS ===" && ls -la src/lib/
+
+# Build frontend for production with optimizations
+RUN npm run build
 
 # API stage - OPTIMIZED FOR MINIMAL RESOURCES
 FROM python:3.11-slim

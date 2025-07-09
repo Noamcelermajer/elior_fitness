@@ -47,9 +47,6 @@ coverage.xml
 *.cover
 .hypothesis/
 
-# Frontend (not needed in backend container)
-EC_fitness_front/
-
 # Test files and uploads
 test_uploads/
 uploads/

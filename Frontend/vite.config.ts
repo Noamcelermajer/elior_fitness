@@ -9,6 +9,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
   },
   build: {
     // OPTIMIZED FOR MINIMAL BUNDLE SIZE
@@ -44,4 +45,8 @@ export default defineConfig({
       overlay: false, // Disable error overlay for better performance
     },
   },
+  // Explicit module resolution for Render.com compatibility
+  define: {
+    'process.env.NODE_ENV': '"production"'
+  }
 })
