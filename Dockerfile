@@ -83,8 +83,8 @@ RUN echo "=== VERIFYING FRONTEND COPY ===" && \
 RUN mkdir -p uploads data logs && \
     chmod 755 uploads data logs
 
-# Copy nginx configuration
-COPY nginx/nginx.dev.conf /etc/nginx/nginx.conf
+# Copy nginx configuration (secure - frontend only)
+COPY nginx/nginx.secure.conf /etc/nginx/nginx.conf
 
 # Test nginx configuration
 RUN nginx -t

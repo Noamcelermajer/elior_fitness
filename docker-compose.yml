@@ -5,8 +5,8 @@ services:
       dockerfile: Dockerfile
     container_name: elior-api-optimized
     ports:
-      - "3000:80"  # Frontend on port 3000
-      - "8000:8000"  # API on port 8000
+      - "3000:80"  # Frontend only - default access
+      # API port 8000 is internal only - not exposed externally
     volumes:
       - ./uploads:/app/uploads
       - sqlite_data:/app/data  # Mount volume for SQLite database
@@ -24,13 +24,15 @@ services:
       - ENABLE_DEBUG_LOGGING=false
     command: >
       sh -c "
-        echo '=== ELIOR FITNESS OPTIMIZED STARTUP ==='
+        echo '=== ELIOR FITNESS SECURE STARTUP ==='
         echo 'Timestamp: $(date)'
-        echo 'Environment: Production (Optimized)'
+        echo 'Environment: Production (Secure Frontend Only)'
         echo 'Database: SQLite (Minimal Resources)'
-        echo 'Frontend: Port 3000'
-        echo 'API: Port 8000'
-        echo 'Starting optimized Nginx and FastAPI...'
+        echo 'Frontend: Port 3000 (Public Access)'
+        echo 'API: Internal Only (No External Access)'
+        echo 'Health: Internal Only (/health)'
+        echo 'Docs: Internal Only (/docs)'
+        echo 'Starting secure Nginx and FastAPI...'
         /app/start.sh
       "
     restart: unless-stopped

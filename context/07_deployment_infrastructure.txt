@@ -2,12 +2,13 @@ DEPLOYMENT & INFRASTRUCTURE
 
 DOCKER CONFIGURATION:
 docker-compose.yml: Main deployment configuration
-- API service on port 8000
-- Frontend served via Nginx on port 3000
+- Frontend served via Nginx on port 3000 (public access)
+- API service internal only (port 8000 not exposed)
 - SQLite database with persistent volume
 - Resource limits: 512MB memory, 1 CPU core
 - Automatic restart policy
 - Log rotation with size limits
+- Security: Frontend-only external access
 
 Dockerfile: Multi-stage build
 - Python 3.11 base image
@@ -16,12 +17,15 @@ Dockerfile: Multi-stage build
 - Health checks and monitoring
 
 NGINX CONFIGURATION:
-nginx/nginx.conf: Production configuration
+nginx/nginx.secure.conf: Secure frontend-only configuration
+nginx/nginx.conf: Production configuration (SSL)
 nginx/nginx.dev.conf: Development configuration
-- Reverse proxy for API requests
-- Static file serving for frontend
+- Frontend serving with API proxy for same-origin requests
+- Internal-only API access (port 8000)
+- Health and docs restricted to internal networks
 - SSL/TLS support (production)
 - CORS headers and security
+- Blocked external API access
 
 ENVIRONMENT CONFIGURATION:
 env.production.example: Production environment template
@@ -39,19 +43,23 @@ RESOURCE OPTIMIZATION:
 - Database: SQLite for simplicity and portability
 
 SECURITY FEATURES:
+- Frontend-only external access (API internal only)
 - JWT authentication with secure tokens
 - Role-based access control
 - File upload validation and virus scanning
-- CORS configuration for cross-origin requests
+- CORS configuration for frontend requests only
 - Input validation and SQL injection prevention
 - XSS protection and secure error handling
+- Internal-only health and documentation access
+- Blocked external API access
 
 MONITORING & HEALTH CHECKS:
-- Application health endpoint: /health
-- Database status endpoint: /status/database
-- Performance metrics endpoint: /metrics
+- Application health endpoint: /health (internal only)
+- Database status endpoint: /status/database (internal only)
+- Performance metrics endpoint: /metrics (blocked externally)
 - Logging with different levels (WARNING in production)
 - Error tracking and reporting
+- Internal-only monitoring access
 
 DEPLOYMENT COMMANDS:
 docker-compose up --build: Build and start services
