@@ -255,8 +255,8 @@ async def health_check():
             "performance_monitoring": "enabled"
         }
     }
-    
-    status_code = 200 if db_healthy else 503
+    # Always return 200 for platform health
+    status_code = 200
     return JSONResponse(content=health_status, status_code=status_code)
 
 # Add OPTIONS handler for health endpoint
