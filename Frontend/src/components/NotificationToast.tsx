@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { Notification } from '../contexts/NotificationContext';
-import { cn } from '../lib/utils';
+import { cn } from '@/lib';
 
 interface NotificationToastProps {
   notification: Notification;

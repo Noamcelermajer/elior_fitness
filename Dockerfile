@@ -26,6 +26,8 @@ RUN echo "=== VERIFYING FILES ===" && \
     ls -la src/lib/ && \
     echo "=== UTILS FILE CONTENT ===" && \
     cat src/lib/utils.ts && \
+    echo "=== TESTING PATH RESOLUTION ===" && \
+    node -e "console.log('Testing path resolution...'); const path = require('path'); console.log('Resolved path:', path.resolve('./src/lib/utils.ts')); console.log('File exists:', require('fs').existsSync('./src/lib/utils.ts'));" && \
     echo "=== CONFIG FILES ===" && \
     ls -la *.json *.ts *.js 2>/dev/null || true
 
