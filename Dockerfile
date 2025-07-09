@@ -7,16 +7,16 @@ WORKDIR /frontend
 # Copy frontend package files
 COPY Frontend/package*.json ./
 
-# Install frontend dependencies with proper cleanup
-RUN npm ci --only=production && \
-    npm cache clean --force && \
-    rm -rf /root/.npm
+# Install ALL dependencies (including dev dependencies for build)
+RUN npm ci --legacy-peer-deps && \
+    npm cache clean --force
 
 # Copy frontend source code
 COPY Frontend/ ./
 
-# Build frontend for production with optimizations
-RUN npm run build
+# Verify vite is available and build frontend
+RUN npm list vite && \
+    npm run build
 
 # API stage - OPTIMIZED FOR MINIMAL RESOURCES
 FROM python:3.11-slim
