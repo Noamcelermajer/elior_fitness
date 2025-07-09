@@ -22,6 +22,10 @@ RUN echo "=== VERIFYING FILES ===" && \
     ls -la && \
     echo "=== SRC STRUCTURE ===" && \
     find src -type f -name "*.ts" -o -name "*.tsx" | head -10 && \
+    echo "=== LIB DIRECTORY ===" && \
+    ls -la src/lib/ && \
+    echo "=== UTILS FILE CONTENT ===" && \
+    cat src/lib/utils.ts && \
     echo "=== CONFIG FILES ===" && \
     ls -la *.json *.ts *.js 2>/dev/null || true
 
