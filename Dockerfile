@@ -21,6 +21,9 @@ COPY Frontend/tsconfig*.json ./
 COPY Frontend/tailwind.config.ts ./
 COPY Frontend/postcss.config.js ./
 
+# Ensure lib directory is properly copied
+RUN ls -la src/ && echo "=== LIB CONTENTS ===" && ls -la src/lib/ || echo "lib directory not found"
+
 # Debug: List what we have
 RUN ls -la && echo "=== SRC CONTENTS ===" && ls -la src/ && echo "=== LIB CONTENTS ===" && if [ -d "src/lib" ]; then ls -la src/lib/; else echo "lib directory doesn't exist"; fi
 
