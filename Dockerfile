@@ -88,8 +88,8 @@ RUN echo "=== VERIFYING FRONTEND COPY ===" && \
 RUN mkdir -p uploads data logs && \
     chmod 755 uploads data logs
 
-# Copy nginx configuration (secure - frontend only)
-COPY nginx/nginx.secure.conf /etc/nginx/nginx.conf
+# Copy nginx configuration (Railway for production, secure for local)
+COPY nginx/nginx.railway.conf /etc/nginx/nginx.conf
 
 # Test nginx configuration
 RUN nginx -t && \
@@ -103,7 +103,7 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 echo "=== ELIOR FITNESS STARTING ==="\n\
 echo "Time: $(date)"\n\
-echo "Environment: Production"\n\
+echo "Environment: Production (Railway Compatible)"\n\
 echo "Verifying frontend files..."\n\
 ls -la /var/www/html/\n\
 echo "Testing nginx config..."\n\

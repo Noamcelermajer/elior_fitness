@@ -24,15 +24,15 @@ services:
       - ENABLE_DEBUG_LOGGING=false
     command: >
       sh -c "
-        echo '=== ELIOR FITNESS SECURE STARTUP ==='
+        echo '=== ELIOR FITNESS RAILWAY-COMPATIBLE STARTUP ==='
         echo 'Timestamp: $(date)'
-        echo 'Environment: Production (Secure Frontend Only)'
+        echo 'Environment: Production (Railway Compatible)'
         echo 'Database: SQLite (Minimal Resources)'
         echo 'Frontend: Port 3000 (Public Access)'
         echo 'API: Internal Only (No External Access)'
         echo 'Health: Internal Only (/health)'
         echo 'Docs: Internal Only (/docs)'
-        echo 'Starting secure Nginx and FastAPI...'
+        echo 'Starting Railway-compatible Nginx and FastAPI...'
         /app/start.sh
       "
     restart: unless-stopped
