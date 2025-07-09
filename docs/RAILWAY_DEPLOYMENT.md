@@ -15,9 +15,10 @@ This guide explains how to deploy the Elior Fitness application to Railway with 
 
 ### Configuration Files
 
-- **Dockerfile**: `Dockerfile.railway` - Railway-optimized build
+- **Dockerfile**: `Dockerfile` - Now uses Railway configuration
 - **Nginx**: `nginx/nginx.railway.conf` - Handles SSL termination
-- **Docker Compose**: `docker-compose.railway.yml` - Production settings
+- **Railway Config**: `railway.json` - Tells Railway how to build
+- **Docker Compose**: `docker-compose.yml` - Updated for Railway compatibility
 
 ## Deployment Steps
 
@@ -44,14 +45,15 @@ ENABLE_DEBUG_LOGGING=false
 ### 3. Build Configuration
 
 Railway will automatically detect and use:
-- **Dockerfile**: `Dockerfile.railway`
+- **Dockerfile**: `Dockerfile` (now Railway-compatible)
+- **Railway Config**: `railway.json` (specifies build settings)
 - **Port**: 80 (Railway handles HTTPS)
 - **Health Check**: `/health` endpoint
 
 ### 4. Deploy
 
 1. **Push Changes**: Commit and push your changes
-2. **Automatic Build**: Railway will build using `Dockerfile.railway`
+2. **Automatic Build**: Railway will build using `Dockerfile` (Railway-compatible)
 3. **Deploy**: Railway automatically deploys the new version
 
 ## Configuration Details
@@ -117,9 +119,10 @@ curl https://eliorfitness-production.up.railway.app/api/users
 
 **Problem**: Frontend returns 403 Forbidden
 **Solution**: 
-1. Ensure using `Dockerfile.railway`
+1. Ensure using `Dockerfile` (now Railway-compatible)
 2. Check nginx configuration is `nginx.railway.conf`
 3. Verify frontend files are built and copied
+4. Check `railway.json` configuration exists
 
 ### SSL Issues
 
@@ -141,9 +144,10 @@ curl https://eliorfitness-production.up.railway.app/api/users
 
 **Problem**: Build fails on Railway
 **Solution**:
-1. Check `Dockerfile.railway` exists
-2. Verify all required files are present
-3. Check Railway build logs
+1. Check `Dockerfile` exists and is Railway-compatible
+2. Verify `railway.json` configuration exists
+3. Verify all required files are present
+4. Check Railway build logs
 
 ## Monitoring
 
