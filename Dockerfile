@@ -14,20 +14,33 @@ COPY Frontend/package*.json ./
 RUN npm ci --legacy-peer-deps --no-audit --no-fund && \
     npm cache clean --force
 
-# Copy ALL frontend files at once to avoid missing file issues
-COPY Frontend/ ./
+# Copy frontend files explicitly to ensure everything is copied
+COPY Frontend/package*.json ./
+COPY Frontend/src ./src
+COPY Frontend/public ./public
+COPY Frontend/index.html ./
+COPY Frontend/vite.config.ts ./
+COPY Frontend/tsconfig*.json ./
+COPY Frontend/tailwind.config.ts ./
+COPY Frontend/postcss.config.js ./
+COPY Frontend/components.json ./
+COPY Frontend/eslint.config.js ./
 
 # Verify critical files exist before building
 RUN echo "=== VERIFYING FILES ===" && \
     ls -la && \
     echo "=== SRC STRUCTURE ===" && \
     find src -type f -name "*.ts" -o -name "*.tsx" | head -10 && \
-    echo "=== LIB DIRECTORY ===" && \
+    echo "=== LIB DIRECTORY CHECK ===" && \
+    ls -la src/ && \
+    echo "=== LIB CONTENTS ===" && \
     ls -la src/lib/ && \
     echo "=== UTILS FILE CONTENT ===" && \
     cat src/lib/utils.ts && \
+    echo "=== INDEX FILE CONTENT ===" && \
+    cat src/lib/index.ts && \
     echo "=== TESTING PATH RESOLUTION ===" && \
-    node -e "console.log('Testing path resolution...'); const path = require('path'); console.log('Resolved path:', path.resolve('./src/lib/utils.ts')); console.log('File exists:', require('fs').existsSync('./src/lib/utils.ts'));" && \
+    node -e "console.log('Testing path resolution...'); const path = require('path'); console.log('Resolved path:', path.resolve('./src/lib/utils.ts')); console.log('File exists:', require('fs').existsSync('./src/lib/utils.ts')); console.log('Index exists:', require('fs').existsSync('./src/lib/index.ts'));" && \
     echo "=== CONFIG FILES ===" && \
     ls -la *.json *.ts *.js 2>/dev/null || true
 
