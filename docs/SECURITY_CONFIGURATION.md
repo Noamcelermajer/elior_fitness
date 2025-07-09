@@ -63,7 +63,8 @@ The application has been configured to serve **only the frontend by default** wi
 - **Purpose**: Secure frontend-only configuration
 - **Features**: 
   - Frontend serving on port 80
-  - Internal API on port 8000
+  - Internal API proxy on port 8000
+  - FastAPI backend on port 8001 (internal)
   - Restricted access controls
 
 ### Docker Configuration
@@ -71,6 +72,7 @@ The application has been configured to serve **only the frontend by default** wi
 - **Ports**: 
   - `3000:80` (Frontend only)
   - API port 8000 not exposed externally
+  - FastAPI port 8001 internal only
 - **Security**: Internal API access only
 
 ## Testing Access
@@ -94,6 +96,9 @@ curl http://localhost:3000/docs
 # From inside the container or internal network
 curl http://localhost:8000/health
 curl http://localhost:8000/docs
+# Direct API access (internal only)
+curl http://localhost:8001/health
+curl http://localhost:8001/docs
 ```
 
 ## Deployment

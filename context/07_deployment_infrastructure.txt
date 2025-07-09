@@ -3,7 +3,7 @@ DEPLOYMENT & INFRASTRUCTURE
 DOCKER CONFIGURATION:
 docker-compose.yml: Main deployment configuration
 - Frontend served via Nginx on port 3000 (public access)
-- API service internal only (port 8000 not exposed)
+- API service internal only (port 8000 proxy, port 8001 backend)
 - SQLite database with persistent volume
 - Resource limits: 512MB memory, 1 CPU core
 - Automatic restart policy
@@ -21,7 +21,7 @@ nginx/nginx.secure.conf: Secure frontend-only configuration
 nginx/nginx.conf: Production configuration (SSL)
 nginx/nginx.dev.conf: Development configuration
 - Frontend serving with API proxy for same-origin requests
-- Internal-only API access (port 8000)
+- Internal-only API access (port 8000 proxy to 8001)
 - Health and docs restricted to internal networks
 - SSL/TLS support (production)
 - CORS headers and security

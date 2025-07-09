@@ -99,8 +99,8 @@ echo "Testing nginx config..."\n\
 nginx -t\n\
 echo "Starting nginx..."\n\
 nginx\n\
-echo "Starting FastAPI..."\n\
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1\n\
+echo "Starting FastAPI on internal port 8001..."\n\
+exec uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 1\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
 # Expose ports
@@ -108,7 +108,7 @@ EXPOSE 80 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8001/health || exit 1
 
 # Start application
 CMD ["/app/start.sh"] 
