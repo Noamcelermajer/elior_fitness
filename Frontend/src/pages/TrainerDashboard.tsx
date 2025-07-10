@@ -179,49 +179,84 @@ const TrainerDashboard = () => {
   }
   return (
     <Layout currentPage="dashboard">
-      <div className="max-w-4xl mx-auto py-10">
-        <h1 className="text-3xl font-bold mb-6">Trainer Overview</h1>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <Card><CardContent className="p-6"><div className="text-center"><div className="text-2xl font-bold">{stats.totalClients}</div><div className="text-muted-foreground">Total Clients</div></div></CardContent></Card>
-          <Card><CardContent className="p-6"><div className="text-center"><div className="text-2xl font-bold">{stats.totalExercises}</div><div className="text-muted-foreground">Exercises</div></div></CardContent></Card>
-          <Card><CardContent className="p-6"><div className="text-center"><div className="text-2xl font-bold">{stats.completionRate.toFixed(1)}%</div><div className="text-muted-foreground">Workout Completion</div></div></CardContent></Card>
+      <div className="max-w-5xl mx-auto py-10 px-4">
+        <h1 className="text-4xl font-bold mb-10 text-center">Trainer Dashboard</h1>
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+          <Card className="rounded-xl shadow-md">
+            <CardContent className="p-8 flex flex-col items-center">
+              <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-3">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <div className="text-3xl font-bold mb-1">{stats.totalClients}</div>
+              <div className="text-muted-foreground text-sm">Total Clients</div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-xl shadow-md">
+            <CardContent className="p-8 flex flex-col items-center">
+              <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mb-3">
+                <Dumbbell className="w-7 h-7 text-white" />
+              </div>
+              <div className="text-3xl font-bold mb-1">{stats.totalExercises}</div>
+              <div className="text-muted-foreground text-sm">Exercises</div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-xl shadow-md">
+            <CardContent className="p-8 flex flex-col items-center">
+              <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-3">
+                <TrendingUp className="w-7 h-7 text-white" />
+              </div>
+              <div className="text-3xl font-bold mb-1">{stats.completionRate.toFixed(1)}%</div>
+              <div className="text-muted-foreground text-sm">Workout Completion</div>
+            </CardContent>
+          </Card>
         </div>
-        {/* Client Management Section */}
+        {/* Clients Section */}
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Clients</h2>
-          <input
-            type="text"
-            placeholder="Search clients..."
-            value={clientSearch}
-            onChange={e => setClientSearch(e.target.value)}
-            className="mb-4 px-4 py-2 border rounded-lg w-full md:w-1/2"
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h2 className="text-2xl font-bold mb-6 text-center">Your Clients</h2>
+          <div className="flex justify-center mb-8">
+            <input
+              type="text"
+              placeholder="Search clients..."
+              value={clientSearch}
+              onChange={e => setClientSearch(e.target.value)}
+              className="px-4 py-2 border border-input rounded-lg w-full max-w-md focus:ring-2 focus:ring-primary focus:outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {clients.filter(client =>
               client.full_name.toLowerCase().includes(clientSearch.toLowerCase()) ||
               client.email.toLowerCase().includes(clientSearch.toLowerCase()) ||
               client.username.toLowerCase().includes(clientSearch.toLowerCase())
-            ).map(client => (
-              <Card key={client.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold">
-                        {client.full_name.split(' ').map(n => n[0]).join('')}
-                      </span>
+            ).length === 0 ? (
+              <div className="col-span-full text-center text-muted-foreground py-12 text-lg">No clients found.</div>
+            ) : (
+              clients.filter(client =>
+                client.full_name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                client.email.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                client.username.toLowerCase().includes(clientSearch.toLowerCase())
+              ).map(client => (
+                <Card key={client.id} className="rounded-xl shadow-sm hover:shadow-lg transition-shadow flex flex-col justify-between h-full">
+                  <CardContent className="p-6 flex flex-col h-full">
+                    <div className="flex items-center mb-4">
+                      <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-4">
+                        <span className="text-white font-bold text-2xl">
+                          {client.full_name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg text-foreground mb-1">{client.full_name}</h3>
+                        <p className="text-sm text-muted-foreground">{client.email}</p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{client.full_name}</h3>
-                      <p className="text-sm text-muted-foreground">{client.email}</p>
+                    <div className="flex space-x-2 mt-auto pt-4">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => handleViewProgress(client)}>View Progress</Button>
+                      <Button size="sm" className="flex-1" onClick={() => navigate(`/client/${client.id}`)}>View Profile</Button>
                     </div>
-                  </div>
-                  <div className="flex space-x-2 mt-2">
-                    <Button size="sm" variant="outline" onClick={() => handleViewProgress(client)}>View Progress</Button>
-                    <Button size="sm" onClick={() => navigate(`/client/${client.id}`)}>View Profile</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
           {/* Progress Modal */}
           <Dialog open={progressModalOpen} onOpenChange={setProgressModalOpen}>
