@@ -183,7 +183,7 @@ const TrainerDashboard = () => {
         <h1 className="text-4xl font-bold mb-10 text-center">Trainer Dashboard</h1>
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
-          <Card className="rounded-xl shadow-md">
+          <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
             <CardContent className="p-6 flex flex-col items-center">
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-2 mt-2">
                 <Users className="w-6 h-6 text-white" />
@@ -192,7 +192,7 @@ const TrainerDashboard = () => {
               <div className="text-muted-foreground text-sm">Total Clients</div>
             </CardContent>
           </Card>
-          <Card className="rounded-xl shadow-md">
+          <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
             <CardContent className="p-6 flex flex-col items-center">
               <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mb-2 mt-2">
                 <Dumbbell className="w-6 h-6 text-white" />
@@ -201,7 +201,7 @@ const TrainerDashboard = () => {
               <div className="text-muted-foreground text-sm">Exercises</div>
             </CardContent>
           </Card>
-          <Card className="rounded-xl shadow-md">
+          <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
             <CardContent className="p-6 flex flex-col items-center">
               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-2 mt-2">
                 <TrendingUp className="w-6 h-6 text-white" />
@@ -236,7 +236,7 @@ const TrainerDashboard = () => {
                 client.email.toLowerCase().includes(clientSearch.toLowerCase()) ||
                 client.username.toLowerCase().includes(clientSearch.toLowerCase())
               ).map(client => (
-                <Card key={client.id} className="rounded-xl shadow-sm hover:shadow-lg transition-shadow flex flex-col justify-between h-full">
+                <Card key={client.id} className="rounded-xl shadow-lg border border-border bg-muted/90 hover:-translate-y-1 hover:shadow-2xl transition-transform duration-300 animate-fade-in-up flex flex-col justify-between h-full">
                   <CardContent className="p-6 flex flex-col h-full">
                     <div className="flex items-center mb-4">
                       <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-4">

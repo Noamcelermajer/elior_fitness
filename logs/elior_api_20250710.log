@@ -2326,3 +2326,5 @@ AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-07-10 18:16:08,097 - app.main - INFO - ========================================
 2025-07-10 18:16:08,097 - app.main - INFO - ✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY
 2025-07-10 18:16:08,098 - app.main - INFO - ========================================
+2025-07-10 18:51:46,257 - app.database - ERROR - Database session error: 401: Could not validate credentials
+2025-07-10 18:51:46,268 - app.database - ERROR - Database session error: 401: Could not validate credentials

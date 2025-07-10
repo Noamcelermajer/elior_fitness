@@ -255,7 +255,7 @@ const ClientProfile = () => {
 
         {/* Client Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+          <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
             <CardContent className="p-6">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -271,7 +271,7 @@ const ClientProfile = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
             <CardContent className="p-6">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
@@ -287,7 +287,7 @@ const ClientProfile = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
             <CardContent className="p-6">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
@@ -303,7 +303,7 @@ const ClientProfile = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
             <CardContent className="py-6">
               <div className="flex items-center space-x-4">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">

@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.bg-muted\/90 {
+  background-color: rgba(38, 38, 38, 0.9); /* fallback for dark gray, adjust as needed */
+}
+
 /* Modern fitness app color scheme with orange and matte black */
 
 @layer base {
@@ -134,6 +138,20 @@
 
   .glow-hover:hover {
     box-shadow: 0 0 30px rgba(251, 146, 60, 0.5);
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  @keyframes fadeInUp {
+    0% {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 

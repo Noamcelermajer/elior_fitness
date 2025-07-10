@@ -264,7 +264,7 @@ const ExerciseBank = () => {
         {/* Search and Filter */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-x-4 mb-6">
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-x-4 mb-6 mt-2">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
