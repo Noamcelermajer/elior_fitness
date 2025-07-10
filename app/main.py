@@ -227,58 +227,41 @@ except Exception as e:
 # Enhanced health check endpoint with comprehensive system status
 @app.get("/health")
 async def health_check():
-    """Platform health check endpoint - optimized for Railway."""
+    """Platform health check endpoint - always returns 200 for Railway."""
     logger.debug("Health check endpoint called")
     
-    try:
-        # Quick database connectivity check
-        db_healthy = check_db_connection()
-        
-        # Get database pool statistics
-        pool_stats = get_db_pool_stats()
-        
-        # Health status - always return 200 for platform compatibility
-        health_status = {
-            "status": "healthy" if db_healthy else "degraded",
-            "version": "1.0.0",
-            "environment": ENVIRONMENT,
-            "timestamp": time.time(),
-            "database": {
-                "status": "connected" if db_healthy else "disconnected",
-                "pool_stats": pool_stats
-            }
+    # Check database connectivity
+    db_healthy = check_db_connection()
+    
+    # Get database pool statistics
+    pool_stats = get_db_pool_stats()
+    
+    # Health status - always return 200 for platform compatibility
+    health_status = {
+        "status": "healthy" if db_healthy else "degraded",
+        "version": "1.0.0",
+        "environment": ENVIRONMENT,
+        "timestamp": time.time(),
+        "database": {
+            "status": "connected" if db_healthy else "disconnected",
+            "pool_stats": pool_stats
         }
-        
-        # Always return 200 for platform health checks
-        return JSONResponse(content=health_status, status_code=200)
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        # Return 200 even on error to prevent Railway from killing the container
-        return JSONResponse(
-            content={
-                "status": "degraded",
-                "version": "1.0.0",
-                "environment": ENVIRONMENT,
-                "timestamp": time.time(),
-                "error": str(e)
-            },
-            status_code=200
-        )
+    }
+    
+    # Always return 200 for platform health checks
+    return JSONResponse(content=health_status, status_code=200)
 
-# Simple test endpoint for Railway debugging - NO DATABASE DEPENDENCY
+# Simple test endpoint for Railway debugging
 @app.get("/test")
 async def test_endpoint():
-    """Simple test endpoint that doesn't depend on database - for Railway health checks."""
-    return JSONResponse(
-        content={
-            "message": "Elior Fitness API is running",
-            "version": "1.0.0",
-            "environment": ENVIRONMENT,
-            "timestamp": time.time(),
-            "status": "ok"
-        },
-        status_code=200
-    )
+    """Simple test endpoint that doesn't depend on database."""
+    return {
+        "message": "Elior Fitness API is running",
+        "version": "1.0.0",
+        "environment": ENVIRONMENT,
+        "timestamp": time.time(),
+        "status": "ok"
+    }
 
 # Add OPTIONS handler for health endpoint
 @app.options("/health")

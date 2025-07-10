@@ -1,169 +1,82 @@
-# Railway Deployment Guide for Elior Fitness
+# Railway Deployment Guide
 
-## Quick Fixes Applied
+## Quick Deploy
 
-### 1. Port Configuration
-- **Problem**: Dockerfile was hardcoded to port 80, but Railway uses dynamic ports
-- **Fix**: Updated Dockerfile to use `$PORT` environment variable
-- **Result**: App now listens on Railway's assigned port
+1. **Connect to Railway**:
+   ```bash
+   npm install -g @railway/cli
+   railway login
+   railway link
+   ```
 
-### 2. Health Check Issues
-- **Problem**: `/health` endpoint was too slow and database-dependent
-- **Fix**: 
-  - Changed Railway health check to `/test` endpoint (no database dependency)
-  - Reduced health check timeout from 300s to 60s
-  - Made `/health` endpoint always return 200 (even on errors)
-- **Result**: Faster, more reliable health checks
+2. **Deploy**:
+   ```bash
+   railway up
+   ```
 
-### 3. Startup Script Improvements
-- **Problem**: Startup script had timing issues and hardcoded ports
-- **Fix**: 
-  - Added dynamic port detection
-  - Improved nginx configuration updates
-  - Better error handling
-- **Result**: More reliable startup process
+## Environment Variables (Set in Railway Dashboard)
 
-## Deployment Steps
-
-### 1. Environment Variables
-Set these in Railway dashboard:
-
-```bash
+```
 ENVIRONMENT=production
-DOMAIN=eliorfitness-production.up.railway.app
-CORS_ORIGINS=https://eliorfitness-production.up.railway.app,http://localhost:3000
+JWT_SECRET=your-secure-jwt-secret-here
+DATABASE_URL=sqlite:///./data/elior_fitness.db
+DOMAIN=your-railway-domain.up.railway.app
+CORS_ORIGINS=https://your-railway-domain.up.railway.app
 LOG_LEVEL=INFO
-ENABLE_DEBUG_LOGGING=false
-SECRET_KEY=your-super-secret-key-here-change-this
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-MAX_FILE_SIZE=5242880
-ALLOWED_EXTENSIONS=jpg,jpeg,png,gif,pdf,doc,docx
-UPLOAD_DIR=uploads
-WORKERS=1
-WORKER_CONNECTIONS=256
 ```
-
-### 2. Deploy to Railway
-```bash
-# Push your changes
-git add .
-git commit -m "Fix Railway deployment issues"
-git push
-
-# Railway will automatically deploy
-```
-
-### 3. Monitor Deployment
-1. Go to Railway dashboard
-2. Check the deployment logs
-3. Look for these success messages:
-   - "ELIOR FITNESS STARTUP"
-   - "nginx -t" (nginx config test)
-   - "Starting FastAPI on port 8001"
 
 ## Troubleshooting
 
-### If you get 502 errors:
+### 502 Error on Frontend
 
 1. **Check Railway logs**:
    ```bash
-   # In Railway dashboard, check the logs for:
-   - "ELIOR FITNESS STARTUP"
-   - "Using port: [PORT]"
-   - "nginx -t" success
-   - "Starting FastAPI on port 8001"
+   railway logs
    ```
 
-2. **Test endpoints manually**:
-   ```bash
-   # Test the simple endpoint
-   curl https://eliorfitness-production.up.railway.app/test
-   
-   # Test the health endpoint
-   curl https://eliorfitness-production.up.railway.app/health
-   ```
+2. **Test endpoints**:
+   - Health: `https://your-domain.up.railway.app/health`
+   - Test: `https://your-domain.up.railway.app/test`
+   - API: `https://your-domain.up.railway.app/api/`
 
-3. **Common issues and fixes**:
+3. **Verify Dockerfile is used**:
+   - Check Railway build logs for "Building with Dockerfile"
+   - Ensure `railway.json` is in root directory
 
-   **Issue**: "nginx: [emerg] bind() to 0.0.0.0:80 failed"
-   **Fix**: The startup script now uses dynamic ports
+### Common Issues
 
-   **Issue**: Health check timeout
-   **Fix**: Using `/test` endpoint instead of `/health`
+1. **Frontend not loading**: Check if nginx is running in container
+2. **API not responding**: Check if FastAPI is running on port 8001
+3. **Health check failing**: Verify `/health` endpoint returns 200
 
-   **Issue**: Database connection errors
-   **Fix**: Health check now returns 200 even on database errors
+### Debug Commands
 
-### If the app starts but frontend doesn't load:
+```bash
+# Check Railway status
+railway status
 
-1. **Check if static files are built**:
-   ```bash
-   # In Railway logs, look for:
-   "Checking frontend files..."
-   "ls -la /var/www/html/"
-   ```
+# View logs
+railway logs
 
-2. **Test static file access**:
-   ```bash
-   curl https://eliorfitness-production.up.railway.app/
-   # Should return the React app
-   ```
+# Redeploy
+railway up
 
-### Database Issues:
+# Check environment variables
+railway variables
+```
 
-1. **SQLite is used by default** (good for Railway)
-2. **If you want PostgreSQL**:
-   - Add PostgreSQL service in Railway
-   - Set `DATABASE_URL` environment variable
-   - Update the app to use PostgreSQL
+## Architecture
 
-## Performance Optimizations
+- **Port 80**: Nginx serves frontend and proxies API
+- **Port 8001**: FastAPI runs internally
+- **Health Check**: `/health` endpoint for Railway monitoring
+- **Frontend**: React SPA served by nginx
+- **API**: FastAPI proxied through nginx at `/api/`
 
-### For Railway's free tier:
-- Single worker (`WORKERS=1`)
-- Reduced logging (`LOG_LEVEL=INFO`)
-- Disabled debug logging
-- Optimized nginx configuration
-- Minimal health checks
+## Expected Behavior
 
-### For paid tiers:
-- Increase `WORKERS` to 2-4
-- Enable debug logging if needed
-- Increase `WORKER_CONNECTIONS`
-
-## Monitoring
-
-### Health Check Endpoints:
-- `/test` - Simple health check (used by Railway)
-- `/health` - Detailed health check with database status
-- `/metrics` - Performance metrics
-- `/status/database` - Database status
-
-### Logs:
-- Application logs: Railway dashboard
-- Nginx logs: Inside container at `/var/log/nginx/`
-- FastAPI logs: Application logs
-
-## Security Notes
-
-1. **Change the SECRET_KEY** in production
-2. **Set proper CORS_ORIGINS** for your domain
-3. **Database**: SQLite is fine for small scale, use PostgreSQL for larger scale
-4. **File uploads**: Limited to 5MB by default
-
-## Next Steps
-
-1. Deploy with these fixes
-2. Test the endpoints
-3. Monitor the logs
-4. If issues persist, check Railway's status page
-5. Consider upgrading to paid tier for better performance
-
-## Support
-
-If you still have issues:
-1. Check Railway's status page
-2. Review the deployment logs
-3. Test endpoints manually
-4. Consider the app might need more resources (upgrade tier) 
+- ✅ Frontend loads at root URL
+- ✅ API accessible at `/api/` endpoints
+- ✅ Health check returns 200
+- ✅ WebSocket support at `/api/ws/`
+- ❌ Sensitive endpoints blocked (`/docs`, `/metrics`) 
