@@ -40,6 +40,11 @@ const AdminDashboard = () => {
       setStatsError('');
       try {
         const token = localStorage.getItem('access_token');
+        if (!token) {
+          setStatsError('No access token found. Please log in again.');
+          navigate('/login');
+          return;
+        }
         // Fetch all users
         const usersRes = await fetch(`${API_BASE_URL}/users/`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -50,6 +55,18 @@ const AdminDashboard = () => {
         const clientsRes = await fetch(`${API_BASE_URL}/users/clients`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        if (!usersRes.ok) {
+          const err = await usersRes.text();
+          console.error('Users fetch failed:', err);
+        }
+        if (!trainersRes.ok) {
+          const err = await trainersRes.text();
+          console.error('Trainers fetch failed:', err);
+        }
+        if (!clientsRes.ok) {
+          const err = await clientsRes.text();
+          console.error('Clients fetch failed:', err);
+        }
         if (!usersRes.ok || !trainersRes.ok || !clientsRes.ok) {
           throw new Error('Failed to fetch user stats');
         }
@@ -64,12 +81,13 @@ const AdminDashboard = () => {
         });
       } catch (err: any) {
         setStatsError(err.message || 'Failed to load stats');
+        console.error('Stats error:', err);
       } finally {
         setStatsLoading(false);
       }
     };
     fetchStats();
-  }, []);
+  }, [navigate]);
 
   const statsCards = [
     {
@@ -411,7 +429,10 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
           {statsError && (
-            <div className="text-red-500 font-semibold text-center mt-4">{statsError}</div>
+            <div className="text-red-500 font-semibold text-center mt-4">
+              {statsError}
+              <Button onClick={() => window.location.reload()} className="ml-4">Retry</Button>
+            </div>
           )}
         </div>
       </div>
