@@ -39,7 +39,7 @@ const ExerciseBank = () => {
   const { toast } = useToast();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
@@ -81,7 +81,7 @@ const ExerciseBank = () => {
   }, []);
 
   const filteredExercises = exercises.filter(exercise =>
-    exercise.name.toLowerCase().includes(search.toLowerCase()) &&
+    exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
     (selectedMuscleGroup === 'all' || exercise.muscle_group === selectedMuscleGroup)
   );
 
@@ -264,29 +264,27 @@ const ExerciseBank = () => {
         {/* Search and Filter */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-x-4 mb-6">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10"
                   placeholder="Search exercises..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Select value={selectedMuscleGroup} onValueChange={setSelectedMuscleGroup}>
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Filter by muscle group" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Muscle Groups</SelectItem>
-                  {muscleGroups.map(group => (
-                    <SelectItem key={group} value={group}>
-                      {group.charAt(0).toUpperCase() + group.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="w-full md:w-[220px]">
+                <Select value={selectedMuscleGroup} onValueChange={setSelectedMuscleGroup}>
+                  <SelectTrigger className="h-10 w-full" />
+                  <SelectContent>
+                    <SelectItem value="all">All Muscle Groups</SelectItem>
+                    {muscleGroups.map(group => (
+                      <SelectItem key={group} value={group}>{group}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>

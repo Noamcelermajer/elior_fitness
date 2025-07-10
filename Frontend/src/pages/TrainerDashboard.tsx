@@ -184,27 +184,27 @@ const TrainerDashboard = () => {
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
           <Card className="rounded-xl shadow-md">
-            <CardContent className="p-8 flex flex-col items-center">
-              <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-3">
-                <Users className="w-7 h-7 text-white" />
+            <CardContent className="p-6 flex flex-col items-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-2 mt-2">
+                <Users className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.totalClients}</div>
               <div className="text-muted-foreground text-sm">Total Clients</div>
             </CardContent>
           </Card>
           <Card className="rounded-xl shadow-md">
-            <CardContent className="p-8 flex flex-col items-center">
-              <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mb-3">
-                <Dumbbell className="w-7 h-7 text-white" />
+            <CardContent className="p-6 flex flex-col items-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mb-2 mt-2">
+                <Dumbbell className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.totalExercises}</div>
               <div className="text-muted-foreground text-sm">Exercises</div>
             </CardContent>
           </Card>
           <Card className="rounded-xl shadow-md">
-            <CardContent className="p-8 flex flex-col items-center">
-              <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-3">
-                <TrendingUp className="w-7 h-7 text-white" />
+            <CardContent className="p-6 flex flex-col items-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-2 mt-2">
+                <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.completionRate.toFixed(1)}%</div>
               <div className="text-muted-foreground text-sm">Workout Completion</div>

@@ -304,16 +304,14 @@ const ClientProfile = () => {
           </Card>
 
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-white" />
+            <CardContent className="py-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-white" />
                 </div>
-                <div>
+                <div className="flex flex-col justify-center">
                   <p className="text-sm font-medium text-muted-foreground">Member Since</p>
-                  <p className="text-sm font-bold text-foreground">
-                    {new Date(client.created_at).toLocaleDateString()}
-                  </p>
+                  <p className="text-sm font-bold text-foreground">{new Date(client.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
             </CardContent>
