@@ -14,6 +14,18 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 DOMAIN = os.getenv("DOMAIN", "localhost")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 
+# Defensive defaults when env vars missing (e.g., during initial deploy)
+if not ENVIRONMENT:
+    ENVIRONMENT = "production"
+
+if (not DOMAIN or DOMAIN == "localhost") and os.getenv("RAILWAY_PUBLIC_DOMAIN"):
+    DOMAIN = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+
+if (not CORS_ORIGINS or CORS_ORIGINS == [""] or CORS_ORIGINS == ["http://localhost:3000"]):
+    rail_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN") or os.getenv("RAILWAY_STATIC_URL")
+    if rail_domain:
+        CORS_ORIGINS = [f"https://{rail_domain}", f"http://{rail_domain}"]
+
 # Configure logging with comprehensive output
 import os
 from datetime import datetime
