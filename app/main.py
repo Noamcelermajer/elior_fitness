@@ -251,6 +251,18 @@ async def health_check():
     # Always return 200 for platform health checks
     return JSONResponse(content=health_status, status_code=200)
 
+# Simple test endpoint for Railway debugging
+@app.get("/test")
+async def test_endpoint():
+    """Simple test endpoint that doesn't depend on database."""
+    return {
+        "message": "Elior Fitness API is running",
+        "version": "1.0.0",
+        "environment": ENVIRONMENT,
+        "timestamp": time.time(),
+        "status": "ok"
+    }
+
 # Add OPTIONS handler for health endpoint
 @app.options("/health")
 async def health_check_options():

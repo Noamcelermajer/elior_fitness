@@ -47,11 +47,21 @@ RUN chmod -R 755 /var/www/html && \
 # Copy nginx configuration
 COPY nginx/nginx.railway.conf /etc/nginx/nginx.conf
 
-# Create startup script
+# Create startup script with debugging
 RUN echo '#!/bin/bash\n\
 set -e\n\
-echo "Starting Elior Fitness..."\n\
+echo "=== ELIOR FITNESS STARTUP ==="\n\
+echo "Time: $(date)"\n\
+echo "Environment: $ENVIRONMENT"\n\
+echo "Checking frontend files..."\n\
+ls -la /var/www/html/\n\
+echo "Testing nginx config..."\n\
+nginx -t\n\
+echo "Starting nginx..."\n\
 nginx\n\
+echo "Testing frontend access..."\n\
+curl -f http://localhost/ || echo "Frontend not accessible yet"\n\
+echo "Starting FastAPI on port 8001..."\n\
 exec uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 1\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
