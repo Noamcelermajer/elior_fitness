@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
+import ClientWeightProgress from '../components/ClientWeightProgress';
 
 interface Client {
   id: number;
@@ -101,7 +102,7 @@ const ClientProfile = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('progress');
   
   // Data states
   const [client, setClient] = useState<Client | null>(null);
@@ -111,51 +112,51 @@ const ClientProfile = () => {
   const [loading, setLoading] = useState(true);
 
   // Get client from location state or fetch by ID
-  useEffect(() => {
-    const fetchClientData = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        const headers = {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        };
+  const fetchClientData = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
 
-        // If we have client data in location state, use it
-        if (location.state?.client) {
-          setClient(location.state.client);
-        } else if (clientId) {
-          // Otherwise fetch client by ID
-          const response = await fetch(`${API_BASE_URL}/users/${clientId}`, { headers });
-          if (response.ok) {
-            const clientData = await response.json();
-            setClient(clientData);
-          }
+      // If we have client data in location state, use it
+      if (location.state?.client) {
+        setClient(location.state.client);
+      } else if (clientId) {
+        // Otherwise fetch client by ID
+        const response = await fetch(`${API_BASE_URL}/users/${clientId}`, { headers });
+        if (response.ok) {
+          const clientData = await response.json();
+          setClient(clientData);
         }
-
-        // Fetch client-specific data
-        if (clientId) {
-          const [workoutRes, mealRes, progressRes] = await Promise.all([
-            fetch(`${API_BASE_URL}/workouts/plans?client_id=${clientId}`, { headers }),
-            fetch(`${API_BASE_URL}/meal-plans/?client_id=${clientId}`, { headers }),
-            fetch(`${API_BASE_URL}/progress/?client_id=${clientId}`, { headers })
-          ]);
-
-          const workoutData = workoutRes.ok ? await workoutRes.json() : [];
-          const mealData = mealRes.ok ? await mealRes.json() : [];
-          const progressData = progressRes.ok ? await progressRes.json() : [];
-
-          setWorkoutPlans(workoutData);
-          setMealPlans(mealData);
-          setProgressEntries(progressData);
-        }
-
-      } catch (error) {
-        console.error('Error fetching client data:', error);
-      } finally {
-        setLoading(false);
       }
-    };
 
+      // Fetch client-specific data
+      if (clientId) {
+        const [workoutRes, mealRes, progressRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/workouts/plans?client_id=${clientId}`, { headers }),
+          fetch(`${API_BASE_URL}/meal-plans/?client_id=${clientId}`, { headers }),
+          fetch(`${API_BASE_URL}/progress/?client_id=${clientId}`, { headers })
+        ]);
+
+        const workoutData = workoutRes.ok ? await workoutRes.json() : [];
+        const mealData = mealRes.ok ? await mealRes.json() : [];
+        const progressData = progressRes.ok ? await progressRes.json() : [];
+
+        setWorkoutPlans(workoutData);
+        setMealPlans(mealData);
+        setProgressEntries(progressData);
+      }
+
+    } catch (error) {
+      console.error('Error fetching client data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchClientData();
   }, [clientId, location.state]);
 
@@ -209,6 +210,17 @@ const ClientProfile = () => {
   const latestPhoto = progressEntries
     .filter(entry => entry.photo_path)
     .sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())[0];
+
+  // Map progress entries to match ClientWeightProgress expected type
+  const normalizedProgressEntries = progressEntries.map((entry: any) => ({
+    id: entry.id,
+    client_id: client?.id || entry.client_id || 0,
+    date: entry.recorded_at || entry.date || '',
+    weight: entry.weight ?? 0,
+    photo_path: entry.photo_path,
+    notes: entry.notes,
+    created_at: entry.created_at || entry.recorded_at || '',
+  }));
 
   return (
     <Layout currentPage="dashboard">
@@ -310,12 +322,10 @@ const ClientProfile = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="workouts">Workouts</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="progress">Weight Progress</TabsTrigger>
+            <TabsTrigger value="workouts">Workout Plans</TabsTrigger>
             <TabsTrigger value="meals">Meal Plans</TabsTrigger>
-            <TabsTrigger value="progress">Progress</TabsTrigger>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -541,73 +551,12 @@ const ClientProfile = () => {
 
           {/* Progress Tab */}
           <TabsContent value="progress" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Progress Tracking</h3>
-              <Button onClick={() => navigate(`/client/${clientId}/progress/add`)} className="gradient-blue">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Progress Entry
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Weight Tracking */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Weight Progress</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {progressEntries
-                      .filter(entry => entry.weight)
-                      .sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())
-                      .slice(0, 5)
-                      .map((entry) => (
-                        <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg border">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                              <Weight className="w-4 h-4 text-white" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{entry.weight}kg</p>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(entry.recorded_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          {entry.body_fat && (
-                            <Badge variant="outline">{entry.body_fat}% body fat</Badge>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Progress Photos */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Progress Photos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    {progressEntries
-                      .filter(entry => entry.photo_path)
-                      .sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())
-                      .slice(0, 4)
-                      .map((entry) => (
-                        <div key={entry.id} className="aspect-square bg-secondary rounded-lg flex items-center justify-center">
-                          <div className="text-center">
-                            <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(entry.recorded_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <ClientWeightProgress
+              clientId={clientId!}
+              progressEntries={normalizedProgressEntries}
+              onProgressUpdate={fetchClientData}
+              isTrainer={user?.role === 'trainer'}
+            />
           </TabsContent>
 
           {/* Profile Tab */}

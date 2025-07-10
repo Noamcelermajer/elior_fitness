@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, UserPlus, Search, Mail, Phone, Calendar, Target, Plus, User, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import ClientWeightProgress from '../components/ClientWeightProgress';
+import { useNavigate } from 'react-router-dom';
 
 interface Client {
   id: number;
@@ -32,6 +34,12 @@ const ClientsPage = () => {
     full_name: ''
   });
   const [creating, setCreating] = useState(false);
+  const [progressModalOpen, setProgressModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [progressEntries, setProgressEntries] = useState<any[]>([]);
+  const [progressLoading, setProgressLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   // Fetch clients from backend
   const fetchClients = async () => {
@@ -124,6 +132,28 @@ const ClientsPage = () => {
       alert('An error occurred while creating the client');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleViewProgress = async (client: Client) => {
+    setSelectedClient(client);
+    setProgressModalOpen(true);
+    setProgressLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`http://localhost:8000/api/progress/?client_id=${client.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProgressEntries(data);
+      } else {
+        setProgressEntries([]);
+      }
+    } catch {
+      setProgressEntries([]);
+    } finally {
+      setProgressLoading(false);
     }
   };
 
@@ -332,14 +362,8 @@ const ClientsPage = () => {
                       <span>Joined {formatDate(client.created_at)}</span>
                     </div>
                     <div className="flex space-x-2 pt-2">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Target className="w-4 h-4 mr-1" />
-                        View Progress
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <User className="w-4 h-4 mr-1" />
-                        Profile
-                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleViewProgress(client)}>View Progress</Button>
+                      <Button size="sm" onClick={() => navigate(`/client/${client.id}`)}>View Profile</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -348,6 +372,25 @@ const ClientsPage = () => {
           )}
         </div>
       </div>
+
+      {/* Progress Modal */}
+      <Dialog open={progressModalOpen} onOpenChange={setProgressModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Weight Progress - {selectedClient?.full_name}</DialogTitle>
+          </DialogHeader>
+          {progressLoading ? (
+            <div className="p-8 text-center">Loading...</div>
+          ) : (
+            <ClientWeightProgress
+              clientId={selectedClient?.id?.toString() || ''}
+              progressEntries={progressEntries}
+              onProgressUpdate={() => handleViewProgress(selectedClient!)}
+              isTrainer={true}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

@@ -22,9 +22,11 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
     { id: 'users', label: 'Users', icon: User, href: '/users' },
     { id: 'system', label: 'System', icon: Settings, href: '/system' }
+  ] : isTrainer ? [
+    { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/trainer-dashboard' },
+    { id: 'exercises', label: 'Exercise Bank', icon: Dumbbell, href: '/exercises' }
   ] : [
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
-    ...(isTrainer ? [{ id: 'clients', label: 'Clients', icon: Users, href: '/clients' }] : []),
     { id: 'meals', label: 'Meals', icon: Utensils, href: '/meals' },
     { id: 'training', label: 'Training', icon: Target, href: '/training' }, 
     { id: 'progress', label: 'Progress', icon: TrendingUp, href: '/progress' }

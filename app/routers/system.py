@@ -10,6 +10,8 @@ from typing import List, Dict, Any
 from app.database import get_db
 from app.auth.utils import get_current_user
 from app.schemas.auth import UserResponse
+from app.services.system_service import system_service
+from app.services.user_service import get_users
 
 router = APIRouter()
 
@@ -22,17 +24,38 @@ async def get_system_status(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    # Mock system status for now
+    # Get real system stats
+    resources = system_service.get_system_resources()
+    db_stats = system_service.get_database_stats(db)
+    docker_stats = system_service.get_docker_stats()
+    app_info = system_service.get_application_info()
+    
+    # Get user counts
+    all_users = get_users(db)
+    active_users = len([u for u in all_users if u.is_active])
+    
+    # Determine system health based on metrics
+    system_health = "healthy"
+    if resources['cpu_usage'] > 80 or resources['memory_usage'] > 80:
+        system_health = "warning"
+    if resources['cpu_usage'] > 95 or resources['memory_usage'] > 95:
+        system_health = "critical"
+    
     return {
-        "uptime": "2 days, 14 hours, 32 minutes",
-        "database_connections": 12,
-        "memory_usage": 68,
-        "cpu_usage": 23,
-        "active_users": 8,
-        "total_users": 156,
-        "system_health": "healthy",
-        "last_backup": "2024-01-15 02:30:00",
-        "version": "1.2.0"
+        "uptime": system_service.get_system_uptime(),
+        "database_connections": db_stats['active_connections'],
+        "memory_usage": resources['memory_usage'],
+        "cpu_usage": resources['cpu_usage'],
+        "active_users": active_users,
+        "total_users": len(all_users),
+        "system_health": system_health,
+        "last_backup": db_stats['last_backup'],
+        "version": app_info['version'],
+        "docker_stats": docker_stats,
+        "resources": resources,
+        "database": db_stats,
+        "application": app_info,
+        "process_stats": system_service.get_process_stats() if not docker_stats.get('docker_available', False) else []
     }
 
 @router.get("/logs")
@@ -44,30 +67,7 @@ async def get_system_logs(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    # Mock logs for now
-    return [
-        {
-            "id": 1,
-            "timestamp": "2024-01-15 10:30:00",
-            "level": "info",
-            "message": "System backup completed successfully",
-            "source": "backup-service"
-        },
-        {
-            "id": 2,
-            "timestamp": "2024-01-15 10:25:00",
-            "level": "info",
-            "message": "New user registered: john.doe@example.com",
-            "source": "auth-service"
-        },
-        {
-            "id": 3,
-            "timestamp": "2024-01-15 10:20:00",
-            "level": "warning",
-            "message": "High memory usage detected (75%)",
-            "source": "monitoring"
-        }
-    ]
+    return system_service.get_recent_logs(limit=50)
 
 @router.post("/run-tests")
 async def run_tests(
@@ -194,8 +194,11 @@ async def create_backup(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    # Mock implementation
-    return {"message": "Database backup created successfully"}
+    success = system_service.create_backup(db)
+    if success:
+        return {"message": "Database backup created successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to create backup")
 
 @router.post("/optimize-db")
 async def optimize_database(
@@ -206,5 +209,8 @@ async def optimize_database(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    # Mock implementation
-    return {"message": "Database optimization completed"} 
+    success = system_service.optimize_database(db)
+    if success:
+        return {"message": "Database optimization completed"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to optimize database") 

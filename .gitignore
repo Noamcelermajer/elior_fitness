@@ -36,4 +36,7 @@ Thumbs.db
 
 # Temporary
 .tmp
-.temp 
+.temp
+
+# Backups
+backups/ 

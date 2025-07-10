@@ -32,13 +32,16 @@ const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isTrainer = user?.role === 'trainer';
+  const isAdmin = user?.role === 'admin';
   
-  // Redirect trainers to trainer dashboard
+  // Redirect trainers to trainer dashboard and admins to admin dashboard
   useEffect(() => {
     if (isTrainer) {
       navigate('/trainer-dashboard');
+    } else if (isAdmin) {
+      navigate('/admin');
     }
-  }, [isTrainer, navigate]);
+  }, [isTrainer, isAdmin, navigate]);
   
   const [stats, setStats] = useState<DashboardStats>({
     totalClients: 0,

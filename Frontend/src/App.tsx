@@ -27,6 +27,7 @@ import ClientProfile from './pages/ClientProfile';
 import CreateExercise from './pages/CreateExercise';
 import CreateWorkout from './pages/CreateWorkout';
 import CreateMealPlan from './pages/CreateMealPlan';
+import ExerciseBank from './pages/ExerciseBank';
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requiredRole="trainer">
             <CreateMealPlan />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/exercises" 
+        element={
+          <ProtectedRoute requiredRole="trainer">
+            <ExerciseBank />
           </ProtectedRoute>
         } 
       />

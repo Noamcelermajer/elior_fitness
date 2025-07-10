@@ -92,25 +92,25 @@ const AdminDashboard = () => {
   const statsCards = [
     {
       label: 'Total Users',
-      value: '156',
+      value: statsLoading ? '...' : stats.totalUsers.toString(),
       icon: Users,
       gradient: 'bg-gradient-to-r from-blue-500 to-blue-600',
     },
     {
       label: 'Active Trainers',
-      value: '23',
+      value: statsLoading ? '...' : stats.totalTrainers.toString(),
       icon: Shield,
       gradient: 'bg-gradient-to-r from-green-500 to-green-600',
     },
     {
       label: 'Total Clients',
-      value: '133',
+      value: statsLoading ? '...' : stats.totalClients.toString(),
       icon: Users,
       gradient: 'bg-gradient-to-r from-purple-500 to-purple-600',
     },
     {
       label: 'System Health',
-      value: '100%',
+      value: stats.systemHealth,
       icon: CheckCircle,
       gradient: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
     },
@@ -173,6 +173,20 @@ const AdminDashboard = () => {
       setLoading(false);
     }
   };
+
+  // Show loading state while fetching stats
+  if (statsLoading) {
+    return (
+      <Layout currentPage="dashboard">
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="flex items-center space-x-2">
+            <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+            <span className="text-muted-foreground">Loading admin dashboard...</span>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout currentPage="dashboard">

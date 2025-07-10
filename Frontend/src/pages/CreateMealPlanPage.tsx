@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Utensils, Save } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from 'react-hook-form';
+import { API_BASE_URL } from '../config/api';
 
 interface Meal {
   id: string;
@@ -28,6 +29,7 @@ interface MealPlan {
   lunch: Meal | null;
   dinner: Meal | null;
   snacks: Meal[];
+  preworkout: Meal | null;
 }
 
 const CreateMealPlanPage = () => {
@@ -57,7 +59,8 @@ const CreateMealPlanPage = () => {
     breakfast: null,
     lunch: null,
     dinner: null,
-    snacks: []
+    snacks: [],
+    preworkout: null
   });
 
   const [newMeal, setNewMeal] = useState({
@@ -114,7 +117,7 @@ const CreateMealPlanPage = () => {
     }
   };
 
-  const assignMealToSlot = (meal: Meal, slot: 'breakfast' | 'lunch' | 'dinner' | 'snack') => {
+  const assignMealToSlot = (meal: Meal, slot: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'preworkout') => {
     if (slot === 'snack') {
       setMealPlan({
         ...mealPlan,
@@ -128,27 +131,159 @@ const CreateMealPlanPage = () => {
     }
   };
 
-  const removeMealFromSlot = (slot: 'breakfast' | 'lunch' | 'dinner', snackIndex?: number) => {
-    if (slot === 'breakfast' || slot === 'lunch' || slot === 'dinner') {
-      setMealPlan({
-        ...mealPlan,
-        [slot]: null
-      });
-    } else if (snackIndex !== undefined) {
+  const removeMealFromSlot = (slot: 'breakfast' | 'lunch' | 'dinner' | 'preworkout' | 'snack', snackIndex?: number) => {
+    if (slot === 'snack' && snackIndex !== undefined) {
       setMealPlan({
         ...mealPlan,
         snacks: mealPlan.snacks.filter((_, index) => index !== snackIndex)
       });
+    } else {
+      setMealPlan({
+        ...mealPlan,
+        [slot]: null
+      });
     }
   };
 
-  const createMealPlan = (data: { name: string }) => {
-    const plan = {
-      ...mealPlan,
-      name: data.name
-    };
-    console.log('Creating meal plan:', plan);
-    // Here you would typically save to your backend
+  const createMealPlan = async (data: { name: string }) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      
+      // Convert our meal plan structure to the backend format
+      const mealEntries = [];
+      
+      // Add breakfast
+      if (mealPlan.breakfast) {
+        mealEntries.push({
+          name: 'Breakfast',
+          order_index: 0,
+          notes: '',
+          meal_components: mealPlan.breakfast.ingredients.map((ing, idx) => ({
+            type: 'other',
+            description: ing,
+            calories: Math.floor(mealPlan.breakfast.calories / mealPlan.breakfast.ingredients.length),
+            protein: parseInt(mealPlan.breakfast.protein) || 0,
+            carbs: parseInt(mealPlan.breakfast.carbs) || 0,
+            fat: parseInt(mealPlan.breakfast.fat) || 0,
+            is_optional: false
+          }))
+        });
+      }
+      
+      // Add lunch
+      if (mealPlan.lunch) {
+        mealEntries.push({
+          name: 'Lunch',
+          order_index: 1,
+          notes: '',
+          meal_components: mealPlan.lunch.ingredients.map((ing, idx) => ({
+            type: 'other',
+            description: ing,
+            calories: Math.floor(mealPlan.lunch.calories / mealPlan.lunch.ingredients.length),
+            protein: parseInt(mealPlan.lunch.protein) || 0,
+            carbs: parseInt(mealPlan.lunch.carbs) || 0,
+            fat: parseInt(mealPlan.lunch.fat) || 0,
+            is_optional: false
+          }))
+        });
+      }
+      
+      // Add dinner
+      if (mealPlan.dinner) {
+        mealEntries.push({
+          name: 'Dinner',
+          order_index: 2,
+          notes: '',
+          meal_components: mealPlan.dinner.ingredients.map((ing, idx) => ({
+            type: 'other',
+            description: ing,
+            calories: Math.floor(mealPlan.dinner.calories / mealPlan.dinner.ingredients.length),
+            protein: parseInt(mealPlan.dinner.protein) || 0,
+            carbs: parseInt(mealPlan.dinner.carbs) || 0,
+            fat: parseInt(mealPlan.dinner.fat) || 0,
+            is_optional: false
+          }))
+        });
+      }
+      
+      // Add snacks
+      mealPlan.snacks.forEach((snack, idx) => {
+        mealEntries.push({
+          name: `Snack ${idx + 1}`,
+          order_index: 3 + idx,
+          notes: '',
+          meal_components: snack.ingredients.map((ing) => ({
+            type: 'other',
+            description: ing,
+            calories: Math.floor(snack.calories / snack.ingredients.length),
+            protein: parseInt(snack.protein) || 0,
+            carbs: parseInt(snack.carbs) || 0,
+            fat: parseInt(snack.fat) || 0,
+            is_optional: false
+          }))
+        });
+      });
+      
+      // Add pre-workout
+      if (mealPlan.preworkout) {
+        mealEntries.push({
+          name: 'Pre-Workout',
+          order_index: 3 + mealPlan.snacks.length,
+          notes: '',
+          meal_components: mealPlan.preworkout.ingredients.map((ing, idx) => ({
+            type: 'other',
+            description: ing,
+            calories: Math.floor(mealPlan.preworkout.calories / mealPlan.preworkout.ingredients.length),
+            protein: parseInt(mealPlan.preworkout.protein) || 0,
+            carbs: parseInt(mealPlan.preworkout.carbs) || 0,
+            fat: parseInt(mealPlan.preworkout.fat) || 0,
+            is_optional: false
+          }))
+        });
+      }
+      
+      // Calculate totals
+      const totalCalories = mealEntries.reduce((sum, entry) => 
+        sum + entry.meal_components.reduce((s, c) => s + c.calories, 0), 0);
+      const totalProtein = mealEntries.reduce((sum, entry) => 
+        sum + entry.meal_components.reduce((s, c) => s + c.protein, 0), 0);
+      const totalCarbs = mealEntries.reduce((sum, entry) => 
+        sum + entry.meal_components.reduce((s, c) => s + c.carbs, 0), 0);
+      const totalFat = mealEntries.reduce((sum, entry) => 
+        sum + entry.meal_components.reduce((s, c) => s + c.fat, 0), 0);
+      
+      const mealPlanData = {
+        client_id: 1, // This should come from props or state
+        date: new Date().toISOString().split('T')[0],
+        title: data.name,
+        total_calories: totalCalories,
+        protein_target: totalProtein,
+        carb_target: totalCarbs,
+        fat_target: totalFat,
+        notes: '',
+        meal_entries: mealEntries
+      };
+      
+      const response = await fetch(`${API_BASE_URL}/meal-plans/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(mealPlanData)
+      });
+      
+      if (response.ok) {
+        alert('Meal plan created successfully!');
+        // Reset form or navigate
+      } else {
+        const error = await response.json();
+        alert(`Error creating meal plan: ${error.detail || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error creating meal plan:', error);
+      alert('Failed to create meal plan');
+    }
   };
 
   return (
@@ -364,6 +499,14 @@ const CreateMealPlanPage = () => {
                           >
                             Add as Snack
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => assignMealToSlot(meal, 'preworkout')}
+                            disabled={mealPlan.preworkout?.id === meal.id}
+                          >
+                            Add as Pre-Workout
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -477,7 +620,7 @@ const CreateMealPlanPage = () => {
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => removeMealFromSlot('breakfast', index)}
+                                    onClick={() => removeMealFromSlot('snack', index)}
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
@@ -486,6 +629,28 @@ const CreateMealPlanPage = () => {
                             </div>
                           ) : (
                             <p className="text-muted-foreground text-sm">No snacks added</p>
+                          )}
+                        </div>
+
+                        {/* Pre-Workout */}
+                        <div className="p-4 bg-orange-500/10 rounded-xl border border-orange-500/20">
+                          <h3 className="font-semibold text-orange-400 mb-3">Pre-Workout Meal (Optional)</h3>
+                          {mealPlan.preworkout ? (
+                            <div className="flex justify-between items-center p-3 bg-background/50 rounded-lg">
+                              <div>
+                                <p className="font-medium">{mealPlan.preworkout.name}</p>
+                                <p className="text-sm text-muted-foreground">{mealPlan.preworkout.calories} kcal</p>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeMealFromSlot('preworkout')}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <p className="text-muted-foreground text-sm">No pre-workout meal assigned</p>
                           )}
                         </div>
                       </div>

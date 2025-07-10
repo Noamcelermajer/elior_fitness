@@ -23,7 +23,8 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Container
 } from 'lucide-react';
 
 interface SystemStatus {
@@ -36,6 +37,55 @@ interface SystemStatus {
   system_health: string;
   last_backup: string;
   version: string;
+  docker_stats?: {
+    containers_running: number;
+    containers_total: number;
+    images_total: number;
+    volumes_total: number;
+    docker_version: string;
+    container_stats: Array<{
+      name: string;
+      id: string;
+      status: string;
+      cpu_percent: number;
+      memory_usage_mb: number;
+      memory_limit_mb: number;
+      memory_percent: number;
+    }>;
+    docker_available: boolean;
+    docker_info?: string;
+  };
+  resources?: {
+    cpu_usage: number;
+    cpu_count: number;
+    memory_usage: number;
+    memory_total_gb: number;
+    memory_available_gb: number;
+    disk_usage: number;
+    disk_total_gb: number;
+    disk_free_gb: number;
+    network_sent_mb: number;
+    network_recv_mb: number;
+  };
+  database?: {
+    database_size_mb: number;
+    active_connections: number;
+    table_counts: Record<string, number>;
+    last_backup: string;
+  };
+  application?: {
+    version: string;
+    environment: string;
+    python_version: string;
+    platform: string;
+    hostname: string;
+  };
+  process_stats?: Array<{
+    pid: number;
+    name: string;
+    cpu_percent: number;
+    memory_percent: number;
+  }>;
 }
 
 interface SystemLog {
@@ -323,12 +373,20 @@ const SystemPage: React.FC = () => {
                   <span className="font-medium">{systemStatus?.database_connections || 0}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span>Database Size</span>
+                  <span className="font-medium">{systemStatus?.database?.database_size_mb || 0} MB</span>
+                </div>
+                <div className="flex justify-between">
                   <span>Last Backup</span>
                   <span className="font-medium">{systemStatus?.last_backup || 'Never'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Version</span>
-                  <span className="font-medium">{systemStatus?.version || 'Unknown'}</span>
+                  <span>Total Records</span>
+                  <span className="font-medium">
+                    {systemStatus?.database?.table_counts 
+                      ? Object.values(systemStatus.database.table_counts).reduce((a, b) => a + b, 0)
+                      : 0}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -341,19 +399,183 @@ const SystemPage: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>API Version</span>
-                  <span className="font-medium">1.2.0</span>
+                  <span className="font-medium">{systemStatus?.application?.version || '1.2.0'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Environment</span>
-                  <span className="font-medium">Production</span>
+                  <span className="font-medium">{systemStatus?.application?.environment || 'Production'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Database</span>
-                  <span className="font-medium">SQLite</span>
+                  <span>Platform</span>
+                  <span className="font-medium text-xs">{systemStatus?.application?.platform?.split('-')[0] || 'Unknown'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Python Version</span>
+                  <span className="font-medium">{systemStatus?.application?.python_version || 'Unknown'}</span>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Docker Stats Section */}
+          {systemStatus?.docker_stats && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Docker Container Status</CardTitle>
+                <CardDescription>
+                  {systemStatus.docker_stats.docker_available 
+                    ? `${systemStatus.docker_stats.containers_running} running containers out of ${systemStatus.docker_stats.containers_total} total`
+                    : systemStatus.docker_stats.docker_info || 'Docker is not available on this system'
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {systemStatus.docker_stats.docker_available ? (
+                  <>
+                    <div className="grid gap-4 md:grid-cols-4">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Containers</p>
+                        <p className="text-2xl font-bold">{systemStatus.docker_stats.containers_running}/{systemStatus.docker_stats.containers_total}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Images</p>
+                        <p className="text-2xl font-bold">{systemStatus.docker_stats.images_total}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Volumes</p>
+                        <p className="text-2xl font-bold">{systemStatus.docker_stats.volumes_total}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Docker Version</p>
+                        <p className="text-xl font-bold">{systemStatus.docker_stats.docker_version}</p>
+                      </div>
+                    </div>
+                    
+                    {systemStatus.docker_stats.container_stats.length > 0 && (
+                      <div className="space-y-2 mt-4">
+                        <h4 className="font-medium">Running Containers</h4>
+                        <div className="space-y-2">
+                          {systemStatus.docker_stats.container_stats.map((container) => (
+                            <div key={container.id} className="p-3 border rounded-lg space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">{container.name}</span>
+                                <Badge variant={container.status === 'running' ? 'default' : 'secondary'}>
+                                  {container.status}
+                                </Badge>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">CPU: </span>
+                                  <span className="font-medium">{container.cpu_percent}%</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Memory: </span>
+                                  <span className="font-medium">
+                                    {container.memory_usage_mb} MB ({container.memory_percent}%)
+                                  </span>
+                                </div>
+                              </div>
+                              <Progress value={container.memory_percent} className="h-2" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center py-4">
+                      <Container className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground mb-2">Docker is not available</p>
+                      <p className="text-sm text-muted-foreground">
+                        {systemStatus.docker_stats.docker_info || 'Install Docker Desktop to monitor containers'}
+                      </p>
+                    </div>
+                    
+                    {/* Show process stats as alternative when Docker is not available */}
+                    {systemStatus.process_stats && systemStatus.process_stats.length > 0 && (
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-3">Application Processes</h4>
+                        <div className="space-y-2">
+                          {systemStatus.process_stats.map((process) => (
+                            <div key={process.pid} className="p-3 border rounded-lg space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">{process.name}</span>
+                                <span className="text-sm text-muted-foreground">PID: {process.pid}</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">CPU: </span>
+                                  <span className="font-medium">{process.cpu_percent}%</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Memory: </span>
+                                  <span className="font-medium">{process.memory_percent}%</span>
+                                </div>
+                              </div>
+                              <Progress value={Math.min(process.memory_percent, 100)} className="h-2" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* System Resources Section */}
+          {systemStatus?.resources && (
+            <Card>
+              <CardHeader>
+                <CardTitle>System Resources</CardTitle>
+                <CardDescription>Detailed resource utilization metrics</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>CPU Cores</span>
+                      <span className="font-medium">{systemStatus.resources.cpu_count}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Total Memory</span>
+                      <span className="font-medium">{systemStatus.resources.memory_total_gb} GB</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Available Memory</span>
+                      <span className="font-medium">{systemStatus.resources.memory_available_gb} GB</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Disk Usage</span>
+                      <span className="font-medium">{systemStatus.resources.disk_usage}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Total Disk</span>
+                      <span className="font-medium">{systemStatus.resources.disk_total_gb} GB</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Free Disk</span>
+                      <span className="font-medium">{systemStatus.resources.disk_free_gb} GB</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Network Sent</span>
+                    <span className="font-medium">{systemStatus.resources.network_sent_mb} MB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Network Received</span>
+                    <span className="font-medium">{systemStatus.resources.network_recv_mb} MB</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-4">
