@@ -1,7 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
-from datetime import datetime
-from app.models.nutrition import MealType, MealStatus
+from datetime import datetime, date
+from app.models.nutrition import MealType, MealStatus, ComponentType
 
 # Nutrition Plan Schemas
 class NutritionPlanBase(BaseModel):
@@ -34,8 +34,7 @@ class NutritionPlanResponse(NutritionPlanBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Recipe Schemas
 class RecipeBase(BaseModel):
@@ -66,8 +65,7 @@ class RecipeResponse(RecipeBase):
     trainer_id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Planned Meal Schemas
 class PlannedMealBase(BaseModel):
@@ -93,8 +91,7 @@ class PlannedMealResponse(PlannedMealBase):
     recipe_id: Optional[int] = None
     recipe: Optional[RecipeResponse] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Meal Completion Schemas
 class MealCompletionBase(BaseModel):
@@ -115,8 +112,7 @@ class MealCompletionResponse(MealCompletionBase):
     photo_path: Optional[str] = None
     completed_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Weigh In Schemas
 class WeighInBase(BaseModel):
@@ -137,8 +133,7 @@ class WeighInResponse(WeighInBase):
     client_id: int
     recorded_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Complete Nutrition Plan with Planned Meals
 class CompleteNutritionPlanResponse(NutritionPlanResponse):
@@ -187,8 +182,7 @@ class NutritionGoalsResponse(NutritionGoalsBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Daily Nutrition Summary
 class DailyNutritionSummary(BaseModel):
@@ -201,5 +195,126 @@ class DailyNutritionSummary(BaseModel):
     total_meals: int = 0
     goals: Optional[NutritionGoalsResponse] = None
 
-    class Config:
-        from_attributes = True 
+    model_config = ConfigDict(from_attributes=True)
+
+# New Meal Plan System Schemas
+class MealComponentBase(BaseModel):
+    type: ComponentType
+    description: str
+    calories: Optional[int] = Field(None, ge=0)
+    protein: Optional[int] = Field(None, ge=0)  # grams
+    carbs: Optional[int] = Field(None, ge=0)    # grams
+    fat: Optional[int] = Field(None, ge=0)      # grams
+    is_optional: bool = False
+
+class MealComponentCreate(MealComponentBase):
+    pass
+
+class MealComponentUpdate(BaseModel):
+    type: Optional[ComponentType] = None
+    description: Optional[str] = None
+    calories: Optional[int] = Field(None, ge=0)
+    protein: Optional[int] = Field(None, ge=0)
+    carbs: Optional[int] = Field(None, ge=0)
+    fat: Optional[int] = Field(None, ge=0)
+    is_optional: Optional[bool] = None
+
+class MealComponentResponse(MealComponentBase):
+    id: int
+    meal_entry_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+class MealEntryBase(BaseModel):
+    name: str
+    order_index: int = Field(ge=0)
+    notes: Optional[str] = None
+
+class MealEntryCreate(MealEntryBase):
+    meal_components: List[MealComponentCreate] = []
+
+class MealEntryUpdate(BaseModel):
+    name: Optional[str] = None
+    order_index: Optional[int] = Field(None, ge=0)
+    notes: Optional[str] = None
+
+class MealEntryResponse(MealEntryBase):
+    id: int
+    meal_plan_id: int
+    meal_components: List[MealComponentResponse] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+class MealPlanBase(BaseModel):
+    client_id: int
+    date: date
+    title: Optional[str] = None
+    total_calories: Optional[int] = Field(None, ge=0)
+    protein_target: Optional[int] = Field(None, ge=0)  # grams
+    carb_target: Optional[int] = Field(None, ge=0)     # grams
+    fat_target: Optional[int] = Field(None, ge=0)      # grams
+    notes: Optional[str] = None
+
+class MealPlanCreate(MealPlanBase):
+    meal_entries: List[MealEntryCreate] = []
+
+class MealPlanUpdate(BaseModel):
+    title: Optional[str] = None
+    total_calories: Optional[int] = Field(None, ge=0)
+    protein_target: Optional[int] = Field(None, ge=0)
+    carb_target: Optional[int] = Field(None, ge=0)
+    fat_target: Optional[int] = Field(None, ge=0)
+    notes: Optional[str] = None
+
+class MealPlanResponse(MealPlanBase):
+    id: int
+    trainer_id: int
+    created_at: datetime
+    meal_entries: List[MealEntryResponse] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+class MealUploadBase(BaseModel):
+    meal_entry_id: int
+    marked_ok: Optional[bool] = None
+
+class MealUploadCreate(MealUploadBase):
+    pass
+
+class MealUploadUpdate(BaseModel):
+    marked_ok: Optional[bool] = None
+
+class MealUploadResponse(MealUploadBase):
+    id: int
+    client_id: int
+    image_path: Optional[str] = None
+    uploaded_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+# Complete Meal Plan with Uploads
+class CompleteMealPlanResponse(MealPlanResponse):
+    meal_uploads: List[MealUploadResponse] = []
+
+# Filter Schemas for Meal Plans
+class MealPlanFilter(BaseModel):
+    trainer_id: Optional[int] = None
+    client_id: Optional[int] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    search: Optional[str] = None
+    page: int = 1
+    size: int = 20
+
+# Meal Plan Summary
+class MealPlanSummary(BaseModel):
+    date: date
+    total_meals: int
+    completed_meals: int
+    total_calories: int
+    total_protein: int
+    total_carbs: int
+    total_fat: int
+    completion_rate: float
+
+    model_config = ConfigDict(from_attributes=True) 

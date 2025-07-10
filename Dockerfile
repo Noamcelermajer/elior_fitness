@@ -1,36 +1,70 @@
+# Production Dockerfile for Railway deployment
+# Multi-stage build for optimal size and security
+# Updated: 2025-07-10 15:20 - Removed Nginx, FastAPI only
+
+# Build argument to force cache invalidation
+ARG BUILD_DATE=unknown
+
+# Stage 1: Frontend Builder
+FROM node:18-slim AS frontend-builder
+WORKDIR /frontend
+
+# Copy package files for dependency caching
+COPY Frontend/package*.json ./
+RUN npm ci --legacy-peer-deps --no-audit --no-fund --production=false
+
+# Copy frontend source
+COPY Frontend/ ./
+
+# Build frontend
+RUN npm run build
+
+# Stage 2: Production Server
 FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    libmagic1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 WORKDIR /app
 
-# Install system dependencies for Sprint 5 file management
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
-    netcat-traditional \
-    libmagic1 \
-    libmagic-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install Python dependencies
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy backend application
+COPY app/ ./app/
 
-# Create necessary directories
-RUN mkdir -p uploads
-RUN mkdir -p tests
+# Copy built frontend to static directory
+COPY --from=frontend-builder /frontend/dist ./static
 
-# Set environment variables
-ENV PYTHONPATH=/app
+# Set proper permissions
+RUN chmod -R 755 ./static && \
+    mkdir -p uploads data logs && \
+    chmod 755 uploads data logs
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "=== ELIOR FITNESS STARTUP ==="\n\
+echo "Time: $(date)"\n\
+echo "Environment: $ENVIRONMENT"\n\
+echo "Port: $PORT"\n\
+echo "Checking static files..."\n\
+ls -la ./static/\n\
+echo "Starting FastAPI on port $PORT..."\n\
+exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# Expose port for Railway
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
+    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
-# Expose port
-EXPOSE 8000
-
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 
+# Start application
+CMD ["/app/start.sh"] 

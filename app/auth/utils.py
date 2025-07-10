@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -15,15 +15,15 @@ from app.schemas.auth import UserResponse
 load_dotenv()
 
 # JWT Configuration
-SECRET_KEY = os.getenv("JWT_SECRET")
-ALGORITHM = os.getenv("JWT_ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+SECRET_KEY = os.getenv("JWT_SECRET", "your-secret-key-here")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -33,7 +33,7 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if expires_delta:
         expire = now + expires_delta
     else:
@@ -63,13 +63,14 @@ async def get_current_user(
             raise credentials_exception
         
         # Get the full user object from database
-        user = await get_user_by_id(db, int(user_id))
+        user = get_user_by_id(db, int(user_id))
         if user is None:
             raise credentials_exception
         
         # Convert to UserResponse
         return UserResponse(
             id=user.id,
+            username=user.username,
             email=user.email,
             full_name=user.full_name,
             role=user.role,
@@ -103,13 +104,14 @@ async def get_current_user_websocket(token: str) -> UserResponse:
         db = SessionLocal()
         try:
             # Get the full user object from database
-            user = await get_user_by_id(db, int(user_id))
+            user = get_user_by_id(db, int(user_id))
             if user is None:
                 raise credentials_exception
             
             # Convert to UserResponse
             return UserResponse(
                 id=user.id,
+                username=user.username,
                 email=user.email,
                 full_name=user.full_name,
                 role=user.role,

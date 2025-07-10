@@ -3,29 +3,33 @@ from typing import List, Optional
 from app.models.user import User
 from app.schemas.auth import UserRole, UserResponse, UserUpdate
 
-async def get_users(db: Session) -> List[User]:
+def get_users(db: Session) -> List[User]:
     """Get all users"""
     return db.query(User).all()
 
-async def get_user(db: Session, user_id: int) -> Optional[User]:
+def get_user(db: Session, user_id: int) -> Optional[User]:
     """Get user by ID"""
     return db.query(User).filter(User.id == user_id).first()
 
-async def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     """Get user by ID."""
     return db.query(User).filter(User.id == user_id).first()
 
-async def get_user_by_email(db: Session, email: str) -> Optional[User]:
+def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Get user by email."""
     return db.query(User).filter(User.email == email).first()
 
-async def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
+def get_user_by_username(db: Session, username: str) -> Optional[User]:
+    """Get user by username."""
+    return db.query(User).filter(User.username == username).first()
+
+def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
     """Get all users with pagination."""
     return db.query(User).offset(skip).limit(limit).all()
 
-async def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[User]:
+def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[User]:
     """Update user information."""
-    db_user = await get_user_by_id(db, user_id)
+    db_user = get_user_by_id(db, user_id)
     if not db_user:
         return None
     
@@ -37,9 +41,9 @@ async def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Opt
     db.refresh(db_user)
     return db_user
 
-async def delete_user(db: Session, user_id: int) -> bool:
+def delete_user(db: Session, user_id: int) -> bool:
     """Delete a user."""
-    db_user = await get_user_by_id(db, user_id)
+    db_user = get_user_by_id(db, user_id)
     if not db_user:
         return False
     
@@ -47,9 +51,9 @@ async def delete_user(db: Session, user_id: int) -> bool:
     db.commit()
     return True
 
-async def get_trainer_clients(db: Session, trainer_id: int) -> List[User]:
+def get_trainer_clients(db: Session, trainer_id: int) -> List[User]:
     """Get all clients assigned to a trainer."""
-    trainer = await get_user_by_id(db, trainer_id)
+    trainer = get_user_by_id(db, trainer_id)
     if not trainer or trainer.role != UserRole.TRAINER:
         return []
     
@@ -61,10 +65,10 @@ async def get_trainer_clients(db: Session, trainer_id: int) -> List[User]:
     
     return clients
 
-async def assign_client_to_trainer(db: Session, trainer_id: int, client_id: int) -> bool:
+def assign_client_to_trainer(db: Session, trainer_id: int, client_id: int) -> bool:
     """Assign a client to a trainer."""
-    trainer = await get_user_by_id(db, trainer_id)
-    client = await get_user_by_id(db, client_id)
+    trainer = get_user_by_id(db, trainer_id)
+    client = get_user_by_id(db, client_id)
     
     if not trainer or not client:
         return False
@@ -78,10 +82,10 @@ async def assign_client_to_trainer(db: Session, trainer_id: int, client_id: int)
     db.refresh(client)
     return True
 
-async def remove_client_from_trainer(db: Session, trainer_id: int, client_id: int) -> bool:
+def remove_client_from_trainer(db: Session, trainer_id: int, client_id: int) -> bool:
     """Remove a client from a trainer."""
-    trainer = await get_user_by_id(db, trainer_id)
-    client = await get_user_by_id(db, client_id)
+    trainer = get_user_by_id(db, trainer_id)
+    client = get_user_by_id(db, client_id)
     
     if not trainer or not client:
         return False
@@ -93,4 +97,8 @@ async def remove_client_from_trainer(db: Session, trainer_id: int, client_id: in
     client.trainer_id = None
     db.commit()
     db.refresh(client)
-    return True 
+    return True
+
+def get_users_by_role(db: Session, role: UserRole) -> List[User]:
+    """Get all users with a specific role."""
+    return db.query(User).filter(User.role == role).all() 

@@ -9,13 +9,14 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     full_name = Column(String)
-    role = Column(String)  # 'TRAINER' or 'CLIENT'
+    role = Column(Enum(UserRole), nullable=False)  # Use Enum type for proper enum handling
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now())  # SQLite compatible
+    updated_at = Column(DateTime, onupdate=func.now())  # SQLite compatible
 
     # Trainer-Client relationship
     trainer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
@@ -24,7 +25,11 @@ class User(Base):
     # Relationships with other tables will be added here when models are implemented
     # workouts = relationship("Workout", back_populates="user")
     # nutrition_plans = relationship("NutritionPlan", back_populates="user")
-    # progress_records = relationship("ProgressRecord", back_populates="user")
+    progress_entries = relationship("ProgressEntry", back_populates="client")
+    
+    # Notification relationships
+    received_notifications = relationship("Notification", foreign_keys="Notification.recipient_id", back_populates="recipient")
+    sent_notifications = relationship("Notification", foreign_keys="Notification.sender_id", back_populates="sender")
 
 class TrainerProfile(Base):
     __tablename__ = "trainer_profiles"

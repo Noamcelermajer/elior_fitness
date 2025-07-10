@@ -1,0 +1,156 @@
+BUSINESS LOGIC & WORKFLOWS
+
+USER MANAGEMENT WORKFLOWS:
+
+Trainer-Client Relationship:
+1. Trainer registers and creates profile
+2. Client registers and gets assigned to trainer
+3. Trainer manages client profiles and goals
+4. Client accesses personalized content
+5. Trainer monitors client progress
+
+Role-Based Access Control:
+- Admin: Full system access, user management, system monitoring
+- Trainer: Client management, workout/nutrition planning, progress monitoring
+- Client: Personal data access, workout execution, meal tracking
+
+WORKOUT MANAGEMENT WORKFLOWS:
+
+Exercise Bank Management:
+1. Trainer creates exercises in personal bank
+2. Exercises categorized by muscle groups
+3. Exercises include instructions, equipment, video links
+4. Trainer assigns exercises to workout plans
+5. Clients access assigned exercises
+
+Workout Plan Creation:
+1. Trainer creates workout plan for specific client
+2. Plan includes multiple sessions (days of week)
+3. Each session contains multiple exercises
+4. Exercises have sets, reps, weight, rest time
+5. Client executes workouts and logs completions
+
+Progress Tracking:
+1. Client logs exercise completions
+2. System tracks actual vs planned performance
+3. Trainer reviews client progress
+4. Analytics show trends and improvements
+5. Adjustments made based on progress
+
+NUTRITION MANAGEMENT WORKFLOWS:
+
+Meal Plan Creation:
+1. Trainer creates daily meal plans for clients
+2. Plans include macronutrient targets (calories, protein, carbs, fat)
+3. Each meal has multiple components (protein, carb, fat, vegetable)
+4. Components are optional or required
+5. Client follows plan and uploads meal photos
+
+Meal Tracking:
+1. Client uploads meal photos for each component
+2. Trainer reviews and approves/rejects meals
+3. System tracks adherence to nutrition goals
+4. Analytics show nutrition trends
+5. Adjustments made based on results
+
+Advanced Meal Planning:
+1. Detailed component tracking per meal
+2. Macronutrient goals per meal plan
+3. Photo approval workflow
+4. Comprehensive nutrition analytics
+5. Progress monitoring and adjustments
+
+FILE MANAGEMENT WORKFLOWS:
+
+File Upload Process:
+1. User uploads file through secure endpoint
+2. System validates file type and size
+3. File processed and stored securely
+4. Thumbnails generated for images
+5. File metadata stored in database
+
+Access Control:
+1. Files associated with specific users
+2. Role-based access permissions
+3. Trainer can access client files
+4. Secure file serving with authentication
+5. Protected deletion with authorization
+
+REAL-TIME NOTIFICATIONS:
+
+WebSocket Communication:
+1. Users connect via WebSocket with authentication
+2. System sends real-time notifications
+3. Notifications for file uploads, meal completions, progress updates
+4. Connection management and cleanup
+5. Message broadcasting between users
+
+NOTIFICATION TYPES:
+- FILE_UPLOADED: File upload confirmations
+- FILE_DELETED: File deletion notifications
+- MEAL_COMPLETED: Meal completion alerts
+- PROGRESS_UPDATED: Progress record updates
+- MESSAGE: Direct user messaging
+- SYSTEM: System notifications
+
+PROGRESS TRACKING WORKFLOWS:
+
+Weight and Body Composition:
+1. Client logs regular weigh-ins
+2. System tracks weight trends over time
+3. Body fat percentage tracking
+4. Progress visualization and analytics
+5. Trainer reviews and provides feedback
+
+Analytics and Reporting:
+1. Comprehensive progress analytics
+2. Workout completion rates
+3. Nutrition adherence tracking
+4. Weight and body composition trends
+5. Performance improvement metrics
+
+BUSINESS RULES:
+
+Data Validation:
+- All user inputs validated with Pydantic schemas
+- File uploads validated for type, size, and content
+- Database constraints ensure data integrity
+- Business logic validation at service layer
+
+Authorization Rules:
+- Users can only access their own data
+- Trainers can access assigned client data
+- Admins have full system access
+- File access controlled by ownership and relationships
+
+Workflow Constraints:
+- Clients must be assigned to trainers
+- Workout plans must have valid exercises
+- Meal plans must have valid components
+- File uploads must meet security requirements
+
+Performance Rules:
+- Resource limits enforced (memory, CPU, storage)
+- Database queries optimized for performance
+- File processing with size and format limits
+- Real-time updates with connection management
+
+QUALITY ASSURANCE:
+
+Data Consistency:
+- Referential integrity in database
+- Business logic validation
+- Error handling and recovery
+- Data backup and recovery
+
+User Experience:
+- Intuitive workflows and interfaces
+- Real-time feedback and notifications
+- Error messages and guidance
+- Performance optimization
+
+Security Compliance:
+- Authentication and authorization
+- Data protection and privacy
+- Secure file handling
+- Audit trails and logging 
