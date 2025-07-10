@@ -4,8 +4,7 @@ services:
   elior-fitness:
     build: .
     ports:
-      - "8000:80"  # Frontend accessible on port 8000
-      - "8001:8000"  # Internal API access on port 8001
+      - "8000:80"  # Frontend accessible on port 8000 locally
     volumes:
       - ./uploads:/app/uploads
       - ./data:/app/data

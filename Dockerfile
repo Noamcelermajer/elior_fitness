@@ -55,8 +55,8 @@ nginx\n\
 exec uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 1\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
-# Expose ports
-EXPOSE 80 8000
+# Expose port 80 for Railway (Railway expects this)
+EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
