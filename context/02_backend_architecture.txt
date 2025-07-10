@@ -1,63 +1,206 @@
-BACKEND ARCHITECTURE (FastAPI/Python)
+# Backend Architecture
 
-MAIN APPLICATION: app/main.py
-- FastAPI app with lifespan management
-- CORS middleware configuration
-- Performance monitoring middleware
-- Health check endpoints
-- Static file serving
+## Overview
+The Elior Fitness backend is built with FastAPI, providing a modern, high-performance API with automatic OpenAPI documentation.
 
-DATABASE LAYER: app/database.py
-- SQLAlchemy ORM with SQLite
-- Connection pooling and optimization
-- Database initialization and health checks
+## Architecture Components
 
-MODELS (app/models/):
-user.py: User, TrainerProfile, ClientProfile
-workout.py: Exercise, WorkoutPlan, WorkoutSession, WorkoutExercise, ExerciseCompletion
-nutrition.py: MealPlan, MealEntry, MealComponent, MealUpload, NutritionEntry, Recipe
-progress.py: ProgressEntry
-notification.py: Notification
+### 1. FastAPI Application (`app/main.py`)
+- **Single Service**: FastAPI serves both API endpoints and static frontend files
+- **Performance Optimized**: In-memory caching, compression headers, static file optimization
+- **SPA Routing**: Supports React router with catch-all routes
+- **Health Monitoring**: Built-in health checks and metrics
 
-ROUTERS (app/routers/):
-auth.py: JWT authentication, registration, password management
-users.py: User CRUD, trainer-client relationships
-workouts.py: Exercise bank, workout plans, progress tracking
-nutrition.py: Nutrition entries, analytics
-meal_plans.py: Advanced meal planning with components
-files.py: File uploads, image processing, access control
-websocket.py: Real-time notifications
-progress.py: Progress tracking and analytics
-system.py: System management (admin)
-notifications.py: Notification management
+### 2. Database Layer (`app/database.py`)
+- **SQLite**: Primary database with performance optimizations
+- **Connection Pooling**: Optimized database connections
+- **Migration Support**: Automatic schema management
+- **Performance Monitoring**: Query optimization and logging
 
-SERVICES (app/services/):
-auth_service.py: Authentication business logic
-user_service.py: User management operations
-workout_service.py: Workout planning and tracking
-nutrition_service.py: Nutrition management
-meal_plan_service.py: Advanced meal planning
-file_service.py: File uploads, processing, validation
-websocket_service.py: Real-time communication
-notification_service.py: Notification management
-password_service.py: Password operations
-scheduler_service.py: Background task scheduling
+### 3. Authentication System (`app/auth/`)
+- **JWT Tokens**: Secure authentication with refresh tokens
+- **Role-Based Access**: Admin, Trainer, Client roles
+- **Password Security**: Bcrypt hashing with salt
+- **Session Management**: Secure session handling
 
-SCHEMAS (app/schemas/):
-Pydantic models for request/response validation
-auth.py: Authentication schemas
-workout.py: Workout-related schemas
-nutrition.py: Nutrition schemas
-notification.py: Notification schemas
+### 4. API Routes (`app/routers/`)
+- **Modular Design**: Separate routers for each domain
+- **CRUD Operations**: Full CRUD for all entities
+- **File Uploads**: Secure file handling with validation
+- **WebSocket Support**: Real-time notifications
 
-KEY FEATURES:
-- JWT authentication with role-based access
-- SQLAlchemy ORM with relationship management
-- File upload with security validation
-- Image processing with Pillow
-- WebSocket real-time notifications
-- Comprehensive error handling
-- Performance monitoring
-- Health checks and metrics
+### 5. Services Layer (`app/services/`)
+- **Business Logic**: Separated from route handlers
+- **External Integrations**: File processing, notifications
+- **Background Tasks**: Async processing for heavy operations
+- **Caching**: Redis-like caching for performance
 
-DEPLOYMENT: Docker containerized with Nginx reverse proxy 
+## Performance Optimizations
+
+### Static File Serving
+- **In-Memory Caching**: Index.html cached for 5 minutes
+- **Asset Caching**: Static assets cached for 1 year
+- **Compression**: Automatic gzip compression
+- **CDN Ready**: Optimized headers for CDN integration
+
+### Database Optimizations
+- **Connection Pooling**: Efficient database connections
+- **Query Optimization**: Indexed queries and efficient joins
+- **Caching Strategy**: Smart caching for frequently accessed data
+- **Background Processing**: Async operations for heavy tasks
+
+### API Performance
+- **Response Caching**: Cache frequently requested data
+- **Pagination**: Efficient pagination for large datasets
+- **Compression**: Automatic response compression
+- **Rate Limiting**: Built-in rate limiting protection
+
+## Security Features
+
+### Authentication & Authorization
+- **JWT Tokens**: Secure token-based authentication
+- **Role-Based Access**: Fine-grained permission control
+- **Password Security**: Bcrypt with salt rounds
+- **Session Security**: Secure session management
+
+### Data Protection
+- **Input Validation**: Comprehensive request validation
+- **SQL Injection Protection**: Parameterized queries
+- **XSS Protection**: Output sanitization
+- **CSRF Protection**: Cross-site request forgery protection
+
+### File Security
+- **Upload Validation**: File type and size validation
+- **Virus Scanning**: Malware detection for uploads
+- **Secure Storage**: Encrypted file storage
+- **Access Control**: Role-based file access
+
+## Deployment Architecture
+
+### Production (Railway)
+```
+Internet → Railway → FastAPI (Port $PORT) → Static Files + API
+```
+
+### Development (Local)
+```
+Localhost → Docker → FastAPI (Port 8000) → Static Files + API
+```
+
+### Key Benefits
+- **Single Service**: Simplified deployment and maintenance
+- **Railway Optimized**: Perfect compatibility with Railway platform
+- **Performance**: No proxy overhead, optimized static serving
+- **Scalability**: Easy horizontal scaling
+- **Monitoring**: Centralized logging and metrics
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/refresh` - Token refresh
+- `POST /api/auth/logout` - User logout
+
+### Users Management
+- `GET /api/users` - List users (Admin)
+- `POST /api/users` - Create user (Admin)
+- `GET /api/users/{id}` - Get user details
+- `PUT /api/users/{id}` - Update user
+- `DELETE /api/users/{id}` - Delete user (Admin)
+
+### Workouts
+- `GET /api/workouts` - List workouts
+- `POST /api/workouts` - Create workout
+- `GET /api/workouts/{id}` - Get workout details
+- `PUT /api/workouts/{id}` - Update workout
+- `DELETE /api/workouts/{id}` - Delete workout
+
+### Nutrition & Meal Plans
+- `GET /api/meal-plans` - List meal plans
+- `POST /api/meal-plans` - Create meal plan
+- `GET /api/meal-plans/{id}` - Get meal plan details
+- `PUT /api/meal-plans/{id}` - Update meal plan
+- `DELETE /api/meal-plans/{id}` - Delete meal plan
+
+### Progress Tracking
+- `GET /api/progress` - List progress entries
+- `POST /api/progress` - Create progress entry
+- `GET /api/progress/{id}` - Get progress details
+- `PUT /api/progress/{id}` - Update progress
+- `DELETE /api/progress/{id}` - Delete progress
+
+### File Management
+- `POST /api/files/upload` - Upload files
+- `GET /api/files/{filename}` - Download files
+- `DELETE /api/files/{filename}` - Delete files
+
+### System Management
+- `GET /api/system/health` - Health check
+- `GET /api/system/metrics` - System metrics
+- `GET /api/system/logs` - Application logs
+
+## WebSocket Endpoints
+
+### Real-time Notifications
+- `WS /ws/notifications` - Real-time notification stream
+- `WS /ws/progress` - Real-time progress updates
+- `WS /ws/workouts` - Real-time workout updates
+
+## Error Handling
+
+### Standard Error Responses
+```json
+{
+  "error": "Error message",
+  "detail": "Detailed error information",
+  "status_code": 400
+}
+```
+
+### Validation Errors
+```json
+{
+  "error": "Validation Error",
+  "detail": [
+    {
+      "loc": ["body", "email"],
+      "msg": "Invalid email format",
+      "type": "value_error"
+    }
+  ]
+}
+```
+
+## Monitoring & Logging
+
+### Health Checks
+- `GET /health` - Basic health check
+- `GET /health/detailed` - Detailed health information
+- `GET /metrics` - Application metrics
+
+### Logging
+- **Structured Logging**: JSON format for easy parsing
+- **Log Levels**: DEBUG, INFO, WARNING, ERROR, CRITICAL
+- **Performance Logging**: Request timing and database query logs
+- **Error Tracking**: Comprehensive error logging with stack traces
+
+## Configuration
+
+### Environment Variables
+- `ENVIRONMENT`: production/development
+- `DOMAIN`: Application domain
+- `CORS_ORIGINS`: Allowed CORS origins
+- `LOG_LEVEL`: Logging level
+- `PORT`: Application port (Railway sets this)
+
+### Database Configuration
+- `DATABASE_URL`: Database connection string
+- `POOL_SIZE`: Connection pool size
+- `MAX_OVERFLOW`: Maximum connection overflow
+
+### Security Configuration
+- `SECRET_KEY`: JWT secret key
+- `ALGORITHM`: JWT algorithm
+- `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration
+- `REFRESH_TOKEN_EXPIRE_DAYS`: Refresh token expiration 

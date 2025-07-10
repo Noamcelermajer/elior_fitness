@@ -1,0 +1,1310 @@
+2025-07-10 05:04:15,141 - app.main - INFO - ============================================================
+2025-07-10 05:04:15,141 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:04:15,141 - app.main - INFO - ============================================================
+2025-07-10 05:04:15,141 - app.main - INFO - Timestamp: 2025-07-10 05:04:15.141857
+2025-07-10 05:04:15,142 - app.main - INFO - Environment: development
+2025-07-10 05:04:15,142 - app.main - INFO - Log Level: INFO
+2025-07-10 05:04:15,142 - app.main - INFO - Debug Logging: False
+2025-07-10 05:04:15,142 - app.main - INFO - Domain: localhost
+2025-07-10 05:04:15,142 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:04:15,142 - app.main - INFO - ============================================================
+2025-07-10 05:04:15,143 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:04:15,246 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:04:15,247 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:04:15,247 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:04:15,254 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:04:15,254 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:04:15,255 - app.database - INFO - Base class created
+2025-07-10 05:04:15,255 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:04:15,255 - app.main - INFO - Database module imported successfully
+2025-07-10 05:04:15,255 - app.main - INFO - Importing router modules...
+2025-07-10 05:04:15,412 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:04:15,412 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:04:15,413 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:04:15,413 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:04:16,221 - app.main - INFO - ============================================================
+2025-07-10 05:04:16,221 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:04:16,221 - app.main - INFO - ============================================================
+2025-07-10 05:04:16,221 - app.main - INFO - Timestamp: 2025-07-10 05:04:16.221514
+2025-07-10 05:04:16,221 - app.main - INFO - Environment: development
+2025-07-10 05:04:16,221 - app.main - INFO - Log Level: INFO
+2025-07-10 05:04:16,221 - app.main - INFO - Debug Logging: False
+2025-07-10 05:04:16,221 - app.main - INFO - Domain: localhost
+2025-07-10 05:04:16,222 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:04:16,222 - app.main - INFO - ============================================================
+2025-07-10 05:04:16,222 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:04:16,315 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:04:16,315 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:04:16,315 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:04:16,320 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:04:16,320 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:04:16,320 - app.database - INFO - Base class created
+2025-07-10 05:04:16,320 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:04:16,320 - app.main - INFO - Database module imported successfully
+2025-07-10 05:04:16,321 - app.main - INFO - Importing router modules...
+2025-07-10 05:04:16,450 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:04:16,450 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:04:16,450 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:04:16,451 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:04:17,311 - app.main - INFO - ============================================================
+2025-07-10 05:04:17,311 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:04:17,311 - app.main - INFO - ============================================================
+2025-07-10 05:04:17,312 - app.main - INFO - Timestamp: 2025-07-10 05:04:17.312054
+2025-07-10 05:04:17,312 - app.main - INFO - Environment: development
+2025-07-10 05:04:17,312 - app.main - INFO - Log Level: INFO
+2025-07-10 05:04:17,312 - app.main - INFO - Debug Logging: False
+2025-07-10 05:04:17,312 - app.main - INFO - Domain: localhost
+2025-07-10 05:04:17,312 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:04:17,312 - app.main - INFO - ============================================================
+2025-07-10 05:04:17,312 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:04:17,407 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:04:17,407 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:04:17,408 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:04:17,412 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:04:17,412 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:04:17,412 - app.database - INFO - Base class created
+2025-07-10 05:04:17,413 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:04:17,413 - app.main - INFO - Database module imported successfully
+2025-07-10 05:04:17,413 - app.main - INFO - Importing router modules...
+2025-07-10 05:04:17,534 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:04:17,535 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:04:17,535 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:04:17,536 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:04:18,624 - app.main - INFO - ============================================================
+2025-07-10 05:04:18,624 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:04:18,624 - app.main - INFO - ============================================================
+2025-07-10 05:04:18,624 - app.main - INFO - Timestamp: 2025-07-10 05:04:18.624808
+2025-07-10 05:04:18,624 - app.main - INFO - Environment: development
+2025-07-10 05:04:18,625 - app.main - INFO - Log Level: INFO
+2025-07-10 05:04:18,625 - app.main - INFO - Debug Logging: False
+2025-07-10 05:04:18,625 - app.main - INFO - Domain: localhost
+2025-07-10 05:04:18,625 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:04:18,625 - app.main - INFO - ============================================================
+2025-07-10 05:04:18,625 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:04:18,719 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:04:18,719 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:04:18,720 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:04:18,724 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:04:18,724 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:04:18,725 - app.database - INFO - Base class created
+2025-07-10 05:04:18,725 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:04:18,725 - app.main - INFO - Database module imported successfully
+2025-07-10 05:04:18,725 - app.main - INFO - Importing router modules...
+2025-07-10 05:04:18,851 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:04:18,851 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:04:18,851 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:04:18,853 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:04:20,295 - app.main - INFO - ============================================================
+2025-07-10 05:04:20,295 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:04:20,295 - app.main - INFO - ============================================================
+2025-07-10 05:04:20,296 - app.main - INFO - Timestamp: 2025-07-10 05:04:20.296185
+2025-07-10 05:04:20,296 - app.main - INFO - Environment: development
+2025-07-10 05:04:20,296 - app.main - INFO - Log Level: INFO
+2025-07-10 05:04:20,296 - app.main - INFO - Debug Logging: False
+2025-07-10 05:04:20,296 - app.main - INFO - Domain: localhost
+2025-07-10 05:04:20,297 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:04:20,297 - app.main - INFO - ============================================================
+2025-07-10 05:04:20,297 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:04:20,391 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:04:20,391 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:04:20,392 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:04:20,396 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:04:20,396 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:04:20,397 - app.database - INFO - Base class created
+2025-07-10 05:04:20,397 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:04:20,397 - app.main - INFO - Database module imported successfully
+2025-07-10 05:04:20,397 - app.main - INFO - Importing router modules...
+2025-07-10 05:04:20,519 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:04:20,519 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:04:20,519 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:04:20,520 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:04:22,718 - app.main - INFO - ============================================================
+2025-07-10 05:04:22,719 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:04:22,719 - app.main - INFO - ============================================================
+2025-07-10 05:04:22,719 - app.main - INFO - Timestamp: 2025-07-10 05:04:22.719283
+2025-07-10 05:04:22,719 - app.main - INFO - Environment: development
+2025-07-10 05:04:22,719 - app.main - INFO - Log Level: INFO
+2025-07-10 05:04:22,719 - app.main - INFO - Debug Logging: False
+2025-07-10 05:04:22,719 - app.main - INFO - Domain: localhost
+2025-07-10 05:04:22,719 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:04:22,720 - app.main - INFO - ============================================================
+2025-07-10 05:04:22,720 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:04:22,830 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:04:22,830 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:04:22,831 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:04:22,835 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:04:22,836 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:04:22,836 - app.database - INFO - Base class created
+2025-07-10 05:04:22,836 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:04:22,836 - app.main - INFO - Database module imported successfully
+2025-07-10 05:04:22,836 - app.main - INFO - Importing router modules...
+2025-07-10 05:04:22,975 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:04:22,976 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:04:22,976 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:04:22,977 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:04:26,738 - app.main - INFO - ============================================================
+2025-07-10 05:04:26,738 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:04:26,739 - app.main - INFO - ============================================================
+2025-07-10 05:04:26,739 - app.main - INFO - Timestamp: 2025-07-10 05:04:26.739234
+2025-07-10 05:04:26,739 - app.main - INFO - Environment: development
+2025-07-10 05:04:26,739 - app.main - INFO - Log Level: INFO
+2025-07-10 05:04:26,739 - app.main - INFO - Debug Logging: False
+2025-07-10 05:04:26,739 - app.main - INFO - Domain: localhost
+2025-07-10 05:04:26,740 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:04:26,740 - app.main - INFO - ============================================================
+2025-07-10 05:04:26,740 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:04:26,840 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:04:26,840 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:04:26,840 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:04:26,845 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:04:26,845 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:04:26,845 - app.database - INFO - Base class created
+2025-07-10 05:04:26,846 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:04:26,846 - app.main - INFO - Database module imported successfully
+2025-07-10 05:04:26,846 - app.main - INFO - Importing router modules...
+2025-07-10 05:04:26,978 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:04:26,978 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:04:26,978 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:04:26,979 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:04:33,987 - app.main - INFO - ============================================================
+2025-07-10 05:04:33,987 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:04:33,987 - app.main - INFO - ============================================================
+2025-07-10 05:04:33,988 - app.main - INFO - Timestamp: 2025-07-10 05:04:33.988064
+2025-07-10 05:04:33,988 - app.main - INFO - Environment: development
+2025-07-10 05:04:33,988 - app.main - INFO - Log Level: INFO
+2025-07-10 05:04:33,988 - app.main - INFO - Debug Logging: False
+2025-07-10 05:04:33,988 - app.main - INFO - Domain: localhost
+2025-07-10 05:04:33,988 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:04:33,989 - app.main - INFO - ============================================================
+2025-07-10 05:04:33,989 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:04:34,085 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:04:34,085 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:04:34,086 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:04:34,090 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:04:34,090 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:04:34,090 - app.database - INFO - Base class created
+2025-07-10 05:04:34,091 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:04:34,091 - app.main - INFO - Database module imported successfully
+2025-07-10 05:04:34,091 - app.main - INFO - Importing router modules...
+2025-07-10 05:04:34,223 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:04:34,223 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:04:34,223 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:04:34,224 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:04:47,628 - app.main - INFO - ============================================================
+2025-07-10 05:04:47,628 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:04:47,628 - app.main - INFO - ============================================================
+2025-07-10 05:04:47,629 - app.main - INFO - Timestamp: 2025-07-10 05:04:47.628984
+2025-07-10 05:04:47,629 - app.main - INFO - Environment: development
+2025-07-10 05:04:47,629 - app.main - INFO - Log Level: INFO
+2025-07-10 05:04:47,629 - app.main - INFO - Debug Logging: False
+2025-07-10 05:04:47,629 - app.main - INFO - Domain: localhost
+2025-07-10 05:04:47,629 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:04:47,630 - app.main - INFO - ============================================================
+2025-07-10 05:04:47,630 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:04:47,740 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:04:47,740 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:04:47,741 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:04:47,745 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:04:47,746 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:04:47,746 - app.database - INFO - Base class created
+2025-07-10 05:04:47,746 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:04:47,746 - app.main - INFO - Database module imported successfully
+2025-07-10 05:04:47,747 - app.main - INFO - Importing router modules...
+2025-07-10 05:04:47,879 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:04:47,880 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:04:47,880 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:04:47,881 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:05:14,306 - app.main - INFO - ============================================================
+2025-07-10 05:05:14,307 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:05:14,307 - app.main - INFO - ============================================================
+2025-07-10 05:05:14,307 - app.main - INFO - Timestamp: 2025-07-10 05:05:14.307439
+2025-07-10 05:05:14,307 - app.main - INFO - Environment: development
+2025-07-10 05:05:14,307 - app.main - INFO - Log Level: INFO
+2025-07-10 05:05:14,307 - app.main - INFO - Debug Logging: False
+2025-07-10 05:05:14,308 - app.main - INFO - Domain: localhost
+2025-07-10 05:05:14,308 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:05:14,308 - app.main - INFO - ============================================================
+2025-07-10 05:05:14,308 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:05:14,442 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:05:14,442 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:05:14,443 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:05:14,451 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:05:14,452 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:05:14,452 - app.database - INFO - Base class created
+2025-07-10 05:05:14,452 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:05:14,452 - app.main - INFO - Database module imported successfully
+2025-07-10 05:05:14,452 - app.main - INFO - Importing router modules...
+2025-07-10 05:05:14,628 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:05:14,628 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:05:14,628 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:05:14,630 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:06:06,452 - app.main - INFO - ============================================================
+2025-07-10 05:06:06,452 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:06:06,453 - app.main - INFO - ============================================================
+2025-07-10 05:06:06,453 - app.main - INFO - Timestamp: 2025-07-10 05:06:06.453344
+2025-07-10 05:06:06,453 - app.main - INFO - Environment: development
+2025-07-10 05:06:06,453 - app.main - INFO - Log Level: INFO
+2025-07-10 05:06:06,453 - app.main - INFO - Debug Logging: False
+2025-07-10 05:06:06,453 - app.main - INFO - Domain: localhost
+2025-07-10 05:06:06,454 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:06:06,454 - app.main - INFO - ============================================================
+2025-07-10 05:06:06,454 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:06:06,563 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:06:06,564 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:06:06,564 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:06:06,569 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:06:06,569 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:06:06,569 - app.database - INFO - Base class created
+2025-07-10 05:06:06,570 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:06:06,570 - app.main - INFO - Database module imported successfully
+2025-07-10 05:06:06,570 - app.main - INFO - Importing router modules...
+2025-07-10 05:06:06,698 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:06:06,698 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:06:06,698 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:06:06,699 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:07:07,270 - app.main - INFO - ============================================================
+2025-07-10 05:07:07,270 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:07:07,270 - app.main - INFO - ============================================================
+2025-07-10 05:07:07,270 - app.main - INFO - Timestamp: 2025-07-10 05:07:07.270874
+2025-07-10 05:07:07,271 - app.main - INFO - Environment: development
+2025-07-10 05:07:07,271 - app.main - INFO - Log Level: INFO
+2025-07-10 05:07:07,271 - app.main - INFO - Debug Logging: False
+2025-07-10 05:07:07,271 - app.main - INFO - Domain: localhost
+2025-07-10 05:07:07,271 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:07:07,271 - app.main - INFO - ============================================================
+2025-07-10 05:07:07,271 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:07:07,369 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:07:07,369 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:07:07,370 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:07:07,374 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:07:07,374 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:07:07,375 - app.database - INFO - Base class created
+2025-07-10 05:07:07,375 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:07:07,375 - app.main - INFO - Database module imported successfully
+2025-07-10 05:07:07,375 - app.main - INFO - Importing router modules...
+2025-07-10 05:07:07,510 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:07:07,511 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:07:07,511 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:07:07,512 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:08:08,065 - app.main - INFO - ============================================================
+2025-07-10 05:08:08,066 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:08:08,066 - app.main - INFO - ============================================================
+2025-07-10 05:08:08,066 - app.main - INFO - Timestamp: 2025-07-10 05:08:08.066456
+2025-07-10 05:08:08,066 - app.main - INFO - Environment: development
+2025-07-10 05:08:08,066 - app.main - INFO - Log Level: INFO
+2025-07-10 05:08:08,066 - app.main - INFO - Debug Logging: False
+2025-07-10 05:08:08,066 - app.main - INFO - Domain: localhost
+2025-07-10 05:08:08,067 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:08:08,067 - app.main - INFO - ============================================================
+2025-07-10 05:08:08,067 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:08:08,162 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:08:08,162 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:08:08,163 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:08:08,168 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:08:08,168 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:08:08,168 - app.database - INFO - Base class created
+2025-07-10 05:08:08,169 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:08:08,169 - app.main - INFO - Database module imported successfully
+2025-07-10 05:08:08,169 - app.main - INFO - Importing router modules...
+2025-07-10 05:08:08,301 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:08:08,301 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:08:08,301 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:08:08,302 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:09:08,856 - app.main - INFO - ============================================================
+2025-07-10 05:09:08,856 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:09:08,857 - app.main - INFO - ============================================================
+2025-07-10 05:09:08,857 - app.main - INFO - Timestamp: 2025-07-10 05:09:08.857283
+2025-07-10 05:09:08,857 - app.main - INFO - Environment: development
+2025-07-10 05:09:08,857 - app.main - INFO - Log Level: INFO
+2025-07-10 05:09:08,857 - app.main - INFO - Debug Logging: False
+2025-07-10 05:09:08,858 - app.main - INFO - Domain: localhost
+2025-07-10 05:09:08,858 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:09:08,858 - app.main - INFO - ============================================================
+2025-07-10 05:09:08,858 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:09:08,954 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:09:08,954 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:09:08,954 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:09:08,958 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:09:08,958 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:09:08,959 - app.database - INFO - Base class created
+2025-07-10 05:09:08,959 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:09:08,959 - app.main - INFO - Database module imported successfully
+2025-07-10 05:09:08,959 - app.main - INFO - Importing router modules...
+2025-07-10 05:09:09,085 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:09:09,085 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:09:09,085 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:09:09,086 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:10:09,681 - app.main - INFO - ============================================================
+2025-07-10 05:10:09,681 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:10:09,681 - app.main - INFO - ============================================================
+2025-07-10 05:10:09,681 - app.main - INFO - Timestamp: 2025-07-10 05:10:09.681955
+2025-07-10 05:10:09,682 - app.main - INFO - Environment: development
+2025-07-10 05:10:09,682 - app.main - INFO - Log Level: INFO
+2025-07-10 05:10:09,682 - app.main - INFO - Debug Logging: False
+2025-07-10 05:10:09,682 - app.main - INFO - Domain: localhost
+2025-07-10 05:10:09,682 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:10:09,682 - app.main - INFO - ============================================================
+2025-07-10 05:10:09,682 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:10:09,781 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:10:09,781 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:10:09,782 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:10:09,786 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:10:09,787 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:10:09,787 - app.database - INFO - Base class created
+2025-07-10 05:10:09,787 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:10:09,787 - app.main - INFO - Database module imported successfully
+2025-07-10 05:10:09,788 - app.main - INFO - Importing router modules...
+2025-07-10 05:10:09,917 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:10:09,917 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:10:09,918 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:10:09,919 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:11:10,533 - app.main - INFO - ============================================================
+2025-07-10 05:11:10,534 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:11:10,534 - app.main - INFO - ============================================================
+2025-07-10 05:11:10,534 - app.main - INFO - Timestamp: 2025-07-10 05:11:10.534473
+2025-07-10 05:11:10,534 - app.main - INFO - Environment: development
+2025-07-10 05:11:10,534 - app.main - INFO - Log Level: INFO
+2025-07-10 05:11:10,534 - app.main - INFO - Debug Logging: False
+2025-07-10 05:11:10,534 - app.main - INFO - Domain: localhost
+2025-07-10 05:11:10,535 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:11:10,535 - app.main - INFO - ============================================================
+2025-07-10 05:11:10,535 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:11:10,630 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:11:10,631 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:11:10,631 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:11:10,635 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:11:10,636 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:11:10,636 - app.database - INFO - Base class created
+2025-07-10 05:11:10,636 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:11:10,636 - app.main - INFO - Database module imported successfully
+2025-07-10 05:11:10,636 - app.main - INFO - Importing router modules...
+2025-07-10 05:11:10,763 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:11:10,763 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:11:10,764 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:11:10,765 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:12:11,365 - app.main - INFO - ============================================================
+2025-07-10 05:12:11,366 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:12:11,366 - app.main - INFO - ============================================================
+2025-07-10 05:12:11,366 - app.main - INFO - Timestamp: 2025-07-10 05:12:11.366458
+2025-07-10 05:12:11,366 - app.main - INFO - Environment: development
+2025-07-10 05:12:11,366 - app.main - INFO - Log Level: INFO
+2025-07-10 05:12:11,366 - app.main - INFO - Debug Logging: False
+2025-07-10 05:12:11,367 - app.main - INFO - Domain: localhost
+2025-07-10 05:12:11,367 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:12:11,367 - app.main - INFO - ============================================================
+2025-07-10 05:12:11,367 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:12:11,465 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:12:11,465 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:12:11,466 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:12:11,470 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:12:11,471 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:12:11,471 - app.database - INFO - Base class created
+2025-07-10 05:12:11,471 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:12:11,471 - app.main - INFO - Database module imported successfully
+2025-07-10 05:12:11,472 - app.main - INFO - Importing router modules...
+2025-07-10 05:12:11,601 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:12:11,602 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:12:11,602 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:12:11,603 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:13:12,214 - app.main - INFO - ============================================================
+2025-07-10 05:13:12,214 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:13:12,214 - app.main - INFO - ============================================================
+2025-07-10 05:13:12,214 - app.main - INFO - Timestamp: 2025-07-10 05:13:12.214879
+2025-07-10 05:13:12,215 - app.main - INFO - Environment: development
+2025-07-10 05:13:12,215 - app.main - INFO - Log Level: INFO
+2025-07-10 05:13:12,215 - app.main - INFO - Debug Logging: False
+2025-07-10 05:13:12,215 - app.main - INFO - Domain: localhost
+2025-07-10 05:13:12,215 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:13:12,215 - app.main - INFO - ============================================================
+2025-07-10 05:13:12,215 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:13:12,311 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:13:12,312 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:13:12,312 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:13:12,316 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:13:12,317 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:13:12,317 - app.database - INFO - Base class created
+2025-07-10 05:13:12,317 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:13:12,317 - app.main - INFO - Database module imported successfully
+2025-07-10 05:13:12,317 - app.main - INFO - Importing router modules...
+2025-07-10 05:13:12,442 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:13:12,442 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:13:12,442 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:13:12,443 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:14:13,022 - app.main - INFO - ============================================================
+2025-07-10 05:14:13,022 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:14:13,022 - app.main - INFO - ============================================================
+2025-07-10 05:14:13,022 - app.main - INFO - Timestamp: 2025-07-10 05:14:13.022622
+2025-07-10 05:14:13,022 - app.main - INFO - Environment: development
+2025-07-10 05:14:13,022 - app.main - INFO - Log Level: INFO
+2025-07-10 05:14:13,022 - app.main - INFO - Debug Logging: False
+2025-07-10 05:14:13,023 - app.main - INFO - Domain: localhost
+2025-07-10 05:14:13,023 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:14:13,023 - app.main - INFO - ============================================================
+2025-07-10 05:14:13,023 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:14:13,119 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:14:13,119 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:14:13,119 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:14:13,124 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:14:13,124 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:14:13,124 - app.database - INFO - Base class created
+2025-07-10 05:14:13,124 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:14:13,124 - app.main - INFO - Database module imported successfully
+2025-07-10 05:14:13,125 - app.main - INFO - Importing router modules...
+2025-07-10 05:14:13,251 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:14:13,252 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:14:13,252 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:14:13,253 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:15:13,873 - app.main - INFO - ============================================================
+2025-07-10 05:15:13,874 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:15:13,874 - app.main - INFO - ============================================================
+2025-07-10 05:15:13,874 - app.main - INFO - Timestamp: 2025-07-10 05:15:13.874476
+2025-07-10 05:15:13,874 - app.main - INFO - Environment: development
+2025-07-10 05:15:13,874 - app.main - INFO - Log Level: INFO
+2025-07-10 05:15:13,874 - app.main - INFO - Debug Logging: False
+2025-07-10 05:15:13,875 - app.main - INFO - Domain: localhost
+2025-07-10 05:15:13,875 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:15:13,875 - app.main - INFO - ============================================================
+2025-07-10 05:15:13,875 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:15:13,974 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:15:13,974 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:15:13,975 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:15:13,979 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:15:13,979 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:15:13,979 - app.database - INFO - Base class created
+2025-07-10 05:15:13,980 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:15:13,980 - app.main - INFO - Database module imported successfully
+2025-07-10 05:15:13,980 - app.main - INFO - Importing router modules...
+2025-07-10 05:15:14,110 - app.main - ERROR - ❌ Failed to import router modules: failed to find libmagic.  Check your installation
+2025-07-10 05:15:14,111 - app.main - ERROR - Error type: ImportError
+2025-07-10 05:15:14,111 - app.main - ERROR - Error details: failed to find libmagic.  Check your installation
+2025-07-10 05:15:14,112 - app.main - ERROR - Stack trace: Traceback (most recent call last):
+  File "/app/app/main.py", line 64, in <module>
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+  File "/app/app/routers/__init__.py", line 1, in <module>
+    from . import auth, users, exercises, workouts, nutrition, meal_plans, progress, files, websocket, system, notifications
+  File "/app/app/routers/workouts.py", line 7, in <module>
+    from app.services.workout_service import WorkoutService
+  File "/app/app/services/workout_service.py", line 23, in <module>
+    from app.services.file_service import FileService
+  File "/app/app/services/file_service.py", line 8, in <module>
+    import magic
+  File "/usr/local/lib/python3.11/site-packages/magic/__init__.py", line 209, in <module>
+    libmagic = loader.load_lib()
+               ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/magic/loader.py", line 49, in load_lib
+    raise ImportError('failed to find libmagic.  Check your installation')
+ImportError: failed to find libmagic.  Check your installation
+
+2025-07-10 05:16:14,704 - app.main - INFO - ============================================================
+2025-07-10 05:16:14,705 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:16:14,705 - app.main - INFO - ============================================================
+2025-07-10 05:16:14,705 - app.main - INFO - Timestamp: 2025-07-10 05:16:14.705559
+2025-07-10 05:16:14,705 - app.main - INFO - Environment: development
+2025-07-10 05:16:14,705 - app.main - INFO - Log Level: INFO
+2025-07-10 05:16:14,706 - app.main - INFO - Debug Logging: False
+2025-07-10 05:16:14,706 - app.main - INFO - Domain: localhost
+2025-07-10 05:16:14,706 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:16:14,706 - app.main - INFO - ============================================================
+2025-07-10 05:16:14,706 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:16:14,808 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:16:14,808 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:16:14,808 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:16:14,814 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:16:14,814 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:16:14,815 - app.database - INFO - Base class created
+2025-07-10 05:16:14,815 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:16:14,815 - app.main - INFO - Database module imported successfully
+2025-07-10 05:16:14,815 - app.main - INFO - Importing router modules...
+2025-07-10 05:16:15,055 - app.main - INFO - ✅ Router modules imported successfully
+2025-07-10 05:16:15,056 - app.main - INFO - 📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+2025-07-10 05:16:15,056 - app.main - INFO - Importing model modules...
+2025-07-10 05:16:15,056 - app.main - INFO - ✅ Model modules imported successfully
+2025-07-10 05:16:15,056 - app.main - INFO - 📋 Available models: user, workout, nutrition, progress, notification
+2025-07-10 05:16:15,056 - app.main - INFO - FastAPI application created with performance optimizations
+2025-07-10 05:16:15,056 - app.main - INFO - Development CORS origins configured
+2025-07-10 05:16:15,056 - app.main - INFO - CORS middleware configured with frontend integration support
+2025-07-10 05:16:15,057 - app.main - INFO - Static files mounted successfully
+2025-07-10 05:16:15,057 - app.main - INFO - ========================================
+2025-07-10 05:16:15,057 - app.main - INFO - INCLUDING ROUTERS
+2025-07-10 05:16:15,057 - app.main - INFO - ========================================
+2025-07-10 05:16:15,057 - app.main - INFO - Including auth router...
+2025-07-10 05:16:15,064 - app.main - INFO - ✅ Auth router included
+2025-07-10 05:16:15,064 - app.main - INFO - Including users router...
+2025-07-10 05:16:15,069 - app.main - INFO - ✅ Users router included
+2025-07-10 05:16:15,069 - app.main - INFO - Including exercises router...
+2025-07-10 05:16:15,069 - app.main - INFO - ✅ Exercises router included
+2025-07-10 05:16:15,069 - app.main - INFO - Including workouts router...
+2025-07-10 05:16:15,098 - app.main - INFO - ✅ Workouts router included
+2025-07-10 05:16:15,098 - app.main - INFO - Including nutrition router...
+2025-07-10 05:16:15,115 - app.main - INFO - ✅ Nutrition router included
+2025-07-10 05:16:15,116 - app.main - INFO - Including meal_plans router...
+2025-07-10 05:16:15,128 - app.main - INFO - ✅ Meal plans router included
+2025-07-10 05:16:15,128 - app.main - INFO - Including progress router...
+2025-07-10 05:16:15,130 - app.main - INFO - ✅ Progress router included
+2025-07-10 05:16:15,130 - app.main - INFO - Including files router...
+2025-07-10 05:16:15,132 - app.main - INFO - ✅ Files router included
+2025-07-10 05:16:15,132 - app.main - INFO - Including websocket router...
+2025-07-10 05:16:15,133 - app.main - INFO - ✅ WebSocket router included
+2025-07-10 05:16:15,133 - app.main - INFO - Including system router...
+2025-07-10 05:16:15,134 - app.main - INFO - ✅ System router included
+2025-07-10 05:16:15,135 - app.main - INFO - Including notifications router...
+2025-07-10 05:16:15,139 - app.main - INFO - ✅ Notifications router included
+2025-07-10 05:16:15,139 - app.main - INFO - ========================================
+2025-07-10 05:16:15,139 - app.main - INFO - ✅ ALL ROUTERS INCLUDED SUCCESSFULLY
+2025-07-10 05:16:15,139 - app.main - INFO - ========================================
+2025-07-10 05:16:15,139 - app.main - INFO - Elior Fitness API application startup completed successfully
+2025-07-10 05:16:15,140 - app.main - INFO - ========================================
+2025-07-10 05:16:15,140 - app.main - INFO - APPLICATION STARTUP INITIATED
+2025-07-10 05:16:15,140 - app.main - INFO - ========================================
+2025-07-10 05:16:15,140 - app.main - INFO - Checking database connection...
+2025-07-10 05:16:15,150 - app.main - INFO - ✅ Database connection successful
+2025-07-10 05:16:15,150 - app.main - INFO - Initializing database tables...
+2025-07-10 05:16:15,151 - app.database - INFO - Initializing database tables...
+2025-07-10 05:16:15,224 - app.database - INFO - Database tables initialized successfully
+2025-07-10 05:16:15,224 - app.main - INFO - ✅ Database tables initialized successfully
+2025-07-10 05:16:15,224 - app.main - INFO - 📊 Database pool initialized: {'pool_size': 5, 'checked_in_connections': 1, 'checked_out_connections': 0, 'overflow_connections': -4}
+2025-07-10 05:16:15,224 - app.main - INFO - ========================================
+2025-07-10 05:16:15,224 - app.main - INFO - ✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY
+2025-07-10 05:16:15,225 - app.main - INFO - ========================================
+2025-07-10 05:19:24,923 - app.main - INFO - ========================================
+2025-07-10 05:19:24,923 - app.main - INFO - APPLICATION SHUTDOWN INITIATED
+2025-07-10 05:19:24,924 - app.main - INFO - ========================================
+2025-07-10 05:19:24,924 - app.main - INFO - Closing database connections...
+2025-07-10 05:19:24,943 - app.main - INFO - ✅ Database connections closed
+2025-07-10 05:19:24,944 - app.main - INFO - ========================================
+2025-07-10 05:19:24,944 - app.main - INFO - ✅ APPLICATION SHUTDOWN COMPLETED
+2025-07-10 05:19:24,944 - app.main - INFO - ========================================
+2025-07-10 05:19:32,195 - app.main - INFO - ============================================================
+2025-07-10 05:19:32,195 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 05:19:32,195 - app.main - INFO - ============================================================
+2025-07-10 05:19:32,196 - app.main - INFO - Timestamp: 2025-07-10 05:19:32.196074
+2025-07-10 05:19:32,196 - app.main - INFO - Environment: development
+2025-07-10 05:19:32,196 - app.main - INFO - Log Level: INFO
+2025-07-10 05:19:32,196 - app.main - INFO - Debug Logging: False
+2025-07-10 05:19:32,196 - app.main - INFO - Domain: localhost
+2025-07-10 05:19:32,196 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 05:19:32,196 - app.main - INFO - ============================================================
+2025-07-10 05:19:32,197 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 05:19:32,322 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 05:19:32,322 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 05:19:32,322 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 05:19:32,331 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 05:19:32,331 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 05:19:32,331 - app.database - INFO - Base class created
+2025-07-10 05:19:32,331 - app.database - INFO - Database configuration completed successfully
+2025-07-10 05:19:32,331 - app.main - INFO - Database module imported successfully
+2025-07-10 05:19:32,332 - app.main - INFO - Importing router modules...
+2025-07-10 05:19:32,601 - app.main - INFO - ✅ Router modules imported successfully
+2025-07-10 05:19:32,601 - app.main - INFO - 📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+2025-07-10 05:19:32,601 - app.main - INFO - Importing model modules...
+2025-07-10 05:19:32,602 - app.main - INFO - ✅ Model modules imported successfully
+2025-07-10 05:19:32,602 - app.main - INFO - 📋 Available models: user, workout, nutrition, progress, notification
+2025-07-10 05:19:32,602 - app.main - INFO - FastAPI application created with performance optimizations
+2025-07-10 05:19:32,602 - app.main - INFO - Development CORS origins configured
+2025-07-10 05:19:32,602 - app.main - INFO - CORS middleware configured with frontend integration support
+2025-07-10 05:19:32,603 - app.main - INFO - Static files mounted successfully
+2025-07-10 05:19:32,603 - app.main - INFO - ========================================
+2025-07-10 05:19:32,603 - app.main - INFO - INCLUDING ROUTERS
+2025-07-10 05:19:32,603 - app.main - INFO - ========================================
+2025-07-10 05:19:32,603 - app.main - INFO - Including auth router...
+2025-07-10 05:19:32,611 - app.main - INFO - ✅ Auth router included
+2025-07-10 05:19:32,611 - app.main - INFO - Including users router...
+2025-07-10 05:19:32,615 - app.main - INFO - ✅ Users router included
+2025-07-10 05:19:32,615 - app.main - INFO - Including exercises router...
+2025-07-10 05:19:32,616 - app.main - INFO - ✅ Exercises router included
+2025-07-10 05:19:32,616 - app.main - INFO - Including workouts router...
+2025-07-10 05:19:32,632 - app.main - INFO - ✅ Workouts router included
+2025-07-10 05:19:32,633 - app.main - INFO - Including nutrition router...
+2025-07-10 05:19:32,651 - app.main - INFO - ✅ Nutrition router included
+2025-07-10 05:19:32,651 - app.main - INFO - Including meal_plans router...
+2025-07-10 05:19:32,664 - app.main - INFO - ✅ Meal plans router included
+2025-07-10 05:19:32,664 - app.main - INFO - Including progress router...
+2025-07-10 05:19:32,666 - app.main - INFO - ✅ Progress router included
+2025-07-10 05:19:32,666 - app.main - INFO - Including files router...
+2025-07-10 05:19:32,668 - app.main - INFO - ✅ Files router included
+2025-07-10 05:19:32,668 - app.main - INFO - Including websocket router...
+2025-07-10 05:19:32,669 - app.main - INFO - ✅ WebSocket router included
+2025-07-10 05:19:32,669 - app.main - INFO - Including system router...
+2025-07-10 05:19:32,671 - app.main - INFO - ✅ System router included
+2025-07-10 05:19:32,671 - app.main - INFO - Including notifications router...
+2025-07-10 05:19:32,676 - app.main - INFO - ✅ Notifications router included
+2025-07-10 05:19:32,676 - app.main - INFO - ========================================
+2025-07-10 05:19:32,676 - app.main - INFO - ✅ ALL ROUTERS INCLUDED SUCCESSFULLY
+2025-07-10 05:19:32,676 - app.main - INFO - ========================================
+2025-07-10 05:19:32,676 - app.main - INFO - Elior Fitness API application startup completed successfully
+2025-07-10 05:19:32,677 - app.main - INFO - ========================================
+2025-07-10 05:19:32,677 - app.main - INFO - APPLICATION STARTUP INITIATED
+2025-07-10 05:19:32,677 - app.main - INFO - ========================================
+2025-07-10 05:19:32,677 - app.main - INFO - Checking database connection...
+2025-07-10 05:19:32,690 - app.main - INFO - ✅ Database connection successful
+2025-07-10 05:19:32,690 - app.main - INFO - Initializing database tables...
+2025-07-10 05:19:32,690 - app.database - INFO - Initializing database tables...
+2025-07-10 05:19:32,695 - app.database - INFO - Database tables initialized successfully
+2025-07-10 05:19:32,695 - app.main - INFO - ✅ Database tables initialized successfully
+2025-07-10 05:19:32,695 - app.main - INFO - 📊 Database pool initialized: {'pool_size': 5, 'checked_in_connections': 1, 'checked_out_connections': 0, 'overflow_connections': -4}
+2025-07-10 05:19:32,695 - app.main - INFO - ========================================
+2025-07-10 05:19:32,696 - app.main - INFO - ✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY
+2025-07-10 05:19:32,696 - app.main - INFO - ========================================
+2025-07-10 15:13:30,040 - app.main - INFO - ========================================
+2025-07-10 15:13:30,041 - app.main - INFO - APPLICATION SHUTDOWN INITIATED
+2025-07-10 15:13:30,041 - app.main - INFO - ========================================
+2025-07-10 15:13:30,041 - app.main - INFO - Closing database connections...
+2025-07-10 15:13:30,044 - app.main - INFO - ✅ Database connections closed
+2025-07-10 15:13:30,045 - app.main - INFO - ========================================
+2025-07-10 15:13:30,045 - app.main - INFO - ✅ APPLICATION SHUTDOWN COMPLETED
+2025-07-10 15:13:30,045 - app.main - INFO - ========================================
+2025-07-10 15:13:31,152 - app.main - INFO - ============================================================
+2025-07-10 15:13:31,152 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 15:13:31,152 - app.main - INFO - ============================================================
+2025-07-10 15:13:31,152 - app.main - INFO - Timestamp: 2025-07-10 15:13:31.152689
+2025-07-10 15:13:31,152 - app.main - INFO - Environment: development
+2025-07-10 15:13:31,152 - app.main - INFO - Log Level: INFO
+2025-07-10 15:13:31,153 - app.main - INFO - Debug Logging: False
+2025-07-10 15:13:31,153 - app.main - INFO - Domain: localhost
+2025-07-10 15:13:31,153 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 15:13:31,153 - app.main - INFO - ============================================================
+2025-07-10 15:13:31,153 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 15:13:31,258 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 15:13:31,258 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 15:13:31,258 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 15:13:31,266 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 15:13:31,266 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 15:13:31,266 - app.database - INFO - Base class created
+2025-07-10 15:13:31,267 - app.database - INFO - Database configuration completed successfully
+2025-07-10 15:13:31,267 - app.main - INFO - Database module imported successfully
+2025-07-10 15:13:31,267 - app.main - INFO - Importing router modules...
+2025-07-10 15:13:31,520 - app.main - INFO - ✅ Router modules imported successfully
+2025-07-10 15:13:31,520 - app.main - INFO - 📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+2025-07-10 15:13:31,520 - app.main - INFO - Importing model modules...
+2025-07-10 15:13:31,520 - app.main - INFO - ✅ Model modules imported successfully
+2025-07-10 15:13:31,520 - app.main - INFO - 📋 Available models: user, workout, nutrition, progress, notification
+2025-07-10 15:13:31,521 - app.main - INFO - FastAPI application created with performance optimizations
+2025-07-10 15:13:31,521 - app.main - INFO - Development CORS origins configured
+2025-07-10 15:13:31,521 - app.main - INFO - CORS middleware configured with frontend integration support
+2025-07-10 15:13:31,521 - app.main - INFO - Static files mounted successfully
+2025-07-10 15:13:31,521 - app.main - INFO - Frontend assets mounted successfully
+2025-07-10 15:13:31,522 - app.main - INFO - Frontend serving endpoints configured
+2025-07-10 15:13:31,522 - app.main - INFO - ========================================
+2025-07-10 15:13:31,522 - app.main - INFO - INCLUDING ROUTERS
+2025-07-10 15:13:31,522 - app.main - INFO - ========================================
+2025-07-10 15:13:31,522 - app.main - INFO - Including auth router...
+2025-07-10 15:13:31,529 - app.main - INFO - ✅ Auth router included
+2025-07-10 15:13:31,530 - app.main - INFO - Including users router...
+2025-07-10 15:13:31,534 - app.main - INFO - ✅ Users router included
+2025-07-10 15:13:31,534 - app.main - INFO - Including exercises router...
+2025-07-10 15:13:31,534 - app.main - INFO - ✅ Exercises router included
+2025-07-10 15:13:31,534 - app.main - INFO - Including workouts router...
+2025-07-10 15:13:31,551 - app.main - INFO - ✅ Workouts router included
+2025-07-10 15:13:31,551 - app.main - INFO - Including nutrition router...
+2025-07-10 15:13:31,569 - app.main - INFO - ✅ Nutrition router included
+2025-07-10 15:13:31,569 - app.main - INFO - Including meal_plans router...
+2025-07-10 15:13:31,583 - app.main - INFO - ✅ Meal plans router included
+2025-07-10 15:13:31,584 - app.main - INFO - Including progress router...
+2025-07-10 15:13:31,586 - app.main - INFO - ✅ Progress router included
+2025-07-10 15:13:31,586 - app.main - INFO - Including files router...
+2025-07-10 15:13:31,587 - app.main - INFO - ✅ Files router included
+2025-07-10 15:13:31,587 - app.main - INFO - Including websocket router...
+2025-07-10 15:13:31,589 - app.main - INFO - ✅ WebSocket router included
+2025-07-10 15:13:31,589 - app.main - INFO - Including system router...
+2025-07-10 15:13:31,590 - app.main - INFO - ✅ System router included
+2025-07-10 15:13:31,590 - app.main - INFO - Including notifications router...
+2025-07-10 15:13:31,594 - app.main - INFO - ✅ Notifications router included
+2025-07-10 15:13:31,595 - app.main - INFO - ========================================
+2025-07-10 15:13:31,595 - app.main - INFO - ✅ ALL ROUTERS INCLUDED SUCCESSFULLY
+2025-07-10 15:13:31,595 - app.main - INFO - ========================================
+2025-07-10 15:13:31,595 - app.main - INFO - Elior Fitness API application startup completed successfully
+2025-07-10 15:13:31,596 - app.main - INFO - ========================================
+2025-07-10 15:13:31,596 - app.main - INFO - APPLICATION STARTUP INITIATED
+2025-07-10 15:13:31,596 - app.main - INFO - ========================================
+2025-07-10 15:13:31,597 - app.main - INFO - Checking database connection...
+2025-07-10 15:13:31,608 - app.main - INFO - ✅ Database connection successful
+2025-07-10 15:13:31,609 - app.main - INFO - Initializing database tables...
+2025-07-10 15:13:31,609 - app.database - INFO - Initializing database tables...
+2025-07-10 15:13:31,614 - app.database - INFO - Database tables initialized successfully
+2025-07-10 15:13:31,614 - app.main - INFO - ✅ Database tables initialized successfully
+2025-07-10 15:13:31,614 - app.main - INFO - 📊 Database pool initialized: {'pool_size': 5, 'checked_in_connections': 1, 'checked_out_connections': 0, 'overflow_connections': -4}
+2025-07-10 15:13:31,614 - app.main - INFO - ========================================
+2025-07-10 15:13:31,614 - app.main - INFO - ✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY
+2025-07-10 15:13:31,614 - app.main - INFO - ========================================
+2025-07-10 15:17:09,238 - app.main - INFO - ========================================
+2025-07-10 15:17:09,238 - app.main - INFO - APPLICATION SHUTDOWN INITIATED
+2025-07-10 15:17:09,239 - app.main - INFO - ========================================
+2025-07-10 15:17:09,239 - app.main - INFO - Closing database connections...
+2025-07-10 15:17:09,241 - app.main - INFO - ✅ Database connections closed
+2025-07-10 15:17:09,241 - app.main - INFO - ========================================
+2025-07-10 15:17:09,242 - app.main - INFO - ✅ APPLICATION SHUTDOWN COMPLETED
+2025-07-10 15:17:09,242 - app.main - INFO - ========================================
+2025-07-10 15:17:15,852 - app.main - INFO - ============================================================
+2025-07-10 15:17:15,853 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 15:17:15,853 - app.main - INFO - ============================================================
+2025-07-10 15:17:15,853 - app.main - INFO - Timestamp: 2025-07-10 15:17:15.853694
+2025-07-10 15:17:15,853 - app.main - INFO - Environment: development
+2025-07-10 15:17:15,853 - app.main - INFO - Log Level: INFO
+2025-07-10 15:17:15,854 - app.main - INFO - Debug Logging: False
+2025-07-10 15:17:15,854 - app.main - INFO - Domain: localhost
+2025-07-10 15:17:15,854 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 15:17:15,854 - app.main - INFO - ============================================================
+2025-07-10 15:17:15,854 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 15:17:15,993 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 15:17:15,993 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 15:17:15,993 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 15:17:16,002 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 15:17:16,002 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 15:17:16,002 - app.database - INFO - Base class created
+2025-07-10 15:17:16,002 - app.database - INFO - Database configuration completed successfully
+2025-07-10 15:17:16,003 - app.main - INFO - Database module imported successfully
+2025-07-10 15:17:16,003 - app.main - INFO - Importing router modules...
+2025-07-10 15:17:16,285 - app.main - INFO - ✅ Router modules imported successfully
+2025-07-10 15:17:16,286 - app.main - INFO - 📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+2025-07-10 15:17:16,286 - app.main - INFO - Importing model modules...
+2025-07-10 15:17:16,287 - app.main - INFO - ✅ Model modules imported successfully
+2025-07-10 15:17:16,287 - app.main - INFO - 📋 Available models: user, workout, nutrition, progress, notification
+2025-07-10 15:17:16,288 - app.main - INFO - FastAPI application created with performance optimizations
+2025-07-10 15:17:16,288 - app.main - INFO - Development CORS origins configured
+2025-07-10 15:17:16,288 - app.main - INFO - CORS middleware configured with frontend integration support
+2025-07-10 15:17:16,289 - app.main - INFO - Static files mounted successfully
+2025-07-10 15:17:16,289 - app.main - INFO - Frontend assets mounted successfully
+2025-07-10 15:17:16,290 - app.main - INFO - Frontend serving endpoints configured
+2025-07-10 15:17:16,290 - app.main - INFO - ========================================
+2025-07-10 15:17:16,290 - app.main - INFO - INCLUDING ROUTERS
+2025-07-10 15:17:16,291 - app.main - INFO - ========================================
+2025-07-10 15:17:16,291 - app.main - INFO - Including auth router...
+2025-07-10 15:17:16,298 - app.main - INFO - ✅ Auth router included
+2025-07-10 15:17:16,299 - app.main - INFO - Including users router...
+2025-07-10 15:17:16,304 - app.main - INFO - ✅ Users router included
+2025-07-10 15:17:16,304 - app.main - INFO - Including exercises router...
+2025-07-10 15:17:16,304 - app.main - INFO - ✅ Exercises router included
+2025-07-10 15:17:16,304 - app.main - INFO - Including workouts router...
+2025-07-10 15:17:16,321 - app.main - INFO - ✅ Workouts router included
+2025-07-10 15:17:16,322 - app.main - INFO - Including nutrition router...
+2025-07-10 15:17:16,340 - app.main - INFO - ✅ Nutrition router included
+2025-07-10 15:17:16,341 - app.main - INFO - Including meal_plans router...
+2025-07-10 15:17:16,354 - app.main - INFO - ✅ Meal plans router included
+2025-07-10 15:17:16,355 - app.main - INFO - Including progress router...
+2025-07-10 15:17:16,357 - app.main - INFO - ✅ Progress router included
+2025-07-10 15:17:16,357 - app.main - INFO - Including files router...
+2025-07-10 15:17:16,359 - app.main - INFO - ✅ Files router included
+2025-07-10 15:17:16,359 - app.main - INFO - Including websocket router...
+2025-07-10 15:17:16,360 - app.main - INFO - ✅ WebSocket router included
+2025-07-10 15:17:16,360 - app.main - INFO - Including system router...
+2025-07-10 15:17:16,362 - app.main - INFO - ✅ System router included
+2025-07-10 15:17:16,362 - app.main - INFO - Including notifications router...
+2025-07-10 15:17:16,366 - app.main - INFO - ✅ Notifications router included
+2025-07-10 15:17:16,366 - app.main - INFO - ========================================
+2025-07-10 15:17:16,366 - app.main - INFO - ✅ ALL ROUTERS INCLUDED SUCCESSFULLY
+2025-07-10 15:17:16,366 - app.main - INFO - ========================================
+2025-07-10 15:17:16,367 - app.main - INFO - Elior Fitness API application startup completed successfully
+2025-07-10 15:17:16,367 - app.main - INFO - ========================================
+2025-07-10 15:17:16,367 - app.main - INFO - APPLICATION STARTUP INITIATED
+2025-07-10 15:17:16,367 - app.main - INFO - ========================================
+2025-07-10 15:17:16,367 - app.main - INFO - Checking database connection...
+2025-07-10 15:17:16,381 - app.main - INFO - ✅ Database connection successful
+2025-07-10 15:17:16,381 - app.main - INFO - Initializing database tables...
+2025-07-10 15:17:16,382 - app.database - INFO - Initializing database tables...
+2025-07-10 15:17:16,387 - app.database - INFO - Database tables initialized successfully
+2025-07-10 15:17:16,387 - app.main - INFO - ✅ Database tables initialized successfully
+2025-07-10 15:17:16,387 - app.main - INFO - 📊 Database pool initialized: {'pool_size': 5, 'checked_in_connections': 1, 'checked_out_connections': 0, 'overflow_connections': -4}
+2025-07-10 15:17:16,387 - app.main - INFO - ========================================
+2025-07-10 15:17:16,387 - app.main - INFO - ✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY
+2025-07-10 15:17:16,387 - app.main - INFO - ========================================
+2025-07-10 15:18:12,690 - app.database - ERROR - Database session error: 401: Incorrect username or password
+2025-07-10 15:18:13,564 - app.database - ERROR - Database session error: 401: Incorrect username or password
+2025-07-10 15:18:42,877 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-07-10 15:21:43,190 - app.main - INFO - ========================================
+2025-07-10 15:21:43,191 - app.main - INFO - APPLICATION SHUTDOWN INITIATED
+2025-07-10 15:21:43,191 - app.main - INFO - ========================================
+2025-07-10 15:21:43,191 - app.main - INFO - Closing database connections...
+2025-07-10 15:21:43,198 - app.main - INFO - ✅ Database connections closed
+2025-07-10 15:21:43,198 - app.main - INFO - ========================================
+2025-07-10 15:21:43,199 - app.main - INFO - ✅ APPLICATION SHUTDOWN COMPLETED
+2025-07-10 15:21:43,199 - app.main - INFO - ========================================
+2025-07-10 15:21:51,923 - app.main - INFO - ============================================================
+2025-07-10 15:21:51,923 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 15:21:51,923 - app.main - INFO - ============================================================
+2025-07-10 15:21:51,923 - app.main - INFO - Timestamp: 2025-07-10 15:21:51.923960
+2025-07-10 15:21:51,924 - app.main - INFO - Environment: development
+2025-07-10 15:21:51,924 - app.main - INFO - Log Level: INFO
+2025-07-10 15:21:51,924 - app.main - INFO - Debug Logging: False
+2025-07-10 15:21:51,924 - app.main - INFO - Domain: localhost
+2025-07-10 15:21:51,925 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 15:21:51,925 - app.main - INFO - ============================================================
+2025-07-10 15:21:51,925 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 15:21:52,027 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 15:21:52,027 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 15:21:52,028 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 15:21:52,034 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 15:21:52,034 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 15:21:52,035 - app.database - INFO - Base class created
+2025-07-10 15:21:52,035 - app.database - INFO - Database configuration completed successfully
+2025-07-10 15:21:52,035 - app.main - INFO - Database module imported successfully
+2025-07-10 15:21:52,035 - app.main - INFO - Importing router modules...
+2025-07-10 15:21:52,278 - app.main - INFO - ✅ Router modules imported successfully
+2025-07-10 15:21:52,279 - app.main - INFO - 📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+2025-07-10 15:21:52,279 - app.main - INFO - Importing model modules...
+2025-07-10 15:21:52,280 - app.main - INFO - ✅ Model modules imported successfully
+2025-07-10 15:21:52,280 - app.main - INFO - 📋 Available models: user, workout, nutrition, progress, notification
+2025-07-10 15:21:52,280 - app.main - INFO - FastAPI application created with performance optimizations
+2025-07-10 15:21:52,280 - app.main - INFO - Development CORS origins configured
+2025-07-10 15:21:52,280 - app.main - INFO - CORS middleware configured with frontend integration support
+2025-07-10 15:21:52,281 - app.main - INFO - Static files mounted successfully
+2025-07-10 15:21:52,281 - app.main - INFO - Frontend assets mounted successfully
+2025-07-10 15:21:52,281 - app.main - INFO - Frontend serving endpoints configured
+2025-07-10 15:21:52,282 - app.main - INFO - ========================================
+2025-07-10 15:21:52,282 - app.main - INFO - INCLUDING ROUTERS
+2025-07-10 15:21:52,282 - app.main - INFO - ========================================
+2025-07-10 15:21:52,282 - app.main - INFO - Including auth router...
+2025-07-10 15:21:52,289 - app.main - INFO - ✅ Auth router included
+2025-07-10 15:21:52,289 - app.main - INFO - Including users router...
+2025-07-10 15:21:52,294 - app.main - INFO - ✅ Users router included
+2025-07-10 15:21:52,294 - app.main - INFO - Including exercises router...
+2025-07-10 15:21:52,294 - app.main - INFO - ✅ Exercises router included
+2025-07-10 15:21:52,294 - app.main - INFO - Including workouts router...
+2025-07-10 15:21:52,311 - app.main - INFO - ✅ Workouts router included
+2025-07-10 15:21:52,311 - app.main - INFO - Including nutrition router...
+2025-07-10 15:21:52,329 - app.main - INFO - ✅ Nutrition router included
+2025-07-10 15:21:52,329 - app.main - INFO - Including meal_plans router...
+2025-07-10 15:21:52,341 - app.main - INFO - ✅ Meal plans router included
+2025-07-10 15:21:52,341 - app.main - INFO - Including progress router...
+2025-07-10 15:21:52,343 - app.main - INFO - ✅ Progress router included
+2025-07-10 15:21:52,344 - app.main - INFO - Including files router...
+2025-07-10 15:21:52,345 - app.main - INFO - ✅ Files router included
+2025-07-10 15:21:52,345 - app.main - INFO - Including websocket router...
+2025-07-10 15:21:52,346 - app.main - INFO - ✅ WebSocket router included
+2025-07-10 15:21:52,346 - app.main - INFO - Including system router...
+2025-07-10 15:21:52,348 - app.main - INFO - ✅ System router included
+2025-07-10 15:21:52,348 - app.main - INFO - Including notifications router...
+2025-07-10 15:21:52,352 - app.main - INFO - ✅ Notifications router included
+2025-07-10 15:21:52,352 - app.main - INFO - ========================================
+2025-07-10 15:21:52,352 - app.main - INFO - ✅ ALL ROUTERS INCLUDED SUCCESSFULLY
+2025-07-10 15:21:52,352 - app.main - INFO - ========================================
+2025-07-10 15:21:52,352 - app.main - INFO - Elior Fitness API application startup completed successfully
+2025-07-10 15:21:52,352 - app.main - INFO - ========================================
+2025-07-10 15:21:52,353 - app.main - INFO - APPLICATION STARTUP INITIATED
+2025-07-10 15:21:52,353 - app.main - INFO - ========================================
+2025-07-10 15:21:52,353 - app.main - INFO - Checking database connection...
+2025-07-10 15:21:52,365 - app.main - INFO - ✅ Database connection successful
+2025-07-10 15:21:52,365 - app.main - INFO - Initializing database tables...
+2025-07-10 15:21:52,365 - app.database - INFO - Initializing database tables...
+2025-07-10 15:21:52,370 - app.database - INFO - Database tables initialized successfully
+2025-07-10 15:21:52,370 - app.main - INFO - ✅ Database tables initialized successfully
+2025-07-10 15:21:52,371 - app.main - INFO - 📊 Database pool initialized: {'pool_size': 5, 'checked_in_connections': 1, 'checked_out_connections': 0, 'overflow_connections': -4}
+2025-07-10 15:21:52,371 - app.main - INFO - ========================================
+2025-07-10 15:21:52,371 - app.main - INFO - ✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY
+2025-07-10 15:21:52,371 - app.main - INFO - ========================================
+2025-07-10 15:23:37,859 - app.main - INFO - ========================================
+2025-07-10 15:23:37,859 - app.main - INFO - APPLICATION SHUTDOWN INITIATED
+2025-07-10 15:23:37,859 - app.main - INFO - ========================================
+2025-07-10 15:23:37,859 - app.main - INFO - Closing database connections...
+2025-07-10 15:23:37,862 - app.main - INFO - ✅ Database connections closed
+2025-07-10 15:23:37,862 - app.main - INFO - ========================================
+2025-07-10 15:23:37,862 - app.main - INFO - ✅ APPLICATION SHUTDOWN COMPLETED
+2025-07-10 15:23:37,863 - app.main - INFO - ========================================
+2025-07-10 15:23:44,789 - app.main - INFO - ============================================================
+2025-07-10 15:23:44,789 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-10 15:23:44,789 - app.main - INFO - ============================================================
+2025-07-10 15:23:44,789 - app.main - INFO - Timestamp: 2025-07-10 15:23:44.789632
+2025-07-10 15:23:44,789 - app.main - INFO - Environment: development
+2025-07-10 15:23:44,789 - app.main - INFO - Log Level: INFO
+2025-07-10 15:23:44,790 - app.main - INFO - Debug Logging: False
+2025-07-10 15:23:44,790 - app.main - INFO - Domain: localhost
+2025-07-10 15:23:44,790 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://localhost:8000']
+2025-07-10 15:23:44,790 - app.main - INFO - ============================================================
+2025-07-10 15:23:44,790 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-10 15:23:44,894 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-10 15:23:44,895 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-10 15:23:44,895 - app.database - INFO - Database directory created/verified: ./data
+2025-07-10 15:23:44,901 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-10 15:23:44,901 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-10 15:23:44,901 - app.database - INFO - Base class created
+2025-07-10 15:23:44,901 - app.database - INFO - Database configuration completed successfully
+2025-07-10 15:23:44,902 - app.main - INFO - Database module imported successfully
+2025-07-10 15:23:44,902 - app.main - INFO - Importing router modules...
+2025-07-10 15:23:45,141 - app.main - INFO - ✅ Router modules imported successfully
+2025-07-10 15:23:45,141 - app.main - INFO - 📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+2025-07-10 15:23:45,142 - app.main - INFO - Importing model modules...
+2025-07-10 15:23:45,142 - app.main - INFO - ✅ Model modules imported successfully
+2025-07-10 15:23:45,142 - app.main - INFO - 📋 Available models: user, workout, nutrition, progress, notification
+2025-07-10 15:23:45,142 - app.main - INFO - FastAPI application created with performance optimizations
+2025-07-10 15:23:45,142 - app.main - INFO - Development CORS origins configured
+2025-07-10 15:23:45,142 - app.main - INFO - CORS middleware configured with frontend integration support
+2025-07-10 15:23:45,143 - app.main - INFO - Static files mounted successfully
+2025-07-10 15:23:45,143 - app.main - INFO - Frontend assets mounted with performance optimizations
+2025-07-10 15:23:45,144 - app.main - INFO - Frontend serving endpoints configured with performance optimizations
+2025-07-10 15:23:45,144 - app.main - INFO - ========================================
+2025-07-10 15:23:45,145 - app.main - INFO - INCLUDING ROUTERS
+2025-07-10 15:23:45,145 - app.main - INFO - ========================================
+2025-07-10 15:23:45,145 - app.main - INFO - Including auth router...
+2025-07-10 15:23:45,152 - app.main - INFO - ✅ Auth router included
+2025-07-10 15:23:45,152 - app.main - INFO - Including users router...
+2025-07-10 15:23:45,157 - app.main - INFO - ✅ Users router included
+2025-07-10 15:23:45,157 - app.main - INFO - Including exercises router...
+2025-07-10 15:23:45,157 - app.main - INFO - ✅ Exercises router included
+2025-07-10 15:23:45,157 - app.main - INFO - Including workouts router...
+2025-07-10 15:23:45,173 - app.main - INFO - ✅ Workouts router included
+2025-07-10 15:23:45,174 - app.main - INFO - Including nutrition router...
+2025-07-10 15:23:45,192 - app.main - INFO - ✅ Nutrition router included
+2025-07-10 15:23:45,192 - app.main - INFO - Including meal_plans router...
+2025-07-10 15:23:45,204 - app.main - INFO - ✅ Meal plans router included
+2025-07-10 15:23:45,204 - app.main - INFO - Including progress router...
+2025-07-10 15:23:45,206 - app.main - INFO - ✅ Progress router included
+2025-07-10 15:23:45,206 - app.main - INFO - Including files router...
+2025-07-10 15:23:45,208 - app.main - INFO - ✅ Files router included
+2025-07-10 15:23:45,208 - app.main - INFO - Including websocket router...
+2025-07-10 15:23:45,209 - app.main - INFO - ✅ WebSocket router included
+2025-07-10 15:23:45,209 - app.main - INFO - Including system router...
+2025-07-10 15:23:45,210 - app.main - INFO - ✅ System router included
+2025-07-10 15:23:45,211 - app.main - INFO - Including notifications router...
+2025-07-10 15:23:45,214 - app.main - INFO - ✅ Notifications router included
+2025-07-10 15:23:45,215 - app.main - INFO - ========================================
+2025-07-10 15:23:45,215 - app.main - INFO - ✅ ALL ROUTERS INCLUDED SUCCESSFULLY
+2025-07-10 15:23:45,215 - app.main - INFO - ========================================
+2025-07-10 15:23:45,215 - app.main - INFO - Elior Fitness API application startup completed successfully
+2025-07-10 15:23:45,215 - app.main - INFO - ========================================
+2025-07-10 15:23:45,215 - app.main - INFO - APPLICATION STARTUP INITIATED
+2025-07-10 15:23:45,216 - app.main - INFO - ========================================
+2025-07-10 15:23:45,216 - app.main - INFO - Checking database connection...
+2025-07-10 15:23:45,228 - app.main - INFO - ✅ Database connection successful
+2025-07-10 15:23:45,228 - app.main - INFO - Initializing database tables...
+2025-07-10 15:23:45,228 - app.database - INFO - Initializing database tables...
+2025-07-10 15:23:45,233 - app.database - INFO - Database tables initialized successfully
+2025-07-10 15:23:45,233 - app.main - INFO - ✅ Database tables initialized successfully
+2025-07-10 15:23:45,233 - app.main - INFO - 📊 Database pool initialized: {'pool_size': 5, 'checked_in_connections': 1, 'checked_out_connections': 0, 'overflow_connections': -4}
+2025-07-10 15:23:45,233 - app.main - INFO - ========================================
+2025-07-10 15:23:45,233 - app.main - INFO - ✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY
+2025-07-10 15:23:45,233 - app.main - INFO - ========================================
+2025-07-10 15:51:02,057 - app.main - INFO - ========================================
+2025-07-10 15:51:02,058 - app.main - INFO - APPLICATION SHUTDOWN INITIATED
+2025-07-10 15:51:02,058 - app.main - INFO - ========================================
+2025-07-10 15:51:02,058 - app.main - INFO - Closing database connections...
+2025-07-10 15:51:02,062 - app.main - INFO - ✅ Database connections closed
+2025-07-10 15:51:02,063 - app.main - INFO - ========================================
+2025-07-10 15:51:02,063 - app.main - INFO - ✅ APPLICATION SHUTDOWN COMPLETED
+2025-07-10 15:51:02,063 - app.main - INFO - ========================================

@@ -1,5 +1,9 @@
 # Production Dockerfile for Railway deployment
 # Multi-stage build for optimal size and security
+# Updated: 2025-07-10 15:20 - Removed Nginx, FastAPI only
+
+# Build argument to force cache invalidation
+ARG BUILD_DATE=unknown
 
 # Stage 1: Frontend Builder
 FROM node:18-slim AS frontend-builder
@@ -20,7 +24,6 @@ FROM python:3.11-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    nginx \
     curl \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/* \
@@ -35,53 +38,33 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend application
 COPY app/ ./app/
 
-# Copy built frontend
-COPY --from=frontend-builder /frontend/dist /var/www/html
+# Copy built frontend to static directory
+COPY --from=frontend-builder /frontend/dist ./static
 
 # Set proper permissions
-RUN chmod -R 755 /var/www/html && \
-    chown -R www-data:www-data /var/www/html && \
+RUN chmod -R 755 ./static && \
     mkdir -p uploads data logs && \
     chmod 755 uploads data logs
 
-# Copy nginx configuration
-COPY nginx/nginx.railway.conf /etc/nginx/nginx.conf
-
-# Create startup script with debugging
+# Create startup script
 RUN echo '#!/bin/bash\n\
 set -e\n\
 echo "=== ELIOR FITNESS STARTUP ==="\n\
 echo "Time: $(date)"\n\
 echo "Environment: $ENVIRONMENT"\n\
-echo "Checking frontend files..."\n\
-ls -la /var/www/html/\n\
-echo "Testing nginx config..."\n\
-nginx -t\n\
-# Determine external port (Railway sets $PORT)\n\
-PORT=${PORT:-80}\n\
-echo "Using external port: $PORT"\n\
-\n\
-# Update nginx config to listen on the external port\n\
-sed -i "s/listen 80;/listen ${PORT};/" /etc/nginx/nginx.conf\n\
-\n\
-echo "Starting nginx..."\n\
-nginx\n\
-\n\
-echo "Testing frontend access via nginx..."\n\
-curl -f http://localhost:${PORT}/ || echo "Frontend not accessible yet"\n\
-\n\
-# Start FastAPI backend (internal to nginx)\n\
-BACKEND_PORT=8001\n\
-echo "Starting FastAPI on internal port $BACKEND_PORT..."\n\
-exec uvicorn app.main:app --host 0.0.0.0 --port ${BACKEND_PORT} --workers 1\n\
+echo "Port: $PORT"\n\
+echo "Checking static files..."\n\
+ls -la ./static/\n\
+echo "Starting FastAPI on port $PORT..."\n\
+exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
-# Expose port 80 for Railway (Railway expects this)
-EXPOSE 80
+# Expose port for Railway
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/health || exit 1
+    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
 # Start application
 CMD ["/app/start.sh"] 

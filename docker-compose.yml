@@ -4,7 +4,7 @@ services:
   elior-fitness:
     build: .
     ports:
-      - "8000:80"  # Frontend accessible on port 8000 locally
+      - "8000:8000"  # FastAPI accessible on port 8000 locally
     volumes:
       - ./uploads:/app/uploads
       - ./data:/app/data
@@ -14,9 +14,10 @@ services:
       - DOMAIN=localhost
       - CORS_ORIGINS=http://localhost:3000,http://localhost:8000
       - LOG_LEVEL=INFO
+      - PORT=8000
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3

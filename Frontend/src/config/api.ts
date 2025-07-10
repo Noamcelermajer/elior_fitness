@@ -1,21 +1,24 @@
-// Environment-aware API base URL
-export const getApiBaseUrl = (): string => {
+// API Configuration
+// Production: Uses current domain with /api path
+// Development: Uses localhost:8000 (FastAPI directly)
+
+const getApiUrl = () => {
   // Check for environment variable first
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
   
-  // Check if we're in production (HTTPS)
-  if (window.location.protocol === 'https:') {
-    // In production, use the same domain with /api path
+  // Production environment - use same domain as frontend
+  if (import.meta.env.PROD) {
+    // Use the same domain as the frontend, with /api path
     return `${window.location.origin}/api`;
   }
   
-  // Development fallback - use the same port as the frontend since Nginx proxies API calls
-  return `${window.location.origin}/api`;
+  // Development environment - FastAPI runs directly on port 8000
+  return 'http://localhost:8000';
 };
 
-export const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = getApiUrl();
 
 // Log the API URL being used (for debugging)
 console.log('API Base URL:', API_BASE_URL);

@@ -236,6 +236,151 @@ try:
 except Exception as e:
     logger.warning(f"Could not mount uploads directory: {e}")
 
+# Mount frontend static files with performance optimizations
+try:
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+    import os
+    import mimetypes
+    from datetime import datetime, timedelta
+    
+    # Custom static files handler with caching and compression
+    class OptimizedStaticFiles(StaticFiles):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            
+        async def __call__(self, scope, receive, send):
+            # Add cache headers for static assets
+            if scope["path"].startswith("/assets/"):
+                # Cache static assets for 1 year
+                scope["headers"] = [
+                    (b"cache-control", b"public, max-age=31536000, immutable"),
+                    (b"vary", b"Accept-Encoding")
+                ]
+            elif scope["path"].endswith((".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico")):
+                # Cache other static files for 1 month
+                scope["headers"] = [
+                    (b"cache-control", b"public, max-age=2592000"),
+                    (b"vary", b"Accept-Encoding")
+                ]
+            
+            await super().__call__(scope, receive, send)
+    
+    app.mount("/assets", OptimizedStaticFiles(directory="static/assets"), name="assets")
+    logger.info("Frontend assets mounted with performance optimizations")
+except Exception as e:
+    logger.warning(f"Could not mount frontend assets: {e}")
+
+# Serve frontend files with performance optimizations
+try:
+    from fastapi.responses import FileResponse, HTMLResponse
+    import os
+    from datetime import datetime, timedelta
+    
+    # Cache the index.html content in memory for better performance
+    _index_html_cache = None
+    _index_html_cache_time = None
+    _cache_duration = timedelta(minutes=5)  # Cache for 5 minutes
+    
+    def get_index_html():
+        """Get index.html with caching for better performance."""
+        global _index_html_cache, _index_html_cache_time
+        
+        current_time = datetime.now()
+        
+        # Return cached version if still valid
+        if (_index_html_cache and _index_html_cache_time and 
+            current_time - _index_html_cache_time < _cache_duration):
+            return _index_html_cache
+        
+        # Read and cache the file
+        index_path = "static/index.html"
+        if os.path.exists(index_path):
+            with open(index_path, 'r', encoding='utf-8') as f:
+                _index_html_cache = f.read()
+                _index_html_cache_time = current_time
+                return _index_html_cache
+        return None
+    
+    @app.get("/", response_class=HTMLResponse)
+    async def serve_frontend():
+        """Serve the React frontend with caching."""
+        html_content = get_index_html()
+        if html_content:
+            return HTMLResponse(
+                content=html_content,
+                headers={
+                    "Cache-Control": "public, max-age=300",  # Cache for 5 minutes
+                    "Vary": "Accept-Encoding"
+                }
+            )
+        else:
+            return HTMLResponse(
+                content="<h1>Frontend not found</h1>",
+                status_code=404
+            )
+            
+    @app.get("/favicon.ico")
+    async def serve_favicon():
+        """Serve favicon with caching."""
+        favicon_path = "static/favicon.ico"
+        if os.path.exists(favicon_path):
+            return FileResponse(
+                favicon_path,
+                headers={
+                    "Cache-Control": "public, max-age=86400",  # Cache for 1 day
+                    "Vary": "Accept-Encoding"
+                }
+            )
+        return {"message": "Favicon not found"}
+        
+    @app.get("/robots.txt")
+    async def serve_robots():
+        """Serve robots.txt with caching."""
+        robots_path = "static/robots.txt"
+        if os.path.exists(robots_path):
+            return FileResponse(
+                robots_path,
+                headers={
+                    "Cache-Control": "public, max-age=86400",  # Cache for 1 day
+                    "Vary": "Accept-Encoding"
+                }
+            )
+        return {"message": "Robots.txt not found"}
+    
+    # Catch-all route for SPA routing - must be LAST
+    @app.get("/{full_path:path}", response_class=HTMLResponse)
+    async def serve_spa_routes(full_path: str):
+        """Serve index.html for all non-API routes to support SPA routing."""
+        # Don't serve index.html for API routes or system endpoints
+        if (full_path.startswith("api/") or 
+            full_path in ["health", "test", "metrics"] or
+            full_path.startswith("health/") or
+            full_path.startswith("metrics/") or
+            full_path.startswith("status/") or
+            full_path.startswith("uploads/")):
+            raise HTTPException(status_code=404, detail="Not found")
+        
+        # Serve index.html for all other routes (SPA routing)
+        html_content = get_index_html()
+        if html_content:
+            return HTMLResponse(
+                content=html_content,
+                headers={
+                    "Cache-Control": "public, max-age=300",  # Cache for 5 minutes
+                    "Vary": "Accept-Encoding"
+                }
+            )
+        else:
+            return HTMLResponse(
+                content="<h1>Frontend not found</h1>",
+                status_code=404
+            )
+        
+    logger.info("Frontend serving endpoints configured with performance optimizations")
+except Exception as e:
+    logger.warning(f"Could not configure frontend serving: {e}")
+
 # Enhanced health check endpoint with comprehensive system status
 @app.get("/health")
 async def health_check():
@@ -396,38 +541,6 @@ except Exception as e:
     logger.error(f"Stack trace: {traceback.format_exc()}")
     raise
 
-@app.get("/")
-async def root():
-    """Root endpoint with enhanced feature information."""
-    logger.debug("Root endpoint called")
-    return {
-        "message": "Welcome to Elior Fitness API", 
-        "version": "1.0.0",
-        "sprint": "6 - Advanced Meal Plan System",
-        "features": [
-            "Advanced meal plan management",
-            "Meal entries with components (protein, carbs, fats, vegetables)",
-            "Client meal photo uploads with approval system",
-            "Macronutrient tracking and goals",
-            "Real-time WebSocket notifications",
-            "Secure file uploads with validation",
-            "Image processing and thumbnails",
-            "Performance monitoring and optimization",
-            "Database connection pooling",
-            "Query performance optimization"
-        ],
-        "performance_features": {
-            "database_connection_pooling": "enabled",
-            "query_performance_monitoring": "enabled",
-            "request_performance_tracking": "enabled",
-            "slow_query_detection": "enabled",
-            "health_monitoring": "enabled"
-        },
-        "api_endpoints": {
-            "health": "/health",
-            "metrics": "/metrics",
-            "database_status": "/status/database"
-        }
-    }
+# Root endpoint moved to serve_frontend() function above
 
 logger.info("Elior Fitness API application startup completed successfully") 

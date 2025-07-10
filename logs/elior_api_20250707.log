@@ -1,0 +1,376 @@
+2025-07-07 00:14:08,268 - app.main - INFO - ============================================================
+2025-07-07 00:14:08,268 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-07 00:14:08,268 - app.main - INFO - ============================================================
+2025-07-07 00:14:08,269 - app.main - INFO - Timestamp: 2025-07-07 00:14:08.269056
+2025-07-07 00:14:08,269 - app.main - INFO - Environment: development
+2025-07-07 00:14:08,269 - app.main - INFO - Log Level: DEBUG
+2025-07-07 00:14:08,269 - app.main - INFO - Debug Logging: True
+2025-07-07 00:14:08,269 - app.main - INFO - Domain: localhost
+2025-07-07 00:14:08,269 - app.main - INFO - CORS Origins: ['http://localhost:3000']
+2025-07-07 00:14:08,270 - app.main - INFO - ============================================================
+2025-07-07 00:14:08,270 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-07 00:14:08,407 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-07 00:14:08,408 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-07 00:14:08,408 - app.database - DEBUG - Database file path: ./data/elior_fitness.db
+2025-07-07 00:14:08,408 - app.database - INFO - Database directory created/verified: ./data
+2025-07-07 00:14:08,416 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-07 00:14:08,417 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-07 00:14:08,417 - app.database - INFO - Base class created
+2025-07-07 00:14:08,417 - app.database - INFO - Database configuration completed successfully
+2025-07-07 00:14:08,417 - app.main - INFO - Database module imported successfully
+2025-07-07 00:14:08,417 - app.main - INFO - Importing router modules...
+2025-07-07 00:14:08,538 - passlib.utils.compat - DEBUG - loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>
+2025-07-07 00:14:08,538 - passlib.utils.compat - DEBUG - loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>
+2025-07-07 00:14:08,538 - passlib.utils.compat - DEBUG - loaded lazy attr 'BytesIO': <class '_io.BytesIO'>
+2025-07-07 00:14:08,542 - passlib.registry - DEBUG - registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>
+2025-07-07 00:14:08,694 - app.main - INFO - ✅ Router modules imported successfully
+2025-07-07 00:14:08,694 - app.main - INFO - 📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+2025-07-07 00:14:08,695 - app.main - INFO - Importing model modules...
+2025-07-07 00:14:08,695 - app.main - INFO - ✅ Model modules imported successfully
+2025-07-07 00:14:08,695 - app.main - INFO - 📋 Available models: user, workout, nutrition, progress, notification
+2025-07-07 00:14:08,695 - app.main - INFO - FastAPI application created with performance optimizations
+2025-07-07 00:14:08,695 - app.main - INFO - Development CORS origins configured
+2025-07-07 00:14:08,695 - app.main - INFO - CORS middleware configured with frontend integration support
+2025-07-07 00:14:08,696 - app.main - INFO - Static files mounted successfully
+2025-07-07 00:14:08,696 - app.main - INFO - ========================================
+2025-07-07 00:14:08,696 - app.main - INFO - INCLUDING ROUTERS
+2025-07-07 00:14:08,697 - app.main - INFO - ========================================
+2025-07-07 00:14:08,697 - app.main - INFO - Including auth router...
+2025-07-07 00:14:08,703 - app.main - INFO - ✅ Auth router included
+2025-07-07 00:14:08,703 - app.main - INFO - Including users router...
+2025-07-07 00:14:08,708 - app.main - INFO - ✅ Users router included
+2025-07-07 00:14:08,708 - app.main - INFO - Including exercises router...
+2025-07-07 00:14:08,708 - app.main - INFO - ✅ Exercises router included
+2025-07-07 00:14:08,709 - app.main - INFO - Including workouts router...
+2025-07-07 00:14:08,724 - app.main - INFO - ✅ Workouts router included
+2025-07-07 00:14:08,725 - app.main - INFO - Including nutrition router...
+2025-07-07 00:14:08,742 - app.main - INFO - ✅ Nutrition router included
+2025-07-07 00:14:08,742 - app.main - INFO - Including meal_plans router...
+2025-07-07 00:14:08,755 - app.main - INFO - ✅ Meal plans router included
+2025-07-07 00:14:08,755 - app.main - INFO - Including progress router...
+2025-07-07 00:14:08,758 - app.main - INFO - ✅ Progress router included
+2025-07-07 00:14:08,758 - app.main - INFO - Including files router...
+2025-07-07 00:14:08,759 - app.main - INFO - ✅ Files router included
+2025-07-07 00:14:08,760 - app.main - INFO - Including websocket router...
+2025-07-07 00:14:08,761 - app.main - INFO - ✅ WebSocket router included
+2025-07-07 00:14:08,761 - app.main - INFO - Including system router...
+2025-07-07 00:14:08,762 - app.main - INFO - ✅ System router included
+2025-07-07 00:14:08,763 - app.main - INFO - Including notifications router...
+2025-07-07 00:14:08,767 - app.main - INFO - ✅ Notifications router included
+2025-07-07 00:14:08,767 - app.main - INFO - ========================================
+2025-07-07 00:14:08,767 - app.main - INFO - ✅ ALL ROUTERS INCLUDED SUCCESSFULLY
+2025-07-07 00:14:08,767 - app.main - INFO - ========================================
+2025-07-07 00:14:08,767 - app.main - INFO - Elior Fitness API application startup completed successfully
+2025-07-07 00:14:08,768 - app.main - INFO - ========================================
+2025-07-07 00:14:08,768 - app.main - INFO - APPLICATION STARTUP INITIATED
+2025-07-07 00:14:08,768 - app.main - INFO - ========================================
+2025-07-07 00:14:08,768 - app.main - INFO - Checking database connection...
+2025-07-07 00:14:08,769 - app.main - INFO - ✅ Database connection successful
+2025-07-07 00:14:08,769 - app.main - INFO - Initializing database tables...
+2025-07-07 00:14:08,769 - app.database - INFO - Initializing database tables...
+2025-07-07 00:14:08,771 - app.database - INFO - Database tables initialized successfully
+2025-07-07 00:14:08,771 - app.main - INFO - ✅ Database tables initialized successfully
+2025-07-07 00:14:08,771 - app.main - INFO - 📊 Database pool initialized: {'pool_size': 5, 'checked_in_connections': 1, 'checked_out_connections': 0, 'overflow_connections': -4}
+2025-07-07 00:14:08,771 - app.main - INFO - Starting notification scheduler...
+2025-07-07 00:14:08,772 - app.services.scheduler_service - INFO - Starting notification scheduler
+2025-07-07 00:14:08,772 - app.main - INFO - ✅ Notification scheduler started successfully
+2025-07-07 00:14:08,773 - app.main - INFO - ========================================
+2025-07-07 00:14:08,773 - app.main - INFO - ✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY
+2025-07-07 00:14:08,773 - app.main - INFO - ========================================
+2025-07-07 00:40:13,393 - app.database - DEBUG - Creating database session
+2025-07-07 00:40:13,401 - app.database - ERROR - Database session error: 401: Could not validate credentials
+2025-07-07 00:40:13,401 - app.database - DEBUG - Closing database session
+2025-07-07 00:40:13,408 - app.database - DEBUG - Creating database session
+2025-07-07 00:40:13,434 - app.database - DEBUG - Closing database session
+2025-07-07 07:04:54,277 - app.database - DEBUG - Creating database session
+2025-07-07 07:04:54,296 - app.database - DEBUG - Closing database session
+2025-07-07 07:04:55,105 - app.database - DEBUG - Creating database session
+2025-07-07 07:04:55,122 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-07-07 07:04:55,125 - passlib.handlers.bcrypt - DEBUG - detected 'bcrypt' backend, version '<unknown>'
+2025-07-07 07:04:55,125 - passlib.handlers.bcrypt - DEBUG - 'bcrypt' backend lacks $2$ support, enabling workaround
+2025-07-07 07:04:55,309 - app.database - DEBUG - Closing database session
+2025-07-07 07:04:55,315 - app.database - DEBUG - Creating database session
+2025-07-07 07:04:55,331 - app.database - DEBUG - Closing database session
+2025-07-07 07:04:55,347 - app.database - DEBUG - Creating database session
+2025-07-07 07:04:55,351 - app.database - DEBUG - Closing database session
+2025-07-07 07:12:00,005 - app.database - DEBUG - Creating database session
+2025-07-07 07:12:00,010 - app.database - DEBUG - Closing database session
+2025-07-07 07:12:01,643 - app.database - DEBUG - Creating database session
+2025-07-07 07:12:01,646 - app.database - DEBUG - Closing database session
+2025-07-07 07:12:02,420 - app.database - DEBUG - Creating database session
+2025-07-07 07:12:02,423 - app.database - DEBUG - Closing database session
+2025-07-07 07:12:02,436 - app.database - DEBUG - Creating database session
+2025-07-07 07:12:02,438 - app.database - DEBUG - Creating database session
+2025-07-07 07:12:02,443 - app.database - DEBUG - Closing database session
+2025-07-07 07:12:02,446 - app.database - DEBUG - Creating database session
+2025-07-07 07:12:02,460 - app.database - DEBUG - Closing database session
+2025-07-07 07:12:02,461 - app.database - DEBUG - Closing database session
+2025-07-07 14:35:48,064 - app.main - INFO - ============================================================
+2025-07-07 14:35:48,064 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-07 14:35:48,064 - app.main - INFO - ============================================================
+2025-07-07 14:35:48,064 - app.main - INFO - Timestamp: 2025-07-07 14:35:48.064983
+2025-07-07 14:35:48,065 - app.main - INFO - Environment: development
+2025-07-07 14:35:48,065 - app.main - INFO - Log Level: DEBUG
+2025-07-07 14:35:48,065 - app.main - INFO - Debug Logging: True
+2025-07-07 14:35:48,065 - app.main - INFO - Domain: localhost
+2025-07-07 14:35:48,066 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost']
+2025-07-07 14:35:48,066 - app.main - INFO - ============================================================
+2025-07-07 14:35:48,066 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-07 14:35:48,196 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-07 14:35:48,196 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-07 14:35:48,196 - app.database - DEBUG - Database file path: ./data/elior_fitness.db
+2025-07-07 14:35:48,196 - app.database - INFO - Database directory created/verified: ./data
+2025-07-07 14:35:48,207 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-07 14:35:48,208 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-07 14:35:48,208 - app.database - INFO - Base class created
+2025-07-07 14:35:48,208 - app.database - INFO - Database configuration completed successfully
+2025-07-07 14:35:48,209 - app.main - INFO - Database module imported successfully
+2025-07-07 14:35:48,209 - app.main - INFO - Importing router modules...
+2025-07-07 14:35:48,346 - passlib.utils.compat - DEBUG - loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>
+2025-07-07 14:35:48,346 - passlib.utils.compat - DEBUG - loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>
+2025-07-07 14:35:48,346 - passlib.utils.compat - DEBUG - loaded lazy attr 'BytesIO': <class '_io.BytesIO'>
+2025-07-07 14:35:48,349 - passlib.registry - DEBUG - registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>
+2025-07-07 14:35:48,499 - app.main - INFO - ✅ Router modules imported successfully
+2025-07-07 14:35:48,500 - app.main - INFO - 📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+2025-07-07 14:35:48,500 - app.main - INFO - Importing model modules...
+2025-07-07 14:35:48,500 - app.main - INFO - ✅ Model modules imported successfully
+2025-07-07 14:35:48,500 - app.main - INFO - 📋 Available models: user, workout, nutrition, progress, notification
+2025-07-07 14:35:48,500 - app.main - INFO - FastAPI application created with performance optimizations
+2025-07-07 14:35:48,501 - app.main - INFO - Development CORS origins configured
+2025-07-07 14:35:48,501 - app.main - INFO - CORS middleware configured with frontend integration support
+2025-07-07 14:35:48,501 - app.main - INFO - Static files mounted successfully
+2025-07-07 14:35:48,502 - app.main - INFO - ========================================
+2025-07-07 14:35:48,502 - app.main - INFO - INCLUDING ROUTERS
+2025-07-07 14:35:48,502 - app.main - INFO - ========================================
+2025-07-07 14:35:48,502 - app.main - INFO - Including auth router...
+2025-07-07 14:35:48,509 - app.main - INFO - ✅ Auth router included
+2025-07-07 14:35:48,509 - app.main - INFO - Including users router...
+2025-07-07 14:35:48,514 - app.main - INFO - ✅ Users router included
+2025-07-07 14:35:48,514 - app.main - INFO - Including exercises router...
+2025-07-07 14:35:48,514 - app.main - INFO - ✅ Exercises router included
+2025-07-07 14:35:48,514 - app.main - INFO - Including workouts router...
+2025-07-07 14:35:48,532 - app.main - INFO - ✅ Workouts router included
+2025-07-07 14:35:48,532 - app.main - INFO - Including nutrition router...
+2025-07-07 14:35:48,551 - app.main - INFO - ✅ Nutrition router included
+2025-07-07 14:35:48,551 - app.main - INFO - Including meal_plans router...
+2025-07-07 14:35:48,563 - app.main - INFO - ✅ Meal plans router included
+2025-07-07 14:35:48,563 - app.main - INFO - Including progress router...
+2025-07-07 14:35:48,566 - app.main - INFO - ✅ Progress router included
+2025-07-07 14:35:48,566 - app.main - INFO - Including files router...
+2025-07-07 14:35:48,567 - app.main - INFO - ✅ Files router included
+2025-07-07 14:35:48,568 - app.main - INFO - Including websocket router...
+2025-07-07 14:35:48,569 - app.main - INFO - ✅ WebSocket router included
+2025-07-07 14:35:48,569 - app.main - INFO - Including system router...
+2025-07-07 14:35:48,570 - app.main - INFO - ✅ System router included
+2025-07-07 14:35:48,571 - app.main - INFO - Including notifications router...
+2025-07-07 14:35:48,575 - app.main - INFO - ✅ Notifications router included
+2025-07-07 14:35:48,575 - app.main - INFO - ========================================
+2025-07-07 14:35:48,575 - app.main - INFO - ✅ ALL ROUTERS INCLUDED SUCCESSFULLY
+2025-07-07 14:35:48,576 - app.main - INFO - ========================================
+2025-07-07 14:35:48,576 - app.main - INFO - Elior Fitness API application startup completed successfully
+2025-07-07 14:35:48,576 - app.main - INFO - ========================================
+2025-07-07 14:35:48,577 - app.main - INFO - APPLICATION STARTUP INITIATED
+2025-07-07 14:35:48,577 - app.main - INFO - ========================================
+2025-07-07 14:35:48,577 - app.main - INFO - Checking database connection...
+2025-07-07 14:35:48,580 - app.main - INFO - ✅ Database connection successful
+2025-07-07 14:35:48,580 - app.main - INFO - Initializing database tables...
+2025-07-07 14:35:48,580 - app.database - INFO - Initializing database tables...
+2025-07-07 14:35:48,582 - app.database - INFO - Database tables initialized successfully
+2025-07-07 14:35:48,582 - app.main - INFO - ✅ Database tables initialized successfully
+2025-07-07 14:35:48,582 - app.main - INFO - 📊 Database pool initialized: {'pool_size': 5, 'checked_in_connections': 1, 'checked_out_connections': 0, 'overflow_connections': -4}
+2025-07-07 14:35:48,582 - app.main - INFO - Starting notification scheduler...
+2025-07-07 14:35:48,583 - app.services.scheduler_service - INFO - Starting notification scheduler
+2025-07-07 14:35:48,583 - app.main - INFO - ✅ Notification scheduler started successfully
+2025-07-07 14:35:48,583 - app.main - INFO - ========================================
+2025-07-07 14:35:48,583 - app.main - INFO - ✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY
+2025-07-07 14:35:48,584 - app.main - INFO - ========================================
+2025-07-07 14:35:51,238 - app.database - DEBUG - Creating database session
+2025-07-07 14:35:51,242 - app.database - ERROR - Database session error: 401: Could not validate credentials
+2025-07-07 14:35:51,242 - app.database - DEBUG - Closing database session
+2025-07-07 14:35:51,259 - app.database - DEBUG - Creating database session
+2025-07-07 14:35:51,285 - app.database - DEBUG - Closing database session
+2025-07-07 14:35:53,519 - app.database - DEBUG - Creating database session
+2025-07-07 14:35:53,523 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-07-07 14:35:53,524 - passlib.handlers.bcrypt - DEBUG - detected 'bcrypt' backend, version '<unknown>'
+2025-07-07 14:35:53,524 - passlib.handlers.bcrypt - DEBUG - 'bcrypt' backend lacks $2$ support, enabling workaround
+2025-07-07 14:35:53,706 - app.database - DEBUG - Closing database session
+2025-07-07 14:35:53,711 - app.database - DEBUG - Creating database session
+2025-07-07 14:35:53,717 - app.database - DEBUG - Closing database session
+2025-07-07 14:35:53,737 - app.database - DEBUG - Creating database session
+2025-07-07 14:35:53,741 - app.database - DEBUG - Creating database session
+2025-07-07 14:35:53,741 - app.database - DEBUG - Closing database session
+2025-07-07 14:35:53,742 - app.database - DEBUG - Creating database session
+2025-07-07 14:35:53,747 - app.database - DEBUG - Closing database session
+2025-07-07 14:35:53,758 - app.database - DEBUG - Closing database session
+2025-07-07 14:35:53,760 - app.database - DEBUG - Creating database session
+2025-07-07 14:35:53,767 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:25,312 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:25,313 - app.database - ERROR - Database session error: 401: Could not validate credentials
+2025-07-07 15:15:25,313 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:25,330 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:25,333 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:26,845 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:27,016 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:27,020 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:27,021 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:27,033 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:27,037 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:27,038 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:27,046 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:29,519 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:29,521 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:29,534 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:29,535 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:29,538 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:29,545 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,009 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,011 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,023 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,027 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,027 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,035 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,205 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,207 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,217 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,217 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,222 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,227 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,410 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,411 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,424 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,426 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,429 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,435 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,636 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,637 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,652 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,652 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:30,655 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:30,662 - app.database - DEBUG - Closing database session
+2025-07-07 15:15:33,761 - app.database - DEBUG - Creating database session
+2025-07-07 15:15:33,763 - app.database - DEBUG - Closing database session
+2025-07-07 15:21:44,389 - app.main - INFO - ============================================================
+2025-07-07 15:21:44,390 - app.main - INFO - ELIOR FITNESS API STARTUP
+2025-07-07 15:21:44,390 - app.main - INFO - ============================================================
+2025-07-07 15:21:44,390 - app.main - INFO - Timestamp: 2025-07-07 15:21:44.390687
+2025-07-07 15:21:44,390 - app.main - INFO - Environment: development
+2025-07-07 15:21:44,391 - app.main - INFO - Log Level: DEBUG
+2025-07-07 15:21:44,391 - app.main - INFO - Debug Logging: True
+2025-07-07 15:21:44,391 - app.main - INFO - Domain: localhost
+2025-07-07 15:21:44,391 - app.main - INFO - CORS Origins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost']
+2025-07-07 15:21:44,391 - app.main - INFO - ============================================================
+2025-07-07 15:21:44,392 - app.main - INFO - Starting Elior Fitness API application...
+2025-07-07 15:21:44,519 - app.database - INFO - Database URL: sqlite:///./data/elior_fitness.db
+2025-07-07 15:21:44,519 - app.database - INFO - Configuring SQLite database with optimizations...
+2025-07-07 15:21:44,519 - app.database - DEBUG - Database file path: ./data/elior_fitness.db
+2025-07-07 15:21:44,520 - app.database - INFO - Database directory created/verified: ./data
+2025-07-07 15:21:44,528 - app.database - INFO - SQLite engine created with performance optimizations
+2025-07-07 15:21:44,528 - app.database - INFO - SessionLocal class created with optimizations
+2025-07-07 15:21:44,528 - app.database - INFO - Base class created
+2025-07-07 15:21:44,529 - app.database - INFO - Database configuration completed successfully
+2025-07-07 15:21:44,529 - app.main - INFO - Database module imported successfully
+2025-07-07 15:21:44,529 - app.main - INFO - Importing router modules...
+2025-07-07 15:21:44,652 - passlib.utils.compat - DEBUG - loaded lazy attr 'SafeConfigParser': <class 'configparser.ConfigParser'>
+2025-07-07 15:21:44,652 - passlib.utils.compat - DEBUG - loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>
+2025-07-07 15:21:44,653 - passlib.utils.compat - DEBUG - loaded lazy attr 'BytesIO': <class '_io.BytesIO'>
+2025-07-07 15:21:44,655 - passlib.registry - DEBUG - registered 'bcrypt' handler: <class 'passlib.handlers.bcrypt.bcrypt'>
+2025-07-07 15:21:44,803 - app.main - INFO - ✅ Router modules imported successfully
+2025-07-07 15:21:44,803 - app.main - INFO - 📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+2025-07-07 15:21:44,803 - app.main - INFO - Importing model modules...
+2025-07-07 15:21:44,804 - app.main - INFO - ✅ Model modules imported successfully
+2025-07-07 15:21:44,804 - app.main - INFO - 📋 Available models: user, workout, nutrition, progress, notification
+2025-07-07 15:21:44,804 - app.main - INFO - FastAPI application created with performance optimizations
+2025-07-07 15:21:44,804 - app.main - INFO - Development CORS origins configured
+2025-07-07 15:21:44,804 - app.main - INFO - CORS middleware configured with frontend integration support
+2025-07-07 15:21:44,805 - app.main - INFO - Static files mounted successfully
+2025-07-07 15:21:44,805 - app.main - INFO - ========================================
+2025-07-07 15:21:44,806 - app.main - INFO - INCLUDING ROUTERS
+2025-07-07 15:21:44,806 - app.main - INFO - ========================================
+2025-07-07 15:21:44,806 - app.main - INFO - Including auth router...
+2025-07-07 15:21:44,813 - app.main - INFO - ✅ Auth router included
+2025-07-07 15:21:44,813 - app.main - INFO - Including users router...
+2025-07-07 15:21:44,819 - app.main - INFO - ✅ Users router included
+2025-07-07 15:21:44,819 - app.main - INFO - Including exercises router...
+2025-07-07 15:21:44,819 - app.main - INFO - ✅ Exercises router included
+2025-07-07 15:21:44,819 - app.main - INFO - Including workouts router...
+2025-07-07 15:21:44,836 - app.main - INFO - ✅ Workouts router included
+2025-07-07 15:21:44,836 - app.main - INFO - Including nutrition router...
+2025-07-07 15:21:44,854 - app.main - INFO - ✅ Nutrition router included
+2025-07-07 15:21:44,854 - app.main - INFO - Including meal_plans router...
+2025-07-07 15:21:44,866 - app.main - INFO - ✅ Meal plans router included
+2025-07-07 15:21:44,866 - app.main - INFO - Including progress router...
+2025-07-07 15:21:44,869 - app.main - INFO - ✅ Progress router included
+2025-07-07 15:21:44,870 - app.main - INFO - Including files router...
+2025-07-07 15:21:44,871 - app.main - INFO - ✅ Files router included
+2025-07-07 15:21:44,871 - app.main - INFO - Including websocket router...
+2025-07-07 15:21:44,872 - app.main - INFO - ✅ WebSocket router included
+2025-07-07 15:21:44,873 - app.main - INFO - Including system router...
+2025-07-07 15:21:44,874 - app.main - INFO - ✅ System router included
+2025-07-07 15:21:44,874 - app.main - INFO - Including notifications router...
+2025-07-07 15:21:44,879 - app.main - INFO - ✅ Notifications router included
+2025-07-07 15:21:44,879 - app.main - INFO - ========================================
+2025-07-07 15:21:44,879 - app.main - INFO - ✅ ALL ROUTERS INCLUDED SUCCESSFULLY
+2025-07-07 15:21:44,879 - app.main - INFO - ========================================
+2025-07-07 15:21:44,880 - app.main - INFO - Elior Fitness API application startup completed successfully
+2025-07-07 15:21:44,880 - app.main - INFO - ========================================
+2025-07-07 15:21:44,880 - app.main - INFO - APPLICATION STARTUP INITIATED
+2025-07-07 15:21:44,881 - app.main - INFO - ========================================
+2025-07-07 15:21:44,881 - app.main - INFO - Checking database connection...
+2025-07-07 15:21:44,882 - app.main - INFO - ✅ Database connection successful
+2025-07-07 15:21:44,882 - app.main - INFO - Initializing database tables...
+2025-07-07 15:21:44,882 - app.database - INFO - Initializing database tables...
+2025-07-07 15:21:44,884 - app.database - INFO - Database tables initialized successfully
+2025-07-07 15:21:44,884 - app.main - INFO - ✅ Database tables initialized successfully
+2025-07-07 15:21:44,885 - app.main - INFO - 📊 Database pool initialized: {'pool_size': 5, 'checked_in_connections': 1, 'checked_out_connections': 0, 'overflow_connections': -4}
+2025-07-07 15:21:44,885 - app.main - INFO - Starting notification scheduler...
+2025-07-07 15:21:44,886 - app.services.scheduler_service - INFO - Starting notification scheduler
+2025-07-07 15:21:44,886 - app.main - INFO - ✅ Notification scheduler started successfully
+2025-07-07 15:21:44,886 - app.main - INFO - ========================================
+2025-07-07 15:21:44,886 - app.main - INFO - ✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY
+2025-07-07 15:21:44,887 - app.main - INFO - ========================================
+2025-07-07 15:21:50,330 - app.database - DEBUG - Creating database session
+2025-07-07 15:21:50,362 - app.database - DEBUG - Closing database session
+2025-07-07 15:21:50,371 - app.database - DEBUG - Creating database session
+2025-07-07 15:21:50,373 - app.database - DEBUG - Closing database session
+2025-07-07 15:21:51,957 - app.database - DEBUG - Creating database session
+2025-07-07 15:21:51,961 - app.database - DEBUG - Closing database session
+2025-07-07 15:21:51,965 - app.database - DEBUG - Creating database session
+2025-07-07 15:21:51,967 - app.database - DEBUG - Creating database session
+2025-07-07 15:21:51,973 - app.database - DEBUG - Closing database session
+2025-07-07 15:21:51,979 - app.database - DEBUG - Creating database session
+2025-07-07 15:21:51,984 - app.database - DEBUG - Closing database session
+2025-07-07 15:21:51,991 - app.database - DEBUG - Closing database session
+2025-07-07 15:21:56,875 - app.database - DEBUG - Creating database session
+2025-07-07 15:21:56,878 - app.database - DEBUG - Creating database session
+2025-07-07 15:21:56,882 - app.database - DEBUG - Closing database session
+2025-07-07 15:21:56,889 - app.database - DEBUG - Closing database session
+2025-07-07 15:22:00,801 - app.database - DEBUG - Creating database session
+2025-07-07 15:22:00,802 - app.database - DEBUG - Closing database session
+2025-07-07 15:22:00,816 - app.database - DEBUG - Creating database session
+2025-07-07 15:22:00,821 - app.database - DEBUG - Closing database session
+2025-07-07 15:22:00,821 - app.database - DEBUG - Creating database session
+2025-07-07 15:22:00,831 - app.database - DEBUG - Closing database session
+2025-07-07 15:22:03,162 - app.database - DEBUG - Creating database session
+2025-07-07 15:22:03,164 - app.database - DEBUG - Closing database session
+2025-07-07 15:22:34,217 - app.database - DEBUG - Creating database session
+2025-07-07 15:22:34,221 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-07-07 15:22:34,222 - passlib.handlers.bcrypt - DEBUG - detected 'bcrypt' backend, version '<unknown>'
+2025-07-07 15:22:34,222 - passlib.handlers.bcrypt - DEBUG - 'bcrypt' backend lacks $2$ support, enabling workaround
+2025-07-07 15:22:34,409 - app.database - ERROR - Database session error: 'dict' object has no attribute 'title'
+2025-07-07 15:22:34,410 - app.database - DEBUG - Closing database session
+2025-07-07 15:22:34,410 - app.main - ERROR - Request failed: POST http://localhost:8000/api/auth/register/client after 0.194s - Error: 'dict' object has no attribute 'title' (ID: 1751901754216)

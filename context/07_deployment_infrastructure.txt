@@ -1,83 +1,229 @@
-DEPLOYMENT & INFRASTRUCTURE
+# Deployment Infrastructure
 
-DOCKER CONFIGURATION:
-docker-compose.yml: Main deployment configuration
-- Frontend served via Nginx on port 3000 (public access)
-- API service internal only (port 8000 proxy, port 8001 backend)
-- SQLite database with persistent volume
-- Resource limits: 512MB memory, 1 CPU core
-- Automatic restart policy
-- Log rotation with size limits
-- Security: Frontend-only external access
+## Overview
+Elior Fitness uses a modern, containerized deployment strategy optimized for Railway platform with FastAPI serving both the API and frontend.
 
-Dockerfile: Multi-stage build
-- Python 3.11 base image
-- Nginx for frontend serving
-- Optimized for minimal resource usage
-- Health checks and monitoring
+## Architecture
 
-NGINX CONFIGURATION:
-nginx/nginx.secure.conf: Secure frontend-only configuration
-nginx/nginx.conf: Production configuration (SSL)
-nginx/nginx.dev.conf: Development configuration
-- Frontend serving with API proxy for same-origin requests
-- Internal-only API access (port 8000 proxy to 8001)
-- Health and docs restricted to internal networks
-- SSL/TLS support (production)
-- CORS headers and security
-- Blocked external API access
+### Production Deployment (Railway)
+```
+Internet → Railway Edge → FastAPI Container (Port $PORT) → Static Files + API
+```
 
-ENVIRONMENT CONFIGURATION:
-env.production.example: Production environment template
-- Database URL configuration
-- JWT secret and algorithm settings
-- File upload limits and directories
-- CORS origins and domain settings
-- Logging levels and debug settings
+### Development Deployment (Local)
+```
+Localhost → Docker → FastAPI Container (Port 8000) → Static Files + API
+```
 
-RESOURCE OPTIMIZATION:
-- Memory limit: 512MB (hard), 256MB (reserved)
-- CPU limit: 1.0 core (hard), 0.5 core (reserved)
-- File upload size: 5MB (reduced for minimal storage)
-- Log file size: 5MB max, 2 files max
-- Database: SQLite for simplicity and portability
+## Container Strategy
 
-SECURITY FEATURES:
-- Frontend-only external access (API internal only)
-- JWT authentication with secure tokens
-- Role-based access control
-- File upload validation and virus scanning
-- CORS configuration for frontend requests only
-- Input validation and SQL injection prevention
-- XSS protection and secure error handling
-- Internal-only health and documentation access
-- Blocked external API access
+### Multi-Stage Docker Build
+1. **Frontend Builder Stage**: Node.js builds React app
+2. **Production Stage**: Python/FastAPI serves built files
 
-MONITORING & HEALTH CHECKS:
-- Application health endpoint: /health (internal only)
-- Database status endpoint: /status/database (internal only)
-- Performance metrics endpoint: /metrics (blocked externally)
-- Logging with different levels (WARNING in production)
-- Error tracking and reporting
-- Internal-only monitoring access
+### Benefits
+- **Single Service**: Simplified deployment and maintenance
+- **Railway Optimized**: Perfect compatibility with Railway's `$PORT` system
+- **Performance**: No proxy overhead, optimized static serving
+- **Security**: No Node.js in production runtime
 
-DEPLOYMENT COMMANDS:
-docker-compose up --build: Build and start services
-docker-compose down: Stop services
-docker-compose logs: View service logs
-docker-compose restart: Restart services
+## Railway Configuration
 
-PRODUCTION CONSIDERATIONS:
-- Environment variables for sensitive data
-- SSL/TLS certificates for HTTPS
-- Database backups and persistence
-- Monitoring and alerting setup
-- Performance optimization and caching
-- Security hardening and access controls
+### Service Configuration (`railway.json`)
+```json
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "./Dockerfile"
+  },
+  "envVars": {
+    "ENVIRONMENT": "production",
+    "DOMAIN": "${{RAILWAY_PUBLIC_DOMAIN}}",
+    "CORS_ORIGINS": "https://${{RAILWAY_PUBLIC_DOMAIN}},http://${{RAILWAY_PUBLIC_DOMAIN}}"
+  },
+  "deploy": {
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300
+  }
+}
+```
 
-DEVELOPMENT SETUP:
-- Local development with hot reload
-- Test database with sample data
-- Debug logging and error reporting
-- Development-specific configurations
-- Testing environment with pytest 
+### Port Configuration
+- **Target Port**: 8080 (Railway's assigned port)
+- **Environment Variable**: `$PORT` (Railway sets this)
+- **Health Check**: `/health` endpoint
+
+### Environment Variables
+- `ENVIRONMENT`: production/development
+- `DOMAIN`: Railway public domain
+- `CORS_ORIGINS`: Allowed CORS origins
+- `PORT`: Application port (Railway sets this)
+
+## Docker Configuration
+
+### Production Dockerfile
+```dockerfile
+# Multi-stage build for optimal size and security
+FROM node:18-slim AS frontend-builder
+# Build React app
+
+FROM python:3.11-slim
+# Install dependencies and copy built frontend
+# Start FastAPI with Railway port support
+```
+
+### Local Development (`docker-compose.yml`)
+```yaml
+services:
+  elior-fitness:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - PORT=8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+```
+
+## Performance Optimizations
+
+### Static File Serving
+- **In-Memory Caching**: Index.html cached for 5 minutes
+- **Asset Caching**: Static assets cached for 1 year
+- **Compression**: Automatic gzip compression
+- **CDN Ready**: Optimized headers for CDN integration
+
+### FastAPI Optimizations
+- **Response Caching**: Cache frequently requested data
+- **Compression**: Automatic response compression
+- **Connection Pooling**: Optimized database connections
+- **Background Tasks**: Async processing for heavy operations
+
+## Security Features
+
+### Container Security
+- **Non-Root User**: Application runs as non-root user
+- **Minimal Base Image**: Python slim image for smaller attack surface
+- **No Development Dependencies**: Only production dependencies in final image
+- **Secure File Permissions**: Proper file ownership and permissions
+
+### Application Security
+- **JWT Authentication**: Secure token-based authentication
+- **Input Validation**: Comprehensive request validation
+- **SQL Injection Protection**: Parameterized queries
+- **File Upload Security**: Validation and virus scanning
+
+## Monitoring & Health Checks
+
+### Health Check Endpoints
+- `GET /health` - Basic health check
+- `GET /health/detailed` - Detailed health information
+- `GET /metrics` - Application metrics
+
+### Railway Health Checks
+- **Path**: `/health`
+- **Timeout**: 300 seconds
+- **Retries**: 3 attempts
+- **Interval**: 30 seconds
+
+### Logging
+- **Structured Logging**: JSON format for easy parsing
+- **Log Levels**: DEBUG, INFO, WARNING, ERROR, CRITICAL
+- **Performance Logging**: Request timing and database query logs
+- **Error Tracking**: Comprehensive error logging with stack traces
+
+## Deployment Process
+
+### Railway Deployment
+1. **Code Push**: Git push triggers Railway build
+2. **Docker Build**: Multi-stage build creates optimized image
+3. **Environment Setup**: Railway injects environment variables
+4. **Health Check**: Application starts and passes health checks
+5. **Traffic Routing**: Railway routes traffic to new deployment
+
+### Local Development
+1. **Build Image**: `docker-compose build`
+2. **Start Container**: `docker-compose up -d`
+3. **Health Check**: Verify `/health` endpoint
+4. **Access Application**: `http://localhost:8000`
+
+## Scaling Strategy
+
+### Horizontal Scaling
+- **Railway Auto-Scaling**: Automatic scaling based on traffic
+- **Load Balancing**: Railway handles load distribution
+- **Stateless Design**: Application is stateless for easy scaling
+
+### Performance Monitoring
+- **Response Times**: Monitor API response times
+- **Error Rates**: Track error rates and types
+- **Resource Usage**: Monitor CPU and memory usage
+- **Database Performance**: Track query performance
+
+## Backup & Recovery
+
+### Database Backup
+- **SQLite Database**: File-based backup strategy
+- **Volume Mounting**: Database persisted in Railway volumes
+- **Backup Frequency**: Daily automated backups
+- **Recovery Testing**: Regular recovery testing
+
+### Application Recovery
+- **Health Checks**: Automatic health monitoring
+- **Restart Policy**: Automatic restart on failure
+- **Rollback Strategy**: Quick rollback to previous version
+- **Disaster Recovery**: Complete system recovery procedures
+
+## SSL/TLS Configuration
+
+### Railway SSL
+- **Automatic SSL**: Railway provides automatic SSL certificates
+- **Custom Domains**: Support for custom domain SSL
+- **HTTPS Redirect**: Automatic HTTP to HTTPS redirect
+- **Security Headers**: Proper security headers configuration
+
+## Development Workflow
+
+### Local Development
+1. **Code Changes**: Make changes in local environment
+2. **Local Testing**: Test with `docker-compose up`
+3. **Git Commit**: Commit changes to version control
+4. **Push to Railway**: Deploy to Railway for testing
+
+### Production Deployment
+1. **Code Review**: Review changes before deployment
+2. **Railway Deploy**: Deploy to Railway production
+3. **Health Monitoring**: Monitor application health
+4. **Performance Validation**: Validate performance metrics
+
+## Troubleshooting
+
+### Common Issues
+1. **Port Conflicts**: Ensure application uses `$PORT` environment variable
+2. **Health Check Failures**: Verify `/health` endpoint returns 200
+3. **Static File Issues**: Check static file serving configuration
+4. **Database Issues**: Verify database connection and permissions
+
+### Debugging Tools
+- **Railway Logs**: `railway logs` for application logs
+- **Health Checks**: Monitor `/health` endpoint
+- **Metrics**: Use `/metrics` endpoint for performance data
+- **Error Logging**: Comprehensive error logging in application
+
+## Future Enhancements
+
+### Planned Improvements
+1. **CDN Integration**: Add CDN for static assets
+2. **Database Migration**: Consider PostgreSQL for production
+3. **Monitoring**: Add application performance monitoring
+4. **CI/CD**: Implement automated testing and deployment
+
+### Scalability Considerations
+1. **Microservices**: Consider breaking into microservices
+2. **Caching**: Add Redis for session and data caching
+3. **Load Balancing**: Implement custom load balancing
+4. **Database Sharding**: Consider database sharding for scale 
