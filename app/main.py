@@ -227,7 +227,7 @@ except Exception as e:
 # Enhanced health check endpoint with comprehensive system status
 @app.get("/health")
 async def health_check():
-    """Comprehensive health check with database and system status."""
+    """Platform health check endpoint - always returns 200 for Railway."""
     logger.debug("Health check endpoint called")
     
     # Check database connectivity
@@ -236,28 +236,20 @@ async def health_check():
     # Get database pool statistics
     pool_stats = get_db_pool_stats()
     
-    # Basic system health
+    # Health status - always return 200 for platform compatibility
     health_status = {
-        "status": "healthy" if db_healthy else "unhealthy",
+        "status": "healthy" if db_healthy else "degraded",
         "version": "1.0.0",
         "environment": ENVIRONMENT,
-        "domain": DOMAIN,
-        "sprint": "6 - Advanced Meal Plan System",
         "timestamp": time.time(),
         "database": {
             "status": "connected" if db_healthy else "disconnected",
             "pool_stats": pool_stats
-        },
-        "performance": {
-            "response_compression": "not_implemented",  # TODO: Add compression
-            "connection_pooling": "enabled",
-            "query_optimization": "enabled",
-            "performance_monitoring": "enabled"
         }
     }
-    # Always return 200 for platform health
-    status_code = 200
-    return JSONResponse(content=health_status, status_code=status_code)
+    
+    # Always return 200 for platform health checks
+    return JSONResponse(content=health_status, status_code=200)
 
 # Add OPTIONS handler for health endpoint
 @app.options("/health")
