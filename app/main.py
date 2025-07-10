@@ -8,23 +8,92 @@ import time
 import asyncio
 import os
 from contextlib import asynccontextmanager
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+import re
 
-# Environment-based configuration (define before logging)
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
-DOMAIN = os.getenv("DOMAIN", "localhost")
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+# Universal environment configuration that works with any reverse proxy
+def detect_environment():
+    """Universal environment detection that works with any deployment method."""
+    
+    # Check for explicit environment setting
+    env = os.getenv("ENVIRONMENT")
+    if env:
+        return env
+    
+    # Auto-detect production environments
+    production_indicators = [
+        os.getenv("RAILWAY_PUBLIC_DOMAIN"),      # Railway
+        os.getenv("RAILWAY_STATIC_URL"),         # Railway
+        os.getenv("RENDER_EXTERNAL_URL"),        # Render
+        os.getenv("HEROKU_APP_NAME"),            # Heroku
+        os.getenv("VERCEL_URL"),                 # Vercel
+        os.getenv("NETLIFY_URL"),                # Netlify
+        os.getenv("PORT"),                       # Any cloud platform
+    ]
+    
+    # If any production indicator is present, assume production
+    if any(indicator for indicator in production_indicators):
+        return "production"
+    
+    # Default to development for local development
+    return "development"
 
-# Defensive defaults when env vars missing (e.g., during initial deploy)
-if not ENVIRONMENT:
-    ENVIRONMENT = "production"
+def detect_domain():
+    """Universal domain detection."""
+    # Check for explicit domain setting
+    domain = os.getenv("DOMAIN")
+    if domain and domain != "localhost":
+        return domain
+    
+    # Auto-detect from various platform variables
+    platform_domains = [
+        os.getenv("RAILWAY_PUBLIC_DOMAIN"),
+        os.getenv("RAILWAY_STATIC_URL"),
+        os.getenv("RENDER_EXTERNAL_URL"),
+        os.getenv("VERCEL_URL"),
+        os.getenv("NETLIFY_URL"),
+    ]
+    
+    for platform_domain in platform_domains:
+        if platform_domain:
+            return platform_domain
+    
+    return "localhost"
 
-if (not DOMAIN or DOMAIN == "localhost") and os.getenv("RAILWAY_PUBLIC_DOMAIN"):
-    DOMAIN = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+def detect_cors_origins():
+    """Universal CORS origins detection."""
+    # Check for explicit CORS setting
+    cors_raw = os.getenv("CORS_ORIGINS")
+    if cors_raw:
+        origins = [origin.strip() for origin in cors_raw.split(",") if origin.strip()]
+        if origins and origins != ["http://localhost:3000"]:
+            return origins
+    
+    # Auto-detect from domain
+    domain = detect_domain()
+    if domain and domain != "localhost":
+        return [f"https://{domain}", f"http://{domain}"]
+    
+    # Default development origins
+    return ["http://localhost:3000", "http://localhost:8000", "http://127.0.0.1:3000", "http://127.0.0.1:8000"]
 
-if (not CORS_ORIGINS or CORS_ORIGINS == [""] or CORS_ORIGINS == ["http://localhost:3000"]):
-    rail_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN") or os.getenv("RAILWAY_STATIC_URL")
-    if rail_domain:
-        CORS_ORIGINS = [f"https://{rail_domain}", f"http://{rail_domain}"]
+# Apply universal detection
+ENVIRONMENT = detect_environment()
+DOMAIN = detect_domain()
+CORS_ORIGINS = detect_cors_origins()
+
+# Debug output
+print(f"=== UNIVERSAL ENVIRONMENT DETECTION ===")
+print(f"Detected ENVIRONMENT: {ENVIRONMENT}")
+print(f"Detected DOMAIN: {DOMAIN}")
+print(f"Detected CORS_ORIGINS: {CORS_ORIGINS}")
+print(f"Raw ENVIRONMENT env var: {os.getenv('ENVIRONMENT')}")
+print(f"Raw DOMAIN env var: {os.getenv('DOMAIN')}")
+print(f"Raw CORS_ORIGINS env var: {os.getenv('CORS_ORIGINS')}")
+print(f"RAILWAY_PUBLIC_DOMAIN: {os.getenv('RAILWAY_PUBLIC_DOMAIN')}")
+print(f"PORT: {os.getenv('PORT')}")
+print("=" * 50)
 
 # Configure logging with comprehensive output
 import os
@@ -201,31 +270,46 @@ async def performance_monitoring_middleware(request: Request, call_next):
         logger.error(f"Request failed: {request.method} {request.url} after {process_time:.3f}s - Error: {str(e)}")
         raise
 
-# Environment-based CORS middleware configuration
-if ENVIRONMENT == "production":
-    # Production: Only allow specified origins
-    cors_origins = CORS_ORIGINS
-    logger.info(f"Production CORS origins: {cors_origins}")
-else:
-    # Development: Allow all localhost origins
-    cors_origins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-        "http://localhost:5173",  # Vite default port
-        "http://127.0.0.1:5173"
-    ]
-    logger.info("Development CORS origins configured")
+# Custom CORS middleware for wildcard domains
+def is_allowed_origin(origin: str) -> bool:
+    if not origin:
+        return False
+    # Allow localhost and 127.0.0.1 for dev
+    if re.match(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", origin):
+        return True
+    # Allow any subdomain of duckdns.org
+    if re.match(r"^https?://([a-zA-Z0-9-]+\.)*duckdns\.org(:\d+)?$", origin):
+        return True
+    # Allow any subdomain of up.railway.app
+    if re.match(r"^https?://([a-zA-Z0-9-]+\.)*up\.railway\.app(:\d+)?$", origin):
+        return True
+    return False
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["*", "Authorization", "Content-Type", "X-Request-ID"],
-    expose_headers=["X-Process-Time", "X-Request-ID"]  # Expose performance headers
-)
+class WildcardCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        origin = request.headers.get("origin")
+        if is_allowed_origin(origin):
+            # Preflight request
+            if request.method == "OPTIONS":
+                resp = Response()
+                resp.headers["Access-Control-Allow-Origin"] = origin
+                resp.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+                resp.headers["Access-Control-Allow-Headers"] = request.headers.get(
+                    "access-control-request-headers", "*")
+                resp.headers["Access-Control-Allow-Credentials"] = "true"
+                return resp
+            # Normal request
+            response = await call_next(request)
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Expose-Headers"] = "X-Process-Time, X-Request-ID"
+            return response
+        else:
+            # Not allowed origin: proceed without CORS headers
+            return await call_next(request)
+
+# Add the custom CORS middleware
+app.add_middleware(WildcardCORSMiddleware)
 
 logger.info("CORS middleware configured with frontend integration support")
 
@@ -348,34 +432,8 @@ try:
             )
         return {"message": "Robots.txt not found"}
     
-    # Catch-all route for SPA routing - must be LAST
-    @app.get("/{full_path:path}", response_class=HTMLResponse)
-    async def serve_spa_routes(full_path: str):
-        """Serve index.html for all non-API routes to support SPA routing."""
-        # Don't serve index.html for API routes or system endpoints
-        if (full_path.startswith("api/") or 
-            full_path in ["health", "test", "metrics"] or
-            full_path.startswith("health/") or
-            full_path.startswith("metrics/") or
-            full_path.startswith("status/") or
-            full_path.startswith("uploads/")):
-            raise HTTPException(status_code=404, detail="Not found")
-        
-        # Serve index.html for all other routes (SPA routing)
-        html_content = get_index_html()
-        if html_content:
-            return HTMLResponse(
-                content=html_content,
-                headers={
-                    "Cache-Control": "public, max-age=300",  # Cache for 5 minutes
-                    "Vary": "Accept-Encoding"
-                }
-            )
-        else:
-            return HTMLResponse(
-                content="<h1>Frontend not found</h1>",
-                status_code=404
-            )
+    # Catch-all route for SPA routing - will be moved to the end
+    # This is just a placeholder - the actual route will be defined after all other routes
         
     logger.info("Frontend serving endpoints configured with performance optimizations")
 except Exception as e:
@@ -418,6 +476,36 @@ async def test_endpoint():
         "environment": ENVIRONMENT,
         "timestamp": time.time(),
         "status": "ok"
+    }
+
+# API test endpoint for debugging authentication flow
+@app.get("/api/test")
+async def api_test_endpoint():
+    """API test endpoint for debugging authentication flow."""
+    return {
+        "message": "API endpoint is accessible!",
+        "environment": ENVIRONMENT,
+        "domain": DOMAIN,
+        "cors_origins": CORS_ORIGINS,
+        "timestamp": time.time(),
+        "api_status": "working"
+    }
+
+# Environment debug endpoint
+@app.get("/api/debug/env")
+async def debug_environment():
+    """Debug endpoint to check environment variables."""
+    return {
+        "raw_environment": os.getenv("ENVIRONMENT"),
+        "raw_domain": os.getenv("DOMAIN"),
+        "raw_cors_origins": os.getenv("CORS_ORIGINS"),
+        "railway_public_domain": os.getenv("RAILWAY_PUBLIC_DOMAIN"),
+        "railway_static_url": os.getenv("RAILWAY_STATIC_URL"),
+        "port": os.getenv("PORT"),
+        "processed_environment": ENVIRONMENT,
+        "processed_domain": DOMAIN,
+        "processed_cors_origins": CORS_ORIGINS,
+        "timestamp": time.time()
     }
 
 # Add OPTIONS handler for health endpoint
@@ -541,6 +629,35 @@ except Exception as e:
     logger.error(f"Stack trace: {traceback.format_exc()}")
     raise
 
-# Root endpoint moved to serve_frontend() function above
+# Catch-all route for SPA routing - MUST BE LAST
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+async def serve_spa_routes(full_path: str):
+    """Serve index.html for all non-API routes to support SPA routing."""
+    # Don't serve index.html for API routes or system endpoints
+    if (full_path.startswith("api/") or 
+        full_path in ["health", "test", "metrics"] or
+        full_path.startswith("health/") or
+        full_path.startswith("metrics/") or
+        full_path.startswith("status/") or
+        full_path.startswith("uploads/") or
+        full_path.startswith("docs/") or
+        full_path.startswith("redoc/")):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Serve index.html for all other routes (SPA routing)
+    html_content = get_index_html()
+    if html_content:
+        return HTMLResponse(
+            content=html_content,
+            headers={
+                "Cache-Control": "public, max-age=300",  # Cache for 5 minutes
+                "Vary": "Accept-Encoding"
+            }
+        )
+    else:
+        return HTMLResponse(
+            content="<h1>Frontend not found</h1>",
+            status_code=404
+        )
 
 logger.info("Elior Fitness API application startup completed successfully") 

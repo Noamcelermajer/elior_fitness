@@ -147,6 +147,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
+      console.log('Attempting login with API URL:', `${API_BASE_URL}/auth/login`);
+      
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -157,6 +159,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           password,
         }),
       });
+
+      console.log('Login response status:', response.status);
+      console.log('Login response headers:', Object.fromEntries(response.headers.entries()));
 
       if (response.ok) {
         const data = await response.json();
@@ -172,11 +177,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return true;
         }
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
         console.error('Login failed:', errorData);
+        console.error('Response status:', response.status);
+        console.error('Response status text:', response.statusText);
       }
     } catch (error) {
       console.error('Login error:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
     }
     
     return false;

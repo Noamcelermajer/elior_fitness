@@ -10,9 +10,10 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
     environment:
-      - ENVIRONMENT=development
-      - DOMAIN=localhost
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:8000
+      # Universal configuration - works with any reverse proxy
+      # For local development with Caddy, set your domain here
+      - DOMAIN=${DOMAIN:-localhost}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000,http://127.0.0.1:3000,http://127.0.0.1:8000}
       - LOG_LEVEL=INFO
       - PORT=8000
     restart: unless-stopped

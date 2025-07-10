@@ -1,21 +1,21 @@
-// API Configuration
-// Production: Uses current domain with /api path
-// Development: Uses localhost:8000 (FastAPI directly)
+// Universal API Configuration
+// Automatically adapts to any deployment scenario
 
 const getApiUrl = () => {
-  // Check for environment variable first
+  // Check for environment variable first (highest priority)
   if (import.meta.env.VITE_API_URL) {
+    console.log('Using VITE_API_URL:', import.meta.env.VITE_API_URL);
     return import.meta.env.VITE_API_URL;
   }
   
-  // Production environment - use same domain as frontend
-  if (import.meta.env.PROD) {
-    // Use the same domain as the frontend, with /api path
-    return `${window.location.origin}/api`;
-  }
+  // Universal detection: Use same domain as frontend with /api path
+  // This works for any reverse proxy setup (Caddy, Nginx, Railway, etc.)
+  const apiUrl = `${window.location.origin}/api`;
+  console.log('Universal API URL:', apiUrl);
+  console.log('Frontend origin:', window.location.origin);
+  console.log('Environment:', import.meta.env.MODE);
   
-  // Development environment - FastAPI runs directly on port 8000
-  return 'http://localhost:8000';
+  return apiUrl;
 };
 
 export const API_BASE_URL = getApiUrl();
