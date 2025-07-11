@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { Pencil, Trash2, Eye, Shield, User, Loader2, UserPlus } from 'lucide-react';
+import { Pencil, Trash2, Eye, Shield, User, Loader2, UserPlus, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 
 const roleOptions = [
@@ -31,13 +31,10 @@ const UsersPage = () => {
   const [editForm, setEditForm] = useState({ full_name: '', email: '', role: '' });
   const [actionLoading, setActionLoading] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
-  const [registerForm, setRegisterForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    full_name: '',
-    role: 'trainer'
-  });
+  const [registerForm, setRegisterForm] = useState({ username: '', email: '', password: '', confirmPassword: '', full_name: '', role: 'trainer' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     if (!user || user.role !== 'admin') return;
@@ -175,7 +172,7 @@ const UsersPage = () => {
           message: 'New trainer account has been created successfully.'
         });
         setRegisterDialogOpen(false);
-        setRegisterForm({ username: '', email: '', password: '', full_name: '', role: 'trainer' });
+        setRegisterForm({ username: '', email: '', password: '', confirmPassword: '', full_name: '', role: 'trainer' });
         fetchUsers(); // Refresh the users list
       } else {
         const errorData = await response.json();
@@ -357,7 +354,7 @@ const UsersPage = () => {
               <DialogTitle>Register New Trainer</DialogTitle>
               <DialogDescription>Create a new trainer account. Fill in the details below.</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleRegisterTrainer} className="space-y-4">
+            <form onSubmit={e => { e.preventDefault(); if (registerForm.password !== registerForm.confirmPassword) { setPasswordError('Passwords do not match'); return; } setPasswordError(''); handleRegisterTrainer(e); }} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
@@ -391,15 +388,37 @@ const UsersPage = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={registerForm.password}
-                  onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
-                  placeholder="Enter password"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={registerForm.password}
+                    onChange={e => setRegisterForm({ ...registerForm, password: e.target.value })}
+                    placeholder="Enter password"
+                    required
+                  />
+                  <button type="button" className="absolute right-2 top-2" onClick={() => setShowPassword(v => !v)}>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={registerForm.confirmPassword}
+                    onChange={e => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                    placeholder="Re-enter password"
+                    required
+                  />
+                  <button type="button" className="absolute right-2 top-2" onClick={() => setShowConfirmPassword(v => !v)}>
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              {passwordError && <div className="text-red-500 text-sm">{passwordError}</div>}
               <div className="flex space-x-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setRegisterDialogOpen(false)} className="flex-1">
                   Cancel

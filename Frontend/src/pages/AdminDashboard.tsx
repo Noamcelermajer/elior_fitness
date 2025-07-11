@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dumbbell, Target, Utensils, TrendingUp, Plus, Calendar, Clock, CheckCircle, Users, Trophy, Flame, UserPlus, Shield, Settings } from 'lucide-react';
+import { Dumbbell, Target, Utensils, TrendingUp, Plus, Calendar, Clock, CheckCircle, Users, Trophy, Flame, UserPlus, Shield, Settings, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
@@ -16,12 +16,10 @@ const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
-  const [registerForm, setRegisterForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    full_name: ''
-  });
+  const [registerForm, setRegisterForm] = useState({ username: '', email: '', password: '', confirmPassword: '', full_name: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
 
   // --- New state for real stats ---
@@ -161,7 +159,7 @@ const AdminDashboard = () => {
       if (response.ok) {
         alert('Trainer registered successfully!');
         setIsRegisterDialogOpen(false);
-        setRegisterForm({ username: '', email: '', password: '', full_name: '' });
+        setRegisterForm({ username: '', email: '', password: '', confirmPassword: '', full_name: '' });
       } else {
         const errorData = await response.json();
         alert(`Registration failed: ${errorData.detail || 'Unknown error'}`);
@@ -220,7 +218,7 @@ const AdminDashboard = () => {
                         Create a new trainer account. Fill in the details below.
                       </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleRegisterTrainer} className="space-y-4">
+                    <form onSubmit={e => { e.preventDefault(); if (registerForm.password !== registerForm.confirmPassword) { setPasswordError('Passwords do not match'); return; } setPasswordError(''); handleRegisterTrainer(e); }} className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="username">Username</Label>
                         <Input
@@ -254,15 +252,37 @@ const AdminDashboard = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="password">Password</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={registerForm.password}
-                          onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
-                          placeholder="Enter password"
-                          required
-                        />
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            value={registerForm.password}
+                            onChange={e => setRegisterForm({ ...registerForm, password: e.target.value })}
+                            placeholder="Enter password"
+                            required
+                          />
+                          <button type="button" className="absolute right-2 top-2" onClick={() => setShowPassword(v => !v)}>
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={registerForm.confirmPassword}
+                            onChange={e => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                            placeholder="Re-enter password"
+                            required
+                          />
+                          <button type="button" className="absolute right-2 top-2" onClick={() => setShowConfirmPassword(v => !v)}>
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      {passwordError && <div className="text-red-500 text-sm">{passwordError}</div>}
                       <div className="flex space-x-2 pt-4">
                         <Button
                           type="button"
