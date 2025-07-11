@@ -105,7 +105,7 @@ const TrainerDashboard = () => {
       };
       // Fetch stats only
       const [clientsRes, exercisesRes, workoutPlansRes, mealPlansRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/users/?role=client`, { headers }),
+        fetch(`${API_BASE_URL}/users/clients`, { headers }),
         fetch(`${API_BASE_URL}/workouts/exercises`, { headers }),
         fetch(`${API_BASE_URL}/workouts/plans`, { headers }),
         fetch(`${API_BASE_URL}/meal-plans/`, { headers })
@@ -136,7 +136,7 @@ const TrainerDashboard = () => {
   const fetchClients = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/users/?role=client`, {
+      const response = await fetch(`${API_BASE_URL}/users/clients`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
