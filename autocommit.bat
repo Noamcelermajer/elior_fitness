@@ -40,10 +40,18 @@ if errorlevel 1 (
     echo Committing with timestamp: %datestamp%
     git commit -m "Auto-commit: %datestamp% - Elior Fitness updates"
     
-    :: Push to remote
-    echo.
-    echo Pushing to remote repository...
-    git push
+    :: Get current branch name
+    for /f "delims=" %%b in ('git rev-parse --abbrev-ref HEAD') do set "branch=%%b"
+
+    :: Check if upstream is set for the current branch
+    for /f "delims=" %%u in ('git rev-parse --symbolic-full-name --verify --quiet "@{u}"') do set "upstream=%%u"
+
+    if not defined upstream (
+        echo No upstream set for branch %branch%. Setting upstream to origin/%branch% ...
+        git push --set-upstream origin %branch%
+    ) else (
+        git push
+    )
     
     echo.
     echo ✅ Commit completed successfully!
