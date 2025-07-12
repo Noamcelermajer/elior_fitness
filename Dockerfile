@@ -34,6 +34,8 @@ WORKDIR /app
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# Install requests for test user initialization
+RUN pip install requests
 
 # Copy backend application
 COPY app/ ./app/
