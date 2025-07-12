@@ -219,7 +219,10 @@ const TrainerDashboard = () => {
         </div>
         {/* Clients Section */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-6 text-center">Your Clients</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-center">Your Clients</h2>
+            <Button onClick={() => setAddClientDialogOpen(true)} className="gradient-orange text-background font-semibold flex items-center"><UserPlus className="w-4 h-4 mr-2" />Add Client</Button>
+          </div>
           <div className="flex justify-center mb-8">
             <input
               type="text"
@@ -264,9 +267,8 @@ const TrainerDashboard = () => {
               ))
             )}
           </div>
-          <Button onClick={() => setAddClientDialogOpen(true)} className="mb-6 gradient-orange text-background font-semibold flex items-center"><UserPlus className="w-4 h-4 mr-2" />Add Client</Button>
-          {/* Progress Modal */}
-          <Dialog open={progressModalOpen} onOpenChange={setProgressModalOpen}>
+        </div>
+        <Dialog open={progressModalOpen} onOpenChange={setProgressModalOpen}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Weight Progress - {selectedClient?.full_name}</DialogTitle>
@@ -283,7 +285,6 @@ const TrainerDashboard = () => {
               )}
             </DialogContent>
           </Dialog>
-        </div>
         <Dialog open={addClientDialogOpen} onOpenChange={setAddClientDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -313,8 +314,14 @@ const TrainerDashboard = () => {
                   })
                 });
                 if (!res.ok) {
-                  const err = await res.json();
-                  setAddClientError(err.detail || 'Failed to register client');
+                  let errMsg = 'Failed to register client';
+                  try {
+                    const err = await res.json();
+                    errMsg = err.detail || JSON.stringify(err);
+                  } catch (jsonErr) {
+                    errMsg = await res.text();
+                  }
+                  setAddClientError(errMsg);
                   setAddClientLoading(false);
                   return;
                 }
@@ -325,7 +332,14 @@ const TrainerDashboard = () => {
                   headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!assignRes.ok) {
-                  setAddClientError('Client registered but failed to assign to trainer');
+                  let assignErrMsg = 'Client registered but failed to assign to trainer';
+                  try {
+                    const err = await assignRes.json();
+                    assignErrMsg = err.detail || JSON.stringify(err);
+                  } catch (jsonErr) {
+                    assignErrMsg = await assignRes.text();
+                  }
+                  setAddClientError(assignErrMsg);
                   setAddClientLoading(false);
                   return;
                 }
@@ -333,7 +347,8 @@ const TrainerDashboard = () => {
                 setAddClientForm({ username: '', email: '', full_name: '', password: '', confirmPassword: '' });
                 fetchClients();
               } catch (err) {
-                setAddClientError('Unexpected error occurred');
+                setAddClientError('Unexpected error occurred: ' + (err?.message || err));
+                console.error('Add client error:', err);
               } finally {
                 setAddClientLoading(false);
               }
