@@ -49,7 +49,8 @@ COPY tests/init_test_users.py ./tests/init_test_users.py
 # Set proper permissions
 RUN chmod -R 755 ./static && \
     mkdir -p uploads data logs && \
-    chmod 755 uploads data logs
+    chmod 755 uploads data logs \
+    && mkdir -p /data && chmod 777 /data
 
 # Create startup script
 RUN echo '#!/bin/bash\n\

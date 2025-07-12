@@ -11,6 +11,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Use environment variable or default for DB path
+DB_PATH = os.getenv("DATABASE_PATH", "/data/app.db")
+
 class SystemService:
     def __init__(self):
         try:
@@ -207,7 +210,7 @@ class SystemService:
         """Get database statistics."""
         try:
             # Get database file size
-            db_path = "data/elior_fitness.db"
+            db_path = DB_PATH
             db_size = os.path.getsize(db_path) if os.path.exists(db_path) else 0
             
             # Get table counts
@@ -308,7 +311,7 @@ class SystemService:
             
             # Copy database file
             import shutil
-            shutil.copy2("data/elior_fitness.db", backup_file)
+            shutil.copy2(DB_PATH, backup_file)
             
             logger.info(f"Database backup created: {backup_file}")
             return True
