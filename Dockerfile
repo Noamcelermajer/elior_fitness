@@ -41,6 +41,9 @@ COPY app/ ./app/
 # Copy built frontend to static directory
 COPY --from=frontend-builder /frontend/dist ./static
 
+# Copy test user initialization script
+COPY tests/init_test_users.py ./tests/init_test_users.py
+
 # Set proper permissions
 RUN chmod -R 755 ./static && \
     mkdir -p uploads data logs && \
@@ -55,6 +58,8 @@ echo "Environment: $ENVIRONMENT"\n\
 echo "Port: $PORT"\n\
 echo "Checking static files..."\n\
 ls -la ./static/\n\
+echo "Initializing test users..."\n\
+python3 ./tests/init_test_users.py || true\n\
 echo "Starting FastAPI on port $PORT..."\n\
 exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1\n\
 ' > /app/start.sh && chmod +x /app/start.sh

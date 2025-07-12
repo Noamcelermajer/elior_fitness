@@ -28,8 +28,24 @@ def create_test_users():
     
     try:
         # Check if test users already exist
+        existing_admin = db.query(user.User).filter(user.User.username == "admin").first()
         existing_trainer = db.query(user.User).filter(user.User.username == "trainer").first()
         existing_client = db.query(user.User).filter(user.User.username == "client").first()
+        
+        if existing_admin:
+            print("Admin user already exists")
+        else:
+            # Create admin user
+            admin = user.User(
+                username="admin",
+                email="admin@test.com",
+                hashed_password=get_password_hash("admin123"),
+                full_name="Test Admin",
+                role=UserRole.ADMIN,
+                is_active=True
+            )
+            db.add(admin)
+            print("Created admin user: username=admin, password=admin123")
         
         if existing_trainer:
             print("Trainer user already exists")
@@ -67,8 +83,9 @@ def create_test_users():
         
         # Display created users
         print("\nTest Users:")
-        print("1. Trainer - username: trainer, password: trainer123")
-        print("2. Client - username: client, password: client123")
+        print("1. Admin   - username: admin, password: admin123")
+        print("2. Trainer - username: trainer, password: trainer123")
+        print("3. Client  - username: client, password: client123")
         
     except Exception as e:
         print(f"Error creating test users: {e}")
