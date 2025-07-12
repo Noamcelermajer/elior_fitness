@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { 
   Dumbbell, Target, Utensils, TrendingUp, Plus, Calendar, Clock, 
   CheckCircle, Users, Trophy, Flame, UserPlus, Activity, 
-  Search, Filter, Eye, Edit, Trash2, PlusCircle, Weight, Camera
+  Search, Filter, Eye, Edit, Trash2, PlusCircle, Weight, Camera, EyeOff
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -95,6 +95,12 @@ const TrainerDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [progressEntries, setProgressEntries] = useState<any[]>([]);
   const [progressLoading, setProgressLoading] = useState(false);
+  const [addClientDialogOpen, setAddClientDialogOpen] = useState(false);
+  const [addClientForm, setAddClientForm] = useState({ username: '', email: '', full_name: '', password: '', confirmPassword: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [addClientLoading, setAddClientLoading] = useState(false);
+  const [addClientError, setAddClientError] = useState('');
 
   const fetchDashboardData = async () => {
     try {
@@ -258,6 +264,7 @@ const TrainerDashboard = () => {
               ))
             )}
           </div>
+          <Button onClick={() => setAddClientDialogOpen(true)} className="mb-6 gradient-orange text-background font-semibold flex items-center"><UserPlus className="w-4 h-4 mr-2" />Add Client</Button>
           {/* Progress Modal */}
           <Dialog open={progressModalOpen} onOpenChange={setProgressModalOpen}>
             <DialogContent className="max-w-2xl">
@@ -277,6 +284,94 @@ const TrainerDashboard = () => {
             </DialogContent>
           </Dialog>
         </div>
+        <Dialog open={addClientDialogOpen} onOpenChange={setAddClientDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Client</DialogTitle>
+              <DialogDescription>Register a new client and assign them to you.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={async e => {
+              e.preventDefault();
+              setAddClientError('');
+              if (addClientForm.password !== addClientForm.confirmPassword) {
+                setAddClientError('Passwords do not match');
+                return;
+              }
+              setAddClientLoading(true);
+              try {
+                const token = localStorage.getItem('access_token');
+                // Register client
+                const res = await fetch(`${API_BASE_URL}/auth/register/client`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    username: addClientForm.username,
+                    email: addClientForm.email,
+                    full_name: addClientForm.full_name,
+                    password: addClientForm.password,
+                    role: 'client'
+                  })
+                });
+                if (!res.ok) {
+                  const err = await res.json();
+                  setAddClientError(err.detail || 'Failed to register client');
+                  setAddClientLoading(false);
+                  return;
+                }
+                const client = await res.json();
+                // Assign client to trainer
+                const assignRes = await fetch(`${API_BASE_URL}/users/clients/${client.id}/assign`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!assignRes.ok) {
+                  setAddClientError('Client registered but failed to assign to trainer');
+                  setAddClientLoading(false);
+                  return;
+                }
+                setAddClientDialogOpen(false);
+                setAddClientForm({ username: '', email: '', full_name: '', password: '', confirmPassword: '' });
+                fetchClients();
+              } catch (err) {
+                setAddClientError('Unexpected error occurred');
+              } finally {
+                setAddClientLoading(false);
+              }
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input id="username" value={addClientForm.username} onChange={e => setAddClientForm({ ...addClientForm, username: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={addClientForm.email} onChange={e => setAddClientForm({ ...addClientForm, email: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Full Name</Label>
+                <Input id="full_name" value={addClientForm.full_name} onChange={e => setAddClientForm({ ...addClientForm, full_name: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input id="password" type={showPassword ? 'text' : 'password'} value={addClientForm.password} onChange={e => setAddClientForm({ ...addClientForm, password: e.target.value })} required />
+                  <button type="button" className="absolute right-2 top-2" onClick={() => setShowPassword(v => !v)}>{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={addClientForm.confirmPassword} onChange={e => setAddClientForm({ ...addClientForm, confirmPassword: e.target.value })} required />
+                  <button type="button" className="absolute right-2 top-2" onClick={() => setShowConfirmPassword(v => !v)}>{showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                </div>
+              </div>
+              {addClientError && <div className="text-red-500 text-sm">{addClientError}</div>}
+              <div className="flex space-x-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setAddClientDialogOpen(false)} className="flex-1">Cancel</Button>
+                <Button type="submit" className="flex-1 gradient-orange text-background" disabled={addClientLoading}>{addClientLoading ? 'Adding...' : 'Add Client'}</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
