@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Plus, X, Search, GripVertical, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Search, GripVertical, Trash2, Dumbbell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 
@@ -76,7 +76,7 @@ const CreateWorkout = () => {
     const fetchExercises = async () => {
       try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`${API_BASE_URL}/exercises/`, {
+        const response = await fetch(`${API_BASE_URL}/workouts/exercises`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

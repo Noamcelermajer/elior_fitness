@@ -256,8 +256,8 @@ const ClientProfile = () => {
         {/* Client Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="px-6 py-8 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-2">
+            <CardContent className="px-6 py-10 flex flex-col items-center justify-center text-center space-y-4 h-full">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <User className="w-6 h-6 text-white" />
               </div>
               <p className="text-sm font-medium text-muted-foreground">Status</p>
@@ -268,8 +268,8 @@ const ClientProfile = () => {
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="px-6 py-8 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center mb-2">
+            <CardContent className="px-6 py-10 flex flex-col items-center justify-center text-center space-y-4 h-full">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                 <Weight className="w-6 h-6 text-white" />
               </div>
               <p className="text-sm font-medium text-muted-foreground">Current Weight</p>
@@ -280,8 +280,8 @@ const ClientProfile = () => {
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="px-6 py-8 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mb-2">
+            <CardContent className="px-6 py-10 flex flex-col items-center justify-center text-center space-y-4 h-full">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
                 <Dumbbell className="w-6 h-6 text-white" />
               </div>
               <p className="text-sm font-medium text-muted-foreground">Active Plans</p>
@@ -292,8 +292,8 @@ const ClientProfile = () => {
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="px-6 py-8 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mb-2">
+            <CardContent className="px-6 py-10 flex flex-col items-center justify-center text-center space-y-4 h-full">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Calendar className="w-5 h-5 text-white" />
               </div>
               <p className="text-sm font-medium text-muted-foreground">Member Since</p>

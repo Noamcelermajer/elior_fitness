@@ -191,7 +191,7 @@ const TrainerDashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
             <CardContent className="px-6 py-8 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-2">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                 <Users className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.totalClients}</div>
@@ -200,7 +200,7 @@ const TrainerDashboard = () => {
           </Card>
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
             <CardContent className="px-6 py-8 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mb-2">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
                 <Dumbbell className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.totalExercises}</div>
@@ -209,7 +209,7 @@ const TrainerDashboard = () => {
           </Card>
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
             <CardContent className="px-6 py-8 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-2">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.completionRate.toFixed(1)}%</div>
