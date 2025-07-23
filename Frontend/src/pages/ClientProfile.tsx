@@ -256,64 +256,48 @@ const ClientProfile = () => {
         {/* Client Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <User className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Status</p>
-                  <Badge variant={client.is_active ? "default" : "secondary"}>
-                    {client.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-2">
+                <User className="w-6 h-6 text-white" />
               </div>
+              <p className="text-sm font-medium text-muted-foreground">Status</p>
+              <Badge variant={client.is_active ? "default" : "secondary"}>
+                {client.is_active ? 'Active' : 'Inactive'}
+              </Badge>
             </CardContent>
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                  <Weight className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Current Weight</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {latestWeight?.weight ? `${latestWeight.weight}kg` : 'N/A'}
-                  </p>
-                </div>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center mb-2">
+                <Weight className="w-6 h-6 text-white" />
               </div>
+              <p className="text-sm font-medium text-muted-foreground">Current Weight</p>
+              <p className="text-2xl font-bold text-foreground">
+                {latestWeight?.weight ? `${latestWeight.weight}kg` : 'N/A'}
+              </p>
             </CardContent>
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-                  <Dumbbell className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Active Plans</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {workoutPlans.length + mealPlans.length}
-                  </p>
-                </div>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mb-2">
+                <Dumbbell className="w-6 h-6 text-white" />
               </div>
+              <p className="text-sm font-medium text-muted-foreground">Active Plans</p>
+              <p className="text-2xl font-bold text-foreground">
+                {workoutPlans.length + mealPlans.length}
+              </p>
             </CardContent>
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="py-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex flex-col justify-center">
-                  <p className="text-sm font-medium text-muted-foreground">Member Since</p>
-                  <p className="text-sm font-bold text-foreground">{new Date(client.created_at).toLocaleDateString()}</p>
-                </div>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mb-2">
+                <Calendar className="w-5 h-5 text-white" />
               </div>
+              <p className="text-sm font-medium text-muted-foreground">Member Since</p>
+              <p className="text-sm font-bold text-foreground">{new Date(client.created_at).toLocaleDateString()}</p>
             </CardContent>
           </Card>
         </div>

@@ -190,8 +190,8 @@ const TrainerDashboard = () => {
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
-            <CardContent className="p-6 flex flex-col items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-2 mt-2">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-2">
                 <Users className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.totalClients}</div>
@@ -199,8 +199,8 @@ const TrainerDashboard = () => {
             </CardContent>
           </Card>
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
-            <CardContent className="p-6 flex flex-col items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mb-2 mt-2">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mb-2">
                 <Dumbbell className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.totalExercises}</div>
@@ -208,8 +208,8 @@ const TrainerDashboard = () => {
             </CardContent>
           </Card>
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
-            <CardContent className="p-6 flex flex-col items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-2 mt-2">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-2">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.completionRate.toFixed(1)}%</div>
@@ -247,7 +247,7 @@ const TrainerDashboard = () => {
               ).map(client => (
                 <Card key={client.id} className="rounded-xl shadow-lg border border-border bg-muted/90 hover:-translate-y-1 hover:shadow-2xl transition-transform duration-300 animate-fade-in-up flex flex-col justify-between h-full">
                   <CardContent className="p-6 flex flex-col h-full">
-                    <div className="flex items-center mb-4">
+                    <div className="flex items-center mt-2 mb-4">
                       <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-4">
                         <span className="text-white font-bold text-2xl">
                           {client.full_name.split(' ').map(n => n[0]).join('')}

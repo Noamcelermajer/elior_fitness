@@ -310,6 +310,14 @@ const AdminDashboard = () => {
                   <Settings className="w-4 h-4 mr-2" />
                   System Settings
                 </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/secret-users')}
+                  className="font-semibold transform hover:scale-105 transition-all duration-200 bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Secret Users
+                </Button>
               </div>
             </div>
           </div>

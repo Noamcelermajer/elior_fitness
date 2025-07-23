@@ -28,6 +28,7 @@ import CreateExercise from './pages/CreateExercise';
 import CreateWorkout from './pages/CreateWorkout';
 import CreateMealPlan from './pages/CreateMealPlan';
 import ExerciseBank from './pages/ExerciseBank';
+import SecretUsersPage from './pages/SecretUsersPage';
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requiredRole="admin">
             <SystemPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/secret-users" 
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <SecretUsersPage />
           </ProtectedRoute>
         } 
       />
