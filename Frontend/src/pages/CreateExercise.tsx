@@ -57,7 +57,7 @@ const CreateExercise = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/workouts/exercises`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
