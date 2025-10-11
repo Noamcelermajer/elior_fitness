@@ -76,6 +76,12 @@ CONTEXT FILES OVERVIEW:
 - Testing and security guidelines
 - Deployment and maintenance practices
 
+13_local_development_setup.txt
+- Local development configuration and setup
+- Quick start scripts and commands
+- Development workflow and troubleshooting
+- Environment variables and configuration
+
 USAGE GUIDELINES:
 
 For LLM Context Loading:

@@ -77,22 +77,28 @@ The Elior Fitness backend is built with FastAPI, providing a modern, high-perfor
 
 ## Deployment Architecture
 
-### Production (Railway)
+### Local Development (Primary)
 ```
-Internet → Railway → FastAPI (Port $PORT) → Static Files + API
+Option 1 (Separate Servers - Recommended):
+Frontend: Localhost:5173 (Vite) → Backend: Localhost:8000 (FastAPI)
+
+Option 2 (Docker):
+Localhost → Docker → FastAPI (Port 8000) → Static Files + API
 ```
 
-### Development (Local)
+### Cloud Deployment (Optional)
 ```
-Localhost → Docker → FastAPI (Port 8000) → Static Files + API
+Internet → Cloud Platform → FastAPI (Port $PORT) → Static Files + API
+Supports: Railway, Render, Heroku, AWS, Azure, GCP, etc.
 ```
 
 ### Key Benefits
 - **Single Service**: Simplified deployment and maintenance
-- **Railway Optimized**: Perfect compatibility with Railway platform
+- **Platform Agnostic**: Works with any cloud platform or locally
 - **Performance**: No proxy overhead, optimized static serving
 - **Scalability**: Easy horizontal scaling
 - **Monitoring**: Centralized logging and metrics
+- **Local First**: Optimized for local development with easy startup
 
 ## API Endpoints
 

@@ -83,4 +83,12 @@ BUILD & DEPLOYMENT:
 - Vite for fast development and optimized builds
 - TypeScript for type safety
 - Tailwind CSS for utility-first styling
-- Docker deployment with Nginx 
+- Local development with hot reload (port 5173)
+- Production build served by FastAPI or Docker
+- API configuration auto-detects environment
+
+API CONFIGURATION:
+- Local Development: http://localhost:8000/api
+- Production/Docker: Same origin /api
+- Configured in Frontend/src/config/api.ts
+- Environment variable override: VITE_API_URL 
