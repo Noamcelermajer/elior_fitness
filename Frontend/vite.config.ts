@@ -47,6 +47,14 @@ export default defineConfig({
     hmr: {
       overlay: false, // Disable error overlay for better performance
     },
+    // Proxy API requests to backend (optional - can use direct URL instead)
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   // Explicit module resolution for Render.com compatibility
   define: {

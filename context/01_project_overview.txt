@@ -2,18 +2,20 @@ ELIOR FITNESS PROJECT OVERVIEW
 
 PROJECT TYPE: Full-stack fitness management web application
 ARCHITECTURE: Backend API (FastAPI/Python) + Frontend (React/TypeScript)
-DEPLOYMENT: Docker containerized with Nginx reverse proxy
-DATABASE: SQLite (migrated from PostgreSQL for simplicity)
+DEPLOYMENT: Local development first, Docker containerized, deployable to any cloud platform
+DATABASE: SQLite (migrated from PostgreSQL for simplicity and local development)
 
 CORE PURPOSE: Personal trainer management system supporting trainer-client relationships with workout planning, nutrition tracking, progress monitoring, and real-time notifications.
 
-DEVELOPMENT APPROACH: 6-sprint agile development with comprehensive testing and documentation.
+DEVELOPMENT APPROACH: 6-sprint agile development with comprehensive testing and documentation. Now configured for local development with easy-to-use startup scripts.
 
 TECH STACK:
 Backend: FastAPI, SQLAlchemy, JWT auth, WebSockets, Pillow (image processing)
 Frontend: React, TypeScript, Tailwind CSS, shadcn/ui, React Query
-Infrastructure: Docker, Nginx, SQLite
+Infrastructure: Docker (optional), Local Python + Node.js, SQLite
 Testing: Pytest with 90%+ coverage
+
+LOCAL DEVELOPMENT: Primary focus on local development with Windows batch scripts for easy startup. Docker is optional.
 
 USER ROLES:
 - Admin: System management, user oversight
@@ -29,4 +31,4 @@ KEY FEATURES:
 6. Real-time Notifications (WebSocket implementation)
 7. Progress Tracking (weight, body composition, analytics)
 
-PROJECT STATUS: Production-ready with comprehensive test coverage and documentation. 
+PROJECT STATUS: Production-ready with comprehensive test coverage and documentation. Configured for local development with easy-to-use startup scripts. Can be deployed to any cloud platform (Railway, Render, AWS, etc.). 

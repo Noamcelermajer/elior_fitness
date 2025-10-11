@@ -1,18 +1,23 @@
 # Deployment Infrastructure
 
 ## Overview
-Elior Fitness uses a modern, containerized deployment strategy optimized for Railway platform with FastAPI serving both the API and frontend.
+Elior Fitness uses a modern, containerized deployment strategy that can be run locally or deployed to any cloud platform. The application uses FastAPI serving both the API and frontend static files.
 
 ## Architecture
 
-### Production Deployment (Railway)
+### Local Development (Primary Setup)
 ```
-Internet → Railway Edge → FastAPI Container (Port $PORT) → Static Files + API
+Option 1 (Docker):
+Localhost → Docker → FastAPI Container (Port 8000) → Static Files + API
+
+Option 2 (Native):
+Localhost → FastAPI (Port 8000) + Vite Dev Server (Port 5173)
 ```
 
-### Development Deployment (Local)
+### Cloud Deployment (Optional)
 ```
-Localhost → Docker → FastAPI Container (Port 8000) → Static Files + API
+Internet → Cloud Platform → FastAPI Container (Port $PORT) → Static Files + API
+Supported platforms: Railway, Render, Heroku, AWS, Azure, GCP, etc.
 ```
 
 ## Container Strategy
@@ -27,40 +32,29 @@ Localhost → Docker → FastAPI Container (Port 8000) → Static Files + API
 - **Performance**: No proxy overhead, optimized static serving
 - **Security**: No Node.js in production runtime
 
-## Railway Configuration
+## Local Development Configuration
 
-### Service Configuration (`railway.json`)
-```json
-{
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "DOCKERFILE",
-    "dockerfilePath": "./Dockerfile"
-  },
-  "envVars": {
-    "ENVIRONMENT": "production",
-    "DOMAIN": "${{RAILWAY_PUBLIC_DOMAIN}}",
-    "CORS_ORIGINS": "https://${{RAILWAY_PUBLIC_DOMAIN}},http://${{RAILWAY_PUBLIC_DOMAIN}}"
-  },
-  "deploy": {
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 3,
-    "healthcheckPath": "/health",
-    "healthcheckTimeout": 300
-  }
-}
-```
+### Quick Start Scripts (Windows)
+- `start-local.bat` - Start both backend and frontend locally
+- `start-docker.bat` - Start with Docker
+- `start-backend-local.bat` - Start backend only (Python)
+- `start-frontend.bat` - Start frontend only (Vite)
 
 ### Port Configuration
-- **Target Port**: 8080 (Railway's assigned port)
-- **Environment Variable**: `$PORT` (Railway sets this)
+- **Backend API**: 8000 (default)
+- **Frontend Dev**: 5173 (Vite default)
 - **Health Check**: `/health` endpoint
 
-### Environment Variables
-- `ENVIRONMENT`: production/development
-- `DOMAIN`: Railway public domain
-- `CORS_ORIGINS`: Allowed CORS origins
-- `PORT`: Application port (Railway sets this)
+### Environment Variables (Local)
+- `ENVIRONMENT=development`
+- `DOMAIN=localhost`
+- `CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:8000`
+- `PORT=8000`
+- `DATABASE_PATH=./data/elior_fitness.db`
+- `LOG_LEVEL=INFO`
+
+### Cloud Deployment (Optional)
+The application can be deployed to any cloud platform with `railway.json` provided as an example configuration for Railway platform.
 
 ## Docker Configuration
 
@@ -82,9 +76,15 @@ services:
     build: .
     ports:
       - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./data:/app/data
+      - ./logs:/app/logs
     environment:
       - ENVIRONMENT=development
+      - DOMAIN=localhost
       - PORT=8000
+      - DATABASE_PATH=/app/data/elior_fitness.db
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
 ```
@@ -138,18 +138,26 @@ services:
 
 ## Deployment Process
 
-### Railway Deployment
-1. **Code Push**: Git push triggers Railway build
-2. **Docker Build**: Multi-stage build creates optimized image
-3. **Environment Setup**: Railway injects environment variables
-4. **Health Check**: Application starts and passes health checks
-5. **Traffic Routing**: Railway routes traffic to new deployment
+### Local Development (Primary)
 
-### Local Development
-1. **Build Image**: `docker-compose build`
-2. **Start Container**: `docker-compose up -d`
-3. **Health Check**: Verify `/health` endpoint
-4. **Access Application**: `http://localhost:8000`
+#### With Docker:
+1. **Start Docker Desktop**
+2. **Run**: `start-docker.bat`
+3. **Access**: `http://localhost:8000`
+
+#### Without Docker (Recommended for Development):
+1. **Setup**: Install Python 3.11+ and Node.js 18+
+2. **Run**: `start-local.bat`
+3. **Access**: 
+   - Frontend: `http://localhost:5173`
+   - Backend: `http://localhost:8000`
+
+### Cloud Deployment (Optional)
+1. **Build Image**: `docker build -t elior-fitness .`
+2. **Test Locally**: `docker run -p 8000:8000 elior-fitness`
+3. **Deploy**: Push to your cloud platform (Railway, Render, etc.)
+4. **Configure**: Set environment variables on platform
+5. **Monitor**: Check logs and health endpoints
 
 ## Scaling Strategy
 
@@ -167,10 +175,10 @@ services:
 ## Backup & Recovery
 
 ### Database Backup
-- **SQLite Database**: File-based backup strategy
-- **Volume Mounting**: Database persisted in Railway volumes
-- **Backup Frequency**: Daily automated backups
-- **Recovery Testing**: Regular recovery testing
+- **SQLite Database**: File-based backup at `./data/elior_fitness.db`
+- **Simple Backup**: Copy the database file to backup location
+- **Docker Volume**: Data persisted in `./data/` folder
+- **Recovery**: Simply restore the `.db` file
 
 ### Application Recovery
 - **Health Checks**: Automatic health monitoring
@@ -189,16 +197,28 @@ services:
 ## Development Workflow
 
 ### Local Development
-1. **Code Changes**: Make changes in local environment
-2. **Local Testing**: Test with `docker-compose up`
-3. **Git Commit**: Commit changes to version control
-4. **Push to Railway**: Deploy to Railway for testing
+1. **Start Application**: Run `start-local.bat`
+2. **Make Changes**: Edit code in `app/` (backend) or `Frontend/src/` (frontend)
+3. **Auto-Reload**: Both servers auto-reload on changes
+4. **Test**: Test functionality in browser
+5. **Commit**: Commit changes to Git
 
-### Production Deployment
-1. **Code Review**: Review changes before deployment
-2. **Railway Deploy**: Deploy to Railway production
-3. **Health Monitoring**: Monitor application health
-4. **Performance Validation**: Validate performance metrics
+### Backend Development
+1. **Start**: `start-backend-local.bat`
+2. **Edit**: Change files in `app/`
+3. **Test**: Use API docs at `http://localhost:8000/docs`
+4. **Logs**: Check console or `logs/` folder
+
+### Frontend Development
+1. **Start**: `start-frontend.bat`
+2. **Edit**: Change files in `Frontend/src/`
+3. **Test**: Browser auto-reloads on changes
+4. **API**: Configure in `Frontend/src/config/api.ts`
+
+### Building for Production
+1. **Build Frontend**: `build-frontend.bat`
+2. **Test Docker**: `start-docker.bat`
+3. **Deploy**: Push to cloud platform (optional)
 
 ## Troubleshooting
 
@@ -209,10 +229,11 @@ services:
 4. **Database Issues**: Verify database connection and permissions
 
 ### Debugging Tools
-- **Railway Logs**: `railway logs` for application logs
+- **Console Logs**: Check terminal output for errors
+- **Log Files**: Check `logs/` folder for detailed logs
 - **Health Checks**: Monitor `/health` endpoint
 - **Metrics**: Use `/metrics` endpoint for performance data
-- **Error Logging**: Comprehensive error logging in application
+- **API Docs**: Use `/docs` for interactive API testing
 
 ## Future Enhancements
 
