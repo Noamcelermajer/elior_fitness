@@ -1,60 +1,152 @@
-# 🚀 Your Website Project
+# Elior Fitness
 
-Welcome to your new website! Everything is set up and ready to go. You can start editing right away.
+A comprehensive fitness management application for personal trainers and their clients.
 
-## ✨ What You Can Do
+## 🚀 Quick Start (ONE COMMAND)
 
-This project includes everything you need to build a modern website:
+### Prerequisites
+- **Docker Desktop** - [Download here](https://www.docker.com/products/docker-desktop/)
 
-- **Easy editing** - Change text, colors, and layout
-- **Live preview** - See changes instantly as you type
-- **Beautiful components** - Pre-built buttons, cards, and more
-- **Auto-sync** - Your changes save automatically to the cloud
-- **Live website** - Share your site with anyone, anywhere
+### Start the Application
 
-## 🚀 Quick Start
+1. **Start Docker Desktop** (wait for it to fully start)
+2. **Double-click**: `START.bat`
+3. **Wait** for the build to complete (~5 minutes first time)
+4. **Open browser**: http://localhost:8000
 
-> 🆕 **First time?** The VS Code extension will automatically set up everything when you open this project.
+That's it! Everything runs in Docker.
 
-### 1. Start Building
+### Stop the Application
 
+Press `Ctrl+C` in the terminal window or run:
 ```bash
-pnpm start
+docker-compose down
 ```
 
-This will:
+## 🔑 Default Login
 
-- Set up everything you need automatically
-- Start your website at `http://localhost:5173`
-- Sync your changes to the cloud
-- Set up browser integration in Cursor
+- **Admin**: admin@elior.com / admin123
+- **Trainer**: trainer@elior.com / trainer123
+- **Client**: client@elior.com / client123
 
-### 2. Start Creating!
+## 📚 Documentation
 
-- Edit files in the `src/` folder
-- See changes instantly in your browser
-- Your live website updates automatically
-- Use the toolbar in the bottom-right to save changes
+- **API Docs**: http://localhost:8000/docs (when running)
+- **Setup Guide**: [LOCAL_DEVELOPMENT_GUIDE.md](LOCAL_DEVELOPMENT_GUIDE.md)
+- **Changes**: [CHANGES_SUMMARY.md](CHANGES_SUMMARY.md)
+- **Context**: See `context/` folder for detailed documentation
 
-## 📱 Opening Your Website
-
-**To see your website in Cursor:**
+## 🐳 Docker Commands
 
 ```bash
-pnpm start
+# Start (recommended)
+docker-compose up --build
+
+# Start in background
+docker-compose up -d --build
+
+# Stop
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Reset everything
+docker-compose down -v
+docker system prune -a
+docker-compose up --build
 ```
 
-**To control your project:**
+## 📁 Project Structure
 
-- Press `Cmd+Shift+P` in Cursor
-- Type "Start Project" to run the setup
-- Type "Open Preview" to see your website
+```
+app/            - Backend (FastAPI/Python)
+Frontend/       - Frontend (React/TypeScript)
+data/           - SQLite database
+uploads/        - User uploaded files
+logs/           - Application logs
+tests/          - Test files
+context/        - Project documentation
+```
 
-## 🛠 Available Commands
+## 🔧 Making Changes
 
-- `pnpm start` - 🚀 Start everything (recommended)
-- `pnpm dev` - Start only the local preview
-- `pnpm sync` - Start only the cloud sync
-- `pnpm build` - 📦 Build your website for sharing
+1. Edit files in your IDE
+2. Run `docker-compose up --build`
+3. Test at http://localhost:8000
+4. Commit to git
 
-Happy building! 🎉
+## 🌐 Access Points
+
+- **Application**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+## 🗄️ Database
+
+- **Type**: SQLite
+- **Location**: `./data/elior_fitness.db`
+- **Reset**: Delete the file and restart Docker
+
+## 🧪 Testing
+
+```bash
+docker-compose exec elior-fitness python tests/run_tests.py
+```
+
+## ⚠️ Troubleshooting
+
+### Docker Desktop not running
+Start Docker Desktop and wait for it to fully initialize.
+
+### Port 8000 already in use
+```bash
+docker-compose down
+# Or change port in docker-compose.yml
+```
+
+### Build fails
+```bash
+docker-compose down
+docker system prune -a
+docker-compose up --build
+```
+
+### Database issues
+```bash
+Remove-Item data\elior_fitness.db
+docker-compose up --build
+```
+
+## 🛠️ Technology Stack
+
+- **Backend**: FastAPI, SQLAlchemy, SQLite
+- **Frontend**: React, TypeScript, Tailwind CSS, shadcn/ui
+- **Infrastructure**: Docker, Docker Compose
+- **Auth**: JWT with bcrypt
+- **Real-time**: WebSockets
+
+## 📝 Features
+
+- ✅ User Authentication & Authorization
+- ✅ Workout Management & Planning
+- ✅ Nutrition Tracking & Meal Plans
+- ✅ Progress Tracking & Analytics
+- ✅ File Uploads & Management
+- ✅ Real-time Notifications
+- ✅ Role-based Access (Admin, Trainer, Client)
+
+## 🤝 Contributing
+
+1. Create a new branch
+2. Make changes
+3. Test with Docker
+4. Commit and push
+
+## 📄 License
+
+Private project - All rights reserved
+
+---
+
+**Need help?** Check [LOCAL_DEVELOPMENT_GUIDE.md](LOCAL_DEVELOPMENT_GUIDE.md) for detailed instructions.
