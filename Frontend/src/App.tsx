@@ -26,9 +26,10 @@ import TrainerDashboard from './pages/TrainerDashboard';
 import ClientProfile from './pages/ClientProfile';
 import CreateExercise from './pages/CreateExercise';
 import CreateWorkout from './pages/CreateWorkout';
-import CreateMealPlan from './pages/CreateMealPlan';
+import CreateMealPlanV2 from './pages/CreateMealPlanV2';
 import ExerciseBank from './pages/ExerciseBank';
 import SecretUsersPage from './pages/SecretUsersPage';
+import CreateWorkoutPlanV2 from './pages/CreateWorkoutPlanV2';
 
 const queryClient = new QueryClient();
 
@@ -49,7 +50,7 @@ const AppRoutes = () => {
       <Route 
         path="/admin" 
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRole="ADMIN">
             <AdminDashboard />
           </ProtectedRoute>
         } 
@@ -57,7 +58,7 @@ const AppRoutes = () => {
       <Route 
         path="/users" 
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRole="ADMIN">
             <UsersPage />
           </ProtectedRoute>
         } 
@@ -65,7 +66,7 @@ const AppRoutes = () => {
       <Route 
         path="/system" 
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRole="ADMIN">
             <SystemPage />
           </ProtectedRoute>
         } 
@@ -73,7 +74,7 @@ const AppRoutes = () => {
       <Route 
         path="/secret-users" 
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRole="ADMIN">
             <SecretUsersPage />
           </ProtectedRoute>
         } 
@@ -83,7 +84,7 @@ const AppRoutes = () => {
       <Route 
         path="/trainer-dashboard" 
         element={
-          <ProtectedRoute requiredRole="trainer">
+          <ProtectedRoute requiredRole="TRAINER">
             <TrainerDashboard />
           </ProtectedRoute>
         } 
@@ -91,7 +92,7 @@ const AppRoutes = () => {
       <Route 
         path="/client/:clientId" 
         element={
-          <ProtectedRoute requiredRole="trainer">
+          <ProtectedRoute requiredRole="TRAINER">
             <ClientProfile />
           </ProtectedRoute>
         } 
@@ -99,7 +100,7 @@ const AppRoutes = () => {
       <Route 
         path="/create-exercise" 
         element={
-          <ProtectedRoute requiredRole="trainer">
+          <ProtectedRoute requiredRole="TRAINER">
             <CreateExercise />
           </ProtectedRoute>
         } 
@@ -107,7 +108,7 @@ const AppRoutes = () => {
       <Route 
         path="/create-workout" 
         element={
-          <ProtectedRoute requiredRole="trainer">
+          <ProtectedRoute requiredRole="TRAINER">
             <CreateWorkout />
           </ProtectedRoute>
         } 
@@ -115,15 +116,23 @@ const AppRoutes = () => {
       <Route 
         path="/create-meal-plan" 
         element={
-          <ProtectedRoute requiredRole="trainer">
-            <CreateMealPlan />
+          <ProtectedRoute requiredRole="TRAINER">
+            <CreateMealPlanV2 />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/create-workout-plan-v2" 
+        element={
+          <ProtectedRoute requiredRole="TRAINER">
+            <CreateWorkoutPlanV2 />
           </ProtectedRoute>
         } 
       />
       <Route 
         path="/exercises" 
         element={
-          <ProtectedRoute requiredRole="trainer">
+          <ProtectedRoute requiredRole="TRAINER">
             <ExerciseBank />
           </ProtectedRoute>
         } 
