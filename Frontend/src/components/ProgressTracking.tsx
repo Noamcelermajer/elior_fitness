@@ -22,10 +22,10 @@ const ProgressTracking = () => {
   ]);
 
   const [photos, setPhotos] = useState([
-    { id: 1, date: '2024-01-01', url: '/placeholder.svg', weight: 180, notes: 'Starting point' },
-    { id: 2, date: '2024-02-01', url: '/placeholder.svg', weight: 176, notes: 'First month progress' },
-    { id: 3, date: '2024-03-01', url: '/placeholder.svg', weight: 173, notes: 'Two months in' },
-    { id: 4, date: '2024-04-01', url: '/placeholder.svg', weight: 170, notes: 'Three months progress' }
+    { id: 1, date: '2024-01-01', url: null, weight: 180, notes: 'Starting point' },
+    { id: 2, date: '2024-02-01', url: null, weight: 176, notes: 'First month progress' },
+    { id: 3, date: '2024-03-01', url: null, weight: 173, notes: 'Two months in' },
+    { id: 4, date: '2024-04-01', url: null, weight: 170, notes: 'Three months progress' }
   ]);
 
   const currentWeight = weightData[weightData.length - 1]?.weight || 0;
@@ -226,12 +226,19 @@ const ProgressTracking = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {photos.map((photo) => (
                   <div key={photo.id} className="group relative">
-                    <div className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
-                      <img 
-                        src={photo.url} 
-                        alt={`Progress photo from ${photo.date}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                      />
+                    <div className="aspect-square bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+                      {photo.url ? (
+                        <img 
+                          src={photo.url} 
+                          alt={`Progress photo from ${photo.date}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                      ) : (
+                        <div className="text-center text-gray-500">
+                          <Camera className="w-12 h-12 mx-auto mb-2" />
+                          <p className="text-sm">No photo</p>
+                        </div>
+                      )}
                     </div>
                     <div className="mt-3 space-y-2">
                       <div className="flex justify-between items-center">

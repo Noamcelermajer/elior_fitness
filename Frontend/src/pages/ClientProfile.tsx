@@ -226,18 +226,18 @@ const ClientProfile = () => {
     <Layout currentPage="dashboard">
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={() => navigate('/')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">{client.full_name}</h1>
+              <h1 className="text-3xl font-bold text-foreground">{client?.full_name || 'Client'}</h1>
               <p className="text-muted-foreground">Client Profile</p>
             </div>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleEditClient}>
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
@@ -537,7 +537,7 @@ const ClientProfile = () => {
               clientId={clientId!}
               progressEntries={normalizedProgressEntries}
               onProgressUpdate={fetchClientData}
-              isTrainer={user?.role === 'trainer'}
+              isTrainer={user?.role === 'TRAINER'}
             />
           </TabsContent>
 
