@@ -116,7 +116,7 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="flex items-center justify-center p-6">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <Weight className="w-6 h-6 text-white" />
@@ -132,7 +132,7 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="flex items-center justify-center p-6">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-white" />
@@ -148,7 +148,7 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="flex items-center justify-center p-6">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Activity className="w-6 h-6 text-white" />
