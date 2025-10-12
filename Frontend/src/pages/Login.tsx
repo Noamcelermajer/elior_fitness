@@ -61,7 +61,7 @@ const Login = () => {
       if (success) {
         // Redirect to appropriate dashboard based on user role
         const from = location.state?.from?.pathname || '/';
-        if (user?.role === 'admin') {
+        if (user?.role === 'ADMIN') {
           navigate('/admin', { replace: true });
         } else {
           navigate(from, { replace: true });

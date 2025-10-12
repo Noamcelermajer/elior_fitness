@@ -31,8 +31,8 @@ interface RecentActivity {
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isTrainer = user?.role === 'trainer';
-  const isAdmin = user?.role === 'admin';
+  const isTrainer = user?.role === 'TRAINER';
+  const isAdmin = user?.role === 'ADMIN';
   
   // Redirect trainers to trainer dashboard and admins to admin dashboard
   useEffect(() => {
@@ -56,7 +56,11 @@ const Index = () => {
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
-    if (!isTrainer) return;
+    // Clients don't need trainer-specific data, just show their stats
+    if (!isTrainer) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const token = localStorage.getItem('access_token');
@@ -68,7 +72,7 @@ const Index = () => {
       // Fetch clients
       const clientsResponse = await fetch('http://localhost:8000/api/users/', { headers });
       const clients = clientsResponse.ok ? await clientsResponse.json() : [];
-      const clientUsers = clients.filter((u: any) => u.role === 'client');
+      const clientUsers = clients.filter((u: any) => u.role === 'CLIENT');
 
       // Fetch workout plans
       const workoutResponse = await fetch('http://localhost:8000/api/workouts/plans', { headers });

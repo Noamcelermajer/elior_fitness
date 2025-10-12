@@ -56,7 +56,7 @@ const ExerciseBank = () => {
   const fetchExercises = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/workouts/exercises`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -97,7 +97,7 @@ const ExerciseBank = () => {
     
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/workouts/exercises`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -139,7 +139,7 @@ const ExerciseBank = () => {
     
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/workouts/exercises/${editingExercise.id}`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/${editingExercise.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -182,7 +182,7 @@ const ExerciseBank = () => {
     
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/workouts/exercises/${exerciseId}`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/${exerciseId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

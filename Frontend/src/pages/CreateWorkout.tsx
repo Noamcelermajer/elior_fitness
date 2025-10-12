@@ -71,6 +71,16 @@ const CreateWorkout = () => {
   const [selectedExercises, setSelectedExercises] = useState<WorkoutExercise[]>([]);
   const [loadingExercises, setLoadingExercises] = useState(true);
 
+  // Redirect non-trainers away from trainer-only pages
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'CLIENT') {
+        navigate('/', { replace: true });
+      }
+      // Admin can access (for monitoring purposes)
+    }
+  }, [user, navigate]);
+
   // Fetch exercises from database
   useEffect(() => {
     const fetchExercises = async () => {

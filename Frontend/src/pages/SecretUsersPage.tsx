@@ -18,7 +18,7 @@ interface User {
   username: string;
   email: string;
   full_name: string;
-  role: 'admin' | 'trainer' | 'client';
+  role: 'ADMIN' | 'TRAINER' | 'CLIENT';
   is_active: boolean;
   created_at: string;
   last_login?: string;
@@ -37,7 +37,7 @@ const SecretUsersPage = () => {
 
   // Redirect if not admin
   useEffect(() => {
-    if (user && user.role !== 'admin') {
+    if (user && user.role !== 'ADMIN') {
       window.location.href = '/';
     }
   }, [user]);
@@ -71,11 +71,11 @@ const SecretUsersPage = () => {
     // Generate predictable test passwords based on username and role
     const basePassword = username.toLowerCase();
     switch (role) {
-      case 'admin':
+      case 'ADMIN':
         return `${basePassword}123`;
-      case 'trainer':
+      case 'TRAINER':
         return `${basePassword}123`;
-      case 'client':
+      case 'CLIENT':
         return `${basePassword}123`;
       default:
         return `${basePassword}123`;
@@ -83,7 +83,7 @@ const SecretUsersPage = () => {
   };
 
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (user?.role === 'ADMIN') {
       fetchUsers();
     }
   }, [user]);
@@ -123,7 +123,7 @@ const SecretUsersPage = () => {
     return isActive ? <UserCheck className="w-4 h-4 text-green-500" /> : <UserX className="w-4 h-4 text-red-500" />;
   };
 
-  if (!user || user.role !== 'admin') {
+  if (!user || user.role !== 'ADMIN') {
     return (
       <Layout currentPage="dashboard">
         <div className="min-h-screen bg-background flex items-center justify-center">
@@ -206,9 +206,9 @@ const SecretUsersPage = () => {
                   className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                 >
                   <option value="all">All Roles</option>
-                  <option value="admin">Admin</option>
-                  <option value="trainer">Trainer</option>
-                  <option value="client">Client</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="TRAINER">Trainer</option>
+                  <option value="CLIENT">Client</option>
                 </select>
               </div>
               <div className="space-y-2">

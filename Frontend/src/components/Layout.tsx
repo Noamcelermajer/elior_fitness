@@ -15,8 +15,8 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const isTrainer = user?.role === 'trainer';
-  const isAdmin = user?.role === 'admin';
+  const isTrainer = user?.role === 'TRAINER';
+  const isAdmin = user?.role === 'ADMIN';
 
   const navigationItems = isAdmin ? [
     { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },

@@ -87,7 +87,7 @@ async def get_progress_entries(
     from app.models.user import User
     
     # If trainer, they can query their clients' progress
-    if current_user.role == "trainer" and client_id:
+    if current_user.role == "TRAINER" and client_id:
         # Check if the client belongs to this trainer
         client = db.query(User).filter(User.id == client_id).first()
         if not client or client.trainer_id != current_user.id:
@@ -177,7 +177,7 @@ async def update_progress_entry(
         raise HTTPException(status_code=404, detail="Progress entry not found")
     
     # Check permissions
-    if current_user.role == "trainer":
+    if current_user.role == "TRAINER":
         # Check if the client belongs to this trainer
         client = db.query(User).filter(User.id == entry.client_id).first()
         if not client or client.trainer_id != current_user.id:

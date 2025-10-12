@@ -6,9 +6,9 @@ import time
 import requests
 
 API_URL = "http://localhost:8000/api"
-ADMIN = {"username": "admin", "email": "admin@test.com", "password": "admin123", "full_name": "Test Admin", "role": "admin"}
-TRAINER = {"username": "trainer", "email": "trainer@test.com", "password": "trainer123", "full_name": "Test Trainer", "role": "trainer"}
-CLIENT = {"username": "client", "email": "client@test.com", "password": "client123", "full_name": "Test Client", "role": "client"}
+ADMIN = {"username": "admin@elior.com", "email": "admin@elior.com", "password": "admin123", "full_name": "Admin User", "role": "admin"}
+TRAINER = {"username": "trainer@elior.com", "email": "trainer@elior.com", "password": "trainer123", "full_name": "Trainer User", "role": "trainer"}
+CLIENT = {"username": "client@elior.com", "email": "client@elior.com", "password": "client123", "full_name": "Client User", "role": "client"}
 
 
 def wait_for_api():

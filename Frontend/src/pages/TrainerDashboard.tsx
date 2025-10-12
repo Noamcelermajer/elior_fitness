@@ -112,7 +112,7 @@ const TrainerDashboard = () => {
       // Fetch stats only
       const [clientsRes, exercisesRes, workoutPlansRes, mealPlansRes] = await Promise.all([
         fetch(`${API_BASE_URL}/users/clients`, { headers }),
-        fetch(`${API_BASE_URL}/workouts/exercises`, { headers }),
+        fetch(`${API_BASE_URL}/exercises/`, { headers }),
         fetch(`${API_BASE_URL}/workouts/plans`, { headers }),
         fetch(`${API_BASE_URL}/meal-plans/`, { headers })
       ]);
@@ -310,7 +310,7 @@ const TrainerDashboard = () => {
                     email: addClientForm.email,
                     full_name: addClientForm.full_name,
                     password: addClientForm.password,
-                    role: 'client'
+                    role: 'CLIENT'
                   })
                 });
                 if (!res.ok) {

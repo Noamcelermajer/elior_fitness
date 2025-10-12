@@ -228,9 +228,10 @@ async def update_user(
     db: Session = Depends(get_db)
 ):
     """
-    Update user by ID. Users can only update themselves.
+    Update user by ID. Admins can update anyone, users can only update themselves.
     """
-    if current_user.id != user_id:
+    # Allow admins to edit anyone, but regular users can only edit themselves
+    if current_user.role != UserRole.ADMIN and current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only update your own profile"

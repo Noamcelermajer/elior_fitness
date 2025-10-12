@@ -54,8 +54,8 @@ const ClientsPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        // Filter to only show clients (role === 'client')
-        const clientUsers = data.filter((user: any) => user.role === 'client');
+        // Filter to only show clients (role === 'CLIENT')
+        const clientUsers = data.filter((user: any) => user.role === 'CLIENT');
         setClients(clientUsers);
       } else {
         console.error('Failed to fetch clients');
@@ -67,9 +67,21 @@ const ClientsPage = () => {
     }
   };
 
+  // Redirect non-trainers away from trainer-only pages
   useEffect(() => {
-    fetchClients();
-  }, []);
+    if (user) {
+      if (user.role === 'CLIENT') {
+        navigate('/', { replace: true });
+      }
+      // Admin can access (for monitoring purposes)
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (user && (user.role === 'TRAINER' || user.role === 'ADMIN')) {
+      fetchClients();
+    }
+  }, [user]);
 
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();

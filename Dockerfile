@@ -61,8 +61,7 @@ echo "Environment: $ENVIRONMENT"\n\
 echo "Port: $PORT"\n\
 echo "Checking static files..."\n\
 ls -la ./static/\n\
-echo "Initializing test users..."\n\
-python3 ./tests/init_test_users.py || true\n\
+echo "Skipping test user initialization (manual setup required)"\n\
 echo "Starting FastAPI on port $PORT..."\n\
 exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1\n\
 ' > /app/start.sh && chmod +x /app/start.sh

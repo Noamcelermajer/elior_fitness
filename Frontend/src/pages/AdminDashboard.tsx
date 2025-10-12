@@ -71,11 +71,19 @@ const AdminDashboard = () => {
         const users = await usersRes.json();
         const trainers = await trainersRes.json();
         const clients = await clientsRes.json();
+        
+        // Fetch real system health
+        const healthRes = await fetch(`${API_BASE_URL}/system/status`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const systemHealth = healthRes.ok ? await healthRes.json() : null;
+        const healthPercent = systemHealth?.system_health === 'healthy' ? '100%' : systemHealth?.system_health === 'degraded' ? '75%' : '50%';
+        
         setStats({
           totalUsers: users.length,
           totalTrainers: trainers.length,
           totalClients: clients.length,
-          systemHealth: '100%', // Placeholder, can be dynamic if backend provides
+          systemHealth: healthPercent,
         });
       } catch (err: any) {
         setStatsError(err.message || 'Failed to load stats');
@@ -114,29 +122,54 @@ const AdminDashboard = () => {
     },
   ];
 
-  const recentActivity = [
-    {
-      title: 'New trainer registered: Coach Sarah',
-      description: 'Sarah Johnson joined the platform',
-      time: '2 hours ago',
-      icon: UserPlus,
-      color: 'bg-gradient-to-tr from-green-500 to-green-700',
-    },
-    {
-      title: 'System maintenance completed',
-      description: 'Database optimization successful',
-      time: 'Yesterday',
-      icon: Settings,
-      color: 'bg-gradient-to-tr from-blue-500 to-blue-700',
-    },
-    {
-      title: 'New client registration',
-      description: 'Mike Davis joined as a client',
-      time: '3 days ago',
-      icon: Users,
-      color: 'bg-gradient-to-tr from-purple-500 to-purple-700',
-    },
-  ];
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+
+  // Fetch recent activity from recent user registrations
+  useEffect(() => {
+    const fetchActivity = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+        const usersRes = await fetch(`${API_BASE_URL}/users/`, { headers });
+        if (usersRes.ok) {
+          const users = await usersRes.json();
+          // Sort by created_at and take last 5
+          const sortedUsers = users.sort((a: any, b: any) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          ).slice(0, 5);
+          
+          const activities = sortedUsers.map((u: any) => ({
+            title: `${u.role === 'ADMIN' ? 'Admin' : u.role === 'TRAINER' ? 'Trainer' : 'Client'} registered: ${u.full_name}`,
+            description: `${u.email} joined the platform`,
+            time: formatTimeAgo(new Date(u.created_at)),
+            icon: UserPlus,
+            color: u.role === 'ADMIN' ? 'bg-gradient-to-tr from-red-500 to-red-700' : 
+                   u.role === 'TRAINER' ? 'bg-gradient-to-tr from-green-500 to-green-700' : 
+                   'bg-gradient-to-tr from-purple-500 to-purple-700',
+          }));
+          setRecentActivity(activities);
+        }
+      } catch (error) {
+        console.error('Error fetching activity:', error);
+      }
+    };
+    if (user?.role === 'ADMIN') {
+      fetchActivity();
+    }
+  }, [user]);
+
+  const formatTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    return date.toLocaleDateString();
+  };
 
   const handleRegisterTrainer = async (e: React.FormEvent) => {
     e.preventDefault();

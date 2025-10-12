@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,9 +12,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 
 const MUSCLE_GROUPS = [
-  'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms',
-  'Core', 'Lower Back', 'Glutes', 'Quadriceps', 'Hamstrings',
-  'Calves', 'Full Body', 'Cardio', 'Flexibility'
+  { value: 'chest', label: 'Chest' },
+  { value: 'back', label: 'Back' },
+  { value: 'shoulders', label: 'Shoulders' },
+  { value: 'biceps', label: 'Biceps' },
+  { value: 'triceps', label: 'Triceps' },
+  { value: 'legs', label: 'Legs' },
+  { value: 'core', label: 'Core' },
+  { value: 'cardio', label: 'Cardio' },
+  { value: 'full_body', label: 'Full Body' },
+  { value: 'other', label: 'Other' }
 ];
 
 const EQUIPMENT_OPTIONS = [
@@ -29,6 +36,15 @@ const CreateExercise = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Redirect non-trainers away from trainer-only pages
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'CLIENT') {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [user, navigate]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -132,7 +148,7 @@ const CreateExercise = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {MUSCLE_GROUPS.map(group => (
-                        <SelectItem key={group} value={group}>{group}</SelectItem>
+                        <SelectItem key={group.value} value={group.value}>{group.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

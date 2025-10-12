@@ -127,7 +127,7 @@ const SystemPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Check if user is admin
-  if (user?.role !== 'admin') {
+  if (user?.role !== 'ADMIN') {
     return (
       <Layout currentPage="system">
         <div className="container mx-auto p-6">

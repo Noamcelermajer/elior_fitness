@@ -135,8 +135,8 @@ const ClientProfile = () => {
       // Fetch client-specific data
       if (clientId) {
         const [workoutRes, mealRes, progressRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/workouts/plans?client_id=${clientId}`, { headers }),
-          fetch(`${API_BASE_URL}/meal-plans/?client_id=${clientId}`, { headers }),
+          fetch(`${API_BASE_URL}/v2/workouts/plans?client_id=${clientId}`, { headers }),
+          fetch(`${API_BASE_URL}/v2/meals/plans?client_id=${clientId}`, { headers }),
           fetch(`${API_BASE_URL}/progress/?client_id=${clientId}`, { headers })
         ]);
 
@@ -497,35 +497,46 @@ const ClientProfile = () => {
               {mealPlans.map((plan) => (
                 <Card key={plan.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
-                    <CardTitle>{plan.title}</CardTitle>
+                    <CardTitle>{plan.name || plan.title}</CardTitle>
                     <div className="flex space-x-4 text-sm text-muted-foreground">
-                      <span>{plan.total_calories} cal</span>
-                      <span>{plan.protein_target}g protein</span>
-                      <span>{plan.carb_target}g carbs</span>
-                      <span>{plan.fat_target}g fat</span>
+                      {plan.total_calories && <span>{plan.total_calories} cal</span>}
+                      {plan.protein_target && <span>{plan.protein_target}g protein</span>}
+                      {plan.carb_target && <span>{plan.carb_target}g carbs</span>}
+                      {plan.fat_target && <span>{plan.fat_target}g fat</span>}
                     </div>
+                    {plan.description && (
+                      <p className="text-sm text-muted-foreground mt-2">{plan.description}</p>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {plan.meals.map((meal) => (
-                        <div key={meal.id} className="p-3 rounded border">
-                          <h4 className="font-medium text-sm mb-2">{meal.name}</h4>
-                          <div className="space-y-1">
-                            {meal.components.map((component) => (
-                              <div key={component.id} className="flex items-center justify-between text-xs">
-                                <span className={component.is_optional ? 'text-muted-foreground' : 'text-foreground'}>
-                                  {component.description}
-                                  {component.is_optional && ' (optional)'}
-                                </span>
-                                <span className="text-muted-foreground">{component.calories} cal</span>
-                              </div>
-                            ))}
+                      {plan.meal_slots && plan.meal_slots.length > 0 ? (
+                        plan.meal_slots.map((meal, index) => (
+                          <div key={meal.id || index} className="p-3 rounded border">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-medium text-sm">{meal.name}</h4>
+                              {meal.time_suggestion && (
+                                <span className="text-xs text-muted-foreground">{meal.time_suggestion}</span>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              {meal.macro_categories && meal.macro_categories.map((macro, macroIndex) => (
+                                <div key={macroIndex} className="text-xs">
+                                  <span className="font-medium capitalize">{macro.macro_type}: </span>
+                                  <span className="text-muted-foreground">{macro.quantity_instruction}</span>
+                                  {macro.food_options && macro.food_options.length > 0 && (
+                                    <span className="text-muted-foreground ml-2">
+                                      ({macro.food_options.map(f => f.name).join(', ')})
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          {meal.notes && (
-                            <p className="text-xs text-orange-600 mt-2">Note: {meal.notes}</p>
-                          )}
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No meals configured yet</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

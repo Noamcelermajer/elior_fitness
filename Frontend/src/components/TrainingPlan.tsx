@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 const TrainingPlan = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isTrainer = user?.role === 'trainer';
+  const isTrainer = user?.role === 'TRAINER';
   
   const trainerWorkouts = [
     {

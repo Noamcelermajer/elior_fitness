@@ -19,7 +19,7 @@ class User(Base):
     updated_at = Column(DateTime, onupdate=func.now())  # SQLite compatible
 
     # Trainer-Client relationship
-    trainer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    trainer_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     clients = relationship("User", backref="trainer", remote_side=[id])
 
     # Relationships with other tables will be added here when models are implemented

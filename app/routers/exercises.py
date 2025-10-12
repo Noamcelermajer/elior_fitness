@@ -20,7 +20,7 @@ def create_exercise(
     db: Session = Depends(get_db)
 ):
     """Create a new exercise in the trainer's exercise bank."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create exercises"
@@ -79,7 +79,7 @@ def update_exercise(
     db: Session = Depends(get_db)
 ):
     """Update an exercise (only by the trainer who created it)."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can update exercises"
@@ -103,7 +103,7 @@ def delete_exercise(
     db: Session = Depends(get_db)
 ):
     """Delete an exercise (only by the trainer who created it)."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can delete exercises"

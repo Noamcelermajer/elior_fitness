@@ -26,7 +26,7 @@ class Exercise(Base):
     muscle_group = Column(Enum(MuscleGroup), nullable=False)
     equipment_needed = Column(String)
     instructions = Column(String)  # How to perform the exercise
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)  # Trainer who created it
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # Trainer who created it
     created_at = Column(DateTime, default=func.now())  # SQLite compatible
 
     # Relationships
@@ -38,8 +38,8 @@ class WorkoutPlan(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     description = Column(String)
-    trainer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    trainer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     start_date = Column(DateTime)  # SQLite compatible
     end_date = Column(DateTime)  # SQLite compatible
     created_at = Column(DateTime, default=func.now())  # SQLite compatible
@@ -85,7 +85,7 @@ class ExerciseCompletion(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     workout_exercise_id = Column(Integer, ForeignKey("workout_exercises.id"), nullable=False)
-    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     completed_at = Column(DateTime, default=func.now())  # SQLite compatible
     actual_sets = Column(Integer)
     actual_reps = Column(String)  # What they actually did

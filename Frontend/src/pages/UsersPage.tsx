@@ -14,9 +14,9 @@ import { Pencil, Trash2, Eye, Shield, User, Loader2, UserPlus, EyeOff } from 'lu
 import { API_BASE_URL } from '../config/api';
 
 const roleOptions = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'trainer', label: 'Trainer' },
-  { value: 'client', label: 'Client' },
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'TRAINER', label: 'Trainer' },
+  { value: 'CLIENT', label: 'Client' },
 ];
 
 const UsersPage = () => {
@@ -31,13 +31,13 @@ const UsersPage = () => {
   const [editForm, setEditForm] = useState({ full_name: '', email: '', role: '' });
   const [actionLoading, setActionLoading] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
-  const [registerForm, setRegisterForm] = useState({ username: '', email: '', password: '', confirmPassword: '', full_name: '', role: 'trainer' });
+  const [registerForm, setRegisterForm] = useState({ username: '', email: '', password: '', confirmPassword: '', full_name: '', role: 'TRAINER' });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') return;
+    if (!user || user.role !== 'ADMIN') return;
     fetchUsers();
   }, [user]);
 
@@ -60,6 +60,12 @@ const UsersPage = () => {
   };
 
   const handleDelete = async (userId) => {
+    // Prevent admin from deleting themselves
+    if (user?.id === userId) {
+      alert('You cannot delete your own account. Please ask another administrator to delete your account if needed.');
+      return;
+    }
+    
     if (!window.confirm('Are you sure you want to delete this user?')) return;
     setActionLoading(true);
     try {
@@ -200,7 +206,7 @@ const UsersPage = () => {
       u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (!user || user.role !== 'admin') {
+  if (!user || user.role !== 'ADMIN') {
     return (
       <Layout currentPage="users">
         <div className="max-w-2xl mx-auto py-20 text-center text-lg font-bold text-red-500">

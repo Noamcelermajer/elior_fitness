@@ -219,7 +219,7 @@ async def create_planned_meal(
     nutrition_service: NutritionService = Depends(get_nutrition_service)
 ):
     """Create a new planned meal."""
-    if current_user.role != "trainer":
+    if current_user.role != "TRAINER":
         raise HTTPException(status_code=403, detail="Only trainers can create planned meals")
     
     planned_meal = nutrition_service.create_planned_meal(planned_meal_data)
@@ -507,7 +507,7 @@ async def update_nutrition_goals(
     nutrition_service: NutritionService = Depends(get_nutrition_service)
 ):
     """Update nutrition goals for a client."""
-    if current_user.role != "client":
+    if current_user.role != "CLIENT":
         raise HTTPException(status_code=403, detail="Only clients can update nutrition goals")
     
     goals = nutrition_service.update_nutrition_goals(current_user.id, goals_data)
