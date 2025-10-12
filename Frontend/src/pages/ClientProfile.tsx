@@ -303,12 +303,14 @@ const ClientProfile = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="progress">Weight Progress</TabsTrigger>
-            <TabsTrigger value="workouts">Workout Plans</TabsTrigger>
-            <TabsTrigger value="meals">Meal Plans</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <div className="pt-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="progress">Weight Progress</TabsTrigger>
+              <TabsTrigger value="workouts">Workout Plans</TabsTrigger>
+              <TabsTrigger value="meals">Meal Plans</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
