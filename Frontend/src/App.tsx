@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { NotificationContainer } from "./components/NotificationContainer";
@@ -30,6 +32,7 @@ import CreateMealPlanV2 from './pages/CreateMealPlanV2';
 import ExerciseBank from './pages/ExerciseBank';
 import SecretUsersPage from './pages/SecretUsersPage';
 import CreateWorkoutPlanV2 from './pages/CreateWorkoutPlanV2';
+import './i18n/config';
 
 const queryClient = new QueryClient();
 
@@ -225,21 +228,34 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <NotificationProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <AppRoutes />
-            <NotificationContainer />
-          </BrowserRouter>
-        </AuthProvider>
-      </NotificationProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    // Set initial direction and language based on current language
+    const currentLang = i18n.language || 'he';
+    document.documentElement.dir = currentLang === 'he' ? 'rtl' : 'ltr';
+    document.documentElement.lang = currentLang;
+  }, [i18n.language]);
+
+  return (
+    <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <NotificationProvider>
+            <AuthProvider>
+              <BrowserRouter>
+                <AppRoutes />
+                <NotificationContainer />
+              </BrowserRouter>
+            </AuthProvider>
+          </NotificationProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </div>
+  );
+};
 
 export default App;

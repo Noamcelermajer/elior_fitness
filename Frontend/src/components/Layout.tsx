@@ -2,8 +2,10 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Dumbbell, Home, Utensils, Target, TrendingUp, Menu, X, LogOut, User, Shield, Settings, Users } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
+import LanguageSelector from './LanguageSelector';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,22 +16,23 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const isTrainer = user?.role === 'TRAINER';
   const isAdmin = user?.role === 'ADMIN';
 
   const navigationItems = isAdmin ? [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
-    { id: 'users', label: 'Users', icon: User, href: '/users' },
-    { id: 'system', label: 'System', icon: Settings, href: '/system' }
+    { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/' },
+    { id: 'users', label: t('navigation.users'), icon: User, href: '/users' },
+    { id: 'system', label: t('navigation.system'), icon: Settings, href: '/system' }
   ] : isTrainer ? [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/trainer-dashboard' },
-    { id: 'exercises', label: 'Exercise Bank', icon: Dumbbell, href: '/exercises' }
+    { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/trainer-dashboard' },
+    { id: 'exercises', label: t('navigation.exercises'), icon: Dumbbell, href: '/exercises' }
   ] : [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/' },
-    { id: 'meals', label: 'Meals', icon: Utensils, href: '/meals' },
-    { id: 'training', label: 'Training', icon: Target, href: '/training' }, 
-    { id: 'progress', label: 'Progress', icon: TrendingUp, href: '/progress' }
+    { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/' },
+    { id: 'meals', label: t('navigation.meals'), icon: Utensils, href: '/meals' },
+    { id: 'training', label: t('navigation.training'), icon: Target, href: '/training' }, 
+    { id: 'progress', label: t('navigation.progress'), icon: TrendingUp, href: '/progress' }
   ];
 
   const handleNavigation = (href: string) => {
@@ -55,12 +58,13 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
           </div>
           
           <div className="flex items-center space-x-2">
-                          <div className="flex items-center space-x-2 mr-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-sm">
-                  👤
-                </div>
-                <span className="text-sm font-medium text-foreground hidden sm:inline">{user?.full_name}</span>
+            <LanguageSelector />
+            <div className="flex items-center space-x-2 mr-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-sm">
+                👤
               </div>
+              <span className="text-sm font-medium text-foreground hidden sm:inline">{user?.full_name}</span>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -98,7 +102,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
                   onClick={logout}
                 >
                   <LogOut className="w-5 h-5 mr-3" />
-                  <span>Sign Out</span>
+                  <span>{t('auth.logout')}</span>
                 </Button>
               </div>
             </div>
@@ -144,6 +148,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
 
               {/* User Profile */}
               <div className="flex items-center space-x-3 pl-4 border-l border-border/30">
+                <LanguageSelector />
                 <NotificationBell />
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-lg shadow-lg">
