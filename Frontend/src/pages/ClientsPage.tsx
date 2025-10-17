@@ -10,6 +10,7 @@ import { Users, UserPlus, Search, Mail, Phone, Calendar, Target, Plus, User, Clo
 import { useAuth } from '../contexts/AuthContext';
 import ClientWeightProgress from '../components/ClientWeightProgress';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface Client {
   id: number;
@@ -23,6 +24,7 @@ interface Client {
 
 const ClientsPage = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -359,9 +361,10 @@ const ClientsPage = () => {
                           <p className="text-sm text-muted-foreground">@{client.username}</p>
                         </div>
                       </div>
-                      <Badge className={client.is_active ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}>
-                        {client.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
+                      <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        <span>{client.last_login ? formatDate(client.last_login) : 'Never'}</span>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -392,7 +395,7 @@ const ClientsPage = () => {
             <DialogTitle>Weight Progress - {selectedClient?.full_name}</DialogTitle>
           </DialogHeader>
           {progressLoading ? (
-            <div className="p-8 text-center">Loading...</div>
+            <div className="p-8 text-center">{t('common.loading')}</div>
           ) : (
             <ClientWeightProgress
               clientId={selectedClient?.id?.toString() || ''}

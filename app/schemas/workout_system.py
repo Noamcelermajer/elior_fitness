@@ -2,7 +2,7 @@
 Pydantic schemas for the new workout system
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
@@ -61,8 +61,7 @@ class WorkoutExerciseResponse(WorkoutExerciseBase):
     created_at: datetime
     exercise: Optional[dict] = None  # Will be populated with exercise details
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ============ Workout Day Schemas ============
 
@@ -90,8 +89,7 @@ class WorkoutDayResponse(WorkoutDayBase):
     created_at: datetime
     workout_exercises: List[WorkoutExerciseResponse] = []
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
 # ============ Workout Plan Schemas ============
 
@@ -130,8 +128,7 @@ class WorkoutPlanResponse(WorkoutPlanBase):
     updated_at: Optional[datetime] = None
     workout_days: List[WorkoutDayResponse] = []
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
 # ============ Complete Workout Plan Creation (All at once) ============
 
@@ -181,8 +178,7 @@ class SetCompletionResponse(SetCompletionCreate):
     client_id: int
     completed_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ============ Workout Session Schemas (for client tracking) ============
 
@@ -210,8 +206,7 @@ class WorkoutSessionResponse(BaseModel):
     created_at: datetime
     set_completions: List[SetCompletionResponse] = []
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ============ Personal Record Schemas ============
 
@@ -229,6 +224,5 @@ class PersonalRecordResponse(PersonalRecordCreate):
     client_id: int
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 

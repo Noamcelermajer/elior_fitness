@@ -11,6 +11,7 @@ class ExerciseBase(BaseModel):
     muscle_group: MuscleGroup
     equipment_needed: Optional[str] = None
     instructions: Optional[str] = Field(None, description="Step-by-step instructions on how to perform the exercise correctly")
+    category: Optional[str] = Field(None, description="Custom category for organizing exercises (e.g., Strength, Hypertrophy, Endurance, Mobility)")
 
 class ExerciseCreate(ExerciseBase):
     pass
@@ -22,6 +23,7 @@ class ExerciseUpdate(BaseModel):
     muscle_group: Optional[MuscleGroup] = None
     equipment_needed: Optional[str] = None
     instructions: Optional[str] = None
+    category: Optional[str] = None
 
 class ExerciseResponse(ExerciseBase):
     id: int

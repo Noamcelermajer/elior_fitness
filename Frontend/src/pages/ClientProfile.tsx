@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
+import { useTranslation } from 'react-i18next';
 
 interface Client {
   id: number;
@@ -39,9 +40,10 @@ interface WorkoutPlan {
   name: string;
   description?: string;
   created_at: string;
-  sessions_count: number;
-  completed_sessions: number;
-  exercises: WorkoutExercise[];
+  sessions_count?: number;
+  completed_sessions?: number;
+  workout_days?: any[];
+  exercises?: WorkoutExercise[];
 }
 
 interface WorkoutExercise {
@@ -102,6 +104,7 @@ const ClientProfile = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('progress');
   
   // Data states
@@ -144,9 +147,26 @@ const ClientProfile = () => {
         const mealData = mealRes.ok ? await mealRes.json() : [];
         const progressData = progressRes.ok ? await progressRes.json() : [];
 
-        setWorkoutPlans(workoutData);
-        setMealPlans(mealData);
-        setProgressEntries(progressData);
+        // Ensure data is array to avoid undefined errors
+        // Transform v2 workout data to match old format for compatibility
+        const transformedWorkouts = Array.isArray(workoutData) ? workoutData.map((plan: any) => ({
+          ...plan,
+          exercises: plan.workout_days?.flatMap((day: any) => 
+            (day.workout_exercises || []).map((ex: any) => ({
+              ...ex,
+              exercise_name: ex.exercise_name || ex.name,
+              sets: ex.target_sets,
+              reps: ex.target_reps,
+              rest_time: ex.rest_seconds
+            }))
+          ) || [],
+          sessions_count: plan.workout_days?.length || 0,
+          completed_sessions: 0
+        })) : [];
+        
+        setWorkoutPlans(transformedWorkouts);
+        setMealPlans(Array.isArray(mealData) ? mealData : []);
+        setProgressEntries(Array.isArray(progressData) ? progressData : []);
       }
 
     } catch (error) {
@@ -195,8 +215,8 @@ const ClientProfile = () => {
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-foreground mb-2">Client Not Found</h2>
-            <p className="text-muted-foreground mb-4">The client you're looking for doesn't exist.</p>
-            <Button onClick={() => navigate('/')}>Back to Dashboard</Button>
+            <p className="text-muted-foreground mb-4">{t('clientProfile.clientNotFound')}</p>
+            <Button onClick={() => navigate('/')}>{t('clientProfile.backToDashboard')}</Button>
           </div>
         </div>
       </Layout>
@@ -224,31 +244,31 @@ const ClientProfile = () => {
 
   return (
     <Layout currentPage="dashboard">
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-6 space-y-6 min-h-screen">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={() => navigate('/')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              {t('clientProfile.back')}
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">{client?.full_name || 'Client'}</h1>
-              <p className="text-muted-foreground">Client Profile</p>
+              <p className="text-muted-foreground">{t('clientProfile.title')}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleEditClient}>
               <Edit className="w-4 h-4 mr-2" />
-              Edit Profile
+              {t('clientProfile.editProfile')}
             </Button>
             <Button onClick={handleCreateWorkout} className="gradient-green">
               <Plus className="w-4 h-4 mr-2" />
-              Create Workout
+              {t('clientProfile.createWorkout')}
             </Button>
             <Button onClick={handleCreateMealPlan} className="gradient-orange">
               <Plus className="w-4 h-4 mr-2" />
-              Create Meal Plan
+              {t('clientProfile.createMealPlan')}
             </Button>
           </div>
         </div>
@@ -260,10 +280,10 @@ const ClientProfile = () => {
               <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
                 <User className="w-7 h-7 text-white" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">Status</p>
-              <Badge variant={client.is_active ? "default" : "secondary"}>
-                {client.is_active ? 'Active' : 'Inactive'}
-              </Badge>
+              <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.lastLogin')}</p>
+              <p className="text-sm font-bold text-foreground">
+                {client.last_login ? new Date(client.last_login).toLocaleDateString() : 'Never'}
+              </p>
             </CardContent>
           </Card>
 
@@ -272,7 +292,7 @@ const ClientProfile = () => {
               <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
                 <Weight className="w-7 h-7 text-white" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">Current Weight</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.currentWeight')}</p>
               <p className="text-2xl font-bold text-foreground">
                 {latestWeight?.weight ? `${latestWeight.weight}kg` : 'N/A'}
               </p>
@@ -284,9 +304,9 @@ const ClientProfile = () => {
               <div className="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
                 <Dumbbell className="w-7 h-7 text-white" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">Active Plans</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.activePlans')}</p>
               <p className="text-2xl font-bold text-foreground">
-                {workoutPlans.length + mealPlans.length}
+                {(workoutPlans?.length || 0) + (mealPlans?.length || 0)}
               </p>
             </CardContent>
           </Card>
@@ -296,7 +316,7 @@ const ClientProfile = () => {
               <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
                 <Calendar className="w-7 h-7 text-white" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">Member Since</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.memberSince')}</p>
               <p className="text-sm font-bold text-foreground">{new Date(client.created_at).toLocaleDateString()}</p>
             </CardContent>
           </Card>
@@ -306,9 +326,9 @@ const ClientProfile = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="pt-4">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="progress">Weight Progress</TabsTrigger>
-              <TabsTrigger value="workouts">Workout Plans</TabsTrigger>
-              <TabsTrigger value="meals">Meal Plans</TabsTrigger>
+              <TabsTrigger value="progress">{t('clientProfile.weightProgress')}</TabsTrigger>
+              <TabsTrigger value="workouts">{t('clientProfile.workoutPlans')}</TabsTrigger>
+              <TabsTrigger value="meals">{t('clientProfile.mealPlans')}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -414,7 +434,7 @@ const ClientProfile = () => {
                       <div className="flex-1">
                         <p className="font-medium text-foreground">{plan.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {plan.total_calories} calories • {plan.meals.length} meals
+                          {plan.total_calories} calories • {plan.meals?.length || 0} meals
                         </p>
                       </div>
                       <span className="text-xs text-muted-foreground">
@@ -430,15 +450,15 @@ const ClientProfile = () => {
           {/* Workouts Tab */}
           <TabsContent value="workouts" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Workout Plans</h3>
+              <h3 className="text-lg font-semibold">{t('clientProfile.workoutPlans')}</h3>
               <Button onClick={handleCreateWorkout} className="gradient-green">
                 <Plus className="w-4 h-4 mr-2" />
-                Create New Workout
+                {t('clientProfile.createNewWorkout')}
               </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {workoutPlans.map((plan) => (
+              {workoutPlans && workoutPlans.length > 0 && workoutPlans.map((plan) => (
                 <Card key={plan.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
@@ -471,7 +491,7 @@ const ClientProfile = () => {
                           </Badge>
                         </div>
                       ))}
-                      {plan.exercises.length > 3 && (
+                      {plan.exercises?.length > 3 && (
                         <p className="text-sm text-muted-foreground text-center">
                           +{plan.exercises.length - 3} more exercises
                         </p>
@@ -486,10 +506,10 @@ const ClientProfile = () => {
           {/* Meals Tab */}
           <TabsContent value="meals" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Meal Plans</h3>
+              <h3 className="text-lg font-semibold">{t('clientProfile.mealPlans')}</h3>
               <Button onClick={handleCreateMealPlan} className="gradient-orange">
                 <Plus className="w-4 h-4 mr-2" />
-                Create New Meal Plan
+                {t('clientProfile.createNewMealPlan')}
               </Button>
             </div>
 
@@ -524,7 +544,7 @@ const ClientProfile = () => {
                                 <div key={macroIndex} className="text-xs">
                                   <span className="font-medium capitalize">{macro.macro_type}: </span>
                                   <span className="text-muted-foreground">{macro.quantity_instruction}</span>
-                                  {macro.food_options && macro.food_options.length > 0 && (
+                                  {macro.food_options?.length > 0 && (
                                     <span className="text-muted-foreground ml-2">
                                       ({macro.food_options.map(f => f.name).join(', ')})
                                     </span>
@@ -535,7 +555,7 @@ const ClientProfile = () => {
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-muted-foreground">No meals configured yet</p>
+                        <p className="text-sm text-muted-foreground">{t('clientProfile.noMealsConfigured')}</p>
                       )}
                     </div>
                   </CardContent>
@@ -550,7 +570,7 @@ const ClientProfile = () => {
               clientId={clientId!}
               progressEntries={normalizedProgressEntries}
               onProgressUpdate={fetchClientData}
-              isTrainer={user?.role === 'TRAINER'}
+              isTrainer={user?.role === 'trainer'}
             />
           </TabsContent>
 
@@ -558,7 +578,7 @@ const ClientProfile = () => {
           <TabsContent value="profile" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Complete Profile Information</CardTitle>
+                <CardTitle>{t('clientProfile.completeProfileInfo')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

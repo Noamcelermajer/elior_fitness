@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -50,6 +51,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const client = location.state?.client;
 
   const [formData, setFormData] = useState<WorkoutPlanFormData>({
@@ -298,11 +300,11 @@ const CreateWorkoutPlanV2: React.FC = () => {
         <div className="flex items-center space-x-4">
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t('clientProfile.back')}
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Create Workout Plan</h1>
-            <p className="text-muted-foreground">New workout system with splits and detailed tracking</p>
+            <h1 className="text-3xl font-bold">{t('workoutCreation.title')}</h1>
+            <p className="text-muted-foreground">{t('workoutCreation.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -347,10 +349,10 @@ const CreateWorkoutPlanV2: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name">Plan Name *</Label>
+              <Label htmlFor="name">{t('workoutCreation.planNameRequired')}</Label>
               <Input
                 id="name"
-                placeholder="e.g., PPL Hypertrophy Phase 1"
+                placeholder={t('workoutCreation.planNamePlaceholder')}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
@@ -369,7 +371,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
           </div>
 
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('workoutCreation.description')}</Label>
             <Textarea
               id="description"
               placeholder="Overall plan description..."
@@ -383,7 +385,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
 
           {/* Split Type Selection */}
           <div>
-            <Label>Workout Split Type *</Label>
+            <Label>{t('workoutCreation.splitTypeRequired')}</Label>
             <RadioGroup value={formData.split_type} onValueChange={(value) => setFormData({ ...formData, split_type: value })}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <Card className={`cursor-pointer ${formData.split_type === 'push_pull_legs' ? 'border-primary' : ''}`}>
@@ -459,7 +461,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
             {formData.split_type === 'custom' && (
               <Button size="sm" onClick={addWorkoutDay}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Day
+                {t('workoutCreation.addDay')}
               </Button>
             )}
           </div>
@@ -675,7 +677,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
           className="gradient-green"
         >
           <Save className="mr-2 h-4 w-4" />
-          {loading ? 'Creating...' : 'Create Workout Plan'}
+          {loading ? t('workoutCreation.creating') : t('workoutCreation.createWorkoutPlan')}
         </Button>
       </div>
 

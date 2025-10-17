@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Scale, Camera, TrendingDown, TrendingUp, Plus, Calendar, Upload, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -27,6 +28,7 @@ interface ProgressEntry {
 
 const ProgressTrackingV2 = () => {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
   const [progressData, setProgressData] = useState<ProgressEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -62,7 +64,7 @@ const ProgressTrackingV2 = () => {
       }
     } catch (error) {
       console.error('Failed to fetch progress data:', error);
-      setError('Failed to load progress data');
+      setError(t('progress.loadError'));
     } finally {
       setLoading(false);
     }
@@ -157,7 +159,7 @@ const ProgressTrackingV2 = () => {
         <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6">
           <Card>
             <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">Loading progress data...</p>
+              <p className="text-center text-muted-foreground">{t('progress.loading')}</p>
             </CardContent>
           </Card>
         </div>
@@ -172,60 +174,60 @@ const ProgressTrackingV2 = () => {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gradient">Progress Tracking</h1>
-              <p className="text-muted-foreground mt-1">Monitor your weight and visual progress</p>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gradient">{t('progress.title')}</h1>
+              <p className="text-muted-foreground mt-1">{t('progress.subtitle')}</p>
             </div>
             <Dialog open={isAddingEntry} onOpenChange={setIsAddingEntry}>
               <DialogTrigger asChild>
                 <Button className="gradient-blue text-background">
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Entry
+                  {t('progress.addEntry')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Add Progress Entry</DialogTitle>
+                  <DialogTitle>{t('progress.addProgressEntry')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 mt-4">
                   <div>
-                    <Label htmlFor="weight">Weight (kg) *</Label>
+                    <Label htmlFor="weight">{t('progress.weightKgRequired')}</Label>
                     <Input
                       id="weight"
                       type="number"
                       step="0.1"
-                      placeholder="e.g., 75.5"
+                      placeholder={t('progress.weightPlaceholder')}
                       value={newWeight}
                       onChange={(e) => setNewWeight(e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="body-fat">Body Fat % (optional)</Label>
+                    <Label htmlFor="body-fat">{t('progress.bodyFatOptional')}</Label>
                     <Input
                       id="body-fat"
                       type="number"
                       step="0.1"
-                      placeholder="e.g., 18.5"
+                      placeholder={t('progress.bodyFatPlaceholder')}
                       value={newBodyFat}
                       onChange={(e) => setNewBodyFat(e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="notes">Notes (optional)</Label>
+                    <Label htmlFor="notes">{t('progress.notesOptional')}</Label>
                     <Textarea
                       id="notes"
-                      placeholder="How are you feeling? Any observations..."
+                      placeholder={t('progress.notesPlaceholder')}
                       value={newNotes}
                       onChange={(e) => setNewNotes(e.target.value)}
                       rows={3}
                     />
                   </div>
                   <div>
-                    <Label>Progress Photo (optional)</Label>
+                    <Label>{t('progress.progressPhotoOptional')}</Label>
                     {photoPreview ? (
                       <div className="relative mt-2">
                         <img 
                           src={photoPreview} 
-                          alt="Preview" 
+                          alt={t('progress.photoPreviewAlt')}
                           className="w-full h-48 object-cover rounded-lg"
                         />
                         <Button
@@ -242,8 +244,8 @@ const ProgressTrackingV2 = () => {
                         <label htmlFor="photo-upload" className="cursor-pointer">
                           <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:bg-accent transition-colors">
                             <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">Click to upload photo</p>
-                            <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
+                            <p className="text-sm text-muted-foreground">{t('progress.clickToUpload')}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{t('progress.uploadHint')}</p>
                           </div>
                         </label>
                         <input
@@ -256,20 +258,20 @@ const ProgressTrackingV2 = () => {
                       </div>
                     )}
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       className="flex-1"
                       onClick={() => setIsAddingEntry(false)}
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </Button>
                     <Button
                       className="flex-1 gradient-green text-background"
                       onClick={addEntry}
                       disabled={!newWeight}
                     >
-                      Add Entry
+                      {t('progress.addEntry')}
                     </Button>
                   </div>
                 </div>
@@ -286,8 +288,8 @@ const ProgressTrackingV2 = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Current Weight</p>
-                  <p className="text-3xl font-bold text-foreground">{currentWeight || '-'} kg</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('progress.currentWeight')}</p>
+                  <p className="text-3xl font-bold text-foreground">{currentWeight || '-'} {t('progress.kg')}</p>
                 </div>
                 <Scale className="w-8 h-8 text-blue-500" />
               </div>
@@ -298,10 +300,10 @@ const ProgressTrackingV2 = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Change</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('progress.totalChange')}</p>
                   <div className="flex items-center space-x-2">
                     <p className={`text-3xl font-bold ${weightChange < 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
+                      {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} {t('progress.kg')}
                     </p>
                     {weightChange < 0 ? (
                       <TrendingDown className="w-6 h-6 text-green-500" />
@@ -318,7 +320,7 @@ const ProgressTrackingV2 = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Progress</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('progress.progress')}</p>
                   <p className={`text-3xl font-bold ${weightChange < 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {weightChangePercentage}%
                   </p>
@@ -331,15 +333,15 @@ const ProgressTrackingV2 = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="chart" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="chart">Weight Chart</TabsTrigger>
-            <TabsTrigger value="photos">Progress Photos</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="chart">{t('progress.weightChart')}</TabsTrigger>
+            <TabsTrigger value="photos">{t('progress.progressPhotos')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="chart" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Weight Progress</CardTitle>
+                <CardTitle>{t('progress.weightProgress')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {chartData.length > 0 ? (
@@ -359,9 +361,7 @@ const ProgressTrackingV2 = () => {
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-center text-muted-foreground py-12">
-                    No weight data yet. Add your first entry to start tracking!
-                  </p>
+                  <p className="text-center text-muted-foreground py-12">{t('progress.noWeightData')}</p>
                 )}
               </CardContent>
             </Card>
@@ -369,7 +369,7 @@ const ProgressTrackingV2 = () => {
             {/* Weight History */}
             <Card>
               <CardHeader>
-                <CardTitle>Weight History</CardTitle>
+                <CardTitle>{t('progress.weightHistory')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {progressData.length > 0 ? (
@@ -381,7 +381,7 @@ const ProgressTrackingV2 = () => {
                           <div>
                             <p className="font-medium">{entry.weight} kg</p>
                             <p className="text-sm text-muted-foreground">
-                              {new Date(entry.date).toLocaleDateString('en-US', { 
+                              {new Date(entry.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', { 
                                 year: 'numeric', 
                                 month: 'long', 
                                 day: 'numeric' 
@@ -395,7 +395,7 @@ const ProgressTrackingV2 = () => {
                         {entry.photo_path && (
                           <Badge variant="outline">
                             <Camera className="w-3 h-3 mr-1" />
-                            Photo
+                            {t('progress.photo')}
                           </Badge>
                         )}
                       </div>
@@ -403,7 +403,7 @@ const ProgressTrackingV2 = () => {
                   </div>
                 ) : (
                   <p className="text-center text-muted-foreground py-8">
-                    No entries yet. Add your first weigh-in!
+                    {t('progress.noEntriesYet')}
                   </p>
                 )}
               </CardContent>
@@ -412,10 +412,10 @@ const ProgressTrackingV2 = () => {
 
           <TabsContent value="photos" className="space-y-4">
             <Card>
-              <CardHeader>
+                    <CardHeader>
                 <CardTitle className="flex items-center">
                   <Camera className="w-5 h-5 mr-2" />
-                  Progress Photos
+                  {t('progress.progressPhotos')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -436,14 +436,14 @@ const ProgressTrackingV2 = () => {
                         <div className="w-full h-48 bg-muted flex items-center justify-center hidden">
                           <div className="text-center text-muted-foreground">
                             <Camera className="w-8 h-8 mx-auto mb-2" />
-                            <p className="text-sm">Photo not available</p>
+                            <p className="text-sm">{t('progress.photoNotAvailable')}</p>
                           </div>
                         </div>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="font-bold text-lg">{entry.weight} kg</p>
+                            <p className="font-bold text-lg">{entry.weight} {t('progress.kg')}</p>
                             <Badge variant="outline">
-                              {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              {new Date(entry.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', { month: 'short', day: 'numeric' })}
                             </Badge>
                           </div>
                           {entry.notes && (
@@ -456,10 +456,8 @@ const ProgressTrackingV2 = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Camera className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-lg font-medium">No Progress Photos Yet</p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Add photos to your weigh-ins to track your visual progress!
-                    </p>
+                    <p className="text-lg font-medium">{t('progress.noPhotosTitle')}</p>
+                    <p className="text-sm text-muted-foreground mt-2">{t('progress.noPhotosSubtitle')}</p>
                   </div>
                 )}
               </CardContent>

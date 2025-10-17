@@ -140,7 +140,7 @@ def create_complete_workout_plan(
     
     return workout_plan
 
-@router.get("/plans", response_model=List[WorkoutPlanResponse])
+@router.get("/plans", response_model=List[dict])
 def get_workout_plans(
     client_id: int = None,
     active_only: bool = True,
@@ -164,7 +164,59 @@ def get_workout_plans(
     if active_only:
         query = query.filter(NewWorkoutPlan.is_active == True)
     
-    return query.all()
+    plans = query.all()
+    
+    # Manually serialize to avoid enum serialization issues
+    return [
+        {
+            "id": plan.id,
+            "client_id": plan.client_id,
+            "trainer_id": plan.trainer_id,
+            "name": plan.name,
+            "description": plan.description,
+            "split_type": plan.split_type.value if hasattr(plan.split_type, 'value') else str(plan.split_type),
+            "days_per_week": plan.days_per_week,
+            "duration_weeks": plan.duration_weeks,
+            "is_active": plan.is_active,
+            "notes": plan.notes,
+            "start_date": plan.start_date.isoformat() if plan.start_date else None,
+            "end_date": plan.end_date.isoformat() if plan.end_date else None,
+            "created_at": plan.created_at.isoformat() if plan.created_at else None,
+            "updated_at": plan.updated_at.isoformat() if plan.updated_at else None,
+            "workout_days": [
+                {
+                    "id": day.id,
+                    "workout_plan_id": day.workout_plan_id,
+                    "name": day.name,
+                    "day_type": day.day_type.value if hasattr(day.day_type, 'value') else str(day.day_type),
+                    "order_index": day.order_index,
+                    "notes": day.notes,
+                    "estimated_duration": day.estimated_duration,
+                    "created_at": day.created_at.isoformat() if day.created_at else None,
+                    "workout_exercises": [
+                        {
+                            "id": ex.id,
+                            "workout_day_id": ex.workout_day_id,
+                            "exercise_id": ex.exercise_id,
+                            "order_index": ex.order_index,
+                            "target_sets": ex.target_sets,
+                            "target_reps": ex.target_reps,
+                            "target_weight": ex.target_weight,
+                            "rest_seconds": ex.rest_seconds,
+                            "tempo": ex.tempo,
+                            "notes": ex.notes,
+                            "video_url": ex.video_url,
+                            "created_at": ex.created_at.isoformat() if ex.created_at else None,
+                            "exercise_name": ex.exercise.name if ex.exercise else None
+                        }
+                        for ex in day.workout_exercises
+                    ]
+                }
+                for day in plan.workout_days
+            ]
+        }
+        for plan in plans
+    ]
 
 @router.get("/plans/{plan_id}", response_model=WorkoutPlanResponse)
 def get_workout_plan(

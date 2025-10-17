@@ -26,6 +26,7 @@ class Exercise(Base):
     muscle_group = Column(Enum(MuscleGroup), nullable=False)
     equipment_needed = Column(String)
     instructions = Column(String)  # How to perform the exercise
+    category = Column(String)  # Custom category for organizing exercises (e.g., "Strength", "Hypertrophy", "Endurance", "Mobility")
     created_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # Trainer who created it
     created_at = Column(DateTime, default=func.now())  # SQLite compatible
 

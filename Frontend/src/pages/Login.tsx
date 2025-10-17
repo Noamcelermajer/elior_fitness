@@ -97,6 +97,16 @@ const Login = () => {
     return role.charAt(0).toUpperCase() + role.slice(1);
   };
 
+  // Development only: Map of test user passwords
+  const getTestPassword = (email: string) => {
+    const testPasswords: { [key: string]: string } = {
+      'admin@elior.com': 'admin123',
+      'trainer@elior.com': 'trainer123',
+      'client@elior.com': 'client123'
+    };
+    return testPasswords[email] || '(unknown)';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4">
       {/* Animated background elements */}
@@ -230,10 +240,9 @@ const Login = () => {
                   </div>
                   <div className="space-y-1 text-sm">
                     <p><span className="text-muted-foreground">{t('common.name')}:</span> <span className="text-foreground font-medium">{user.full_name}</span></p>
-                    <p><span className="text-muted-foreground">{t('auth.email')}:</span> <span className="text-foreground font-mono">{user.username}</span></p>
                     <p><span className="text-muted-foreground">{t('auth.email')}:</span> <span className="text-foreground font-mono">{user.email}</span></p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {t('auth.password')}: ••••••••
+                    <p className="text-xs mt-2">
+                      <span className="text-muted-foreground">{t('auth.password')}:</span> <span className="text-foreground font-mono font-semibold">{getTestPassword(user.email)}</span>
                     </p>
                   </div>
                 </div>

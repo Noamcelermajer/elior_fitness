@@ -7,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dumbbell, Clock, CheckCircle, Circle, TrendingUp, Timer, Weight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -66,6 +67,7 @@ interface SetCompletion {
 
 const TrainingPlanV2 = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
   const [setCompletions, setSetCompletions] = useState<SetCompletion[]>([]);
   const [activeExercise, setActiveExercise] = useState<number | null>(null);
@@ -231,7 +233,7 @@ const TrainingPlanV2 = () => {
       <div className="pb-20 lg:pb-8">
         <div className="bg-gradient-to-br from-card to-secondary px-4 lg:px-6 py-6 lg:py-8">
           <div className="max-w-6xl mx-auto">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gradient">My Workouts</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gradient">{t('training.myWorkouts')}</h1>
             <p className="text-muted-foreground mt-1">Track your training and progress</p>
           </div>
         </div>
@@ -241,9 +243,9 @@ const TrainingPlanV2 = () => {
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
                 <Dumbbell className="w-12 h-12 mx-auto text-muted-foreground" />
-                <p className="text-lg font-medium">No Active Workout Plan</p>
+                <p className="text-lg font-medium">{t('training.noActiveWorkoutPlan')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Your trainer hasn't assigned a workout plan yet. Check back later!
+                  {t('training.noWorkoutPlanAssigned')}
                 </p>
               </div>
             </CardContent>
@@ -338,7 +340,7 @@ const TrainingPlanV2 = () => {
                             {/* Exercise Info */}
                             <div className="grid grid-cols-3 gap-3 mb-4">
                               <div className="text-center p-2 bg-muted rounded-lg">
-                                <p className="text-xs text-muted-foreground">Sets</p>
+                                <p className="text-xs text-muted-foreground">{t('training.sets')}</p>
                                 <p className="text-lg font-bold">{exercise.target_sets}</p>
                               </div>
                               <div className="text-center p-2 bg-muted rounded-lg">
@@ -346,7 +348,7 @@ const TrainingPlanV2 = () => {
                                 <p className="text-lg font-bold">{exercise.target_reps}</p>
                               </div>
                               <div className="text-center p-2 bg-muted rounded-lg">
-                                <p className="text-xs text-muted-foreground">Rest</p>
+                                <p className="text-xs text-muted-foreground">{t('training.rest')}</p>
                                 <p className="text-lg font-bold">{formatRestTime(exercise.rest_seconds)}</p>
                               </div>
                             </div>
@@ -392,7 +394,7 @@ const TrainingPlanV2 = () => {
                                             {completedSet?.reps_completed} reps × {completedSet?.weight_used} kg
                                           </span>
                                         </div>
-                                        <Badge className="gradient-green text-background">Completed</Badge>
+                                        <Badge className="gradient-green text-background">{t('training.completed')}</Badge>
                                       </>
                                     ) : (
                                       <>
@@ -449,6 +451,7 @@ const TrainingPlanV2 = () => {
 };
 
 export default TrainingPlanV2;
+
 
 
 

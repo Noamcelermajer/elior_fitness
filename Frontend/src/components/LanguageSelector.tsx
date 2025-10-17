@@ -15,7 +15,7 @@ const languages = [
 ];
 
 const LanguageSelector: React.FC = () => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   const changeLanguage = (languageCode: string) => {
     i18n.changeLanguage(languageCode);
@@ -34,7 +34,7 @@ const LanguageSelector: React.FC = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon" className="relative">
           <Globe className="h-5 w-5" />
-          <span className="sr-only">Select language</span>
+          <span className="sr-only">{t('common.selectLanguage')}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[150px]">
@@ -42,8 +42,10 @@ const LanguageSelector: React.FC = () => {
           <DropdownMenuItem
             key={language.code}
             onClick={() => changeLanguage(language.code)}
-            className={`cursor-pointer ${
-              currentLanguage.code === language.code ? 'bg-accent' : ''
+            className={`cursor-pointer transition-colors ${
+              currentLanguage.code === language.code 
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' 
+                : 'hover:bg-accent/50'
             }`}
           >
             <span className="mr-2">{language.flag}</span>

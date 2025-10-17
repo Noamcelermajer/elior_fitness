@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -52,6 +53,7 @@ const CreateMealPlanV2: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const client = location.state?.client;
 
   const [formData, setFormData] = useState<MealPlanFormData>({
@@ -236,11 +238,11 @@ const CreateMealPlanV2: React.FC = () => {
         <div className="flex items-center space-x-4">
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t('mealCreation.back')}
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Create Meal Plan</h1>
-            <p className="text-muted-foreground">New meal system with 3 macros and food options</p>
+            <h1 className="text-3xl font-bold">{t('mealCreation.title')}</h1>
+            <p className="text-muted-foreground">{t('mealCreation.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -254,7 +256,7 @@ const CreateMealPlanV2: React.FC = () => {
       {/* Basic Information */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Plan Information</CardTitle>
+          <CardTitle>{t('mealCreation.planTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Client Selection */}
@@ -285,17 +287,17 @@ const CreateMealPlanV2: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name">Plan Name *</Label>
+              <Label htmlFor="name">{t('mealCreation.planTitleRequired')}</Label>
               <Input
                 id="name"
-                placeholder="e.g., Cutting Phase Week 1"
+                placeholder={t('mealCreation.planTitlePlaceholder')}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
 
             <div>
-              <Label>Number of Meals per Day</Label>
+              <Label>{t('mealCreation.meals')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   type="number"
@@ -303,17 +305,17 @@ const CreateMealPlanV2: React.FC = () => {
                   readOnly
                   className="bg-muted"
                 />
-                <span className="text-sm text-muted-foreground">meals configured</span>
+                <span className="text-sm text-muted-foreground">{t('meals.meals')}</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Use "Add Meal" button below to add meals</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('meals.addMeal')}</p>
             </div>
           </div>
 
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('mealCreation.description')}</Label>
             <Textarea
               id="description"
-              placeholder="Overall plan description..."
+              placeholder={t('mealCreation.descriptionPlaceholder')}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
@@ -324,7 +326,7 @@ const CreateMealPlanV2: React.FC = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <Label htmlFor="total_calories">Total Calories</Label>
+              <Label htmlFor="total_calories">{t('mealCreation.targetCalories')}</Label>
               <Input
                 id="total_calories"
                 type="number"
@@ -334,7 +336,7 @@ const CreateMealPlanV2: React.FC = () => {
               />
             </div>
             <div>
-              <Label htmlFor="protein_target">Protein (g)</Label>
+              <Label htmlFor="protein_target">{t('mealCreation.proteinTarget')}</Label>
               <Input
                 id="protein_target"
                 type="number"
@@ -344,7 +346,7 @@ const CreateMealPlanV2: React.FC = () => {
               />
             </div>
             <div>
-              <Label htmlFor="carb_target">Carbs (g)</Label>
+              <Label htmlFor="carb_target">{t('mealCreation.carbTarget')}</Label>
               <Input
                 id="carb_target"
                 type="number"
@@ -354,7 +356,7 @@ const CreateMealPlanV2: React.FC = () => {
               />
             </div>
             <div>
-              <Label htmlFor="fat_target">Fats (g)</Label>
+              <Label htmlFor="fat_target">{t('mealCreation.fatTarget')}</Label>
               <Input
                 id="fat_target"
                 type="number"
@@ -371,14 +373,14 @@ const CreateMealPlanV2: React.FC = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Meals Configuration ({formData.number_of_meals} meals)</CardTitle>
+            <CardTitle>{t('meals.meals')} ({formData.number_of_meals})</CardTitle>
             <Button
               onClick={addMealSlot}
               variant="default"
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Meal
+              {t('mealCreation.addMeal')}
             </Button>
           </div>
         </CardHeader>
@@ -389,12 +391,12 @@ const CreateMealPlanV2: React.FC = () => {
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center justify-between w-full mr-4">
                     <div className="flex items-center space-x-3">
-                      <span className="font-semibold">{slot.name || `Meal ${mealIndex + 1}`}</span>
+                      <span className="font-semibold">{slot.name || `${t('meals.mealName')} ${mealIndex + 1}`}</span>
                       {slot.time_suggestion && (
                         <Badge variant="outline">{slot.time_suggestion}</Badge>
                       )}
                       <span className="text-sm text-muted-foreground">
-                        ({slot.macro_categories.reduce((sum, m) => sum + m.food_options.length, 0)} food options)
+                        ({slot.macro_categories.reduce((sum, m) => sum + m.food_options.length, 0)} {t('mealCreation.foodOptions')})
                       </span>
                     </div>
                     <Button
@@ -415,16 +417,16 @@ const CreateMealPlanV2: React.FC = () => {
                     {/* Meal Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor={`meal-name-${mealIndex}`}>Meal Name *</Label>
+                        <Label htmlFor={`meal-name-${mealIndex}`}>{t('mealCreation.mealName')}</Label>
                         <Input
                           id={`meal-name-${mealIndex}`}
-                          placeholder="e.g., ארוחת בוקר, Breakfast, Meal 1"
+                          placeholder={t('mealCreation.mealNamePlaceholder')}
                           value={slot.name}
                           onChange={(e) => updateMealSlot(mealIndex, 'name', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label htmlFor={`meal-time-${mealIndex}`}>Time Suggestion</Label>
+                        <Label htmlFor={`meal-time-${mealIndex}`}>{t('dates.time')}</Label>
                         <Input
                           id={`meal-time-${mealIndex}`}
                           type="time"
@@ -450,9 +452,7 @@ const CreateMealPlanV2: React.FC = () => {
                         <TabsContent key={macro.macro_type} value={macro.macro_type} className="space-y-4">
                           {/* Macro Instructions */}
                           <div>
-                            <Label htmlFor={`quantity-${mealIndex}-${macroIndex}`}>
-                              Quantity Instruction
-                            </Label>
+                            <Label htmlFor={`quantity-${mealIndex}-${macroIndex}`}>{t('forms.enterValue')}</Label>
                             <Input
                               id={`quantity-${mealIndex}-${macroIndex}`}
                               placeholder="e.g., 150g, 2 pieces, 1 serving"
@@ -464,21 +464,21 @@ const CreateMealPlanV2: React.FC = () => {
                           {/* Food Options */}
                           <div>
                             <div className="flex items-center justify-between mb-3">
-                              <Label>Food Options ({macro.food_options.length})</Label>
+                              <Label>{t('mealCreation.foodOptions')} ({macro.food_options.length})</Label>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => addFoodOption(mealIndex, macroIndex)}
                               >
                                 <Plus className="h-4 w-4 mr-2" />
-                                Add Food Option
+                                {t('mealCreation.addFoodOption')}
                               </Button>
                             </div>
 
                             <div className="space-y-3">
                               {macro.food_options.length === 0 && (
                                 <p className="text-sm text-muted-foreground text-center py-8 border-2 border-dashed rounded">
-                                  No food options yet. Click "Add Food Option" to get started.
+                                  {t('mealCreation.addFoodOption')}
                                 </p>
                               )}
 
@@ -486,7 +486,7 @@ const CreateMealPlanV2: React.FC = () => {
                                 <Card key={foodIndex} className="p-4">
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
-                                      <Label>Food Name (English) *</Label>
+                                      <Label>{t('mealCreation.optionName')}</Label>
                                       <Input
                                         placeholder="e.g., Chicken Breast"
                                         value={food.name}
@@ -494,7 +494,7 @@ const CreateMealPlanV2: React.FC = () => {
                                       />
                                     </div>
                                     <div>
-                                      <Label>שם המזון (עברית)</Label>
+                                      <Label>{t('mealCreation.optionName')}</Label>
                                       <Input
                                         placeholder="e.g., חזה עוף"
                                         value={food.name_hebrew}
@@ -504,7 +504,7 @@ const CreateMealPlanV2: React.FC = () => {
                                     </div>
 
                                     <div>
-                                      <Label>Serving Size</Label>
+                                      <Label>{t('meals.servingSize')}</Label>
                                       <Input
                                         placeholder="e.g., 100g, 1 piece"
                                         value={food.serving_size}
@@ -513,7 +513,7 @@ const CreateMealPlanV2: React.FC = () => {
                                     </div>
 
                                     <div>
-                                      <Label>Calories</Label>
+                                      <Label>{t('meals.calories')}</Label>
                                       <Input
                                         type="number"
                                         placeholder="165"
@@ -523,7 +523,7 @@ const CreateMealPlanV2: React.FC = () => {
                                     </div>
 
                                     <div>
-                                      <Label>Protein (g)</Label>
+                                      <Label>{t('meals.protein')}</Label>
                                       <Input
                                         type="number"
                                         placeholder="31"
@@ -533,7 +533,7 @@ const CreateMealPlanV2: React.FC = () => {
                                     </div>
 
                                     <div>
-                                      <Label>Carbs (g)</Label>
+                                      <Label>{t('meals.carbs')}</Label>
                                       <Input
                                         type="number"
                                         placeholder="0"
@@ -543,7 +543,7 @@ const CreateMealPlanV2: React.FC = () => {
                                     </div>
 
                                     <div>
-                                      <Label>Fat (g)</Label>
+                                      <Label>{t('meals.fats')}</Label>
                                       <Input
                                         type="number"
                                         placeholder="3.6"
@@ -560,7 +560,7 @@ const CreateMealPlanV2: React.FC = () => {
                                         className="w-full"
                                       >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Remove
+                                        {t('mealCreation.removeOption')}
                                       </Button>
                                     </div>
                                   </div>
@@ -579,12 +579,10 @@ const CreateMealPlanV2: React.FC = () => {
 
           {formData.meal_slots.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
-                No meals added yet. Click "Add Meal" to start building your meal plan.
-              </p>
+              <p className="text-muted-foreground mb-4">{t('meals.addMeal')}</p>
               <Button onClick={addMealSlot} variant="outline" size="lg">
                 <Plus className="h-5 w-5 mr-2" />
-                Add Your First Meal
+                {t('meals.addMeal')}
               </Button>
             </div>
           )}
@@ -594,7 +592,7 @@ const CreateMealPlanV2: React.FC = () => {
       {/* Action Buttons */}
       <div className="flex justify-end space-x-4">
         <Button variant="outline" onClick={() => navigate(-1)}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           onClick={handleSubmit}
@@ -602,7 +600,7 @@ const CreateMealPlanV2: React.FC = () => {
           className="gradient-green"
         >
           <Save className="mr-2 h-4 w-4" />
-          {loading ? 'Creating...' : 'Create Meal Plan'}
+          {loading ? t('mealCreation.creating') : t('mealCreation.createMealPlan')}
         </Button>
       </div>
     </div>

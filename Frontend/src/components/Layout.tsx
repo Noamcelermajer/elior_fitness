@@ -45,21 +45,21 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       {/* Mobile Header */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50 lg:hidden">
         <div className="flex items-center justify-between px-4 h-16">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3">
             <div className={`w-8 h-8 ${isAdmin ? 'bg-gradient-to-r from-red-500 to-red-600' : 'gradient-orange'} rounded-lg flex items-center justify-center shadow-lg`}>
               {isAdmin ? <Shield className="w-5 h-5 text-background" /> : <Dumbbell className="w-5 h-5 text-background" />}
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gradient">FitTrainer Pro</h1>
+              <h1 className="text-lg font-bold text-gradient">{t('layout.brandName')}</h1>
               <p className="text-xs text-muted-foreground">
-                {isAdmin ? 'Admin Panel' : isTrainer ? 'Trainer Dashboard' : 'Client Portal'}
+                {isAdmin ? t('layout.adminPanel') : isTrainer ? t('layout.trainerDashboard') : t('layout.clientPortal')}
               </p>
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <LanguageSelector />
-            <div className="flex items-center space-x-2 mr-2">
+            <div className="flex items-center gap-2 me-2">
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-sm">
                 👤
               </div>
@@ -91,7 +91,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
                   }`}
                   onClick={() => handleNavigation(item.href)}
                 >
-                  <item.icon className="w-5 h-5 mr-3" />
+                  <item.icon className="w-5 h-5 me-3" />
                   <span>{item.label}</span>
                 </Button>
               ))}
@@ -101,7 +101,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
                   className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
                   onClick={logout}
                 >
-                  <LogOut className="w-5 h-5 mr-3" />
+                  <LogOut className="w-5 h-5 me-3" />
                   <span>{t('auth.logout')}</span>
                 </Button>
               </div>
@@ -114,26 +114,26 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       <div className="hidden lg:block sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-4">
               <div className={`w-12 h-12 ${isAdmin ? 'bg-gradient-to-r from-red-500 to-red-600' : 'gradient-orange'} rounded-xl flex items-center justify-center shadow-xl transform hover:scale-110 transition-transform duration-300`}>
                 {isAdmin ? <Shield className="w-7 h-7 text-background" /> : <Dumbbell className="w-7 h-7 text-background" />}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gradient">FitTrainer Pro</h1>
+                <h1 className="text-2xl font-bold text-gradient">{t('layout.brandName')}</h1>
                 <p className="text-sm text-muted-foreground">
-                  {isAdmin ? 'Administrative Control Panel' : isTrainer ? 'Client Management System' : 'Personal Fitness Portal'}
+                  {isAdmin ? t('layout.adminSubtitle') : isTrainer ? t('layout.trainerSubtitle') : t('layout.clientSubtitle')}
                 </p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-4">
               {/* Desktop Navigation */}
-              <nav className="flex items-center space-x-2">
+              <nav className="flex items-center gap-2">
                 {navigationItems.map((item) => (
                   <Button
                     key={item.id}
                     variant={currentPage === item.id ? "default" : "ghost"}
-                    className={`flex items-center space-x-2 px-6 transform hover:scale-105 transition-all duration-200 ${
+                    className={`flex items-center gap-2 px-6 transform hover:scale-105 transition-all duration-200 ${
                       currentPage === item.id 
                         ? "gradient-orange text-background font-semibold shadow-lg" 
                         : "hover:bg-secondary"
@@ -147,16 +147,16 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
               </nav>
 
               {/* User Profile */}
-              <div className="flex items-center space-x-3 pl-4 border-l border-border/30">
+              <div className="flex items-center gap-3 ps-4 border-s border-border/30">
                 <LanguageSelector />
                 <NotificationBell />
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-lg shadow-lg">
                     👤
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-sm font-semibold text-foreground">{user?.full_name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+                    <p className="text-xs text-muted-foreground">{user?.role ? t(`roles.${user.role}`) : ''}</p>
                   </div>
                 </div>
                 <Button
@@ -186,7 +186,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
               key={item.id}
               variant="ghost"
               size="sm"
-              className={`flex flex-col items-center space-y-1 h-auto py-2 px-3 min-w-0 transform hover:scale-110 transition-all duration-200 ${
+              className={`flex flex-col items-center gap-1 h-auto py-2 px-3 min-w-0 transform hover:scale-110 transition-all duration-200 ${
                 currentPage === item.id 
                   ? "text-primary bg-primary/10" 
                   : "text-muted-foreground hover:text-foreground"

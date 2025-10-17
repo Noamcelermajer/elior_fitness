@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Check, Clock, Utensils, Flame, Apple, Camera } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -62,6 +63,7 @@ interface ClientMealChoice {
 
 const MealMenuV2 = () => {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [choices, setChoices] = useState<ClientMealChoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,11 +181,11 @@ const MealMenuV2 = () => {
   const getMacroName = (macroType: string) => {
     switch (macroType) {
       case 'protein':
-        return 'חלבון (Protein)';
+        return t('meals.protein');
       case 'carb':
-        return 'פחמימה (Carb)';
+        return t('meals.carbs');
       case 'fat':
-        return 'שומן (Fat)';
+        return t('meals.fats');
       default:
         return macroType;
     }
@@ -195,7 +197,7 @@ const MealMenuV2 = () => {
         <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6">
           <Card>
             <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">Loading meal plan...</p>
+              <p className="text-center text-muted-foreground">{t('meals.loadingMealPlan')}</p>
             </CardContent>
           </Card>
         </div>
@@ -208,8 +210,8 @@ const MealMenuV2 = () => {
       <div className="pb-20 lg:pb-8">
         <div className="bg-gradient-to-br from-card to-secondary px-4 lg:px-6 py-6 lg:py-8">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gradient">My Meal Plan</h1>
-            <p className="text-muted-foreground mt-1">Track your nutrition and meals</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gradient">{t('meals.myMealPlan')}</h1>
+            <p className="text-muted-foreground mt-1">{t('meals.trackNutrition')}</p>
           </div>
         </div>
 
@@ -218,9 +220,9 @@ const MealMenuV2 = () => {
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
                 <Utensils className="w-12 h-12 mx-auto text-muted-foreground" />
-                <p className="text-lg font-medium">No Active Meal Plan</p>
+                <p className="text-lg font-medium">{t('meals.noActiveMealPlan')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Your trainer hasn't assigned a meal plan yet. Check back later!
+                  {t('meals.trainerNotAssignedPlan')}
                 </p>
               </div>
             </CardContent>
@@ -241,7 +243,7 @@ const MealMenuV2 = () => {
                 {mealPlan.name}
               </h1>
               <p className="text-muted-foreground mt-1">
-                {mealPlan.description || 'Track your nutrition and meals'}
+                {mealPlan.description || t('meals.trackNutrition')}
               </p>
             </div>
           </div>
@@ -254,26 +256,26 @@ const MealMenuV2 = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 text-foreground">
               <Flame className="w-5 h-5 text-primary" />
-              <span>Daily Nutrition Goals</span>
+              <span>{t('meals.dailyTargets')}</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-foreground">{mealPlan.total_calories || '-'}</p>
-                <p className="text-sm text-muted-foreground">Calories</p>
+                <p className="text-sm text-muted-foreground">{t('meals.calories')}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-foreground">{mealPlan.protein_target || '-'}g</p>
-                <p className="text-sm text-muted-foreground">Protein</p>
+                <p className="text-sm text-muted-foreground">{t('meals.protein')}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-foreground">{mealPlan.carb_target || '-'}g</p>
-                <p className="text-sm text-muted-foreground">Carbs</p>
+                <p className="text-sm text-muted-foreground">{t('meals.carbs')}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-foreground">{mealPlan.fat_target || '-'}g</p>
-                <p className="text-sm text-muted-foreground">Fats</p>
+                <p className="text-sm text-muted-foreground">{t('meals.fats')}</p>
               </div>
             </div>
           </CardContent>
@@ -351,21 +353,21 @@ const MealMenuV2 = () => {
                                     <div className="flex-1">
                                       <div className="flex items-center justify-between">
                                         <p className="font-medium">
-                                          {option.name_hebrew || option.name}
+                                          {i18n.language === 'he' ? (option.name_hebrew || option.name) : option.name}
                                         </p>
                                         {isSelected && (
                                           <Badge className="gradient-green text-background">
                                             <Check className="w-3 h-3 mr-1" />
-                                            Eaten
+                                            {t('meals.eaten')}
                                           </Badge>
                                         )}
                                       </div>
                                       <p className="text-xs text-muted-foreground mt-1">
-                                        {option.calories}kcal | P: {option.protein}g | C: {option.carbs}g | F: {option.fat}g
+                                        {option.calories}{t('meals.kcal')} | P: {option.protein}g | C: {option.carbs}g | F: {option.fat}g
                                       </p>
                                       {option.serving_size && (
                                         <p className="text-xs text-muted-foreground">
-                                          Serving: {option.serving_size}
+                                          {t('meals.servingSize')}: {option.serving_size}
                                         </p>
                                       )}
                                     </div>

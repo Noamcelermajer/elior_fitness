@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Elior Fitness Test</title>
+</head>
+<body>
+    <h1>Testing Elior Fitness Application</h1>
+    <p>Application is running at: <a href="http://localhost:8000" target="_blank">http://localhost:8000</a></p>
+    
+    <h2>Changes Made:</h2>
+    <ul>
+        <li>✅ Fixed card padding in ClientsPage.tsx (trainer's client list)</li>
+        <li>✅ Fixed card padding in ClientProfile.tsx (client profile stat cards)</li>
+        <li>✅ Replaced Active/Inactive badge with Last Login Date</li>
+        <li>✅ Fixed TypeScript errors</li>
+        <li>✅ Complete clean Docker rebuild with no cache</li>
+    </ul>
+    
+    <h2>To Test:</h2>
+    <ol>
+        <li>Go to <a href="http://localhost:8000" target="_blank">http://localhost:8000</a></li>
+        <li>Login as trainer: trainer@elior.com / trainer123</li>
+        <li>Check Clients page - should show last login dates instead of Active/Inactive</li>
+        <li>Click on a client - check that all 4 stat cards have balanced padding</li>
+    </ol>
+    
+    <script>
+        // Test if the application is accessible
+        fetch('http://localhost:8000/health')
+            .then(response => response.json())
+            .then(data => {
+                document.body.innerHTML += '<p style="color: green;">✅ Application is running and healthy!</p>';
+                document.body.innerHTML += '<p>Status: ' + data.status + '</p>';
+            })
+            .catch(error => {
+                document.body.innerHTML += '<p style="color: red;">❌ Application not accessible: ' + error.message + '</p>';
+            });
+    </script>
+</body>
+</html>

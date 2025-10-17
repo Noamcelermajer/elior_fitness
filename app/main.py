@@ -361,29 +361,20 @@ try:
     import os
     from datetime import datetime, timedelta
     
-    # Cache the index.html content in memory for better performance
-    _index_html_cache = None
-    _index_html_cache_time = None
-    _cache_duration = timedelta(minutes=5)  # Cache for 5 minutes
-    
+    # Cache disabled for development - always read fresh
     def get_index_html():
-        """Get index.html with caching for better performance."""
-        global _index_html_cache, _index_html_cache_time
-        
-        current_time = datetime.now()
-        
-        # Return cached version if still valid
-        if (_index_html_cache and _index_html_cache_time and 
-            current_time - _index_html_cache_time < _cache_duration):
-            return _index_html_cache
-        
-        # Read and cache the file
+        """Get index.html without caching for development."""
+        import os
         index_path = "static/index.html"
+        abs_path = os.path.abspath(index_path)
+        logger.info(f"Reading index.html from: {abs_path}")
+        logger.info(f"File exists: {os.path.exists(index_path)}")
         if os.path.exists(index_path):
             with open(index_path, 'r', encoding='utf-8') as f:
-                _index_html_cache = f.read()
-                _index_html_cache_time = current_time
-                return _index_html_cache
+                content = f.read()
+                logger.info(f"Index.html content preview: {content[:200]}")
+                return content
+        logger.error(f"Index.html not found at {abs_path}")
         return None
     
     @app.get("/", response_class=HTMLResponse)

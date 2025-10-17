@@ -20,7 +20,7 @@ from app.schemas.workout import (
 )
 from app.models.workout import MuscleGroup
 
-router = APIRouter(prefix="/workouts", tags=["workouts"])
+router = APIRouter(tags=["workouts"])
 
 # Exercise Bank Endpoints
 @router.post("/exercises", response_model=ExerciseResponse, status_code=status.HTTP_201_CREATED)
@@ -30,7 +30,7 @@ def create_exercise(
     db: Session = Depends(get_db)
 ):
     """Create a new exercise in the trainer's exercise bank."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create exercises"
@@ -97,7 +97,7 @@ def update_exercise(
     db: Session = Depends(get_db)
 ):
     """Update an exercise (only by the trainer who created it)."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can update exercises"
@@ -121,7 +121,7 @@ def delete_exercise(
     db: Session = Depends(get_db)
 ):
     """Delete an exercise (only by the trainer who created it)."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can delete exercises"
@@ -144,7 +144,7 @@ def create_workout_plan(
     db: Session = Depends(get_db)
 ):
     """Create a new workout plan for a client."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create workout plans"
@@ -167,7 +167,7 @@ def get_workout_plans(
     workout_service = WorkoutService(db)
     
     # If user is a client, only show their plans
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         client_id = current_user.id
     
     filter_params = WorkoutPlanFilter(
@@ -206,7 +206,7 @@ def get_workout_plan(
         )
     
     # Check permissions
-    if not current_user.is_trainer and workout_plan.client_id != current_user.id:
+    if current_user.role not in ["TRAINER", "ADMIN"] and workout_plan.client_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to view this workout plan"
@@ -231,7 +231,7 @@ def get_complete_workout_plan(
         )
     
     # Check permissions
-    if not current_user.is_trainer and workout_plan.client_id != current_user.id:
+    if current_user.role not in ["TRAINER", "ADMIN"] and workout_plan.client_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to view this workout plan"
@@ -247,7 +247,7 @@ def update_workout_plan(
     db: Session = Depends(get_db)
 ):
     """Update a workout plan."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can update workout plans"
@@ -271,7 +271,7 @@ def delete_workout_plan(
     db: Session = Depends(get_db)
 ):
     """Delete a workout plan."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can delete workout plans"
@@ -295,7 +295,7 @@ def create_workout_session(
     db: Session = Depends(get_db)
 ):
     """Create a new workout session for a workout plan."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create workout sessions"
@@ -348,7 +348,7 @@ def update_workout_session(
     db: Session = Depends(get_db)
 ):
     """Update a workout session."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can update workout sessions"
@@ -372,7 +372,7 @@ def delete_workout_session(
     db: Session = Depends(get_db)
 ):
     """Delete a workout session."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can delete workout sessions"
@@ -396,7 +396,7 @@ def create_workout_exercise(
     db: Session = Depends(get_db)
 ):
     """Add an exercise to a workout session."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can add exercises to workout sessions"
@@ -413,7 +413,7 @@ def create_bulk_workout_exercises(
     db: Session = Depends(get_db)
 ):
     """Add multiple exercises to a workout session at once."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can add exercises to workout sessions"
@@ -448,7 +448,7 @@ def update_workout_exercise(
     db: Session = Depends(get_db)
 ):
     """Update a workout exercise."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can update workout exercises"
@@ -472,7 +472,7 @@ def delete_workout_exercise(
     db: Session = Depends(get_db)
 ):
     """Delete a workout exercise."""
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can delete workout exercises"
@@ -524,7 +524,7 @@ def get_exercise_completions(
     workout_service = WorkoutService(db)
     
     # If user is not a trainer, only show their completions
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         client_id = current_user.id
     
     # Parse dates if provided
@@ -587,7 +587,7 @@ def get_exercise_completion(
         )
     
     # Check permissions
-    if not current_user.is_trainer and completion.client_id != current_user.id:
+    if current_user.role not in ["TRAINER", "ADMIN"] and completion.client_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to view this completion"
@@ -613,7 +613,7 @@ def update_exercise_completion(
         )
     
     # Check permissions
-    if not current_user.is_trainer and completion.client_id != current_user.id:
+    if current_user.role not in ["TRAINER", "ADMIN"] and completion.client_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to update this completion"
@@ -639,7 +639,7 @@ def delete_exercise_completion(
         )
     
     # Check permissions
-    if not current_user.is_trainer and completion.client_id != current_user.id:
+    if current_user.role not in ["TRAINER", "ADMIN"] and completion.client_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to delete this completion"
@@ -683,7 +683,7 @@ def get_exercise_progress(
     workout_service = WorkoutService(db)
     
     # If user is not a trainer, use their ID
-    if not current_user.is_trainer:
+    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         client_id = current_user.id
     elif not client_id:
         raise HTTPException(
