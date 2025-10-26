@@ -276,7 +276,7 @@ const ClientProfile = () => {
         {/* Client Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="px-6 pt-8 pb-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
               <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
                 <User className="w-7 h-7 text-white" />
               </div>
@@ -288,7 +288,7 @@ const ClientProfile = () => {
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="px-6 pt-8 pb-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
               <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
                 <Weight className="w-7 h-7 text-white" />
               </div>
@@ -300,7 +300,7 @@ const ClientProfile = () => {
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="px-6 pt-8 pb-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
               <div className="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
                 <Dumbbell className="w-7 h-7 text-white" />
               </div>
@@ -312,7 +312,7 @@ const ClientProfile = () => {
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="px-6 pt-8 pb-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
               <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
                 <Calendar className="w-7 h-7 text-white" />
               </div>

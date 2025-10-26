@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { NotificationContainer } from "./components/NotificationContainer";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -244,14 +245,16 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <NotificationProvider>
-            <AuthProvider>
-              <BrowserRouter>
-                <AppRoutes />
-                <NotificationContainer />
-              </BrowserRouter>
-            </AuthProvider>
-          </NotificationProvider>
+          <ThemeProvider>
+            <NotificationProvider>
+              <AuthProvider>
+                <BrowserRouter>
+                  <AppRoutes />
+                  <NotificationContainer />
+                </BrowserRouter>
+              </AuthProvider>
+            </NotificationProvider>
+          </ThemeProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </div>

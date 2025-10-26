@@ -120,3 +120,18 @@ class MealTemplate(Base):
     is_public = Column(Boolean, default=False)  # Share with other trainers?
     created_at = Column(DateTime, default=func.now())
 
+class DailyMealHistory(Base):
+    """Daily aggregated meal history for tracking progress"""
+    __tablename__ = "daily_meal_history_v2"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    date = Column(DateTime, nullable=False, index=True)  # The date of the meals (YYYY-MM-DD)
+    total_calories = Column(Float, default=0)
+    total_protein = Column(Float, default=0)
+    total_carbs = Column(Float, default=0)
+    total_fat = Column(Float, default=0)
+    is_complete = Column(Boolean, default=False)  # Did client finish eating for the day?
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
+

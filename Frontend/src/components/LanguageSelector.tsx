@@ -42,10 +42,10 @@ const LanguageSelector: React.FC = () => {
           <DropdownMenuItem
             key={language.code}
             onClick={() => changeLanguage(language.code)}
-            className={`cursor-pointer transition-colors ${
+            className={`cursor-pointer ${
               currentLanguage.code === language.code 
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' 
-                : 'hover:bg-accent/50'
+                ? 'font-semibold' 
+                : ''
             }`}
           >
             <span className="mr-2">{language.flag}</span>

@@ -99,7 +99,7 @@ const ClientsPage = () => {
         },
         body: JSON.stringify({
           ...createForm,
-          role: 'client'
+          role: 'CLIENT'
         }),
       });
 

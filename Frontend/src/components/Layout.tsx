@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dumbbell, Home, Utensils, Target, TrendingUp, Menu, X, LogOut, User, Shield, Settings, Users } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 import LanguageSelector from './LanguageSelector';
+import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -59,6 +60,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
           
           <div className="flex items-center gap-2">
             <LanguageSelector />
+            <ThemeToggle />
             <div className="flex items-center gap-2 me-2">
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-sm">
                 👤
@@ -149,6 +151,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
               {/* User Profile */}
               <div className="flex items-center gap-3 ps-4 border-s border-border/30">
                 <LanguageSelector />
+                <ThemeToggle />
                 <NotificationBell />
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-lg shadow-lg">

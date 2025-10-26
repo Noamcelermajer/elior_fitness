@@ -15,7 +15,8 @@ from app.models.meal_system import (
     FoodOption,
     ClientMealChoice,
     MealTemplate,
-    MacroType
+    MacroType,
+    DailyMealHistory
 )
 from app.models.workout_system import (
     WorkoutPlanV2 as NewWorkoutPlan,

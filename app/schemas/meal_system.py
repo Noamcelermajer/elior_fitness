@@ -201,6 +201,28 @@ class ClientMealChoiceResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# ============ Daily Meal History Schemas ============
+
+class DailyMealHistoryBase(BaseModel):
+    date: datetime
+    total_calories: float = 0
+    total_protein: float = 0
+    total_carbs: float = 0
+    total_fat: float = 0
+    is_complete: bool = False
+
+class DailyMealHistoryCreate(DailyMealHistoryBase):
+    client_id: Optional[int] = None  # Optional, will use current user if not provided
+
+class DailyMealHistoryResponse(DailyMealHistoryBase):
+    id: int
+    client_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
 
 
 

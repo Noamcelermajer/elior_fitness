@@ -3,12 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Check, Clock, Utensils, Flame, Apple, Camera } from 'lucide-react';
+import { Plus, Check, Clock, Utensils, Flame, Apple, Camera, TrendingUp, History } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import MacroCircle from './MacroCircle';
+import MealHistory from './MealHistory';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -59,6 +63,34 @@ interface ClientMealChoice {
   food_option_id: number;
   meal_slot_id: number;
   date: string;
+  quantity?: string;
+}
+
+interface DailyMacros {
+  consumed: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  targets: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  remaining: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  percentages: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
 }
 
 const MealMenuV2 = () => {
@@ -68,11 +100,16 @@ const MealMenuV2 = () => {
   const [choices, setChoices] = useState<ClientMealChoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [dailyMacros, setDailyMacros] = useState<DailyMacros | null>(null);
+  const [selectedFood, setSelectedFood] = useState<{food: FoodOption, slotId: number} | null>(null);
+  const [gramsInput, setGramsInput] = useState<string>('');
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
       fetchMealPlan();
       fetchChoices();
+      fetchDailyMacros();
     }
   }, [user]);
 
@@ -118,22 +155,70 @@ const MealMenuV2 = () => {
     }
   };
 
-  const toggleFoodOption = async (mealSlotId: number, foodOptionId: number) => {
+  const fetchDailyMacros = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const today = new Date().toISOString();
+      const response = await fetch(`${API_BASE_URL}/v2/meals/daily-macros?client_id=${user?.id}&date=${today}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDailyMacros(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch daily macros:', error);
+    }
+  };
+
+  const openFoodDialog = (food: FoodOption, slotId: number) => {
+    // Check if already selected
+    const existingChoice = choices.find(
+      c => c.meal_slot_id === slotId && c.food_option_id === food.id
+    );
+    
+    if (existingChoice) {
+      // Parse existing quantity
+      const match = existingChoice.quantity?.match(/(\d+)/);
+      setGramsInput(match ? match[1] : '100');
+    } else {
+      // Default to serving size or 100g
+      const match = food.serving_size?.match(/(\d+)/);
+      setGramsInput(match ? match[1] : '100');
+    }
+    
+    setSelectedFood({ food, slotId });
+  };
+
+  const submitFoodChoice = async () => {
+    if (!selectedFood || !gramsInput) return;
+
     try {
       const token = localStorage.getItem('access_token');
       const existingChoice = choices.find(
-        c => c.meal_slot_id === mealSlotId && c.food_option_id === foodOptionId
+        c => c.meal_slot_id === selectedFood.slotId && c.food_option_id === selectedFood.food.id
       );
 
       if (existingChoice) {
-        // Delete the choice
-        await fetch(`${API_BASE_URL}/v2/meals/choices/${existingChoice.id}`, {
-          method: 'DELETE',
+        // Update existing choice
+        const response = await fetch(`${API_BASE_URL}/v2/meals/choices/${existingChoice.id}`, {
+          method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            quantity: `${gramsInput}g`,
+          }),
         });
-        setChoices(choices.filter(c => c.id !== existingChoice.id));
+
+        if (response.ok) {
+          const updated = await response.json();
+          setChoices(choices.map(c => c.id === updated.id ? updated : c));
+        }
       } else {
         // Create new choice
         const response = await fetch(`${API_BASE_URL}/v2/meals/choices`, {
@@ -143,9 +228,10 @@ const MealMenuV2 = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            food_option_id: foodOptionId,
-            meal_slot_id: mealSlotId,
+            food_option_id: selectedFood.food.id,
+            meal_slot_id: selectedFood.slotId,
             date: new Date().toISOString(),
+            quantity: `${gramsInput}g`,
           }),
         });
 
@@ -154,8 +240,31 @@ const MealMenuV2 = () => {
           setChoices([...choices, newChoice]);
         }
       }
+
+      // Refresh macro calculations
+      await fetchDailyMacros();
+      
+      // Close dialog
+      setSelectedFood(null);
+      setGramsInput('');
     } catch (error) {
-      console.error('Failed to toggle food option:', error);
+      console.error('Failed to submit food choice:', error);
+    }
+  };
+
+  const deleteFoodChoice = async (choiceId: number) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      await fetch(`${API_BASE_URL}/v2/meals/choices/${choiceId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      setChoices(choices.filter(c => c.id !== choiceId));
+      await fetchDailyMacros();
+    } catch (error) {
+      console.error('Failed to delete choice:', error);
     }
   };
 
@@ -188,6 +297,38 @@ const MealMenuV2 = () => {
         return t('meals.fats');
       default:
         return macroType;
+    }
+  };
+
+  const finishDay = async () => {
+    if (!dailyMacros) return;
+    
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/v2/meals/history`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: user?.id,
+          date: new Date().toISOString(),
+          total_calories: dailyMacros.consumed.calories,
+          total_protein: dailyMacros.consumed.protein,
+          total_carbs: dailyMacros.consumed.carbs,
+          total_fat: dailyMacros.consumed.fat,
+          is_complete: true,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Day saved successfully!');
+        setShowHistory(true);
+      }
+    } catch (error) {
+      console.error('Failed to save day:', error);
+      alert('Failed to save day');
     }
   };
 
@@ -246,40 +387,75 @@ const MealMenuV2 = () => {
                 {mealPlan.description || t('meals.trackNutrition')}
               </p>
             </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center gap-2"
+              >
+                <History className="h-4 w-4" />
+                {showHistory ? 'Hide History' : 'Show History'}
+              </Button>
+              <Button 
+                onClick={finishDay}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Finish Day
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 space-y-6">
-        {/* Nutrition Goals */}
-        <Card className="bg-gradient-to-br from-card to-secondary border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-foreground">
-              <Flame className="w-5 h-5 text-primary" />
-              <span>{t('meals.dailyTargets')}</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-foreground">{mealPlan.total_calories || '-'}</p>
-                <p className="text-sm text-muted-foreground">{t('meals.calories')}</p>
+        {/* Daily Macro Progress */}
+        {dailyMacros && (
+          <Card className="bg-gradient-to-br from-card to-secondary border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-foreground">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                <span>Macros</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <MacroCircle
+                  label="Carbohydrates"
+                  consumed={dailyMacros.consumed.carbs}
+                  target={dailyMacros.targets.carbs}
+                  unit="g"
+                  color="rgb(34, 197, 194)"
+                />
+                <MacroCircle
+                  label="Fat"
+                  consumed={dailyMacros.consumed.fat}
+                  target={dailyMacros.targets.fat}
+                  unit="g"
+                  color="rgb(168, 85, 247)"
+                />
+                <MacroCircle
+                  label="Protein"
+                  consumed={dailyMacros.consumed.protein}
+                  target={dailyMacros.targets.protein}
+                  unit="g"
+                  color="rgb(251, 146, 60)"
+                />
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-foreground">{mealPlan.protein_target || '-'}g</p>
-                <p className="text-sm text-muted-foreground">{t('meals.protein')}</p>
+              
+              {/* Calories Summary */}
+              <div className="mt-8 pt-6 border-t border-border">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-2">Daily Calories</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {dailyMacros.consumed.calories} <span className="text-lg text-muted-foreground">/ {dailyMacros.targets.calories}</span>
+                  </p>
+                  <Progress value={dailyMacros.percentages.calories} className="mt-3 h-2" />
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-foreground">{mealPlan.carb_target || '-'}g</p>
-                <p className="text-sm text-muted-foreground">{t('meals.carbs')}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-foreground">{mealPlan.fat_target || '-'}g</p>
-                <p className="text-sm text-muted-foreground">{t('meals.fats')}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Meal Slots */}
         <div className="space-y-4">
@@ -336,6 +512,9 @@ const MealMenuV2 = () => {
                             <div className="space-y-2">
                               {category.food_options.map((option) => {
                                 const isSelected = isFoodOptionSelected(slot.id, option.id);
+                                const selectedChoice = choices.find(
+                                  c => c.meal_slot_id === slot.id && c.food_option_id === option.id
+                                );
                                 return (
                                   <div
                                     key={option.id}
@@ -344,22 +523,30 @@ const MealMenuV2 = () => {
                                         ? 'bg-primary/10 border-primary' 
                                         : 'bg-card hover:bg-accent'
                                     }`}
-                                    onClick={() => toggleFoodOption(slot.id, option.id)}
+                                    onClick={() => openFoodDialog(option, slot.id)}
                                   >
-                                    <Checkbox 
-                                      checked={isSelected}
-                                      className="mt-1"
-                                    />
                                     <div className="flex-1">
                                       <div className="flex items-center justify-between">
                                         <p className="font-medium">
                                           {i18n.language === 'he' ? (option.name_hebrew || option.name) : option.name}
                                         </p>
                                         {isSelected && (
-                                          <Badge className="gradient-green text-background">
-                                            <Check className="w-3 h-3 mr-1" />
-                                            {t('meals.eaten')}
-                                          </Badge>
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="bg-primary/10 text-primary">
+                                              {selectedChoice?.quantity || '100g'}
+                                            </Badge>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 w-6 p-0"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (selectedChoice) deleteFoodChoice(selectedChoice.id);
+                                              }}
+                                            >
+                                              ✕
+                                            </Button>
+                                          </div>
                                         )}
                                       </div>
                                       <p className="text-xs text-muted-foreground mt-1">
@@ -393,7 +580,71 @@ const MealMenuV2 = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Meal History Panel */}
+        {showHistory && (
+          <div className="mt-8">
+            <MealHistory clientId={user?.id} />
+          </div>
+        )}
       </div>
+
+      {/* Gram Input Dialog */}
+      <Dialog open={selectedFood !== null} onOpenChange={(open) => !open && setSelectedFood(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedFood && (i18n.language === 'he' 
+                ? (selectedFood.food.name_hebrew || selectedFood.food.name) 
+                : selectedFood.food.name)}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedFood && (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground mb-2">Nutritional Info (per {selectedFood.food.serving_size || '100g'})</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>Calories: <span className="font-medium">{selectedFood.food.calories} kcal</span></div>
+                  <div>Protein: <span className="font-medium">{selectedFood.food.protein}g</span></div>
+                  <div>Carbs: <span className="font-medium">{selectedFood.food.carbs}g</span></div>
+                  <div>Fat: <span className="font-medium">{selectedFood.food.fat}g</span></div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">How much did you eat? (grams)</label>
+                <Input
+                  type="number"
+                  value={gramsInput}
+                  onChange={(e) => setGramsInput(e.target.value)}
+                  placeholder="Enter grams"
+                  className="text-lg"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setSelectedFood(null)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  className="flex-1 gradient-orange text-background"
+                  onClick={submitFoodChoice}
+                  disabled={!gramsInput || parseFloat(gramsInput) <= 0}
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Confirm
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
