@@ -31,6 +31,7 @@ import CreateExercise from './pages/CreateExercise';
 import CreateWorkout from './pages/CreateWorkout';
 import CreateMealPlanV2 from './pages/CreateMealPlanV2';
 import ExerciseBank from './pages/ExerciseBank';
+import MealBank from './pages/MealBank';
 import SecretUsersPage from './pages/SecretUsersPage';
 import CreateWorkoutPlanV2 from './pages/CreateWorkoutPlanV2';
 import './i18n/config';
@@ -138,6 +139,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requiredRole="TRAINER">
             <ExerciseBank />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/meal-bank" 
+        element={
+          <ProtectedRoute requiredRole="TRAINER">
+            <MealBank />
           </ProtectedRoute>
         } 
       />

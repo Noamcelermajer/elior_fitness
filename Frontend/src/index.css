@@ -261,6 +261,14 @@
   transform: translateY(0px);
 }
 
+  .light .card-3d,
+  .light .card-3d:hover,
+  .light .btn-3d,
+  .light .btn-3d:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
 /* Progress bar enhancements */
 .progress-glow {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px rgba(255, 255, 255, 0.08);

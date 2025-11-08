@@ -28,7 +28,8 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
     { id: 'system', label: t('navigation.system'), icon: Settings, href: '/system' }
   ] : isTrainer ? [
     { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/trainer-dashboard' },
-    { id: 'exercises', label: t('navigation.exercises'), icon: Dumbbell, href: '/exercises' }
+    { id: 'exercises', label: t('navigation.exercises'), icon: Dumbbell, href: '/exercises' },
+    { id: 'meal-bank', label: t('foodBank.title'), icon: Utensils, href: '/meal-bank' }
   ] : [
     { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/' },
     { id: 'meals', label: t('navigation.meals'), icon: Utensils, href: '/meals' },

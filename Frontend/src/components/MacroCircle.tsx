@@ -17,7 +17,9 @@ const MacroCircle: React.FC<MacroCircleProps> = ({
   color,
 }) => {
   const percentage = target > 0 ? Math.min((consumed / target) * 100, 100) : 0;
-  const remaining = Math.max(target - consumed, 0);
+  const roundedConsumed = Math.round(consumed);
+  const roundedTarget = Math.round(target);
+  const roundedRemaining = Math.max(roundedTarget - roundedConsumed, 0);
   
   // SVG circle parameters
   const radius = 70;
@@ -61,17 +63,17 @@ const MacroCircle: React.FC<MacroCircleProps> = ({
         {/* Center Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <div className="text-4xl font-bold text-foreground">
-            {Math.round(consumed)}
+            {roundedConsumed}
           </div>
           <div className="text-sm text-muted-foreground">
-            /{target}{unit}
+            /{roundedTarget}{unit}
           </div>
         </div>
       </div>
       
       {/* Remaining */}
       <div className="text-sm text-muted-foreground">
-        {remaining}{unit} left
+        {roundedRemaining}{unit} left
       </div>
     </div>
   );

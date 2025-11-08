@@ -78,6 +78,10 @@ class MealSlotBase(BaseModel):
     order_index: int
     time_suggestion: Optional[str] = None
     notes: Optional[str] = None
+    target_calories: Optional[int] = None
+    target_protein: Optional[float] = None
+    target_carbs: Optional[float] = None
+    target_fat: Optional[float] = None
 
 class MealSlotCreate(MealSlotBase):
     meal_plan_id: int
@@ -87,6 +91,10 @@ class MealSlotUpdate(BaseModel):
     name: Optional[str] = None
     time_suggestion: Optional[str] = None
     notes: Optional[str] = None
+    target_calories: Optional[int] = None
+    target_protein: Optional[float] = None
+    target_carbs: Optional[float] = None
+    target_fat: Optional[float] = None
 
 class MealSlotResponse(MealSlotBase):
     id: int
@@ -158,6 +166,10 @@ class CompleteMacroCategory(BaseModel):
 class CompleteMealSlot(BaseModel):
     name: str
     time_suggestion: Optional[str] = None
+    target_calories: Optional[int] = None
+    target_protein: Optional[float] = None
+    target_carbs: Optional[float] = None
+    target_fat: Optional[float] = None
     macro_categories: List[CompleteMacroCategory]  # Always 3: Protein, Carb, Fat
 
 class CompleteMealPlanCreate(BaseModel):
@@ -174,34 +186,78 @@ class CompleteMealPlanCreate(BaseModel):
 # ============ Client Meal Choice Schemas ============
 
 class ClientMealChoiceCreate(BaseModel):
-    food_option_id: int
-    meal_slot_id: int
+    food_option_id: Optional[int] = None  # Nullable for custom foods
+    meal_slot_id: Optional[int] = None  # Nullable for custom foods
     date: datetime
     quantity: Optional[str] = None
     photo_path: Optional[str] = None
+    # Custom food fields
+    custom_food_name: Optional[str] = None
+    custom_calories: Optional[float] = None
+    custom_protein: Optional[float] = None
+    custom_carbs: Optional[float] = None
+    custom_fat: Optional[float] = None
 
 class ClientMealChoiceUpdate(BaseModel):
     quantity: Optional[str] = None
     photo_path: Optional[str] = None
     is_approved: Optional[bool] = None
     trainer_comment: Optional[str] = None
+    # Custom food fields
+    custom_food_name: Optional[str] = None
+    custom_calories: Optional[float] = None
+    custom_protein: Optional[float] = None
+    custom_carbs: Optional[float] = None
+    custom_fat: Optional[float] = None
 
 class ClientMealChoiceResponse(BaseModel):
     id: int
     client_id: int
-    food_option_id: int
-    meal_slot_id: int
+    food_option_id: Optional[int] = None
+    meal_slot_id: Optional[int] = None
     date: datetime
     quantity: Optional[str] = None
     photo_path: Optional[str] = None
     is_approved: Optional[bool] = None
     trainer_comment: Optional[str] = None
     created_at: datetime
+    # Custom food fields
+    custom_food_name: Optional[str] = None
+    custom_calories: Optional[float] = None
+    custom_protein: Optional[float] = None
+    custom_carbs: Optional[float] = None
+    custom_fat: Optional[float] = None
     
     class Config:
         from_attributes = True
 
 # ============ Daily Meal History Schemas ============
+
+class MealHistoryChoiceResponse(BaseModel):
+    choice_id: int
+    food_option_id: Optional[int] = None
+    meal_slot_id: Optional[int] = None
+    macro_type: Optional[MacroType] = None
+    food_name: Optional[str] = None
+    food_name_hebrew: Optional[str] = None
+    quantity: Optional[str] = None
+    is_custom: bool = False
+    calories: Optional[float] = None
+    protein: Optional[float] = None
+    carbs: Optional[float] = None
+    fat: Optional[float] = None
+    is_approved: Optional[bool] = None
+    trainer_comment: Optional[str] = None
+    photo_path: Optional[str] = None
+
+
+class MealHistoryMealResponse(BaseModel):
+    meal_slot_id: Optional[int] = None
+    meal_name: str
+    time_suggestion: Optional[str] = None
+    choices: List[MealHistoryChoiceResponse] = []
+    is_completed: Optional[bool] = None
+
 
 class DailyMealHistoryBase(BaseModel):
     date: datetime
@@ -217,6 +273,65 @@ class DailyMealHistoryCreate(DailyMealHistoryBase):
 class DailyMealHistoryResponse(DailyMealHistoryBase):
     id: int
     client_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    meals: List[MealHistoryMealResponse] = []
+    
+    class Config:
+        from_attributes = True
+
+# ============ Meal Completion Schemas ============
+
+class MealCompletionStatusCreate(BaseModel):
+    meal_slot_id: int
+    date: datetime
+    is_completed: bool
+    completion_method: Optional[str] = None
+    client_id: Optional[int] = None
+
+
+class MealCompletionStatusResponse(BaseModel):
+    id: int
+    client_id: int
+    meal_slot_id: int
+    date: datetime
+    is_completed: bool
+    completion_method: Optional[str] = None
+    completed_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+# ============ Meal Bank Schemas ============
+
+class MealBankBase(BaseModel):
+    name: str
+    name_hebrew: Optional[str] = None
+    macro_type: MacroType
+    calories: Optional[int] = None
+    protein: Optional[float] = None
+    carbs: Optional[float] = None
+    fat: Optional[float] = None
+    is_public: bool = False
+
+class MealBankCreate(MealBankBase):
+    pass
+
+class MealBankUpdate(BaseModel):
+    name: Optional[str] = None
+    name_hebrew: Optional[str] = None
+    macro_type: Optional[MacroType] = None
+    calories: Optional[int] = None
+    protein: Optional[float] = None
+    carbs: Optional[float] = None
+    fat: Optional[float] = None
+    is_public: Optional[bool] = None
+
+class MealBankResponse(MealBankBase):
+    id: int
+    created_by: int
     created_at: datetime
     updated_at: Optional[datetime] = None
     

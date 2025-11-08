@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import MacroCircle from './MacroCircle';
 import MealHistory from './MealHistory';
+import { useToast } from '@/hooks/use-toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -42,6 +43,10 @@ interface MealSlot {
   time_suggestion: string;
   notes: string;
   order_index: number;
+  target_calories?: number | null;
+  target_protein?: number | null;
+  target_carbs?: number | null;
+  target_fat?: number | null;
   macro_categories: MacroCategory[];
 }
 
@@ -60,10 +65,15 @@ interface MealPlan {
 
 interface ClientMealChoice {
   id: number;
-  food_option_id: number;
-  meal_slot_id: number;
+  food_option_id?: number | null;
+  meal_slot_id?: number | null;
   date: string;
   quantity?: string;
+  custom_food_name?: string;
+  custom_calories?: number;
+  custom_protein?: number;
+  custom_carbs?: number;
+  custom_fat?: number;
 }
 
 interface DailyMacros {
@@ -93,9 +103,44 @@ interface DailyMacros {
   };
 }
 
+type CompletionRecord = {
+  isCompleted: boolean;
+  method?: 'manual' | 'auto' | string;
+};
+
+const parseGrams = (value?: string | number | null): number => {
+  if (value === undefined || value === null) return 0;
+  if (typeof value === 'number') return value;
+  const match = value.match(/[\d.,]+/);
+  if (!match) return 0;
+  const normalized = match[0].replace(',', '.');
+  const parsed = parseFloat(normalized);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const formatGrams = (value?: string | number | null): string => {
+  const grams = parseGrams(value);
+  if (!grams) return '';
+  return `${Math.round(grams)}g`;
+};
+
+const formatNumber = (value: number): string => {
+  if (!Number.isFinite(value)) return '0';
+  return Math.round(value).toString();
+};
+
+const getServingDefault = (value: string | number | null | undefined, fallback = '100'): string => {
+  const grams = parseGrams(value);
+  if (grams > 0) {
+    return grams.toString();
+  }
+  return fallback;
+};
+
 const MealMenuV2 = () => {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
+  const { toast } = useToast();
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [choices, setChoices] = useState<ClientMealChoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,14 +149,100 @@ const MealMenuV2 = () => {
   const [selectedFood, setSelectedFood] = useState<{food: FoodOption, slotId: number} | null>(null);
   const [gramsInput, setGramsInput] = useState<string>('');
   const [showHistory, setShowHistory] = useState(false);
+  const [showCustomFoodDialog, setShowCustomFoodDialog] = useState(false);
+  const [customFood, setCustomFood] = useState({
+    name: '',
+    calories: '',
+    protein: '',
+    carbs: '',
+    fat: ''
+  });
+  const [mealCompletions, setMealCompletions] = useState<Record<number, CompletionRecord>>({});
+
+  const foodOptionMeta = useMemo(() => {
+    const map = new Map<
+      number,
+      { slotId: number; macroType: MacroCategory['macro_type']; serving: number; option: FoodOption }
+    >();
+
+    if (!mealPlan) {
+      return map;
+    }
+
+    mealPlan.meal_slots.forEach((slot) => {
+      slot.macro_categories.forEach((category) => {
+        category.food_options.forEach((option) => {
+          map.set(option.id, {
+            slotId: slot.id,
+            macroType: category.macro_type,
+            serving: parseGrams(option.serving_size),
+            option,
+          });
+        });
+      });
+    });
+
+    return map;
+  }, [mealPlan]);
+
+  const getCategoryTotalConsumed = useCallback(
+    (slotId: number, macroType: MacroCategory['macro_type']) => {
+      return choices.reduce((sum, choice) => {
+        if (!choice.food_option_id) {
+          return sum;
+        }
+        const meta = foodOptionMeta.get(choice.food_option_id);
+        if (!meta) {
+          return sum;
+        }
+        if (meta.slotId !== slotId || meta.macroType !== macroType) {
+          return sum;
+        }
+        return sum + parseGrams(choice.quantity);
+      }, 0);
+    },
+    [choices, foodOptionMeta]
+  );
+
+  const getOptionConsumedGrams = useCallback(
+    (slotId: number, optionId: number) => {
+      const choice = choices.find(
+        (c) => c.meal_slot_id === slotId && c.food_option_id === optionId
+      );
+      return parseGrams(choice?.quantity);
+    },
+    [choices]
+  );
+
+  const getOptionRemainingGrams = useCallback(
+    (slotId: number, macroType: MacroCategory['macro_type'], option: FoodOption) => {
+      const recommended = parseGrams(option.serving_size);
+      if (recommended <= 0) {
+        return 0;
+      }
+      const consumed = getCategoryTotalConsumed(slotId, macroType);
+      const remaining = Math.max(0, recommended - consumed);
+      return remaining;
+    },
+    [getCategoryTotalConsumed]
+  );
 
   useEffect(() => {
-    if (user?.id) {
-      fetchMealPlan();
-      fetchChoices();
-      fetchDailyMacros();
-    }
-  }, [user]);
+    const initialise = async () => {
+      if (!user?.id) return;
+      setLoading(true);
+      try {
+        await fetchMealPlan();
+        await fetchChoices();
+        await fetchDailyMacros();
+        await fetchMealCompletions();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initialise();
+  }, [user?.id]);
 
   const fetchMealPlan = async () => {
     try {
@@ -131,8 +262,6 @@ const MealMenuV2 = () => {
     } catch (error) {
       console.error('Failed to fetch meal plan:', error);
       setError('Failed to load meal plan');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -149,17 +278,18 @@ const MealMenuV2 = () => {
       if (response.ok) {
         const data = await response.json();
         setChoices(data);
+        await fetchMealCompletions(today);
       }
     } catch (error) {
       console.error('Failed to fetch choices:', error);
     }
   };
 
-  const fetchDailyMacros = async () => {
+  const fetchDailyMacros = async (dateOverride?: string) => {
     try {
       const token = localStorage.getItem('access_token');
-      const today = new Date().toISOString();
-      const response = await fetch(`${API_BASE_URL}/v2/meals/daily-macros?client_id=${user?.id}&date=${today}`, {
+      const dateParam = dateOverride ?? new Date().toISOString().split('T')[0];
+      const response = await fetch(`${API_BASE_URL}/v2/meals/daily-macros?client_id=${user?.id}&date=${dateParam}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -174,6 +304,159 @@ const MealMenuV2 = () => {
     }
   };
 
+  const fetchMealCompletions = async (dateOverride?: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const dateParam = dateOverride ?? new Date().toISOString().split('T')[0];
+      const response = await fetch(`${API_BASE_URL}/v2/meals/completions?date=${dateParam}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const statusMap: Record<number, CompletionRecord> = {};
+        data.forEach((status: any) => {
+          statusMap[status.meal_slot_id] = {
+            isCompleted: Boolean(status.is_completed),
+            method: status.completion_method ?? undefined,
+          };
+        });
+        setMealCompletions(statusMap);
+      }
+    } catch (error) {
+      console.error('Failed to fetch meal completions:', error);
+    }
+  };
+
+  const upsertMealCompletion = useCallback(
+    async (mealSlotId: number, isCompleted: boolean, method: 'manual' | 'auto') => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE_URL}/v2/meals/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            meal_slot_id: mealSlotId,
+            date: new Date().toISOString(),
+            is_completed: isCompleted,
+            completion_method: method,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setMealCompletions((prev) => ({
+            ...prev,
+            [mealSlotId]: {
+              isCompleted: Boolean(data.is_completed),
+              method: data.completion_method ?? method,
+            },
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to update meal completion:', error);
+      }
+    },
+    []
+  );
+
+  const getMealTotals = useCallback(
+    (slotId: number) => {
+      return choices.reduce(
+        (acc, choice) => {
+          const meta = choice.food_option_id ? foodOptionMeta.get(choice.food_option_id) : undefined;
+          const associatedSlotId = choice.meal_slot_id ?? meta?.slotId;
+
+          if (associatedSlotId !== slotId) {
+            return acc;
+          }
+
+          if (choice.custom_food_name) {
+            acc.calories += choice.custom_calories ?? 0;
+            acc.protein += choice.custom_protein ?? 0;
+            acc.carbs += choice.custom_carbs ?? 0;
+            acc.fat += choice.custom_fat ?? 0;
+            return acc;
+          }
+
+          if (meta) {
+            const option = meta.option;
+            const gramsConsumed = parseGrams(choice.quantity);
+            const baseServing = meta.serving > 0 ? meta.serving : 100;
+            const scale = gramsConsumed > 0 && baseServing > 0 ? gramsConsumed / baseServing : 1;
+
+            acc.calories += (option.calories ?? 0) * scale;
+            acc.protein += (option.protein ?? 0) * scale;
+            acc.carbs += (option.carbs ?? 0) * scale;
+            acc.fat += (option.fat ?? 0) * scale;
+          }
+
+          return acc;
+        },
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      );
+    },
+    [choices, foodOptionMeta]
+  );
+
+  useEffect(() => {
+    if (!mealPlan) return;
+
+    const tolerance = 0.5;
+
+    mealPlan.meal_slots.forEach((slot) => {
+      const totals = getMealTotals(slot.id);
+      const targets = {
+        calories: slot.target_calories ?? null,
+        protein: slot.target_protein ?? null,
+        carbs: slot.target_carbs ?? null,
+        fat: slot.target_fat ?? null,
+      };
+
+      const hasTargets = Object.values(targets).some((value) => value && value > 0);
+      if (!hasTargets) {
+        return;
+      }
+
+      const meetsCalories =
+        !targets.calories || totals.calories >= targets.calories - tolerance;
+      const meetsProtein =
+        !targets.protein || totals.protein >= targets.protein - tolerance;
+      const meetsCarbs =
+        !targets.carbs || totals.carbs >= targets.carbs - tolerance;
+      const meetsFat = !targets.fat || totals.fat >= targets.fat - tolerance;
+
+      const meetsAll = meetsCalories && meetsProtein && meetsCarbs && meetsFat;
+      const status = mealCompletions[slot.id];
+
+      if (meetsAll) {
+        if (!status || !status.isCompleted || status.method !== 'manual') {
+          if (!status || !status.isCompleted || status.method !== 'auto') {
+            upsertMealCompletion(slot.id, true, 'auto');
+          }
+        }
+      } else if (status && status.isCompleted && status.method === 'auto') {
+        upsertMealCompletion(slot.id, false, 'auto');
+      }
+    });
+  }, [mealPlan, mealCompletions, getMealTotals, upsertMealCompletion]);
+
+  const getRemainingAllowanceForOption = useCallback(
+    (food: FoodOption, slotId: number) => {
+      const meta = foodOptionMeta.get(food.id);
+      if (!meta) {
+        return parseGrams(food.serving_size);
+      }
+      return getOptionRemainingGrams(slotId, meta.macroType, food);
+    },
+    [foodOptionMeta, getOptionRemainingGrams]
+  );
+
   const openFoodDialog = (food: FoodOption, slotId: number) => {
     // Check if already selected
     const existingChoice = choices.find(
@@ -181,13 +464,10 @@ const MealMenuV2 = () => {
     );
     
     if (existingChoice) {
-      // Parse existing quantity
-      const match = existingChoice.quantity?.match(/(\d+)/);
-      setGramsInput(match ? match[1] : '100');
+      const existingValue = parseGrams(existingChoice.quantity);
+      setGramsInput(existingValue > 0 ? existingValue.toString() : getServingDefault(food.serving_size));
     } else {
-      // Default to serving size or 100g
-      const match = food.serving_size?.match(/(\d+)/);
-      setGramsInput(match ? match[1] : '100');
+      setGramsInput(getServingDefault(food.serving_size));
     }
     
     setSelectedFood({ food, slotId });
@@ -197,6 +477,7 @@ const MealMenuV2 = () => {
     if (!selectedFood || !gramsInput) return;
 
     try {
+      const today = new Date().toISOString().split('T')[0];
       const token = localStorage.getItem('access_token');
       const existingChoice = choices.find(
         c => c.meal_slot_id === selectedFood.slotId && c.food_option_id === selectedFood.food.id
@@ -242,13 +523,67 @@ const MealMenuV2 = () => {
       }
 
       // Refresh macro calculations
-      await fetchDailyMacros();
+      await fetchDailyMacros(today);
       
       // Close dialog
       setSelectedFood(null);
       setGramsInput('');
     } catch (error) {
       console.error('Failed to submit food choice:', error);
+    }
+  };
+
+  const handleToggleCompletion = (slotId: number, checked: boolean) => {
+    upsertMealCompletion(slotId, checked, 'manual');
+  };
+
+  const submitCustomFood = async () => {
+    if (!customFood.name.trim() || !customFood.calories) return;
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/v2/meals/choices`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          custom_food_name: customFood.name,
+          custom_calories: parseFloat(customFood.calories) || 0,
+          custom_protein: parseFloat(customFood.protein) || 0,
+          custom_carbs: parseFloat(customFood.carbs) || 0,
+          custom_fat: parseFloat(customFood.fat) || 0,
+          date: new Date().toISOString(),
+        }),
+      });
+
+      if (response.ok) {
+        const newChoice = await response.json();
+        setChoices([...choices, newChoice]);
+        setCustomFood({ name: '', calories: '', protein: '', carbs: '', fat: '' });
+        setShowCustomFoodDialog(false);
+        await fetchDailyMacros(today);
+        toast({
+          title: t('common.success'),
+          description: t('meals.customFoodAdded'),
+        });
+      } else {
+        const errorData = await response.json().catch(() => null);
+        toast({
+          title: t('common.error'),
+          description: errorData?.detail || t('meals.customFoodError'),
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to submit custom food:', error);
+      toast({
+        title: t('common.error'),
+        description: t('meals.customFoodError'),
+        variant: "destructive",
+      });
     }
   };
 
@@ -262,7 +597,8 @@ const MealMenuV2 = () => {
         },
       });
       setChoices(choices.filter(c => c.id !== choiceId));
-      await fetchDailyMacros();
+      const today = new Date().toISOString().split('T')[0];
+      await fetchDailyMacros(today);
     } catch (error) {
       console.error('Failed to delete choice:', error);
     }
@@ -390,6 +726,14 @@ const MealMenuV2 = () => {
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
+                onClick={() => setShowCustomFoodDialog(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Custom Food
+              </Button>
+              <Button 
+                variant="outline" 
                 onClick={() => setShowHistory(!showHistory)}
                 className="flex items-center gap-2"
               >
@@ -447,11 +791,90 @@ const MealMenuV2 = () => {
               <div className="mt-8 pt-6 border-t border-border">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-2">Daily Calories</p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {dailyMacros.consumed.calories} <span className="text-lg text-muted-foreground">/ {dailyMacros.targets.calories}</span>
+                  <p className={`text-3xl font-bold ${dailyMacros.consumed.calories > dailyMacros.targets.calories ? 'text-destructive' : 'text-foreground'}`}>
+                    {dailyMacros.consumed.calories.toFixed(0)} <span className="text-lg text-muted-foreground">/ {dailyMacros.targets.calories}</span>
                   </p>
-                  <Progress value={dailyMacros.percentages.calories} className="mt-3 h-2" />
+                  {dailyMacros.consumed.calories > dailyMacros.targets.calories && (
+                    <div className="mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <p className="text-sm text-destructive font-medium">
+                        ⚠️ Over by {(dailyMacros.consumed.calories - dailyMacros.targets.calories).toFixed(0)} calories
+                      </p>
+                    </div>
+                  )}
+                  <Progress 
+                    value={Math.min(dailyMacros.percentages.calories, 100)} 
+                    className={`mt-3 h-2 ${dailyMacros.consumed.calories > dailyMacros.targets.calories ? 'bg-destructive/20' : ''}`} 
+                  />
+                  {dailyMacros.percentages.calories > 100 && (
+                    <Progress 
+                      value={100} 
+                      className="mt-1 h-2 bg-destructive/50" 
+                    />
+                  )}
                 </div>
+                
+                {/* Macro Over Alerts */}
+                {(dailyMacros.consumed.protein > dailyMacros.targets.protein ||
+                  dailyMacros.consumed.carbs > dailyMacros.targets.carbs ||
+                  dailyMacros.consumed.fat > dailyMacros.targets.fat) && (
+                  <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-sm font-medium text-destructive mb-2">⚠️ Macro Limits Exceeded:</p>
+                    <div className="space-y-1 text-xs">
+                      {dailyMacros.consumed.protein > dailyMacros.targets.protein && (
+                        <p className="text-destructive">
+                          Protein: {dailyMacros.consumed.protein.toFixed(0)}g / {dailyMacros.targets.protein}g 
+                          (+{(dailyMacros.consumed.protein - dailyMacros.targets.protein).toFixed(0)}g over)
+                        </p>
+                      )}
+                      {dailyMacros.consumed.carbs > dailyMacros.targets.carbs && (
+                        <p className="text-destructive">
+                          Carbs: {dailyMacros.consumed.carbs.toFixed(0)}g / {dailyMacros.targets.carbs}g 
+                          (+{(dailyMacros.consumed.carbs - dailyMacros.targets.carbs).toFixed(0)}g over)
+                        </p>
+                      )}
+                      {dailyMacros.consumed.fat > dailyMacros.targets.fat && (
+                        <p className="text-destructive">
+                          Fat: {dailyMacros.consumed.fat.toFixed(0)}g / {dailyMacros.targets.fat}g 
+                          (+{(dailyMacros.consumed.fat - dailyMacros.targets.fat).toFixed(0)}g over)
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Custom Foods Section */}
+        {choices.filter(c => c.custom_food_name).length > 0 && (
+          <Card className="bg-gradient-to-br from-card to-secondary border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Plus className="w-5 h-5" />
+                <span>Custom Foods</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {choices.filter(c => c.custom_food_name).map((choice) => (
+                  <div key={choice.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="font-medium">{choice.custom_food_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {choice.custom_calories?.toFixed(0) || 0} kcal | P: {choice.custom_protein?.toFixed(0) || 0}g | C: {choice.custom_carbs?.toFixed(0) || 0}g | F: {choice.custom_fat?.toFixed(0) || 0}g
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-destructive"
+                      onClick={() => deleteFoodChoice(choice.id)}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -462,114 +885,221 @@ const MealMenuV2 = () => {
           <h2 className="text-xl font-bold">Daily Meals ({mealPlan.number_of_meals})</h2>
           
           <Accordion type="single" collapsible className="w-full space-y-4">
-            {mealPlan.meal_slots.map((slot) => (
-              <AccordionItem key={slot.id} value={`meal-${slot.id}`} className="border rounded-lg">
-                <Card>
-                  <AccordionTrigger className="hover:no-underline px-6 py-4">
-                    <div className="flex items-center justify-between w-full pr-4">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">🍽️</span>
-                        <div className="text-left">
-                          <p className="font-semibold text-lg">{slot.name}</p>
-                          {slot.time_suggestion && (
-                            <p className="text-sm text-muted-foreground flex items-center">
-                              <Clock className="w-3 h-3 mr-1" />
-                              {slot.time_suggestion}
+            {mealPlan.meal_slots.map((slot) => {
+              const completion = mealCompletions[slot.id];
+              const isCompleted = completion?.isCompleted ?? false;
+              const mealTotals = getMealTotals(slot.id);
+              const caloriesTarget = slot.target_calories ?? null;
+              const proteinTarget = slot.target_protein ?? null;
+              const carbTarget = slot.target_carbs ?? null;
+              const fatTarget = slot.target_fat ?? null;
+
+              const caloriesDelta = caloriesTarget !== null ? caloriesTarget - mealTotals.calories : null;
+              const proteinDelta = proteinTarget !== null ? proteinTarget - mealTotals.protein : null;
+              const carbDelta = carbTarget !== null ? carbTarget - mealTotals.carbs : null;
+              const fatDelta = fatTarget !== null ? fatTarget - mealTotals.fat : null;
+
+              return (
+                <AccordionItem key={slot.id} value={`meal-${slot.id}`} className="border rounded-lg">
+                  <Card>
+                    <AccordionTrigger className="hover:no-underline px-6 py-4">
+                      <div className="flex items-center justify-between w-full pr-4">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">🍽️</span>
+                          <div className="text-left">
+                            <p className="font-semibold text-lg">{slot.name}</p>
+                            {slot.time_suggestion && (
+                              <p className="text-sm text-muted-foreground flex items-center">
+                                <Clock className="w-3 h-3 mr-1" />
+                                {slot.time_suggestion}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div
+                          className="flex items-center gap-2 text-sm text-muted-foreground"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={isCompleted}
+                            onCheckedChange={(checked) => handleToggleCompletion(slot.id, Boolean(checked))}
+                          />
+                          <span>{isCompleted ? t('meals.mealCompleted') : t('meals.markComplete')}</span>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    
+                    <AccordionContent className="px-6 pb-4">
+                      {slot.notes && (
+                        <p className="text-sm text-muted-foreground mb-4 italic">{slot.notes}</p>
+                      )}
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.calories')}</p>
+                          <p className="text-sm font-semibold">
+                            {formatNumber(mealTotals.calories)} {t('mealCreation.unitKcal')}
+                            {caloriesTarget ? ` / ${Math.round(caloriesTarget)} ${t('mealCreation.unitKcal')}` : ''}
+                          </p>
+                          {caloriesDelta !== null && (
+                            <p className="text-xs text-muted-foreground">
+                              {caloriesDelta >= 0
+                                ? `${t('meals.remaining')}: ${Math.round(caloriesDelta)} ${t('mealCreation.unitKcal')}`
+                                : t('mealCreation.overBudget', {
+                                    amount: Math.abs(Math.round(caloriesDelta)),
+                                    unit: t('mealCreation.unitKcal'),
+                                  })}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.protein')}</p>
+                          <p className="text-sm font-semibold">
+                            {formatNumber(mealTotals.protein)} {t('mealCreation.unitGrams')}
+                            {proteinTarget ? ` / ${Math.round(proteinTarget)} ${t('mealCreation.unitGrams')}` : ''}
+                          </p>
+                          {proteinDelta !== null && (
+                            <p className="text-xs text-muted-foreground">
+                              {proteinDelta >= 0
+                                ? `${t('meals.remaining')}: ${Math.round(proteinDelta)} ${t('mealCreation.unitGrams')}`
+                                : t('mealCreation.overBudget', {
+                                    amount: Math.abs(Math.round(proteinDelta)),
+                                    unit: t('mealCreation.unitGrams'),
+                                  })}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.carbs')}</p>
+                          <p className="text-sm font-semibold">
+                            {formatNumber(mealTotals.carbs)} {t('mealCreation.unitGrams')}
+                            {carbTarget ? ` / ${Math.round(carbTarget)} ${t('mealCreation.unitGrams')}` : ''}
+                          </p>
+                          {carbDelta !== null && (
+                            <p className="text-xs text-muted-foreground">
+                              {carbDelta >= 0
+                                ? `${t('meals.remaining')}: ${Math.round(carbDelta)} ${t('mealCreation.unitGrams')}`
+                                : t('mealCreation.overBudget', {
+                                    amount: Math.abs(Math.round(carbDelta)),
+                                    unit: t('mealCreation.unitGrams'),
+                                  })}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.fat')}</p>
+                          <p className="text-sm font-semibold">
+                            {formatNumber(mealTotals.fat)} {t('mealCreation.unitGrams')}
+                            {fatTarget ? ` / ${Math.round(fatTarget)} ${t('mealCreation.unitGrams')}` : ''}
+                          </p>
+                          {fatDelta !== null && (
+                            <p className="text-xs text-muted-foreground">
+                              {fatDelta >= 0
+                                ? `${t('meals.remaining')}: ${Math.round(fatDelta)} ${t('mealCreation.unitGrams')}`
+                                : t('mealCreation.overBudget', {
+                                    amount: Math.abs(Math.round(fatDelta)),
+                                    unit: t('mealCreation.unitGrams'),
+                                  })}
                             </p>
                           )}
                         </div>
                       </div>
-                    </div>
-                  </AccordionTrigger>
-                  
-                  <AccordionContent className="px-6 pb-4">
-                    {slot.notes && (
-                      <p className="text-sm text-muted-foreground mb-4 italic">{slot.notes}</p>
-                    )}
-                    
-                    <Tabs defaultValue={slot.macro_categories[0]?.macro_type || 'protein'} className="w-full">
-                      <TabsList className="grid w-full grid-cols-3">
-                        {slot.macro_categories.map((category) => (
-                          <TabsTrigger key={category.id} value={category.macro_type}>
-                            {getMacroIcon(category.macro_type)} {getMacroName(category.macro_type)}
-                          </TabsTrigger>
-                        ))}
-                      </TabsList>
                       
-                      {slot.macro_categories.map((category) => (
-                        <TabsContent key={category.id} value={category.macro_type} className="mt-4 space-y-3">
-                          {category.quantity_instruction && (
-                            <p className="text-sm text-muted-foreground">
-                              Target: <span className="font-medium">{category.quantity_instruction}</span>
-                            </p>
-                          )}
-                          
-                          {category.food_options.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                              No food options available for this macro
-                            </p>
-                          ) : (
-                            <div className="space-y-2">
-                              {category.food_options.map((option) => {
-                                const isSelected = isFoodOptionSelected(slot.id, option.id);
-                                const selectedChoice = choices.find(
-                                  c => c.meal_slot_id === slot.id && c.food_option_id === option.id
-                                );
-                                return (
-                                  <div
-                                    key={option.id}
-                                    className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                                      isSelected 
-                                        ? 'bg-primary/10 border-primary' 
-                                        : 'bg-card hover:bg-accent'
-                                    }`}
-                                    onClick={() => openFoodDialog(option, slot.id)}
-                                  >
-                                    <div className="flex-1">
-                                      <div className="flex items-center justify-between">
-                                        <p className="font-medium">
-                                          {i18n.language === 'he' ? (option.name_hebrew || option.name) : option.name}
+                      <Tabs defaultValue={slot.macro_categories[0]?.macro_type || 'protein'} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                          {slot.macro_categories.map((category) => (
+                            <TabsTrigger key={category.id} value={category.macro_type}>
+                              {getMacroIcon(category.macro_type)} {getMacroName(category.macro_type)}
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+                        
+                        {slot.macro_categories.map((category) => (
+                          <TabsContent key={category.id} value={category.macro_type} className="mt-4 space-y-3">
+                            {category.quantity_instruction && (
+                              <p className="text-sm text-muted-foreground">
+                                Target: <span className="font-medium">{category.quantity_instruction}</span>
+                              </p>
+                            )}
+                            
+                            {category.food_options.length === 0 ? (
+                              <p className="text-sm text-muted-foreground text-center py-4">
+                                No food options available for this macro
+                              </p>
+                            ) : (
+                              <div className="space-y-2">
+                                {category.food_options.map((option) => {
+                                  const isSelected = isFoodOptionSelected(slot.id, option.id);
+                                  const selectedChoice = choices.find(
+                                    c => c.meal_slot_id === slot.id && c.food_option_id === option.id
+                                  );
+                                  const recommendedGrams = parseGrams(option.serving_size);
+                                  const remainingGrams = getOptionRemainingGrams(slot.id, category.macro_type, option);
+                                  const consumedGrams = getOptionConsumedGrams(slot.id, option.id);
+                                  return (
+                                    <div
+                                      key={option.id}
+                                      className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                                        isSelected 
+                                          ? 'bg-primary/10 border-primary' 
+                                          : 'bg-card hover:bg-accent'
+                                      }`}
+                                      onClick={() => openFoodDialog(option, slot.id)}
+                                    >
+                                      <div className="flex-1">
+                                        <div className="flex items-center justify-between">
+                                          <p className="font-medium">
+                                            {i18n.language === 'he' ? (option.name_hebrew || option.name) : option.name}
+                                          </p>
+                                          {isSelected && (
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant="outline" className="bg-primary/10 text-primary">
+                                                {selectedChoice?.quantity || `${Math.round(consumedGrams || 0)}g`}
+                                              </Badge>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 w-6 p-0"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (selectedChoice) deleteFoodChoice(selectedChoice.id);
+                                                }}
+                                              >
+                                                ✕
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          {option.calories}{t('meals.kcal')} | P: {option.protein}g | C: {option.carbs}g | F: {option.fat}g
                                         </p>
-                                        {isSelected && (
-                                          <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-primary/10 text-primary">
-                                              {selectedChoice?.quantity || '100g'}
-                                            </Badge>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-6 w-6 p-0"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (selectedChoice) deleteFoodChoice(selectedChoice.id);
-                                              }}
-                                            >
-                                              ✕
-                                            </Button>
-                                          </div>
+                                        {recommendedGrams > 0 && (
+                                          <p className="text-xs text-muted-foreground">
+                                            {t('meals.servingSize')}: {formatGrams(recommendedGrams)}
+                                          </p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">
+                                          {t('meals.remaining')}: <span className="font-medium">{Math.max(0, Math.round(remainingGrams))}g</span>
+                                        </p>
+                                        {consumedGrams > 0 && (
+                                          <p className="text-xs text-muted-foreground">
+                                            {t('meals.eaten')}: {Math.round(consumedGrams)}g
+                                          </p>
                                         )}
                                       </div>
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        {option.calories}{t('meals.kcal')} | P: {option.protein}g | C: {option.carbs}g | F: {option.fat}g
-                                      </p>
-                                      {option.serving_size && (
-                                        <p className="text-xs text-muted-foreground">
-                                          {t('meals.servingSize')}: {option.serving_size}
-                                        </p>
-                                      )}
                                     </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </TabsContent>
-                      ))}
-                    </Tabs>
-                  </AccordionContent>
-                </Card>
-              </AccordionItem>
-            ))}
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </TabsContent>
+                        ))}
+                      </Tabs>
+                    </AccordionContent>
+                  </Card>
+                </AccordionItem>
+              );
+            })}
           </Accordion>
         </div>
 
@@ -600,49 +1130,168 @@ const MealMenuV2 = () => {
             </DialogTitle>
           </DialogHeader>
           
-          {selectedFood && (
-            <div className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">Nutritional Info (per {selectedFood.food.serving_size || '100g'})</p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>Calories: <span className="font-medium">{selectedFood.food.calories} kcal</span></div>
-                  <div>Protein: <span className="font-medium">{selectedFood.food.protein}g</span></div>
-                  <div>Carbs: <span className="font-medium">{selectedFood.food.carbs}g</span></div>
-                  <div>Fat: <span className="font-medium">{selectedFood.food.fat}g</span></div>
+          {selectedFood && (() => {
+            const remainingAllowance = getRemainingAllowanceForOption(selectedFood.food, selectedFood.slotId);
+            const hasFiniteLimit = Number.isFinite(remainingAllowance);
+            const safeRemaining = hasFiniteLimit ? remainingAllowance : Infinity;
+            const inputGrams = parseFloat(gramsInput) || 0;
+            const projectedRemaining = hasFiniteLimit ? safeRemaining - inputGrams : Infinity;
+            const normalizedRemaining = hasFiniteLimit
+              ? Math.round(Math.max(projectedRemaining, 0))
+              : Infinity;
+            const exceedsLimit = hasFiniteLimit ? projectedRemaining < 0 : false;
+            
+            return (
+              <div className="space-y-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2">Nutritional Info (per {selectedFood.food.serving_size || '100g'})</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>Calories: <span className="font-medium">{selectedFood.food.calories} kcal</span></div>
+                    <div>Protein: <span className="font-medium">{selectedFood.food.protein}g</span></div>
+                    <div>Carbs: <span className="font-medium">{selectedFood.food.carbs}g</span></div>
+                    <div>Fat: <span className="font-medium">{selectedFood.food.fat}g</span></div>
+                  </div>
+                </div>
+
+                {/* Remaining Allowance Info */}
+                {hasFiniteLimit && (
+                  <div className={`p-3 rounded-lg border ${exceedsLimit ? 'bg-destructive/10 border-destructive/20' : 'bg-primary/10 border-primary/20'}`}>
+                    <p className={`text-sm font-medium ${exceedsLimit ? 'text-destructive' : 'text-primary'}`}>
+                      {t('meals.remainingDailyAllowance')}: <span className="font-bold">{normalizedRemaining}g</span>
+                    </p>
+                  </div>
+                )}
+
+                {/* Warning if exceeding - but allow it */}
+                {exceedsLimit && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-sm text-destructive font-medium">
+                      ⚠️ {t('meals.remainingExceeded', { amount: Math.abs(Math.round(projectedRemaining)) })}
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{t('meals.howMuchDidYouEat')}</label>
+                  <Input
+                    type="number"
+                    value={gramsInput}
+                    onChange={(e) => setGramsInput(e.target.value)}
+                    placeholder={t('meals.enterGrams')}
+                    className={`text-lg ${exceedsLimit ? 'border-destructive' : ''}`}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => setSelectedFood(null)}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                  <Button 
+                    className="flex-1 gradient-orange text-background"
+                    onClick={submitFoodChoice}
+                    disabled={!gramsInput || inputGrams <= 0}
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    {t('common.confirm')}
+                  </Button>
                 </div>
               </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
+      {/* Custom Food Dialog */}
+      <Dialog open={showCustomFoodDialog} onOpenChange={setShowCustomFoodDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Custom Food</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Food Name *</label>
+              <Input
+                placeholder="e.g., Snack, Pizza slice, etc."
+                value={customFood.name}
+                onChange={(e) => setCustomFood({ ...customFood, name: e.target.value })}
+                className="w-full"
+                dir="auto"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">How much did you eat? (grams)</label>
+                <label className="text-sm font-medium">Calories *</label>
                 <Input
                   type="number"
-                  value={gramsInput}
-                  onChange={(e) => setGramsInput(e.target.value)}
-                  placeholder="Enter grams"
-                  className="text-lg"
-                  autoFocus
+                  placeholder="455"
+                  value={customFood.calories}
+                  onChange={(e) => setCustomFood({ ...customFood, calories: e.target.value })}
+                  className="w-full"
                 />
               </div>
-
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setSelectedFood(null)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  className="flex-1 gradient-orange text-background"
-                  onClick={submitFoodChoice}
-                  disabled={!gramsInput || parseFloat(gramsInput) <= 0}
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Confirm
-                </Button>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Protein (g)</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="0"
+                  value={customFood.protein}
+                  onChange={(e) => setCustomFood({ ...customFood, protein: e.target.value })}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Carbs (g)</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="0"
+                  value={customFood.carbs}
+                  onChange={(e) => setCustomFood({ ...customFood, carbs: e.target.value })}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Fat (g)</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="0"
+                  value={customFood.fat}
+                  onChange={(e) => setCustomFood({ ...customFood, fat: e.target.value })}
+                  className="w-full"
+                />
               </div>
             </div>
-          )}
+
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => {
+                  setShowCustomFoodDialog(false);
+                  setCustomFood({ name: '', calories: '', protein: '', carbs: '', fat: '' });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1 gradient-orange text-background"
+                onClick={submitCustomFood}
+                disabled={!customFood.name.trim() || !customFood.calories}
+              >
+                <Check className="w-4 h-4 mr-2" />
+                Add Food
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

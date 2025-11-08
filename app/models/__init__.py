@@ -16,7 +16,8 @@ from app.models.meal_system import (
     ClientMealChoice,
     MealTemplate,
     MacroType,
-    DailyMealHistory
+    DailyMealHistory,
+    MealBank
 )
 from app.models.workout_system import (
     WorkoutPlanV2 as NewWorkoutPlan,
@@ -56,6 +57,8 @@ __all__ = [
     "ClientMealChoice",
     "MealTemplate",
     "MacroType",
+    "DailyMealHistory",
+    "MealBank",
     "NewWorkoutPlan",
     "WorkoutDay",
     "NewWorkoutExercise",

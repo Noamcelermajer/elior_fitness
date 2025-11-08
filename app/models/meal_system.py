@@ -4,7 +4,18 @@ Designed for: Trainer creates meal plan → Client selects from food options
 Architecture: MealPlan → MealSlot → MacroCategory → FoodOption → ClientChoice
 """
 
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, DateTime, Float, Enum, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    Float,
+    Enum,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -49,11 +60,36 @@ class MealSlot(Base):
     order_index = Column(Integer, nullable=False)  # 0, 1, 2, 3... for ordering
     time_suggestion = Column(String)  # e.g., "08:00", "12:30"
     notes = Column(Text)  # Trainer notes for this meal
+    target_calories = Column(Integer)
+    target_protein = Column(Float)
+    target_carbs = Column(Float)
+    target_fat = Column(Float)
     created_at = Column(DateTime, default=func.now())
     
     # Relationships
     meal_plan = relationship("MealPlanV2", back_populates="meal_slots")
     macro_categories = relationship("MacroCategory", back_populates="meal_slot", cascade="all, delete-orphan")
+
+
+class MealCompletionStatus(Base):
+    """Track per-meal completion status for each client/day"""
+
+    __tablename__ = "meal_completion_status_v2"
+    __table_args__ = (
+        UniqueConstraint("client_id", "meal_slot_id", "date", name="uniq_meal_completion"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    meal_slot_id = Column(Integer, ForeignKey("meal_slots_v2.id", ondelete="CASCADE"), nullable=False)
+    date = Column(DateTime, nullable=False)  # Stored as start-of-day UTC
+    is_completed = Column(Boolean, default=False, nullable=False)
+    completion_method = Column(String)  # manual / auto
+    completed_at = Column(DateTime)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
+
+    meal_slot = relationship("MealSlot")
 
 class MacroCategory(Base):
     """One of the 3 macro categories for a meal (Protein, Carb, Fat)"""
@@ -97,14 +133,21 @@ class ClientMealChoice(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    food_option_id = Column(Integer, ForeignKey("food_options_v2.id", ondelete="CASCADE"), nullable=False)
-    meal_slot_id = Column(Integer, ForeignKey("meal_slots_v2.id", ondelete="CASCADE"), nullable=False)  # Which meal
+    food_option_id = Column(Integer, ForeignKey("food_options_v2.id", ondelete="CASCADE"), nullable=True)  # Nullable for custom foods
+    meal_slot_id = Column(Integer, ForeignKey("meal_slots_v2.id", ondelete="CASCADE"), nullable=True)  # Nullable for custom foods
     date = Column(DateTime, nullable=False)  # When they ate it
     quantity = Column(String)  # How much they ate (e.g., "150g", "1 serving")
     photo_path = Column(String)  # Optional photo of the meal
     is_approved = Column(Boolean)  # Trainer approval (✅ or ❌)
     trainer_comment = Column(Text)  # Trainer feedback
     created_at = Column(DateTime, default=func.now())
+    
+    # Custom food fields (when food_option_id is null)
+    custom_food_name = Column(String)  # Name of custom food
+    custom_calories = Column(Float)  # Total calories for this custom food
+    custom_protein = Column(Float)  # Total protein in grams
+    custom_carbs = Column(Float)  # Total carbs in grams
+    custom_fat = Column(Float)  # Total fat in grams
     
     # Relationships
     food_option = relationship("FoodOption", back_populates="client_choices")
@@ -132,6 +175,23 @@ class DailyMealHistory(Base):
     total_carbs = Column(Float, default=0)
     total_fat = Column(Float, default=0)
     is_complete = Column(Boolean, default=False)  # Did client finish eating for the day?
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
+
+class MealBank(Base):
+    """Reusable meal bank items that trainers can add to meal plans"""
+    __tablename__ = "meal_bank"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)  # e.g., "Chicken Breast", "Brown Rice", "Olive Oil"
+    name_hebrew = Column(String)  # e.g., "חזה עוף", "אורז מלא", "שמן זית"
+    macro_type = Column(Enum(MacroType), nullable=False)  # PROTEIN, CARB, or FAT
+    calories = Column(Integer)  # per 100g
+    protein = Column(Float)  # grams per 100g
+    carbs = Column(Float)    # grams per 100g
+    fat = Column(Float)      # grams per 100g
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # Trainer who created it
+    is_public = Column(Boolean, default=False)  # Share with other trainers?
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
 

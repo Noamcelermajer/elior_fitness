@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
 import { useTranslation } from 'react-i18next';
+import MealHistory from '../components/MealHistory';
 
 interface Client {
   id: number;
@@ -60,15 +61,45 @@ interface WorkoutExercise {
   notes: string; // Personalized notes for this client
 }
 
+interface MealPlanFoodOption {
+  name: string;
+  name_hebrew?: string;
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+  serving_size?: string;
+}
+
+interface MealPlanMacroCategory {
+  macro_type: 'protein' | 'carb' | 'fat';
+  quantity_instruction?: string;
+  food_options?: MealPlanFoodOption[];
+}
+
+interface MealPlanSlot {
+  id?: number;
+  name: string;
+  order_index?: number;
+  time_suggestion?: string;
+  macro_categories?: MealPlanMacroCategory[];
+}
+
 interface MealPlan {
   id: number;
-  title: string;
-  total_calories: number;
-  protein_target: number;
-  carb_target: number;
-  fat_target: number;
+  title?: string;
+  name?: string;
+  description?: string;
+  total_calories?: number;
+  protein_target?: number;
+  carb_target?: number;
+  fat_target?: number;
+  number_of_meals?: number;
+  is_active?: boolean;
   created_at: string;
-  meals: MealEntry[];
+  updated_at?: string;
+  meals?: MealEntry[];
+  meal_slots?: MealPlanSlot[];
 }
 
 interface MealEntry {
@@ -164,8 +195,18 @@ const ClientProfile = () => {
           completed_sessions: 0
         })) : [];
         
+        const normalizedMealPlans = Array.isArray(mealData)
+          ? mealData
+              .filter((plan: any) => plan.is_active !== false)
+              .sort((a: any, b: any) => {
+                const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+                const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+                return dateB - dateA;
+              })
+          : [];
+
         setWorkoutPlans(transformedWorkouts);
-        setMealPlans(Array.isArray(mealData) ? mealData : []);
+        setMealPlans(normalizedMealPlans.slice(0, 1));
         setProgressEntries(Array.isArray(progressData) ? progressData : []);
       }
 
@@ -242,6 +283,23 @@ const ClientProfile = () => {
     created_at: entry.created_at || entry.recorded_at || '',
   }));
 
+  const activeMealPlan = mealPlans.length > 0 ? mealPlans[0] : null;
+
+  const handleEditMealPlan = () => {
+    const planForEdit = activeMealPlan || mealPlans[0];
+    if (!planForEdit) {
+      handleCreateMealPlan();
+      return;
+    }
+
+    navigate('/create-meal-plan', {
+      state: {
+        client,
+        mealPlan: planForEdit,
+      },
+    });
+  };
+
   return (
     <Layout currentPage="dashboard">
       <div className="container mx-auto p-6 space-y-6 min-h-screen">
@@ -265,10 +323,6 @@ const ClientProfile = () => {
             <Button onClick={handleCreateWorkout} className="gradient-green">
               <Plus className="w-4 h-4 mr-2" />
               {t('clientProfile.createWorkout')}
-            </Button>
-            <Button onClick={handleCreateMealPlan} className="gradient-orange">
-              <Plus className="w-4 h-4 mr-2" />
-              {t('clientProfile.createMealPlan')}
             </Button>
           </div>
         </div>
@@ -325,10 +379,11 @@ const ClientProfile = () => {
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="pt-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="progress">{t('clientProfile.weightProgress')}</TabsTrigger>
               <TabsTrigger value="workouts">{t('clientProfile.workoutPlans')}</TabsTrigger>
               <TabsTrigger value="meals">{t('clientProfile.mealPlans')}</TabsTrigger>
+              <TabsTrigger value="nutrition">{t('clientProfile.nutritionHistory')}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -507,32 +562,56 @@ const ClientProfile = () => {
           <TabsContent value="meals" className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">{t('clientProfile.mealPlans')}</h3>
-              <Button onClick={handleCreateMealPlan} className="gradient-orange">
-                <Plus className="w-4 h-4 mr-2" />
-                {t('clientProfile.createNewMealPlan')}
-              </Button>
+            <Button
+              onClick={activeMealPlan ? handleEditMealPlan : handleCreateMealPlan}
+              className="gradient-orange"
+            >
+              {!activeMealPlan && <Plus className="w-4 h-4 mr-2" />}
+              <span>{activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}</span>
+            </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {mealPlans.map((plan) => (
-                <Card key={plan.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle>{plan.name || plan.title}</CardTitle>
-                    <div className="flex space-x-4 text-sm text-muted-foreground">
-                      {plan.total_calories && <span>{plan.total_calories} cal</span>}
-                      {plan.protein_target && <span>{plan.protein_target}g protein</span>}
-                      {plan.carb_target && <span>{plan.carb_target}g carbs</span>}
-                      {plan.fat_target && <span>{plan.fat_target}g fat</span>}
+              {activeMealPlan ? (
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-2">
+                        <CardTitle className="text-lg font-semibold">
+                          {activeMealPlan.name || activeMealPlan.title}
+                        </CardTitle>
+                        {activeMealPlan.description && (
+                          <p className="text-sm text-muted-foreground">{activeMealPlan.description}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {t('clientProfile.lastUpdated')} {new Date(activeMealPlan.updated_at || activeMealPlan.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{t('clientProfile.activePlan')}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleEditMealPlan}
+                          aria-label={t('clientProfile.updateMealPlan')}
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">{t('clientProfile.updateMealPlan')}</span>
+                        </Button>
+                      </div>
                     </div>
-                    {plan.description && (
-                      <p className="text-sm text-muted-foreground mt-2">{plan.description}</p>
-                    )}
+                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                      {activeMealPlan.total_calories && <span>{activeMealPlan.total_calories} {t('meals.calories')}</span>}
+                      {activeMealPlan.protein_target && <span>{activeMealPlan.protein_target}g {t('meals.protein')}</span>}
+                      {activeMealPlan.carb_target && <span>{activeMealPlan.carb_target}g {t('meals.carbs')}</span>}
+                      {activeMealPlan.fat_target && <span>{activeMealPlan.fat_target}g {t('meals.fat')}</span>}
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {plan.meal_slots && plan.meal_slots.length > 0 ? (
-                        plan.meal_slots.map((meal, index) => (
-                          <div key={meal.id || index} className="p-3 rounded border">
+                      {activeMealPlan.meal_slots && activeMealPlan.meal_slots.length > 0 ? (
+                        activeMealPlan.meal_slots.map((meal: any, index: number) => (
+                          <div key={meal.id || index} className="p-3 rounded border bg-muted/40">
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="font-medium text-sm">{meal.name}</h4>
                               {meal.time_suggestion && (
@@ -540,13 +619,13 @@ const ClientProfile = () => {
                               )}
                             </div>
                             <div className="space-y-2">
-                              {meal.macro_categories && meal.macro_categories.map((macro, macroIndex) => (
-                                <div key={macroIndex} className="text-xs">
-                                  <span className="font-medium capitalize">{macro.macro_type}: </span>
-                                  <span className="text-muted-foreground">{macro.quantity_instruction}</span>
+                              {meal.macro_categories && meal.macro_categories.map((macro: any, macroIndex: number) => (
+                                <div key={macroIndex} className="text-xs text-muted-foreground">
+                                  <span className="font-medium capitalize text-foreground">{macro.macro_type}: </span>
+                                  <span>{macro.quantity_instruction || t('clientProfile.noQuantitySet')}</span>
                                   {macro.food_options?.length > 0 && (
-                                    <span className="text-muted-foreground ml-2">
-                                      ({macro.food_options.map(f => f.name).join(', ')})
+                                    <span className="ml-2">
+                                      ({macro.food_options.map((f: any) => f.name_hebrew || f.name).join(', ')})
                                     </span>
                                   )}
                                 </div>
@@ -560,8 +639,29 @@ const ClientProfile = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                <Card className="border-dashed">
+                  <CardHeader>
+                    <CardTitle>{t('clientProfile.noMealPlanTitle')}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground space-y-2">
+                    <p>{t('clientProfile.noMealPlanDescription')}</p>
+                    <p>{t('clientProfile.noMealPlanAction')}</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="nutrition" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">{t('clientProfile.nutritionHistory')}</h3>
+              <Button variant="outline" onClick={handleCreateMealPlan}>
+                <Utensils className="w-4 h-4 mr-2" />
+                {activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}
+              </Button>
+            </div>
+            <MealHistory clientId={client.id} />
           </TabsContent>
 
           {/* Progress Tab */}

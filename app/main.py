@@ -188,6 +188,15 @@ async def lifespan(app: FastAPI):
         logger.error("❌ Database initialization failed")
         raise Exception("Database initialization failed")
     logger.info("✅ Database tables initialized successfully")
+
+    try:
+        from app.migrations.meal_system_migration import run_meal_system_migrations
+
+        run_meal_system_migrations()
+        logger.info("✅ Meal system migrations applied")
+    except Exception as migration_error:
+        logger.error("❌ Meal system migrations failed: %s", migration_error)
+        raise
     
     # Log database pool statistics
     pool_stats = get_db_pool_stats()
