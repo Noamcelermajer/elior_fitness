@@ -1,25 +1,67 @@
 import logging
 from typing import Dict, List
+import os
 
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 
 from app.database import engine
 
 logger = logging.getLogger(__name__)
 
+# Detect database type
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "")
+IS_POSTGRESQL = SQLALCHEMY_DATABASE_URL.startswith("postgresql") if SQLALCHEMY_DATABASE_URL else False
+
 
 def _table_info(table_name: str) -> List[Dict[str, object]]:
-    query = text(f"PRAGMA table_info('{table_name}')")
-    with engine.connect() as connection:
-        result = connection.execute(query)
-        return [dict(row._mapping) for row in result]
+    """Get table info - database-agnostic."""
+    if IS_POSTGRESQL:
+        query = text("""
+            SELECT 
+                column_name as name,
+                data_type,
+                is_nullable,
+                column_default
+            FROM information_schema.columns
+            WHERE table_name = :table_name
+            ORDER BY ordinal_position
+        """)
+        with engine.connect() as connection:
+            result = connection.execute(query, {"table_name": table_name})
+            return [
+                {
+                    "name": row.name,
+                    "type": row.data_type,
+                    "notnull": row.is_nullable == "NO",
+                    "dflt_value": row.column_default
+                }
+                for row in result
+            ]
+    else:
+        # SQLite
+        query = text(f"PRAGMA table_info('{table_name}')")
+        with engine.connect() as connection:
+            result = connection.execute(query)
+            return [dict(row._mapping) for row in result]
 
 
 def _column_exists(table_name: str, column_name: str) -> bool:
-    return any(column["name"] == column_name for column in _table_info(table_name))
+    """Check if column exists - database-agnostic."""
+    if IS_POSTGRESQL:
+        query = text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = :table_name AND column_name = :column_name
+        """)
+        with engine.connect() as connection:
+            result = connection.execute(query, {"table_name": table_name, "column_name": column_name})
+            return result.fetchone() is not None
+    else:
+        return any(column["name"] == column_name for column in _table_info(table_name))
 
 
 def _ensure_columns(table_name: str, columns: Dict[str, str]) -> None:
+    """Add columns if they don't exist - database-agnostic."""
     with engine.begin() as connection:
         for column_name, column_type in columns.items():
             if not _column_exists(table_name, column_name):
@@ -29,42 +71,48 @@ def _ensure_columns(table_name: str, columns: Dict[str, str]) -> None:
                     column_name,
                     column_type,
                 )
-                connection.execute(
-                    text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
-                )
+                # Map SQLite types to PostgreSQL types
+                if IS_POSTGRESQL:
+                    pg_type = column_type.replace("TEXT", "VARCHAR").replace("INTEGER", "INTEGER")
+                    connection.execute(
+                        text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {pg_type}")
+                    )
+                else:
+                    connection.execute(
+                        text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+                    )
 
 
 def _table_exists(table_name: str) -> bool:
-    """Check if a table exists in the database."""
-    query = text(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name=:table_name"
-    )
-    with engine.connect() as connection:
-        result = connection.execute(query, {"table_name": table_name})
-        return result.fetchone() is not None
+    """Check if a table exists in the database - database-agnostic."""
+    if IS_POSTGRESQL:
+        query = text("""
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = :table_name
+        """)
+        with engine.connect() as connection:
+            result = connection.execute(query, {"table_name": table_name})
+            return result.fetchone() is not None
+    else:
+        # SQLite
+        query = text(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=:table_name"
+        )
+        with engine.connect() as connection:
+            result = connection.execute(query, {"table_name": table_name})
+            return result.fetchone() is not None
 
 
 def run_workout_system_migrations() -> None:
     """
     Ensure workout system tables contain expected columns for compatibility.
+    Note: Tables are created automatically by SQLAlchemy from models.
+    This migration only adds missing columns to existing tables.
     """
     try:
-        # Create muscle_groups table if it doesn't exist
-        if not _table_exists("muscle_groups"):
-            logger.info("Creating muscle_groups table...")
-            with engine.begin() as connection:
-                connection.execute(
-                    text("""
-                        CREATE TABLE muscle_groups (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            name TEXT NOT NULL UNIQUE,
-                            created_by INTEGER NOT NULL,
-                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
-                        )
-                    """)
-                )
-                logger.info("✅ muscle_groups table created")
+        # Tables are created automatically by SQLAlchemy Base.metadata.create_all()
+        # We only need to add missing columns to existing tables
         
         # Add group_name column to workout_exercises_v2
         _ensure_columns(
@@ -82,24 +130,7 @@ def run_workout_system_migrations() -> None:
             },
         )
         
-        # Create workout_splits table if it doesn't exist
-        if not _table_exists("workout_splits"):
-            logger.info("Creating workout_splits table...")
-            with engine.begin() as connection:
-                connection.execute(
-                    text("""
-                        CREATE TABLE workout_splits (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            name TEXT NOT NULL,
-                            description TEXT,
-                            days_per_week INTEGER,
-                            created_by INTEGER NOT NULL,
-                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
-                        )
-                    """)
-                )
-                logger.info("✅ workout_splits table created")
+        # Tables are created automatically by SQLAlchemy
         
         # Make split_type nullable in workout_plans_v2 (SQLite doesn't support ALTER COLUMN, so we need to recreate)
         # Check if split_type column exists and if it's nullable

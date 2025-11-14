@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, List
+import os
 
 from sqlalchemy import text
 
@@ -7,13 +8,41 @@ from app.database import engine
 
 logger = logging.getLogger(__name__)
 
+# Detect database type
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "")
+IS_POSTGRESQL = SQLALCHEMY_DATABASE_URL.startswith("postgresql") if SQLALCHEMY_DATABASE_URL else False
+
 
 def _table_info(table_name: str) -> List[Dict[str, object]]:
-    """Return PRAGMA table_info as a list of dicts."""
-    query = text(f"PRAGMA table_info('{table_name}')")
-    with engine.connect() as connection:
-        result = connection.execute(query)
-        return [dict(row._mapping) for row in result]
+    """Return table info as a list of dicts - database-agnostic."""
+    if IS_POSTGRESQL:
+        query = text("""
+            SELECT 
+                column_name as name,
+                data_type,
+                is_nullable,
+                column_default
+            FROM information_schema.columns
+            WHERE table_name = :table_name
+            ORDER BY ordinal_position
+        """)
+        with engine.connect() as connection:
+            result = connection.execute(query, {"table_name": table_name})
+            return [
+                {
+                    "name": row.name,
+                    "type": row.data_type,
+                    "notnull": row.is_nullable == "NO",
+                    "dflt_value": row.column_default
+                }
+                for row in result
+            ]
+    else:
+        # SQLite
+        query = text(f"PRAGMA table_info('{table_name}')")
+        with engine.connect() as connection:
+            result = connection.execute(query)
+            return [dict(row._mapping) for row in result]
 
 
 def _column_exists(table_name: str, column_name: str) -> bool:
@@ -21,6 +50,7 @@ def _column_exists(table_name: str, column_name: str) -> bool:
 
 
 def _ensure_columns(table_name: str, columns: Dict[str, str]) -> None:
+    """Add columns if they don't exist - database-agnostic."""
     with engine.begin() as connection:
         for column_name, column_type in columns.items():
             if not _column_exists(table_name, column_name):
@@ -30,11 +60,16 @@ def _ensure_columns(table_name: str, columns: Dict[str, str]) -> None:
                     column_name,
                     column_type,
                 )
-                connection.execute(
-                    text(
-                        f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
+                # Map SQLite types to PostgreSQL types
+                if IS_POSTGRESQL:
+                    pg_type = column_type.replace("TEXT", "VARCHAR").replace("INTEGER", "INTEGER").replace("REAL", "REAL")
+                    connection.execute(
+                        text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {pg_type}")
                     )
-                )
+                else:
+                    connection.execute(
+                        text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+                    )
 
 
 def _ensure_client_meal_choice_nullable_columns() -> None:
@@ -59,9 +94,37 @@ def _ensure_client_meal_choice_nullable_columns() -> None:
 
     with engine.begin() as connection:
         # Create new table with desired schema
-        connection.execute(
-            text(
-                """
+        if IS_POSTGRESQL:
+            connection.execute(
+                text(
+                    """
+CREATE TABLE IF NOT EXISTS client_meal_choices_v2_new (
+    id SERIAL PRIMARY KEY,
+    client_id INTEGER NOT NULL,
+    food_option_id INTEGER,
+    meal_slot_id INTEGER,
+    date TIMESTAMP NOT NULL,
+    quantity VARCHAR,
+    photo_path VARCHAR,
+    is_approved BOOLEAN,
+    trainer_comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    custom_food_name VARCHAR,
+    custom_calories REAL,
+    custom_protein REAL,
+    custom_carbs REAL,
+    custom_fat REAL,
+    FOREIGN KEY(client_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(food_option_id) REFERENCES food_options_v2(id) ON DELETE CASCADE,
+    FOREIGN KEY(meal_slot_id) REFERENCES meal_slots_v2(id) ON DELETE CASCADE
+)
+"""
+                )
+            )
+        else:
+            connection.execute(
+                text(
+                    """
 CREATE TABLE IF NOT EXISTS client_meal_choices_v2_new (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     client_id INTEGER NOT NULL,
@@ -83,8 +146,8 @@ CREATE TABLE IF NOT EXISTS client_meal_choices_v2_new (
     FOREIGN KEY(meal_slot_id) REFERENCES meal_slots_v2(id) ON DELETE CASCADE
 )
 """
+                )
             )
-        )
 
         # Copy existing data
         connection.execute(

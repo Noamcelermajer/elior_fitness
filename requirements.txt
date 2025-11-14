@@ -28,6 +28,9 @@ python-magic>=0.4.27  # For file type detection
 email-validator>=2.1.0
 typing-extensions>=4.0.0
 
+# DATABASE
+psycopg2-binary>=2.9.9  # PostgreSQL adapter for SQLAlchemy
+
 # PERFORMANCE OPTIMIZATIONS - MINIMAL SET
 # uvloop>=0.19.0  # Faster event loop (Linux/Mac only - not compatible with Windows)
 httptools>=0.6.1  # Faster HTTP parsing

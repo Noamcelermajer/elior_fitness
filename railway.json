@@ -9,8 +9,6 @@
     "DOMAIN": "https://ecshape.org",
     "CORS_ORIGINS": "https://ecshape.org,http://ecshape.org,https://www.ecshape.org,http://www.ecshape.org",
     "PERSISTENT_PATH": "/app/persistent",
-    "DATABASE_PATH": "/app/persistent/data/elior_fitness.db",
-    "DATABASE_URL": "sqlite:////app/persistent/data/elior_fitness.db",
     "UPLOAD_DIR": "/app/persistent/uploads",
     "LOG_DIR": "/app/persistent/logs"
   },
