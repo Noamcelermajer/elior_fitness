@@ -221,7 +221,7 @@ const UsersPage = () => {
 
   return (
     <Layout currentPage="users">
-      <div className="max-w-6xl mx-auto py-8">
+      <div className="max-w-6xl mx-auto py-8 px-4 w-full overflow-x-hidden">
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>{t('admin.users')}</CardTitle>

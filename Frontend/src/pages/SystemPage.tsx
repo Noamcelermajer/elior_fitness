@@ -291,7 +291,7 @@ const SystemPage: React.FC = () => {
 
   return (
     <Layout currentPage="system">
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-4 sm:p-6 space-y-6 w-full max-w-full overflow-x-hidden">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">System Management</h1>
