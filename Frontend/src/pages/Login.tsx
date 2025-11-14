@@ -59,29 +59,29 @@ const Login = () => {
       {/* Elior image background - only in dark theme */}
       {theme === 'dark' && (
         <div 
-          className="absolute inset-0 opacity-[0.15] dark:opacity-[0.15] mix-blend-soft-light"
+          className="absolute inset-0 z-0 opacity-[0.12] mix-blend-soft-light"
           style={{
             backgroundImage: 'url(/elior.png)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            filter: 'blur(1px) brightness(0.8)',
+            filter: 'blur(2px) brightness(0.7) contrast(1.1)',
           }}
         />
       )}
       
       {/* Gradient overlay to blend image with background */}
       {theme === 'dark' && (
-        <div className="absolute inset-0 bg-gradient-to-br from-background/80 via-background/60 to-background/80" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-br from-background/85 via-background/70 to-background/85" />
       )}
 
       {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden z-0">
+      <div className="absolute inset-0 overflow-hidden z-[2]">
         <div className="absolute -top-1/2 -left-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute -bottom-1/2 -right-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
       </div>
 
-      <div className="relative z-20 w-full max-w-md animate-fade-in">
+      <div className="relative z-10 w-full max-w-md animate-fade-in">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-20 h-20 gradient-orange rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xl transform hover:scale-110 transition-transform duration-300">
