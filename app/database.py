@@ -123,20 +123,19 @@ if ENVIRONMENT == "production":
         logger.error(error_msg)
         raise ValueError(error_msg)
     
-    # Check if using internal Railway URL and we have a public URL available
-    # Internal URLs often have connectivity issues, so prefer public URL
-    if ".railway.internal" in DATABASE_URL_ENV and DATABASE_PUBLIC_URL_ENV:
-        if DATABASE_PUBLIC_URL_ENV.startswith("postgresql"):
+    # Check if using internal Railway URL - prefer public URL if available
+    # Internal URLs often have connectivity issues on Railway
+    if ".railway.internal" in DATABASE_URL_ENV:
+        if DATABASE_PUBLIC_URL_ENV and DATABASE_PUBLIC_URL_ENV.startswith("postgresql"):
             logger.warning(
-                "Internal Railway URL detected but public URL available. "
-                "Switching to public URL for better connectivity."
+                "Internal Railway URL detected. Using public URL instead for better connectivity."
             )
             SQLALCHEMY_DATABASE_URL = DATABASE_PUBLIC_URL_ENV
         else:
             SQLALCHEMY_DATABASE_URL = DATABASE_URL_ENV
             logger.warning(
-                "Internal Railway URL detected. If connection fails, "
-                "consider using DATABASE_PUBLIC_URL instead."
+                "Internal Railway URL detected but DATABASE_PUBLIC_URL not set. "
+                "If connection fails, set DATABASE_PUBLIC_URL in Railway variables."
             )
     else:
         SQLALCHEMY_DATABASE_URL = DATABASE_URL_ENV
