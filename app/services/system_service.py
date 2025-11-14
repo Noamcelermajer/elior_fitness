@@ -39,9 +39,9 @@ class SystemService:
             try:
                 docker = self._get_docker()
                 self.docker_client = docker.from_env()
-        except Exception as e:
-            logger.warning(f"Docker client initialization failed: {e}")
-            self.docker_client = None
+            except Exception as e:
+                logger.warning(f"Docker client initialization failed: {e}")
+                self.docker_client = None
     
     def get_system_uptime(self) -> str:
         """Get system uptime."""
