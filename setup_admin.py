@@ -1,76 +1,76 @@
 #!/usr/bin/env python3
 """
 Script to ensure admin user exists at startup
+Directly uses database instead of API to avoid dependency on API being up
 """
 import sys
-import time
-import requests
+import os
+from pathlib import Path
 
-API_URL = "http://localhost:8000/api"
-ADMIN_USER = {"username": "admin", "email": "admin@elior.com", "password": "2354wetr", "full_name": "Admin User", "role": "ADMIN"}
+# Add app directory to path
+sys.path.insert(0, str(Path(__file__).parent))
 
-def wait_for_api():
-    """Wait for API to be available"""
-    print("Waiting for API to be available...")
-    for i in range(30):
-        try:
-            r = requests.get(f"{API_URL.replace('/api', '')}/health")
-            if r.status_code == 200:
-                print("API is up!")
-                return True
-        except Exception as e:
-            pass
-        time.sleep(1)
-    print("API did not become available in time.")
-    return False
+from app.database import SessionLocal, engine, Base
+from app.models.user import User
+from app.schemas.auth import UserRole
+from app.auth.utils import get_password_hash
 
-def check_admin_exists():
-    """Check if admin user already exists"""
+ADMIN_USER = {
+    "username": "admin",
+    "email": "admin@elior.com",
+    "password": "2354wetr",
+    "full_name": "Admin User",
+    "role": UserRole.ADMIN
+}
+
+def ensure_admin_exists():
+    """Create admin user directly in database if it doesn't exist"""
+    db = SessionLocal()
     try:
-        # Try to login as admin
-        r = requests.post(f"{API_URL}/auth/login", 
-                         json={"username": ADMIN_USER["username"], "password": ADMIN_USER["password"]})
-        if r.status_code == 200:
-            print("Admin user already exists.")
+        # Check if admin already exists
+        admin = db.query(User).filter(
+            (User.username == ADMIN_USER["username"]) | 
+            (User.email == ADMIN_USER["email"])
+        ).first()
+        
+        if admin:
+            # Update password if needed
+            if admin.role != UserRole.ADMIN:
+                admin.role = UserRole.ADMIN
+            admin.hashed_password = get_password_hash(ADMIN_USER["password"])
+            db.commit()
+            print("Admin user verified and password updated.")
             return True
-        return False
+        
+        # Create new admin user
+        admin = User(
+            username=ADMIN_USER["username"],
+            email=ADMIN_USER["email"],
+            hashed_password=get_password_hash(ADMIN_USER["password"]),
+            full_name=ADMIN_USER["full_name"],
+            role=UserRole.ADMIN,
+            is_active=True
+        )
+        db.add(admin)
+        db.commit()
+        db.refresh(admin)
+        print(f"Admin user created: username={ADMIN_USER['username']}, password={ADMIN_USER['password']}")
+        return True
+        
     except Exception as e:
-        print(f"Error checking admin: {e}")
+        print(f"Error ensuring admin exists: {e}")
+        db.rollback()
         return False
-
-def create_admin():
-    """Create admin user if it doesn't exist"""
-    try:
-        # Use setup endpoint
-        r = requests.post(f"{API_URL}/auth/setup/admin", json=ADMIN_USER)
-        if r.status_code in [201, 200]:
-            print("Admin user created successfully!")
-            return True
-        elif "already exists" in r.text:
-            print("Admin user already exists.")
-            return True
-        else:
-            print(f"Admin creation failed: {r.text}")
-            return False
-    except Exception as e:
-        print(f"Error creating admin: {e}")
-        return False
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     print("=== ELIOR FITNESS ADMIN CHECK ===")
     
-    if not wait_for_api():
-        sys.exit(1)
-    
-    if check_admin_exists():
-        print("Admin user verified.")
-        sys.exit(0)
-    
-    print("Admin user not found. Creating admin...")
-    if create_admin():
-        print("Admin user created: username=admin, password=2354wetr")
+    if ensure_admin_exists():
+        print("Admin setup completed successfully.")
         sys.exit(0)
     else:
-        print("Failed to create admin user.")
+        print("Failed to setup admin user.")
         sys.exit(1)
 

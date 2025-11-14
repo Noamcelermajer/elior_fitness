@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -77,6 +76,14 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       }
     }
   }, [selectedClient, isTrainer]);
+
+  useEffect(() => {
+    // For clients, fetch messages when conversations are loaded and trainer exists
+    if (!isTrainer && conversations.length > 0) {
+      // Client has a trainer, fetch messages (client_id is not needed for clients)
+      fetchMessages(0); // Pass 0 as placeholder, backend will use current user's trainer
+    }
+  }, [conversations, isTrainer]);
 
   useEffect(() => {
     // Connect to WebSocket for real-time updates
@@ -382,7 +389,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
               />
             </div>
           </div>
-          <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {conversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                 <MessageSquare className="h-16 w-16 mb-4 text-muted-foreground opacity-50" />
@@ -446,7 +453,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                 })}
               </div>
             )}
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Chat area */}
@@ -471,7 +478,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
               </div>
 
               {/* Messages area */}
-              <ScrollArea className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 bg-gradient-to-b from-background to-muted/20">
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 bg-gradient-to-b from-background to-muted/20">
                 {loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
@@ -590,7 +597,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                     <div ref={messagesEndRef} />
                   </div>
                 )}
-              </ScrollArea>
+              </div>
 
               {/* Input area */}
               <div className="p-4 md:p-6 border-t border-border bg-card/80 backdrop-blur-sm shrink-0 z-10">
@@ -691,7 +698,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                     <h2 className="text-lg font-bold text-foreground">{t('progress.progress', 'התקדמות')}</h2>
                   </div>
                 </div>
-                <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
+                <div className="flex-1 min-h-0 overflow-y-auto">
                   {loadingProgress ? (
                     <div className="flex items-center justify-center h-full p-8">
                       <div className="text-center">
@@ -766,7 +773,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                       ))}
                     </div>
                   )}
-                </ScrollArea>
+                </div>
               </div>
             </div>
           );
@@ -775,7 +782,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
     );
   } else {
     // Client view: Show conversation with trainer
-    const trainerConversation = conversations[0];
+    const trainerConversation = conversations.length > 0 ? conversations[0] : null;
 
     return (
       <div className="flex flex-col h-full w-full bg-background overflow-hidden">
@@ -791,7 +798,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                 </Avatar>
                 <div>
                   <h3 className="font-semibold text-base md:text-lg text-foreground">
-                    {t('chat.trainer', 'המאמן שלך')}
+                    {trainerConversation.client_name}
                   </h3>
                   <p className="text-xs text-muted-foreground">{t('chat.online', 'מקוון')}</p>
                 </div>
@@ -799,7 +806,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
             </div>
 
             {/* Messages area */}
-            <ScrollArea className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 bg-gradient-to-b from-background to-muted/20">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 bg-gradient-to-b from-background to-muted/20">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -918,7 +925,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                   <div ref={messagesEndRef} />
                 </div>
               )}
-            </ScrollArea>
+            </div>
 
             {/* Input area */}
             <div className="p-4 md:p-6 border-t border-border bg-card/80 backdrop-blur-sm shrink-0 z-10">
@@ -930,13 +937,14 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                     onKeyDown={handleKeyDown}
                     placeholder={t('chat.typeMessage', 'הקלד הודעה...')}
                     className="rounded-full pr-12 h-11 md:h-12 bg-muted/50 border-border focus:bg-background transition-colors"
+                    disabled={!trainerConversation}
                   />
                 </div>
                 <Button 
                   onClick={sendMessage} 
                   size="icon"
                   className="h-11 w-11 md:h-12 md:w-12 rounded-full shrink-0 gradient-orange hover:gradient-orange-dark shadow-lg hover:shadow-xl transition-all"
-                  disabled={!messageInput.trim()}
+                  disabled={!messageInput.trim() || !trainerConversation}
                   aria-label={t('chat.send', 'שלח הודעה')}
                 >
                   <Send className="h-4 w-4 md:h-5 md:w-5" />

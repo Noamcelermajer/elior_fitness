@@ -36,6 +36,11 @@ class FileService:
     MEDIUM_SIZE = (800, 800)
     LARGE_SIZE = (1920, 1920)
     
+    # Aggressive compression for progress photos (space-saving)
+    PROGRESS_PHOTO_MAX_SIZE = (1200, 1200)  # Max dimensions
+    PROGRESS_PHOTO_QUALITY = 65  # JPEG quality (60-75 range for good compression/quality balance)
+    PROGRESS_PHOTO_WEBP_QUALITY = 70  # WebP quality
+    
     def __init__(self, base_upload_path: str = "uploads"):
         self.base_upload_path = base_upload_path
         self._ensure_directories()
@@ -151,26 +156,95 @@ class FileService:
         else:
             directory = f"{self.base_upload_path}/temp"
         
-        # Save original file
-        original_path = os.path.join(directory, filename)
-        async with aiofiles.open(original_path, 'wb') as f:
+        # For progress photos, use aggressive compression
+        if category == "progress_photo" and file_type == "image":
+            # Read content and compress immediately
             content = await file.read()
-            await f.write(content)
-        
-        result = {
-            "original_path": original_path,
-            "filename": filename,
-            "file_size": len(content),
-            "mime_type": magic.from_buffer(content, mime=True),
-            "uploaded_at": datetime.utcnow().isoformat()
-        }
-        
-        # Process image if needed
-        if process_image and file_type == "image":
-            processed_paths = await self._process_image(original_path, category, entity_id, unique_id)
-            result.update(processed_paths)
+            compressed_path, compressed_size = await self._compress_progress_photo(
+                content, directory, filename, entity_id, unique_id
+            )
+            result = {
+                "original_path": compressed_path,  # Store compressed as "original"
+                "filename": os.path.basename(compressed_path),
+                "file_size": compressed_size,
+                "mime_type": "image/jpeg",  # Always JPEG for compressed
+                "uploaded_at": datetime.utcnow().isoformat(),
+                "compressed": True
+            }
+        else:
+            # Save original file for other categories
+            original_path = os.path.join(directory, filename)
+            async with aiofiles.open(original_path, 'wb') as f:
+                content = await file.read()
+                await f.write(content)
+            
+            result = {
+                "original_path": original_path,
+                "filename": filename,
+                "file_size": len(content),
+                "mime_type": magic.from_buffer(content, mime=True),
+                "uploaded_at": datetime.utcnow().isoformat()
+            }
+            
+            # Process image if needed (thumbnails, etc.)
+            if process_image and file_type == "image":
+                processed_paths = await self._process_image(original_path, category, entity_id, unique_id)
+                result.update(processed_paths)
         
         return result
+    
+    async def _compress_progress_photo(self, content: bytes, directory: str, filename: str, entity_id: int, unique_id: str) -> tuple:
+        """
+        Aggressively compress progress photos to save space while maintaining visibility.
+        Uses JPEG with optimized quality settings and resizes if needed.
+        """
+        from io import BytesIO
+        
+        try:
+            # Open image from bytes
+            img = Image.open(BytesIO(content))
+            
+            # Convert to RGB if necessary (removes alpha channel)
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Resize if image is larger than max size (maintain aspect ratio)
+            if img.size[0] > self.PROGRESS_PHOTO_MAX_SIZE[0] or img.size[1] > self.PROGRESS_PHOTO_MAX_SIZE[1]:
+                img.thumbnail(self.PROGRESS_PHOTO_MAX_SIZE, Image.Resampling.LANCZOS)
+            
+            # Save as optimized JPEG with aggressive compression
+            compressed_filename = f"progress_photo_{entity_id}_{unique_id}_compressed.jpg"
+            compressed_path = os.path.join(directory, compressed_filename)
+            
+            # Save with optimization flags
+            img.save(
+                compressed_path,
+                'JPEG',
+                quality=self.PROGRESS_PHOTO_QUALITY,
+                optimize=True,  # Enable Huffman table optimization
+                progressive=True,  # Progressive JPEG for better compression
+                subsampling='4:2:0'  # Chroma subsampling for smaller file size
+            )
+            
+            # Get compressed file size
+            compressed_size = os.path.getsize(compressed_path)
+            
+            return compressed_path, compressed_size
+            
+        except Exception as e:
+            # If compression fails, save original but log error
+            print(f"Error compressing progress photo: {e}")
+            # Fallback: save original file
+            original_path = os.path.join(directory, filename)
+            with open(original_path, 'wb') as f:
+                f.write(content)
+            return original_path, len(content)
     
     async def _process_image(self, original_path: str, category: str, entity_id: int, unique_id: str) -> dict:
         """Process image to create thumbnails and resized versions."""

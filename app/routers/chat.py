@@ -56,8 +56,15 @@ async def get_conversations(
     
     elif current_user.role == UserRole.CLIENT:
         # Client sees their trainer conversation
+        if not current_user.trainer_id:
+            # Log for debugging
+            print(f"CLIENT CHAT ERROR: Client {current_user.id} ({current_user.username}) has no trainer_id assigned")
+            return []
+        
         trainer = db.query(User).filter(User.id == current_user.trainer_id).first()
         if not trainer:
+            # Log for debugging
+            print(f"CLIENT CHAT ERROR: Client {current_user.id} has trainer_id={current_user.trainer_id} but trainer not found in database")
             return []
         
         # Get last message
@@ -74,9 +81,10 @@ async def get_conversations(
             ChatMessage.read_at.is_(None)
         ).count()
         
+        # For clients, return trainer's info in the conversation response
         return [ConversationResponse(
-            client_id=current_user.id,
-            client_name=current_user.full_name or current_user.username,
+            client_id=trainer.id,  # Trainer's ID (used as identifier for the conversation)
+            client_name=trainer.full_name or trainer.username,  # Trainer's name
             last_message=ChatMessageResponse.model_validate(last_message) if last_message else None,
             unread_count=unread_count
         )]
@@ -128,8 +136,13 @@ async def get_messages(
     
     elif current_user.role == UserRole.CLIENT:
         # Client gets messages with their trainer
+        if not current_user.trainer_id:
+            print(f"CLIENT MESSAGES ERROR: Client {current_user.id} has no trainer_id")
+            return []
+        
         trainer = db.query(User).filter(User.id == current_user.trainer_id).first()
         if not trainer:
+            print(f"CLIENT MESSAGES ERROR: Trainer {current_user.trainer_id} not found for client {current_user.id}")
             return []
         
         messages = db.query(ChatMessage).filter(
@@ -180,11 +193,19 @@ async def send_message(
         
     elif current_user.role == UserRole.CLIENT:
         # Client sends to their trainer
+        if not current_user.trainer_id:
+            print(f"CLIENT SEND ERROR: Client {current_user.id} has no trainer_id")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No trainer assigned. Please contact support."
+            )
+        
         trainer = db.query(User).filter(User.id == current_user.trainer_id).first()
         if not trainer:
+            print(f"CLIENT SEND ERROR: Trainer {current_user.trainer_id} not found for client {current_user.id}")
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No trainer assigned"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Trainer not found. Please contact support."
             )
         
         trainer_id = trainer.id
