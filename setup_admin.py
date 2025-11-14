@@ -7,7 +7,7 @@ import time
 import requests
 
 API_URL = "http://localhost:8000/api"
-ADMIN_USER = {"username": "admin", "email": "admin@elior.com", "password": "admin123", "full_name": "Admin User", "role": "ADMIN"}
+ADMIN_USER = {"username": "admin", "email": "admin@elior.com", "password": "2354wetr", "full_name": "Admin User", "role": "ADMIN"}
 
 def wait_for_api():
     """Wait for API to be available"""
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     
     print("Admin user not found. Creating admin...")
     if create_admin():
-        print("Admin user created: username=admin, password=admin123")
+        print("Admin user created: username=admin, password=2354wetr")
         sys.exit(0)
     else:
         print("Failed to create admin user.")

@@ -1,0 +1,52 @@
+# Fly.io Configuration for Elior Fitness
+# Deploy with: fly launch (first time) or fly deploy
+
+app = "elior-fitness"
+primary_region = "fra"  # Frankfurt, Germany - good latency to Israel (~50ms). Alternatives: "ams" (Amsterdam), "iad" (Washington DC)
+
+[build]
+  dockerfile = "Dockerfile"
+  docker_buildkit = true
+
+[env]
+  ENVIRONMENT = "production"
+  PORT = "8000"
+  DATABASE_PATH = "/app/data/elior_fitness.db"
+  DATABASE_URL = "sqlite:////app/data/elior_fitness.db"
+  LOG_LEVEL = "INFO"
+
+# HTTP service configuration
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+  processes = ["app"]
+  
+  # HTTP and HTTPS handlers
+  [[services.ports]]
+    handlers = ["http", "tls"]
+    port = 80
+    
+  [[services.ports]]
+    handlers = ["tls"]
+    port = 443
+
+  # Health check
+  [[services.http_checks]]
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "5s"
+    method = "GET"
+    path = "/health"
+    protocol = "http"
+
+# Persistent volume for database and uploads
+[mounts]
+  source = "elior_data"
+  destination = "/app/data"
+
+# Resource limits (optimized for minimal usage)
+[resources]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+

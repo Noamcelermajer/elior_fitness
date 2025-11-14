@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Dumbbell, Home, Utensils, Target, TrendingUp, Menu, X, LogOut, User, Shield, Settings, Users } from 'lucide-react';
+import { Dumbbell, Home, Utensils, Target, TrendingUp, Menu, X, LogOut, User, Shield, Settings, Users, MessageSquare } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 import LanguageSelector from './LanguageSelector';
 import ThemeToggle from './ThemeToggle';
@@ -29,12 +29,14 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
   ] : isTrainer ? [
     { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/trainer-dashboard' },
     { id: 'exercises', label: t('navigation.exercises'), icon: Dumbbell, href: '/exercises' },
-    { id: 'meal-bank', label: t('foodBank.title'), icon: Utensils, href: '/meal-bank' }
+    { id: 'meal-bank', label: t('foodBank.title'), icon: Utensils, href: '/meal-bank' },
+    { id: 'chat', label: t('navigation.chat'), icon: MessageSquare, href: '/chat' }
   ] : [
     { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/' },
     { id: 'meals', label: t('navigation.meals'), icon: Utensils, href: '/meals' },
     { id: 'training', label: t('navigation.training'), icon: Target, href: '/training' }, 
-    { id: 'progress', label: t('navigation.progress'), icon: TrendingUp, href: '/progress' }
+    { id: 'progress', label: t('navigation.progress'), icon: TrendingUp, href: '/progress' },
+    { id: 'chat', label: t('navigation.chat'), icon: MessageSquare, href: '/chat' }
   ];
 
   const handleNavigation = (href: string) => {

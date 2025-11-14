@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotFound from '../pages/NotFound';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -28,13 +29,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If role is required and user doesn't have it, redirect to appropriate dashboard
+  // If role is required and user doesn't have it, show 404 instead of redirect
   if (requiredRole && user?.role !== requiredRole) {
-    if (user?.role === 'ADMIN') {
-      return <Navigate to="/admin" replace />;
-    } else {
-      return <Navigate to="/" replace />;
-    }
+    return <NotFound />;
   }
 
   return <>{children}</>;

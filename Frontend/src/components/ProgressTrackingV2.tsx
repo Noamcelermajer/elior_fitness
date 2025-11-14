@@ -40,6 +40,8 @@ const ProgressTrackingV2 = () => {
   const [newNotes, setNewNotes] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [viewingPhoto, setViewingPhoto] = useState<ProgressEntry | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -85,6 +87,38 @@ const ProgressTrackingV2 = () => {
   const removePhoto = () => {
     setPhotoFile(null);
     setPhotoPreview(null);
+  };
+
+  const loadPhotoWithAuth = async (photoPath: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      // Extract just the filename from the full path
+      const filename = photoPath.split('/').pop();
+      const response = await fetch(`${API_BASE_URL}/files/media/progress_photos/${filename}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setPhotoUrl(url);
+      } else {
+        console.error('Failed to load photo:', response.status);
+        setPhotoUrl(null);
+      }
+    } catch (error) {
+      console.error('Error loading photo:', error);
+      setPhotoUrl(null);
+    }
+  };
+
+  const handleViewPhoto = (entry: ProgressEntry) => {
+    setViewingPhoto(entry);
+    if (entry.photo_path) {
+      loadPhotoWithAuth(entry.photo_path);
+    }
   };
 
   const addEntry = async () => {
@@ -393,10 +427,13 @@ const ProgressTrackingV2 = () => {
                           </div>
                         </div>
                         {entry.photo_path && (
-                          <Badge variant="outline">
+                          <button
+                            onClick={() => handleViewPhoto(entry)}
+                            className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-border bg-transparent hover:bg-primary/10 cursor-pointer"
+                          >
                             <Camera className="w-3 h-3 mr-1" />
                             {t('progress.photo')}
-                          </Badge>
+                          </button>
                         )}
                       </div>
                     ))}
@@ -422,7 +459,11 @@ const ProgressTrackingV2 = () => {
                 {photosWithData.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {photosWithData.map((entry) => (
-                      <Card key={entry.id} className="overflow-hidden">
+                      <Card 
+                        key={entry.id} 
+                        className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                        onClick={() => handleViewPhoto(entry)}
+                      >
                         <img 
                           src={entry.photo_path?.startsWith('http') ? entry.photo_path : `${API_BASE_URL.replace('/api', '')}${entry.photo_path}`}
                           alt={`Progress ${entry.date}`}
@@ -473,6 +514,61 @@ const ProgressTrackingV2 = () => {
           </Card>
         )}
       </div>
+
+      {/* Photo Viewing Dialog */}
+      <Dialog open={!!viewingPhoto} onOpenChange={(open) => {
+        if (!open) {
+          setViewingPhoto(null);
+          if (photoUrl) {
+            URL.revokeObjectURL(photoUrl);
+            setPhotoUrl(null);
+          }
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('progress.viewPhoto', 'View Progress Photo')}</DialogTitle>
+          </DialogHeader>
+          {viewingPhoto && (
+            <div className="space-y-4">
+              <div className="relative">
+                {photoUrl ? (
+                  <img 
+                    src={photoUrl}
+                    alt={t('progress.progressPhoto', 'Progress photo')}
+                    className="w-full h-auto rounded-lg border"
+                  />
+                ) : (
+                  <div className="w-full h-64 bg-secondary/20 rounded-lg flex items-center justify-center">
+                    <p className="text-muted-foreground">{t('progress.photoNotFound', 'Photo not found')}</p>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-semibold">{viewingPhoto.weight} {t('progress.kg')}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(viewingPhoto.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </p>
+                  </div>
+                </div>
+                {viewingPhoto.notes && (
+                  <div className="p-3 bg-secondary/20 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      <strong>{t('progress.notes')}:</strong> {viewingPhoto.notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -35,6 +35,7 @@ import ExerciseBank from './pages/ExerciseBank';
 import MealBank from './pages/MealBank';
 import SecretUsersPage from './pages/SecretUsersPage';
 import CreateWorkoutPlanV2 from './pages/CreateWorkoutPlanV2';
+import ChatPage from './pages/ChatPage';
 import './i18n/config';
 
 const queryClient = new QueryClient();
@@ -194,6 +195,14 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/chat" 
+        element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/create-workout-old" 
         element={
           <ProtectedRoute>
@@ -234,7 +243,7 @@ const AppRoutes = () => {
         } 
       />
 
-      {/* Catch all route - redirect to login */}
+      {/* Catch all route - show 404 */}
       <Route 
         path="*" 
         element={

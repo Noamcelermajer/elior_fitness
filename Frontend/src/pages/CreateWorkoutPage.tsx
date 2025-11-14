@@ -12,6 +12,7 @@ import { Plus, Trash2, Dumbbell, Users, Save, AlertCircle, Edit, Search } from '
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface Exercise {
   id: number;
@@ -55,6 +56,7 @@ const muscleGroups = [
 
 const CreateWorkoutPage = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
@@ -320,13 +322,13 @@ const CreateWorkoutPage = () => {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                      <Label>Filter by Category</Label>
+                      <Label>{t('workoutCreation.filterByCategory', 'סנן לפי קטגוריה')}</Label>
                       <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                         <SelectTrigger>
-                          <SelectValue placeholder="All categories" />
+                          <SelectValue placeholder={t('workoutCreation.allCategories', 'כל הקטגוריות')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All categories</SelectItem>
+                          <SelectItem value="all">{t('workoutCreation.allCategories', 'כל הקטגוריות')}</SelectItem>
                           {muscleGroups.map((group) => (
                             <SelectItem key={group.value} value={group.value}>
                               {group.label}
@@ -336,11 +338,11 @@ const CreateWorkoutPage = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label>Search Exercises</Label>
+                      <Label>{t('workoutCreation.searchExercises', 'חפש תרגילים')}</Label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                          placeholder="Search exercises..."
+                          placeholder={t('workoutCreation.searchExercisesPlaceholder', 'חפש תרגילים...')}
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="pl-10"
@@ -360,7 +362,7 @@ const CreateWorkoutPage = () => {
                               <div className="flex items-center space-x-2 mb-2">
                                 <h4 className="font-semibold text-foreground">{exercise.name}</h4>
                                 <Badge className={`${getMuscleGroupColor(exercise.muscle_group)} text-white`}>
-                                  {muscleGroups.find(g => g.value === exercise.muscle_group)?.label}
+                                  {t(`exerciseBank.muscleGroups.${exercise.muscle_group}`, exercise.muscle_group)}
                                 </Badge>
                               </div>
                               
@@ -444,7 +446,7 @@ const CreateWorkoutPage = () => {
                               <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select a client" />
+                                    <SelectValue placeholder={t('training.selectClientPlaceholder', 'בחר לקוח')} />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -466,10 +468,10 @@ const CreateWorkoutPage = () => {
                         name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Description</FormLabel>
+                            <FormLabel>{t('workoutCreation.description', 'תיאור')}</FormLabel>
                             <FormControl>
                               <Textarea 
-                                placeholder="Describe the workout goals and focus areas..."
+                                placeholder={t('workoutCreation.workoutDescriptionPlaceholder', 'תאר את מטרות האימון ואזורי המיקוד...')}
                                 className="min-h-[80px]"
                                 {...field} 
                               />
@@ -492,7 +494,7 @@ const CreateWorkoutPage = () => {
                                   <Badge variant="outline">{selectedExercise.order}</Badge>
                                   <h4 className="font-semibold text-foreground">{selectedExercise.exercise.name}</h4>
                                   <Badge className={`${getMuscleGroupColor(selectedExercise.exercise.muscle_group)} text-white`}>
-                                    {muscleGroups.find(g => g.value === selectedExercise.exercise.muscle_group)?.label}
+                                    {t(`exerciseBank.muscleGroups.${selectedExercise.exercise.muscle_group}`, selectedExercise.exercise.muscle_group)}
                                   </Badge>
                                 </div>
                                 <Button
@@ -556,7 +558,7 @@ const CreateWorkoutPage = () => {
                                     <Textarea
                                       value={editNotes}
                                       onChange={(e) => setEditNotes(e.target.value)}
-                                      placeholder="Add client-specific modifications, injury considerations, or special instructions..."
+                                      placeholder={t('workoutCreation.clientModificationsPlaceholder', 'הוסף שינויים ספציפיים ללקוח, שיקולים לגבי פציעות או הוראות מיוחדות...')}
                                       className="min-h-[60px] text-xs"
                                     />
                                     <div className="flex space-x-2">

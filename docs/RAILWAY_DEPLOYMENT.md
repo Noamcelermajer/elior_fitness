@@ -1,197 +1,218 @@
 # Railway Deployment Guide
 
-## Overview
+This guide will walk you through deploying the Elior Fitness application to Railway.
 
-This guide explains how to deploy the Elior Fitness application to Railway with proper SSL termination and frontend serving.
+## Prerequisites
 
-## Railway-Specific Configuration
+- A Railway account (sign up at https://railway.app)
+- A GitHub account with the repository pushed
+- Basic understanding of environment variables
 
-### Key Differences from Local Development
+## Step 1: Connect GitHub Repository to Railway
 
-1. **SSL Termination**: Railway handles SSL at the load balancer level
-2. **Port Configuration**: Container listens on port 80, Railway handles HTTPS
-3. **Proxy Headers**: Railway sends `X-Forwarded-*` headers
-4. **Environment Variables**: Production-specific settings
+1. Log in to your Railway account
+2. Click "New Project"
+3. Select "Deploy from GitHub repo"
+4. Authorize Railway to access your GitHub account if prompted
+5. Select the `elior_fitness` repository
+6. Railway will automatically detect the Dockerfile and start building
 
-### Configuration Files
+## Step 2: Configure Environment Variables
 
-- **Dockerfile**: `Dockerfile` - Now uses Railway configuration
-- **Nginx**: `nginx/nginx.railway.conf` - Handles SSL termination
-- **Railway Config**: `railway.json` - Tells Railway how to build
-- **Docker Compose**: `docker-compose.yml` - Updated for Railway compatibility
+In the Railway project dashboard, go to the "Variables" tab and add the following environment variables:
 
-## Deployment Steps
+### Required Variables
 
-### 1. Railway Setup
-
-1. **Connect Repository**: Link your GitHub repository to Railway
-2. **Create Service**: Create a new service from your repository
-3. **Set Root Directory**: Ensure Railway uses the project root
-
-### 2. Environment Variables
-
-Set these environment variables in Railway:
-
-```bash
+```
 ENVIRONMENT=production
-JWT_SECRET=your-secure-jwt-secret-here
-DATABASE_URL=sqlite:///./data/elior_fitness.db
-CORS_ORIGINS=https://eliorfitness-production.up.railway.app
-DOMAIN=eliorfitness-production.up.railway.app
+DOMAIN=your-railway-domain.railway.app
+CORS_ORIGINS=https://your-railway-domain.railway.app,https://www.your-railway-domain.railway.app
+JWT_SECRET=your-secure-jwt-secret-here-minimum-32-characters
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+DATABASE_PATH=/app/data/elior_fitness.db
+DATABASE_URL=sqlite:////app/data/elior_fitness.db
 LOG_LEVEL=WARNING
+PORT=8000
+```
+
+### Generating JWT Secret
+
+Generate a secure JWT secret using:
+```bash
+openssl rand -hex 32
+```
+
+### Optional Variables
+
+```
+MAX_FILE_SIZE=5242880
+UPLOAD_DIR=/app/uploads
+WORKERS=1
+MAX_CONCURRENT_REQUESTS=50
+MAX_REQUESTS_PER_WORKER=1000
 ENABLE_DEBUG_LOGGING=false
 ```
 
-### 3. Build Configuration
+## Step 3: Configure Persistent Storage
 
-Railway will automatically detect and use:
-- **Dockerfile**: `Dockerfile` (now Railway-compatible)
-- **Railway Config**: `railway.json` (specifies build settings)
-- **Port**: 80 (Railway handles HTTPS)
-- **Health Check**: `/health` endpoint
+Railway provides ephemeral storage by default. For database persistence:
 
-### 4. Deploy
+1. Go to your service in Railway dashboard
+2. Click on "Settings"
+3. Scroll to "Volumes" section
+4. Add a volume for `/app/data` to persist the SQLite database
+5. Optionally add volumes for `/app/uploads` and `/app/logs` if needed
 
-1. **Push Changes**: Commit and push your changes
-2. **Automatic Build**: Railway will build using `Dockerfile` (Railway-compatible)
-3. **Deploy**: Railway automatically deploys the new version
+**Important**: Without volumes, data will be lost on redeployments.
 
-## Configuration Details
+## Step 4: Domain Configuration
 
-### Nginx Configuration (`nginx/nginx.railway.conf`)
+### Using Railway's Default Domain
 
-```nginx
-# Railway server - handles both HTTP and HTTPS (SSL termination at load balancer)
-server {
-    listen 80;
-    server_name _;
+Railway automatically provides a domain like `your-app-name.up.railway.app`. This is HTTPS-enabled by default.
 
-    # Trust Railway's proxy headers
-    real_ip_header X-Forwarded-For;
-    set_real_ip_from 0.0.0.0/0;
+### Using Custom Domain
 
-    # Frontend serving
-    location / {
-        root /var/www/html;
-        try_files $uri $uri/ /index.html;
-    }
+1. Go to your service settings
+2. Click on "Networking" tab
+3. Click "Add Domain"
+4. Enter your custom domain
+5. Follow Railway's DNS configuration instructions
+6. Update `CORS_ORIGINS` environment variable to include your custom domain
 
-    # API proxy
-    location /api/ {
-        proxy_pass http://api_backend;
-        # ... proxy settings
-    }
-}
-```
+## Step 5: Deploy
 
-### Key Features
+Railway will automatically:
+1. Build the Docker image from your Dockerfile
+2. Deploy the container
+3. Run the startup script which:
+   - Starts FastAPI server
+   - Initializes admin user (username: `admin`, password: `2354wetr`)
 
-1. **SSL Termination**: No SSL configuration needed in container
-2. **Proxy Headers**: Trusts Railway's `X-Forwarded-*` headers
-3. **Frontend First**: Serves frontend by default
-4. **API Security**: Blocks external access to sensitive endpoints
-5. **CORS**: Configured for Railway domain
+### Monitoring Deployment
 
-## Testing Deployment
+1. Go to the "Deployments" tab to see build logs
+2. Check the "Logs" tab for runtime logs
+3. Monitor the "Metrics" tab for resource usage
 
-### Frontend Access
-```bash
-# Should work - frontend application
-curl https://eliorfitness-production.up.railway.app/
-```
+## Step 6: Verify Deployment
 
-### API Access (Should Fail)
-```bash
-# Should return 404 - API blocked externally
-curl https://eliorfitness-production.up.railway.app/health
-curl https://eliorfitness-production.up.railway.app/docs
-```
+1. Visit your Railway domain (e.g., `https://your-app-name.up.railway.app`)
+2. You should see the login page
+3. Log in with admin credentials:
+   - Username: `admin`
+   - Password: `2354wetr`
 
-### Frontend API (Should Work)
-```bash
-# API accessible from frontend (same origin)
-curl https://eliorfitness-production.up.railway.app/api/users
-```
+## Step 7: Health Check
+
+Railway uses the health check endpoint configured in the Dockerfile:
+- Endpoint: `/health`
+- Railway will automatically restart the service if health checks fail
 
 ## Troubleshooting
 
-### 403 Forbidden Error
-
-**Problem**: Frontend returns 403 Forbidden
-**Solution**: 
-1. Ensure using `Dockerfile` (now Railway-compatible)
-2. Check nginx configuration is `nginx.railway.conf`
-3. Verify frontend files are built and copied
-4. Check `railway.json` configuration exists
-
-### SSL Issues
-
-**Problem**: SSL certificate errors
-**Solution**: 
-1. Railway handles SSL automatically
-2. Container should listen on port 80 only
-3. No SSL configuration needed in container
-
-### API Not Accessible
-
-**Problem**: Frontend can't access API
-**Solution**:
-1. Check CORS origins include Railway domain
-2. Verify API proxy configuration
-3. Check Railway logs for errors
-
 ### Build Failures
 
-**Problem**: Build fails on Railway
-**Solution**:
-1. Check `Dockerfile` exists and is Railway-compatible
-2. Verify `railway.json` configuration exists
-3. Verify all required files are present
-4. Check Railway build logs
+- Check the build logs in Railway dashboard
+- Ensure Dockerfile is in the root directory
+- Verify all dependencies are correctly specified
 
-## Monitoring
+### Runtime Errors
 
-### Railway Dashboard
-- **Logs**: View real-time application logs
-- **Metrics**: Monitor resource usage
-- **Deployments**: Track deployment history
+- Check application logs in Railway dashboard
+- Verify all environment variables are set correctly
+- Ensure database path is writable
 
-### Health Checks
-- **Endpoint**: `/health` (internal only)
-- **Frequency**: Every 30 seconds
-- **Timeout**: 10 seconds
+### Database Issues
 
-### Logs
-- **Access Logs**: `/var/log/nginx/access.log`
-- **Error Logs**: `/var/log/nginx/error.log`
-- **Application Logs**: Railway dashboard
+- Verify volume is mounted correctly
+- Check database file permissions
+- Ensure `/app/data` directory exists
 
-## Security Features
+### Port Issues
 
-1. **Frontend-Only External Access**: Only frontend publicly accessible
-2. **Internal API**: Backend API internal only
-3. **Blocked Endpoints**: Health, docs, metrics blocked externally
-4. **SSL/TLS**: Handled by Railway load balancer
-5. **CORS**: Configured for Railway domain only
+- Railway automatically sets the `PORT` environment variable
+- The Dockerfile uses `${PORT:-8000}` to handle this
+- Do not hardcode port 8000 in production
 
-## Performance Optimization
+## Updating the Application
 
-1. **Resource Limits**: 512MB memory, 1 CPU core
-2. **Gzip Compression**: Enabled for static files
-3. **Caching**: Static files cached for 1 year
-4. **Rate Limiting**: API endpoints rate limited
-5. **Connection Pooling**: Database connection optimization
+Railway automatically redeploys when you push to the connected GitHub branch:
 
-## Rollback
+1. Make changes to your code
+2. Commit and push to GitHub
+3. Railway detects the push and starts a new deployment
+4. Monitor the deployment in Railway dashboard
 
-If deployment fails:
-1. **Railway Dashboard**: Go to Deployments tab
-2. **Previous Version**: Click on previous successful deployment
-3. **Redeploy**: Click "Redeploy" to rollback
+## Environment-Specific Notes
+
+### Production Best Practices
+
+1. **Security**:
+   - Use a strong JWT secret (minimum 32 characters)
+   - Never commit `.env` files
+   - Use Railway's secret management for sensitive data
+
+2. **Performance**:
+   - Monitor resource usage in Railway dashboard
+   - Adjust `WORKERS` based on traffic
+   - Use Railway's auto-scaling if needed
+
+3. **Backups**:
+   - Regularly backup the database volume
+   - Export database using Railway's volume export feature
+   - Consider automated backup solutions
+
+4. **Monitoring**:
+   - Use Railway's built-in metrics
+   - Set up alerts for errors
+   - Monitor application logs regularly
+
+## Cost Considerations
+
+Railway offers:
+- Free tier with limited usage
+- Pay-as-you-go pricing
+- Volume storage costs extra
+
+Monitor your usage in the Railway dashboard to avoid unexpected charges.
 
 ## Support
 
-For Railway-specific issues:
-1. **Railway Documentation**: https://docs.railway.app/
-2. **Railway Discord**: https://discord.gg/railway
-3. **Railway Support**: https://railway.app/support 
+- Railway Documentation: https://docs.railway.app
+- Railway Discord: https://discord.gg/railway
+- Railway Status: https://status.railway.app
+
+## Additional Configuration
+
+### Custom Build Command
+
+If needed, you can specify a custom build command in `railway.json`:
+
+```json
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  }
+}
+```
+
+### Health Check Configuration
+
+The health check is configured in the Dockerfile:
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
+```
+
+Railway respects this health check configuration.
+
+## Notes
+
+- Railway automatically handles HTTPS/SSL certificates
+- Railway sets the `PORT` environment variable automatically
+- The application uses SQLite by default (suitable for small to medium deployments)
+- For larger deployments, consider migrating to PostgreSQL (Railway offers managed PostgreSQL)

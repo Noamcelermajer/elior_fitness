@@ -730,7 +730,7 @@ const MealMenuV2 = () => {
                 className="flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Add Custom Food
+                {t('meals.addCustomFood')}
               </Button>
               <Button 
                 variant="outline" 
@@ -738,14 +738,14 @@ const MealMenuV2 = () => {
                 className="flex items-center gap-2"
               >
                 <History className="h-4 w-4" />
-                {showHistory ? 'Hide History' : 'Show History'}
+                {showHistory ? t('meals.hideHistory') : t('meals.showHistory')}
               </Button>
               <Button 
                 onClick={finishDay}
                 className="bg-orange-500 hover:bg-orange-600 text-white"
               >
                 <Check className="h-4 w-4 mr-2" />
-                Finish Day
+                {t('meals.finishDay')}
               </Button>
             </div>
           </div>
@@ -759,30 +759,30 @@ const MealMenuV2 = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-foreground">
                 <TrendingUp className="w-5 h-5 text-primary" />
-                <span>Macros</span>
+                <span>{t('meals.macros')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <MacroCircle
-                  label="Carbohydrates"
+                  label={t('meals.carbohydrates')}
                   consumed={dailyMacros.consumed.carbs}
                   target={dailyMacros.targets.carbs}
-                  unit="g"
+                  unit="ג"
                   color="rgb(34, 197, 194)"
                 />
                 <MacroCircle
-                  label="Fat"
+                  label={t('meals.fat')}
                   consumed={dailyMacros.consumed.fat}
                   target={dailyMacros.targets.fat}
-                  unit="g"
+                  unit="ג"
                   color="rgb(168, 85, 247)"
                 />
                 <MacroCircle
-                  label="Protein"
+                  label={t('meals.protein')}
                   consumed={dailyMacros.consumed.protein}
                   target={dailyMacros.targets.protein}
-                  unit="g"
+                  unit="ג"
                   color="rgb(251, 146, 60)"
                 />
               </div>
@@ -790,7 +790,7 @@ const MealMenuV2 = () => {
               {/* Calories Summary */}
               <div className="mt-8 pt-6 border-t border-border">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-2">Daily Calories</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('meals.dailyCalories')}</p>
                   <p className={`text-3xl font-bold ${dailyMacros.consumed.calories > dailyMacros.targets.calories ? 'text-destructive' : 'text-foreground'}`}>
                     {dailyMacros.consumed.calories.toFixed(0)} <span className="text-lg text-muted-foreground">/ {dailyMacros.targets.calories}</span>
                   </p>
@@ -818,24 +818,24 @@ const MealMenuV2 = () => {
                   dailyMacros.consumed.carbs > dailyMacros.targets.carbs ||
                   dailyMacros.consumed.fat > dailyMacros.targets.fat) && (
                   <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                    <p className="text-sm font-medium text-destructive mb-2">⚠️ Macro Limits Exceeded:</p>
+                    <p className="text-sm font-medium text-destructive mb-2">⚠️ {t('meals.macroLimitsExceeded', 'חרגת ממגבלות המאקרו:')}</p>
                     <div className="space-y-1 text-xs">
                       {dailyMacros.consumed.protein > dailyMacros.targets.protein && (
                         <p className="text-destructive">
-                          Protein: {dailyMacros.consumed.protein.toFixed(0)}g / {dailyMacros.targets.protein}g 
-                          (+{(dailyMacros.consumed.protein - dailyMacros.targets.protein).toFixed(0)}g over)
+                          {t('meals.protein')}: {dailyMacros.consumed.protein.toFixed(0)}ג / {dailyMacros.targets.protein}ג 
+                          (+{(dailyMacros.consumed.protein - dailyMacros.targets.protein).toFixed(0)}ג {t('meals.over')})
                         </p>
                       )}
                       {dailyMacros.consumed.carbs > dailyMacros.targets.carbs && (
                         <p className="text-destructive">
-                          Carbs: {dailyMacros.consumed.carbs.toFixed(0)}g / {dailyMacros.targets.carbs}g 
-                          (+{(dailyMacros.consumed.carbs - dailyMacros.targets.carbs).toFixed(0)}g over)
+                          {t('meals.carbs')}: {dailyMacros.consumed.carbs.toFixed(0)}ג / {dailyMacros.targets.carbs}ג 
+                          (+{(dailyMacros.consumed.carbs - dailyMacros.targets.carbs).toFixed(0)}ג {t('meals.over')})
                         </p>
                       )}
                       {dailyMacros.consumed.fat > dailyMacros.targets.fat && (
                         <p className="text-destructive">
-                          Fat: {dailyMacros.consumed.fat.toFixed(0)}g / {dailyMacros.targets.fat}g 
-                          (+{(dailyMacros.consumed.fat - dailyMacros.targets.fat).toFixed(0)}g over)
+                          {t('meals.fat')}: {dailyMacros.consumed.fat.toFixed(0)}ג / {dailyMacros.targets.fat}ג 
+                          (+{(dailyMacros.consumed.fat - dailyMacros.targets.fat).toFixed(0)}ג {t('meals.over')})
                         </p>
                       )}
                     </div>
@@ -859,11 +859,26 @@ const MealMenuV2 = () => {
               <div className="space-y-2">
                 {choices.filter(c => c.custom_food_name).map((choice) => (
                   <div key={choice.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div>
-                      <p className="font-medium">{choice.custom_food_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {choice.custom_calories?.toFixed(0) || 0} kcal | P: {choice.custom_protein?.toFixed(0) || 0}g | C: {choice.custom_carbs?.toFixed(0) || 0}g | F: {choice.custom_fat?.toFixed(0) || 0}g
-                      </p>
+                    <div className="flex-1">
+                      <p className="font-medium mb-2">{choice.custom_food_name}</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="flex flex-col items-center p-2 bg-orange-500/10 dark:bg-orange-500/20 rounded-md border border-orange-500/20">
+                          <span className="text-xs text-muted-foreground mb-0.5">{t('meals.kcal')}</span>
+                          <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">{choice.custom_calories?.toFixed(0) || 0}</span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-md border border-emerald-500/20">
+                          <span className="text-xs text-muted-foreground mb-0.5">{t('meals.protein')}</span>
+                          <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{choice.custom_protein?.toFixed(0) || 0}ג</span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 bg-cyan-500/10 dark:bg-cyan-500/20 rounded-md border border-cyan-500/20">
+                          <span className="text-xs text-muted-foreground mb-0.5">{t('meals.carbs')}</span>
+                          <span className="text-sm font-semibold text-cyan-600 dark:text-cyan-400">{choice.custom_carbs?.toFixed(0) || 0}ג</span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 bg-purple-500/10 dark:bg-purple-500/20 rounded-md border border-purple-500/20">
+                          <span className="text-xs text-muted-foreground mb-0.5">{t('meals.fat')}</span>
+                          <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">{choice.custom_fat?.toFixed(0) || 0}ג</span>
+                        </div>
+                      </div>
                     </div>
                     <Button
                       size="sm"
@@ -882,7 +897,7 @@ const MealMenuV2 = () => {
 
         {/* Meal Slots */}
         <div className="space-y-4">
-          <h2 className="text-xl font-bold">Daily Meals ({mealPlan.number_of_meals})</h2>
+          <h2 className="text-xl font-bold">{t('meals.dailyMeals')} ({mealPlan.number_of_meals})</h2>
           
           <Accordion type="single" collapsible className="w-full space-y-4">
             {mealPlan.meal_slots.map((slot) => {
@@ -1054,7 +1069,7 @@ const MealMenuV2 = () => {
                                           {isSelected && (
                                             <div className="flex items-center gap-2">
                                               <Badge variant="outline" className="bg-primary/10 text-primary">
-                                                {selectedChoice?.quantity || `${Math.round(consumedGrams || 0)}g`}
+                                                {selectedChoice?.quantity || `${Math.round(consumedGrams || 0)}ג`}
                                               </Badge>
                                               <Button
                                                 size="sm"
@@ -1070,20 +1085,42 @@ const MealMenuV2 = () => {
                                             </div>
                                           )}
                                         </div>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                          {option.calories}{t('meals.kcal')} | P: {option.protein}g | C: {option.carbs}g | F: {option.fat}g
-                                        </p>
-                                        {recommendedGrams > 0 && (
-                                          <p className="text-xs text-muted-foreground">
-                                            {t('meals.servingSize')}: {formatGrams(recommendedGrams)}
-                                          </p>
-                                        )}
-                                        <p className="text-xs text-muted-foreground">
-                                          {t('meals.remaining')}: <span className="font-medium">{Math.max(0, Math.round(remainingGrams))}g</span>
-                                        </p>
+                                        <div className="mt-2 space-y-2">
+                                          {/* Macros Grid */}
+                                          <div className="grid grid-cols-4 gap-2">
+                                            <div className="flex flex-col items-center p-2 bg-orange-500/10 dark:bg-orange-500/20 rounded-md border border-orange-500/20">
+                                              <span className="text-xs text-muted-foreground mb-0.5">{t('meals.kcal')}</span>
+                                              <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">{option.calories}</span>
+                                            </div>
+                                            <div className="flex flex-col items-center p-2 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-md border border-emerald-500/20">
+                                              <span className="text-xs text-muted-foreground mb-0.5">{t('meals.protein')}</span>
+                                              <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{option.protein}ג</span>
+                                            </div>
+                                            <div className="flex flex-col items-center p-2 bg-cyan-500/10 dark:bg-cyan-500/20 rounded-md border border-cyan-500/20">
+                                              <span className="text-xs text-muted-foreground mb-0.5">{t('meals.carbs')}</span>
+                                              <span className="text-sm font-semibold text-cyan-600 dark:text-cyan-400">{option.carbs}ג</span>
+                                            </div>
+                                            <div className="flex flex-col items-center p-2 bg-purple-500/10 dark:bg-purple-500/20 rounded-md border border-purple-500/20">
+                                              <span className="text-xs text-muted-foreground mb-0.5">{t('meals.fat')}</span>
+                                              <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">{option.fat}ג</span>
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Serving Size and Remaining */}
+                                          <div className="flex items-center justify-between text-xs">
+                                            {recommendedGrams > 0 && (
+                                              <span className="text-muted-foreground">
+                                                {t('meals.servingSize')}: <span className="font-medium text-foreground">{formatGrams(recommendedGrams)}</span>
+                                              </span>
+                                            )}
+                                            <span className="text-muted-foreground">
+                                              {t('meals.remaining')}: <span className="font-medium text-foreground">{Math.max(0, Math.round(remainingGrams))}ג</span>
+                                            </span>
+                                          </div>
+                                        </div>
                                         {consumedGrams > 0 && (
                                           <p className="text-xs text-muted-foreground">
-                                            {t('meals.eaten')}: {Math.round(consumedGrams)}g
+                                            {t('meals.eaten')}: {Math.round(consumedGrams)}ג
                                           </p>
                                         )}
                                       </div>
@@ -1144,12 +1181,12 @@ const MealMenuV2 = () => {
             return (
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-2">Nutritional Info (per {selectedFood.food.serving_size || '100g'})</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('meals.nutritionalInfo', 'מידע תזונתי')} ({t('meals.per', 'ל')} {selectedFood.food.serving_size || '100ג'})</p>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>Calories: <span className="font-medium">{selectedFood.food.calories} kcal</span></div>
-                    <div>Protein: <span className="font-medium">{selectedFood.food.protein}g</span></div>
-                    <div>Carbs: <span className="font-medium">{selectedFood.food.carbs}g</span></div>
-                    <div>Fat: <span className="font-medium">{selectedFood.food.fat}g</span></div>
+                    <div>{t('meals.calories')}: <span className="font-medium">{selectedFood.food.calories} {t('meals.kcal')}</span></div>
+                    <div>{t('meals.protein')}: <span className="font-medium">{selectedFood.food.protein}ג</span></div>
+                    <div>{t('meals.carbs')}: <span className="font-medium">{selectedFood.food.carbs}ג</span></div>
+                    <div>{t('meals.fat')}: <span className="font-medium">{selectedFood.food.fat}ג</span></div>
                   </div>
                 </div>
 
@@ -1210,14 +1247,14 @@ const MealMenuV2 = () => {
       <Dialog open={showCustomFoodDialog} onOpenChange={setShowCustomFoodDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Custom Food</DialogTitle>
+            <DialogTitle>{t('meals.addCustomFood')}</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Food Name *</label>
+              <label className="text-sm font-medium">{t('meals.customFoodName')} *</label>
               <Input
-                placeholder="e.g., Snack, Pizza slice, etc."
+                placeholder={t('meals.customFoodNamePlaceholder', 'לדוגמה: נשנוש, פרוסת פיצה וכו\'')}
                 value={customFood.name}
                 onChange={(e) => setCustomFood({ ...customFood, name: e.target.value })}
                 className="w-full"
@@ -1227,7 +1264,7 @@ const MealMenuV2 = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Calories *</label>
+                <label className="text-sm font-medium">{t('meals.customFoodCalories')} *</label>
                 <Input
                   type="number"
                   placeholder="455"
@@ -1237,7 +1274,7 @@ const MealMenuV2 = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Protein (g)</label>
+                <label className="text-sm font-medium">{t('meals.customFoodProtein')}</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -1248,7 +1285,7 @@ const MealMenuV2 = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Carbs (g)</label>
+                <label className="text-sm font-medium">{t('meals.customFoodCarbs')}</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -1259,7 +1296,7 @@ const MealMenuV2 = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Fat (g)</label>
+                <label className="text-sm font-medium">{t('meals.customFoodFat')}</label>
                 <Input
                   type="number"
                   step="0.1"

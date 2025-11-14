@@ -16,18 +16,21 @@ RUN npm ci --legacy-peer-deps --no-audit --no-fund --production=false
 # Copy frontend source
 COPY Frontend/ ./
 
-# Build frontend
-RUN npm run build
+# Build frontend (clean npm cache after build)
+RUN npm run build && \
+    npm cache clean --force && \
+    rm -rf node_modules
 
 # Stage 2: Production Server
 FROM python:3.11-slim
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies (minimal set)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && apt-get clean \
+    && apt-get purge -y --auto-remove
 
 WORKDIR /app
 

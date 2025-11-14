@@ -47,11 +47,11 @@ coverage.xml
 *.cover
 .hypothesis/
 
-# Test files and uploads
+# Test files and uploads (keep data directory structure)
 test_uploads/
-uploads/
+# uploads/ (needed for runtime)
 test_*.db
-*.db
+# *.db (needed for runtime, but exclude test dbs)
 
 # Logs
 logs/
@@ -68,14 +68,14 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Docker
-Dockerfile*
-docker-compose*
+# Docker (keep Dockerfile and docker-compose for deployment)
+# Dockerfile
+# docker-compose.yml
 .dockerignore
 
-# Documentation
-docs/
-*.md
+# Documentation (keep essential docs)
+# docs/
+# README.md
 
 # Scripts
 run_tests.py

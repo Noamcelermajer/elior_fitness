@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface MacroCircleProps {
   label: string;
@@ -13,9 +14,10 @@ const MacroCircle: React.FC<MacroCircleProps> = ({
   label,
   consumed,
   target,
-  unit = 'g',
+  unit = 'ג',
   color,
 }) => {
+  const { t } = useTranslation();
   const percentage = target > 0 ? Math.min((consumed / target) * 100, 100) : 0;
   const roundedConsumed = Math.round(consumed);
   const roundedTarget = Math.round(target);
@@ -73,7 +75,7 @@ const MacroCircle: React.FC<MacroCircleProps> = ({
       
       {/* Remaining */}
       <div className="text-sm text-muted-foreground">
-        {roundedRemaining}{unit} left
+        {roundedRemaining}{unit} {t('meals.left')}
       </div>
     </div>
   );

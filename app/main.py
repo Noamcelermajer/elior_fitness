@@ -142,7 +142,7 @@ except Exception as e:
 
 try:
     logger.info("Importing router modules...")
-    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications, meal_system, workout_system, muscle_groups, workout_splits
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications, meal_system, workout_system, muscle_groups, workout_splits, chat
     logger.info("✅ Router modules imported successfully")
     logger.info("📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications")
 except Exception as e:
@@ -250,12 +250,20 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
     # Performance optimizations
-    docs_url="/docs",  # Keep docs available in all environments for this version
-    redoc_url="/redoc",
+    docs_url="/docs" if ENVIRONMENT != "production" else None,  # Disable docs in production
+    redoc_url="/redoc" if ENVIRONMENT != "production" else None,  # Disable redoc in production
     generate_unique_id_function=lambda route: f"{route.tags[0]}-{route.name}" if route.tags else route.name
 )
 
 logger.info("FastAPI application created with performance optimizations")
+
+# Add security middleware
+try:
+    from app.middleware.security import SecurityMiddleware
+    app.add_middleware(SecurityMiddleware)
+    logger.info("✅ Security middleware added")
+except Exception as e:
+    logger.error(f"❌ Failed to add security middleware: {e}")
 
 # Performance monitoring middleware - OPTIMIZED FOR MINIMAL RESOURCES
 @app.middleware("http")
@@ -637,6 +645,10 @@ try:
     logger.info("Including notifications router...")
     app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
     logger.info("✅ Notifications router included")
+    
+    logger.info("Including chat router...")
+    app.include_router(chat.router, prefix="/api", tags=["Chat"])
+    logger.info("✅ Chat router included")
     
     logger.info("=" * 40)
     logger.info("✅ ALL ROUTERS INCLUDED SUCCESSFULLY")

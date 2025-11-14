@@ -1,24 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Dumbbell, User, Lock, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Dumbbell, User, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { API_BASE_URL } from '../config/api';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '../components/LanguageSelector';
 import ThemeToggle from '../components/ThemeToggle';
-
-interface UserLoginInfo {
-  id: number;
-  username: string;
-  email: string;
-  role: string;
-  full_name: string;
-}
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -26,34 +16,10 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [registeredUsers, setRegisteredUsers] = useState<UserLoginInfo[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-
-  // Fetch registered users from the server
-  const fetchRegisteredUsers = async () => {
-    try {
-      setLoadingUsers(true);
-      const response = await fetch(`${API_BASE_URL}/auth/registered-users`);
-      if (response.ok) {
-        const users = await response.json();
-        setRegisteredUsers(users);
-      } else {
-        console.error('Failed to fetch registered users');
-      }
-    } catch (error) {
-      console.error('Error fetching registered users:', error);
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRegisteredUsers();
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,33 +45,6 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getRoleColor = (role: string) => {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return 'bg-gradient-to-r from-red-500 to-red-600';
-      case 'trainer':
-        return 'gradient-orange';
-      case 'client':
-        return 'bg-blue-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  const getRoleDisplayName = (role: string) => {
-    return role.charAt(0).toUpperCase() + role.slice(1);
-  };
-
-  // Development only: Map of test user passwords
-  const getTestPassword = (email: string) => {
-    const testPasswords: { [key: string]: string } = {
-      'admin@elior.com': 'admin123',
-      'trainer@elior.com': 'trainer123',
-      'client@elior.com': 'client123'
-    };
-    return testPasswords[email] || '(unknown)';
   };
 
   return (
@@ -200,60 +139,6 @@ const Login = () => {
                 )}
               </Button>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Registered Users */}
-        <Card className="mt-6 glass-effect border-border/50">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg text-foreground">{t('admin.users')}</CardTitle>
-                <CardDescription>{t('dashboard.viewAll')}</CardDescription>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={fetchRegisteredUsers}
-                disabled={loadingUsers}
-                className="hover:bg-secondary/50"
-              >
-                <RefreshCw className={`w-4 h-4 ${loadingUsers ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {loadingUsers ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                <span className="ml-2 text-muted-foreground">{t('common.loading')}</span>
-              </div>
-            ) : registeredUsers.length > 0 ? (
-              registeredUsers.map((user, index) => (
-                <div key={user.id} className="p-4 bg-secondary/30 rounded-xl border border-border/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge className={
-                      getRoleColor(user.role) === 'gradient-orange' ? 'gradient-orange text-background' : 
-                      getRoleColor(user.role) === 'bg-gradient-to-r from-red-500 to-red-600' ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' :
-                      `${getRoleColor(user.role)} text-white`
-                    }>
-                      {getRoleDisplayName(user.role)}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="text-muted-foreground">{t('common.name')}:</span> <span className="text-foreground font-medium">{user.full_name}</span></p>
-                    <p><span className="text-muted-foreground">{t('auth.email')}:</span> <span className="text-foreground font-mono">{user.email}</span></p>
-                    <p className="text-xs mt-2">
-                      <span className="text-muted-foreground">{t('auth.password')}:</span> <span className="text-foreground font-mono font-semibold">{getTestPassword(user.email)}</span>
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>{t('client.noClients')}</p>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
