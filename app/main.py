@@ -142,7 +142,7 @@ except Exception as e:
 
 try:
     logger.info("Importing router modules...")
-    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications, meal_system, workout_system
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications, meal_system, workout_system, muscle_groups, workout_splits
     logger.info("✅ Router modules imported successfully")
     logger.info("📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications")
 except Exception as e:
@@ -191,11 +191,15 @@ async def lifespan(app: FastAPI):
 
     try:
         from app.migrations.meal_system_migration import run_meal_system_migrations
+        from app.migrations.workout_system_migration import run_workout_system_migrations
 
         run_meal_system_migrations()
         logger.info("✅ Meal system migrations applied")
+
+        run_workout_system_migrations()
+        logger.info("✅ Workout system migrations applied")
     except Exception as migration_error:
-        logger.error("❌ Meal system migrations failed: %s", migration_error)
+        logger.error("❌ Database migrations failed: %s", migration_error)
         raise
     
     # Log database pool statistics
@@ -585,6 +589,14 @@ try:
     logger.info("Including exercises router...")
     app.include_router(exercises.router, prefix="/api/exercises", tags=["Exercises"])
     logger.info("✅ Exercises router included")
+    
+    logger.info("Including muscle_groups router...")
+    app.include_router(muscle_groups.router, prefix="/api/muscle-groups", tags=["Muscle Groups"])
+    logger.info("✅ Muscle groups router included")
+    
+    logger.info("Including workout_splits router...")
+    app.include_router(workout_splits.router, prefix="/api/workout-splits", tags=["Workout Splits"])
+    logger.info("✅ Workout splits router included")
     
     logger.info("Including workouts router...")
     app.include_router(workouts.router, prefix="/api/workouts", tags=["Workouts"])

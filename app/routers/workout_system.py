@@ -4,6 +4,7 @@ Trainers can create workout plans with splits (Push/Pull/Legs) and detailed trac
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List
@@ -30,6 +31,7 @@ from app.schemas.workout_system import (
     PersonalRecordCreate,
     PersonalRecordResponse,
 )
+from app.schemas.workout import ExerciseResponse
 from app.models.workout_system import (
     WorkoutPlanV2 as NewWorkoutPlan,
     WorkoutDay,
@@ -43,6 +45,33 @@ from app.models.workout_system import (
 from app.models.workout import Exercise
 
 router = APIRouter()
+
+# ============ Exercise Metadata ============
+
+@router.get("/exercises/{exercise_id}", response_model=ExerciseResponse)
+def get_exercise_detail(
+    exercise_id: int,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Fetch exercise metadata for workout details."""
+    exercise = db.query(Exercise).filter(Exercise.id == exercise_id).first()
+
+    if not exercise:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+
+    return ExerciseResponse(
+        id=exercise.id,
+        name=exercise.name,
+        description=exercise.description,
+        video_url=exercise.video_url,
+        muscle_group=exercise.muscle_group,
+        equipment_needed=exercise.equipment_needed,
+        instructions=exercise.instructions,
+        category=getattr(exercise, "category", None),
+        created_by=exercise.created_by,
+        created_at=exercise.created_at,
+    )
 
 # ============ Workout Plan Endpoints ============
 
@@ -59,6 +88,42 @@ def create_workout_plan(
             detail="Only trainers can create workout plans"
         )
     
+    # Enforce single active plan per client
+    existing_plan = db.query(NewWorkoutPlan).filter(
+        NewWorkoutPlan.client_id == plan_data.client_id,
+        NewWorkoutPlan.is_active == True
+    ).first()
+
+    if existing_plan:
+        if existing_plan.trainer_id != current_user.id and current_user.role != "ADMIN":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Client already has an active workout plan assigned by another trainer"
+            )
+
+        updatable_fields = [
+            "name",
+            "description",
+            "split_type",
+            "days_per_week",
+            "duration_weeks",
+            "notes",
+            "start_date",
+            "end_date",
+            "is_active",
+        ]
+
+        for field in updatable_fields:
+            value = getattr(plan_data, field, None)
+            if value is not None:
+                setattr(existing_plan, field, value)
+
+        existing_plan.trainer_id = current_user.id
+
+        db.commit()
+        db.refresh(existing_plan)
+        return existing_plan
+
     # Create workout plan
     workout_plan = NewWorkoutPlan(
         client_id=plan_data.client_id,
@@ -93,29 +158,62 @@ def create_complete_workout_plan(
             detail="Only trainers can create workout plans"
         )
     
-    # Create workout plan
-    workout_plan = NewWorkoutPlan(
-        client_id=plan_data.client_id,
-        trainer_id=current_user.id,
-        name=plan_data.name,
-        description=plan_data.description,
-        split_type=plan_data.split_type,
-        days_per_week=plan_data.days_per_week,
-        duration_weeks=plan_data.duration_weeks,
-        notes=plan_data.notes
-    )
-    
-    db.add(workout_plan)
-    db.flush()  # Get workout_plan.id without committing
+    existing_plan = db.query(NewWorkoutPlan).filter(
+        NewWorkoutPlan.client_id == plan_data.client_id,
+        NewWorkoutPlan.is_active == True
+    ).options(joinedload(NewWorkoutPlan.workout_days)).first()
+
+    if existing_plan:
+        if existing_plan.trainer_id != current_user.id and current_user.role != "ADMIN":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Client already has an active workout plan assigned by another trainer"
+            )
+
+        existing_plan.name = plan_data.name
+        existing_plan.description = plan_data.description
+        # Only update split_type if provided (to avoid NULL constraint issues)
+        if plan_data.split_type is not None:
+            existing_plan.split_type = plan_data.split_type
+        existing_plan.days_per_week = plan_data.days_per_week
+        existing_plan.duration_weeks = plan_data.duration_weeks
+        existing_plan.notes = plan_data.notes
+        existing_plan.trainer_id = current_user.id
+        existing_plan.is_active = True
+
+        # Remove existing days/exercises
+        for day in list(existing_plan.workout_days):
+            db.delete(day)
+        db.flush()
+
+        target_plan = existing_plan
+    else:
+        # Use a default split_type if None to avoid NOT NULL constraint
+        # SQLite doesn't allow NULL for this column even though model says nullable=True
+        split_type_value = plan_data.split_type if plan_data.split_type is not None else WorkoutSplitType.CUSTOM
+        target_plan = NewWorkoutPlan(
+            client_id=plan_data.client_id,
+            trainer_id=current_user.id,
+            name=plan_data.name,
+            description=plan_data.description,
+            split_type=split_type_value,
+            days_per_week=plan_data.days_per_week,
+            duration_weeks=plan_data.duration_weeks,
+            notes=plan_data.notes,
+            is_active=True
+        )
+        db.add(target_plan)
+        db.flush()  # Get id
     
     # Create workout days
     for day_data in plan_data.workout_days:
         workout_day = WorkoutDay(
-            workout_plan_id=workout_plan.id,
+            workout_plan_id=target_plan.id,
             name=day_data.name,
             day_type=day_data.day_type,
             order_index=day_data.order_index,
-            notes=day_data.notes
+            notes=day_data.notes,
+            estimated_duration=getattr(day_data, "estimated_duration", None)
         )
         db.add(workout_day)
         db.flush()
@@ -126,19 +224,21 @@ def create_complete_workout_plan(
                 workout_day_id=workout_day.id,
                 exercise_id=exercise_data.exercise_id,
                 order_index=exercise_data.order_index,
-                target_sets=exercise_data.target_sets,
-                target_reps=exercise_data.target_reps,
+                group_name=getattr(exercise_data, "group_name", None),
+                target_sets=exercise_data.target_sets or 3,
+                target_reps=exercise_data.target_reps or '',
                 target_weight=exercise_data.target_weight,
-                rest_seconds=exercise_data.rest_seconds,
+                rest_seconds=exercise_data.rest_seconds or 90,
                 tempo=exercise_data.tempo,
-                notes=exercise_data.notes
+                notes=exercise_data.notes or '',
+                video_url=getattr(exercise_data, "video_url", None),
             )
             db.add(workout_exercise)
     
     db.commit()
-    db.refresh(workout_plan)
+    db.refresh(target_plan)
     
-    return workout_plan
+    return target_plan
 
 @router.get("/plans", response_model=List[dict])
 def get_workout_plans(
@@ -174,7 +274,7 @@ def get_workout_plans(
             "trainer_id": plan.trainer_id,
             "name": plan.name,
             "description": plan.description,
-            "split_type": plan.split_type.value if hasattr(plan.split_type, 'value') else str(plan.split_type),
+            "split_type": plan.split_type.value if plan.split_type and hasattr(plan.split_type, 'value') else (str(plan.split_type) if plan.split_type else None),
             "days_per_week": plan.days_per_week,
             "duration_weeks": plan.duration_weeks,
             "is_active": plan.is_active,
@@ -199,13 +299,15 @@ def get_workout_plans(
                             "workout_day_id": ex.workout_day_id,
                             "exercise_id": ex.exercise_id,
                             "order_index": ex.order_index,
+                    "group_name": ex.group_name,
                             "target_sets": ex.target_sets,
                             "target_reps": ex.target_reps,
                             "target_weight": ex.target_weight,
                             "rest_seconds": ex.rest_seconds,
                             "tempo": ex.tempo,
                             "notes": ex.notes,
-                            "video_url": ex.video_url,
+                    "video_url": ex.video_url,
+                    "group_name": ex.group_name,
                             "created_at": ex.created_at.isoformat() if ex.created_at else None,
                             "exercise_name": ex.exercise.name if ex.exercise else None
                         }
@@ -327,6 +429,76 @@ def add_workout_day(
     
     return workout_day
 
+@router.get("/days/{day_id}")
+def get_workout_day(
+    day_id: int,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get a specific workout day with all exercises"""
+    workout_day = db.query(WorkoutDay).options(
+        joinedload(WorkoutDay.workout_exercises).joinedload(NewWorkoutExercise.exercise)
+    ).filter(WorkoutDay.id == day_id).first()
+    
+    if not workout_day:
+        raise HTTPException(status_code=404, detail="Workout day not found")
+    
+    # Check permissions - verify user has access to the plan
+    workout_plan = db.query(NewWorkoutPlan).filter(NewWorkoutPlan.id == workout_day.workout_plan_id).first()
+    if not workout_plan:
+        raise HTTPException(status_code=404, detail="Workout plan not found")
+    
+    if current_user.role == "CLIENT" and workout_plan.client_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this workout day")
+    elif current_user.role == "TRAINER" and workout_plan.trainer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this workout day")
+    
+    # Manually serialize everything to avoid ORM object issues
+    exercises_data = []
+    for ex in workout_day.workout_exercises:
+        exercise_dict = None
+        if ex.exercise:
+            exercise_dict = {
+                "id": ex.exercise.id,
+                "name": ex.exercise.name,
+                "description": ex.exercise.description,
+                "video_url": ex.exercise.video_url,
+                "muscle_group": ex.exercise.muscle_group,
+                "equipment_needed": ex.exercise.equipment_needed,
+                "instructions": ex.exercise.instructions,
+            }
+        
+        exercises_data.append({
+            "id": ex.id,
+            "workout_day_id": ex.workout_day_id,
+            "exercise_id": ex.exercise_id,
+            "order_index": ex.order_index,
+            "group_name": ex.group_name,
+            "target_sets": ex.target_sets,
+            "target_reps": ex.target_reps,
+            "target_weight": ex.target_weight,
+            "rest_seconds": ex.rest_seconds,
+            "tempo": ex.tempo,
+            "notes": ex.notes,
+            "video_url": ex.video_url,
+            "created_at": ex.created_at.isoformat() if ex.created_at else None,
+            "exercise": exercise_dict,
+        })
+    
+    # Return as JSON to bypass response model validation issues
+    day_dict = {
+        "id": workout_day.id,
+        "workout_plan_id": workout_day.workout_plan_id,
+        "name": workout_day.name,
+        "day_type": workout_day.day_type.value if workout_day.day_type and hasattr(workout_day.day_type, 'value') else (str(workout_day.day_type) if workout_day.day_type else None),
+        "order_index": workout_day.order_index,
+        "notes": workout_day.notes,
+        "estimated_duration": workout_day.estimated_duration,
+        "created_at": workout_day.created_at.isoformat() if workout_day.created_at else None,
+        "workout_exercises": exercises_data,
+    }
+    return JSONResponse(content=day_dict)
+
 @router.put("/days/{day_id}", response_model=WorkoutDayResponse)
 def update_workout_day(
     day_id: int,
@@ -373,13 +545,14 @@ def add_workout_exercise(
         workout_day_id=day_id,
         exercise_id=exercise_data.exercise_id,
         order_index=exercise_data.order_index,
-        target_sets=exercise_data.target_sets,
-        target_reps=exercise_data.target_reps,
+        group_name=getattr(exercise_data, "group_name", None),
+        target_sets=exercise_data.target_sets or 3,
+        target_reps=exercise_data.target_reps or '',
         target_weight=exercise_data.target_weight,
-        rest_seconds=exercise_data.rest_seconds,
+        rest_seconds=exercise_data.rest_seconds or 90,
         tempo=exercise_data.tempo,
-        notes=exercise_data.notes,
-        video_url=exercise_data.video_url
+        notes=exercise_data.notes or '',
+        video_url=getattr(exercise_data, "video_url", None),
     )
     
     db.add(workout_exercise)
@@ -405,6 +578,12 @@ def update_workout_exercise(
         raise HTTPException(status_code=404, detail="Workout exercise not found")
     
     for field, value in exercise_data.dict(exclude_unset=True).items():
+        if field == "target_sets" and value is None:
+            value = 3
+        if field == "target_reps" and value is None:
+            value = ""
+        if field == "rest_seconds" and value is None:
+            value = 90
         setattr(workout_exercise, field, value)
     
     db.commit()

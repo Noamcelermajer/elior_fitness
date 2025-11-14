@@ -15,6 +15,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import MealsPage from "./pages/MealsPage";
 import TrainingPage from "./pages/TrainingPage";
+import TrainingDayPage from "./pages/TrainingDayPage";
 import ProgressPage from "./pages/ProgressPage";
 import CreateWorkoutPage from "./pages/CreateWorkoutPage";
 import CreateExercisePage from "./pages/CreateExercisePage";
@@ -173,6 +174,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <TrainingPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/training/day/:dayId" 
+        element={
+          <ProtectedRoute>
+            <TrainingDayPage />
           </ProtectedRoute>
         } 
       />

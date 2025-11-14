@@ -177,7 +177,7 @@ const TrainingPlan = () => {
                   Create Exercise
                 </Button>
                 <Button 
-                  onClick={() => navigate('/create-workout')}
+                  onClick={() => navigate('/create-workout-plan-v2')}
                   className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
                 >
                   <Dumbbell className="w-4 h-4 mr-2" />

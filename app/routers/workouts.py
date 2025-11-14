@@ -18,7 +18,7 @@ from app.schemas.workout import (
     WorkoutSummary, ExerciseProgress, ExerciseCompletionFilter,
     BulkWorkoutExerciseCreate, BulkExerciseCompletionCreate
 )
-from app.models.workout import MuscleGroup
+from app.models.workout import MuscleGroup, WorkoutPlan
 
 router = APIRouter(tags=["workouts"])
 
@@ -151,6 +151,34 @@ def create_workout_plan(
         )
     
     workout_service = WorkoutService(db)
+    existing_plan = db.query(WorkoutPlan).filter(
+        WorkoutPlan.client_id == workout_plan_data.client_id
+    ).first()
+
+    if existing_plan:
+        if existing_plan.trainer_id != current_user.id and current_user.role != "ADMIN":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Client already has a workout plan assigned by another trainer",
+            )
+
+        updatable_fields = ["name", "description", "start_date", "end_date"]
+        for field in updatable_fields:
+            setattr(existing_plan, field, getattr(workout_plan_data, field))
+
+        existing_plan.trainer_id = current_user.id
+        db.commit()
+        db.refresh(existing_plan)
+
+        refreshed_plan = workout_service.get_workout_plan(existing_plan.id)
+        if not refreshed_plan:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to refresh workout plan",
+            )
+
+        return refreshed_plan
+
     return workout_service.create_workout_plan(workout_plan_data, current_user.id)
 
 @router.get("/plans", response_model=List[WorkoutPlanResponse])

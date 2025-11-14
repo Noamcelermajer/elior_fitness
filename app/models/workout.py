@@ -5,6 +5,7 @@ from app.database import Base
 import enum
 
 class MuscleGroup(str, enum.Enum):
+    """Legacy enum - kept for backward compatibility"""
     CHEST = "chest"
     BACK = "back"
     SHOULDERS = "shoulders"
@@ -23,7 +24,8 @@ class Exercise(Base):
     name = Column(String, nullable=False)
     description = Column(String)
     video_url = Column(String)
-    muscle_group = Column(Enum(MuscleGroup), nullable=False)
+    muscle_group = Column(String, nullable=False)  # Changed to String - can be enum value or custom name
+    muscle_group_id = Column(Integer, ForeignKey("muscle_groups.id"), nullable=True)  # FK to dynamic muscle groups
     equipment_needed = Column(String)
     instructions = Column(String)  # How to perform the exercise
     category = Column(String)  # Custom category for organizing exercises (e.g., "Strength", "Hypertrophy", "Endurance", "Mobility")
@@ -32,6 +34,7 @@ class Exercise(Base):
 
     # Relationships
     workout_exercises = relationship("WorkoutExercise", back_populates="exercise")
+    muscle_group_rel = relationship("MuscleGroup", foreign_keys=[muscle_group_id], back_populates="exercises")
 
 class WorkoutPlan(Base):
     __tablename__ = "workout_plans"

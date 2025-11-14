@@ -245,7 +245,7 @@ const Index = () => {
                     {t('client.clients')}
                   </Button>
                   <Button 
-                    onClick={() => navigate('/create-workout')}
+                    onClick={() => navigate('/create-workout-plan-v2')}
                     variant="outline" 
                     className="font-semibold transform hover:scale-105 transition-all duration-200"
                   >

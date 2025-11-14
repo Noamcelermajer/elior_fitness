@@ -45,7 +45,7 @@ async function loginUI(page: Page, username: string, password: string) {
   await page.waitForSelector('input#username', { timeout: 10000 });
   await page.fill('input#username', username);
   await page.fill('input#password', password);
-  await page.click('button[type="submit"]:has-text("Sign In")');
+  await page.click('button[type="submit"]');
   
   // Wait for successful login (redirect away from login page)
   await page.waitForURL(url => !url.pathname.includes('/login'), { timeout: 5000 });

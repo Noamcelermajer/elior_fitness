@@ -1,5 +1,7 @@
 from app.models.user import User
 from app.models.workout import Exercise, WorkoutPlan, WorkoutSession, WorkoutExercise, ExerciseCompletion
+from app.models.muscle_group import MuscleGroup
+from app.models.workout_split import WorkoutSplit
 from app.models.nutrition import (
     NutritionPlan, Recipe, PlannedMeal, MealCompletion, WeighIn,
     MealPlan, MealEntry, MealComponent, MealUpload, NutritionEntry
@@ -33,6 +35,8 @@ from app.models.workout_system import (
 __all__ = [
     "User",
     "Exercise",
+    "MuscleGroup",
+    "WorkoutSplit",
     "WorkoutPlan",
     "WorkoutSession",
     "WorkoutExercise",

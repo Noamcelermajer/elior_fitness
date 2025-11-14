@@ -36,6 +36,37 @@ const CreateExercise = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [existingCategories, setExistingCategories] = useState<string[]>([]);
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE_URL}/exercises/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const categories = Array.from(
+            new Set(
+              (Array.isArray(data) ? data : [])
+                .map((exercise: any) => exercise.category)
+                .filter((category: string | null | undefined): category is string => Boolean(category))
+            )
+          );
+          setExistingCategories(categories);
+        }
+      } catch (categoryError) {
+        console.error('Failed to load exercise categories:', categoryError);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
 
   // Redirect non-trainers away from trainer-only pages
   useEffect(() => {
@@ -56,7 +87,8 @@ const CreateExercise = () => {
     difficulty_level: 'beginner',
     estimated_duration: '',
     calories_burned: '',
-    tips: ''
+    tips: '',
+    category: ''
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -83,7 +115,8 @@ const CreateExercise = () => {
           ...formData,
           created_by: user?.id,
           calories_burned: formData.calories_burned ? parseInt(formData.calories_burned) : null,
-          estimated_duration: formData.estimated_duration ? parseInt(formData.estimated_duration) : null
+          estimated_duration: formData.estimated_duration ? parseInt(formData.estimated_duration) : null,
+          category: formData.category || null,
         }),
       });
 
@@ -155,7 +188,7 @@ const CreateExercise = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
+                <div className="space-y-2">
                 <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
@@ -195,6 +228,25 @@ const CreateExercise = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Input
+                  id="category"
+                  list="exercise-category-options"
+                  value={formData.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  placeholder="e.g., Strength, Mobility, Hypertrophy"
+                />
+                <datalist id="exercise-category-options">
+                  {existingCategories.map((category) => (
+                    <option key={category} value={category} />
+                  ))}
+                </datalist>
+                <p className="text-xs text-muted-foreground">
+                  Choose an existing category or type a new one.
+                </p>
               </div>
             </CardContent>
           </Card>

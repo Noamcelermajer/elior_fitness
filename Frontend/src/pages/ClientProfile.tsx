@@ -180,20 +180,33 @@ const ClientProfile = () => {
 
         // Ensure data is array to avoid undefined errors
         // Transform v2 workout data to match old format for compatibility
-        const transformedWorkouts = Array.isArray(workoutData) ? workoutData.map((plan: any) => ({
-          ...plan,
-          exercises: plan.workout_days?.flatMap((day: any) => 
-            (day.workout_exercises || []).map((ex: any) => ({
-              ...ex,
-              exercise_name: ex.exercise_name || ex.name,
-              sets: ex.target_sets,
-              reps: ex.target_reps,
-              rest_time: ex.rest_seconds
+        const normalizedWorkouts = Array.isArray(workoutData)
+          ? workoutData
+              .filter((plan: any) => plan.is_active !== false)
+              .sort((a: any, b: any) => {
+                const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+                const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+                return dateB - dateA;
+              })
+          : [];
+
+        const transformedWorkouts = normalizedWorkouts.length > 0
+          ? normalizedWorkouts.map((plan: any) => ({
+              ...plan,
+              exercises:
+                plan.workout_days?.flatMap((day: any) =>
+                  (day.workout_exercises || []).map((ex: any) => ({
+                    ...ex,
+                    exercise_name: ex.exercise_name || ex.name,
+                    sets: ex.target_sets,
+                    reps: ex.target_reps,
+                    rest_time: ex.rest_seconds,
+                  })),
+                ) || [],
+              sessions_count: plan.workout_days?.length || 0,
+              completed_sessions: 0,
             }))
-          ) || [],
-          sessions_count: plan.workout_days?.length || 0,
-          completed_sessions: 0
-        })) : [];
+          : [];
         
         const normalizedMealPlans = Array.isArray(mealData)
           ? mealData
@@ -205,7 +218,7 @@ const ClientProfile = () => {
               })
           : [];
 
-        setWorkoutPlans(transformedWorkouts);
+        setWorkoutPlans(transformedWorkouts.slice(0, 1));
         setMealPlans(normalizedMealPlans.slice(0, 1));
         setProgressEntries(Array.isArray(progressData) ? progressData : []);
       }
@@ -222,7 +235,7 @@ const ClientProfile = () => {
   }, [clientId, location.state]);
 
   const handleCreateWorkout = () => {
-    navigate('/create-workout', { state: { client } });
+    navigate('/create-workout-plan-v2', { state: { client } });
   };
 
   const handleCreateMealPlan = () => {
@@ -284,6 +297,21 @@ const ClientProfile = () => {
   }));
 
   const activeMealPlan = mealPlans.length > 0 ? mealPlans[0] : null;
+  const activeWorkoutPlan = workoutPlans.length > 0 ? workoutPlans[0] : null;
+
+  const handleEditWorkoutPlan = () => {
+    if (!activeWorkoutPlan) {
+      handleCreateWorkout();
+      return;
+    }
+
+    navigate('/create-workout-plan-v2', {
+      state: {
+        client,
+        workoutPlan: activeWorkoutPlan,
+      },
+    });
+  };
 
   const handleEditMealPlan = () => {
     const planForEdit = activeMealPlan || mealPlans[0];
@@ -506,55 +534,128 @@ const ClientProfile = () => {
           <TabsContent value="workouts" className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">{t('clientProfile.workoutPlans')}</h3>
-              <Button onClick={handleCreateWorkout} className="gradient-green">
-                <Plus className="w-4 h-4 mr-2" />
-                {t('clientProfile.createNewWorkout')}
+              <Button
+                data-testid="workout-plan-action"
+                onClick={activeWorkoutPlan ? handleEditWorkoutPlan : handleCreateWorkout}
+                className="gradient-green"
+              >
+                {!activeWorkoutPlan && <Plus className="w-4 h-4 mr-2" />}
+                <span>
+                  {activeWorkoutPlan
+                    ? t('clientProfile.updateWorkoutPlan')
+                    : t('clientProfile.createNewWorkout')}
+                </span>
               </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {workoutPlans && workoutPlans.length > 0 && workoutPlans.map((plan) => (
-                <Card key={plan.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>{plan.name}</span>
-                      <Badge variant="outline">
-                        {plan.completed_sessions}/{plan.sessions_count}
-                      </Badge>
-                    </CardTitle>
-                    {plan.description && (
-                      <p className="text-sm text-muted-foreground">{plan.description}</p>
-                    )}
+              {activeWorkoutPlan ? (
+                <Card className="hover:shadow-lg transition-shadow" data-testid="workout-plan-card">
+                  <CardHeader className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-2">
+                        <CardTitle className="text-lg font-semibold">
+                          {activeWorkoutPlan.name}
+                        </CardTitle>
+                        {activeWorkoutPlan.description && (
+                          <p className="text-sm text-muted-foreground">{activeWorkoutPlan.description}</p>
+                        )}
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          {activeWorkoutPlan.split_type && (
+                            <Badge variant="outline">
+                              {activeWorkoutPlan.split_type.replace(/_/g, ' ')}
+                            </Badge>
+                          )}
+                          {activeWorkoutPlan.days_per_week && (
+                            <Badge variant="outline">
+                              {t('clientProfile.daysPerWeek', { count: activeWorkoutPlan.days_per_week })}
+                            </Badge>
+                          )}
+                          {activeWorkoutPlan.duration_weeks && (
+                            <Badge variant="outline">
+                              {t('clientProfile.durationWeeks', { count: activeWorkoutPlan.duration_weeks })}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{t('clientProfile.activePlan')}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleEditWorkoutPlan}
+                          aria-label={t('clientProfile.updateWorkoutPlan')}
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">{t('clientProfile.updateWorkoutPlan')}</span>
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {plan.exercises.slice(0, 3).map((exercise) => (
-                        <div key={exercise.id} className="flex items-center justify-between p-2 rounded border">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{exercise.exercise_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {exercise.sets} sets • {exercise.reps} • {exercise.rest_time}s rest
-                            </p>
-                            {exercise.notes && (
-                              <p className="text-xs text-orange-600 mt-1">
-                                Note: {exercise.notes}
-                              </p>
+                  <CardContent className="space-y-4">
+                    {activeWorkoutPlan.workout_days?.length ? (
+                      activeWorkoutPlan.workout_days.map((day: any) => (
+                        <div key={day.id || day.order_index} className="p-3 rounded border bg-muted/40 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-sm">{day.name}</p>
+                            {day.estimated_duration && (
+                              <span className="text-xs text-muted-foreground">
+                                {day.estimated_duration} {t('clientProfile.minutesShort')}
+                              </span>
                             )}
                           </div>
-                          <Badge variant="outline" className="text-xs">
-                            {exercise.muscle_group}
-                          </Badge>
+                          <div className="space-y-2">
+                            {day.workout_exercises?.length ? (
+                              day.workout_exercises.map((exercise: any) => (
+                                <div key={exercise.id || exercise.order_index} className="text-xs border rounded px-2 py-1 bg-background">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium text-foreground">
+                                      {exercise.exercise?.name || exercise.exercise_name}
+                                    </span>
+                                    {exercise.exercise?.muscle_group && (
+                                      <Badge variant="outline" className="text-[10px]">
+                                        {exercise.exercise.muscle_group}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-muted-foreground mt-1">
+                                    {[
+                                      exercise.target_sets ? t('clientProfile.setsShort', { count: exercise.target_sets }) : null,
+                                      exercise.target_reps || null,
+                                      exercise.rest_seconds ? t('clientProfile.restShort', { seconds: exercise.rest_seconds }) : null,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(' • ') || t('clientProfile.noWorkoutDetails')}
+                                  </div>
+                                  {exercise.notes ? (
+                                    <div className="mt-1 text-[11px] text-orange-600">
+                                      {t('clientProfile.notePrefix')} {exercise.notes}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-xs text-muted-foreground">{t('clientProfile.noWorkoutPlanExercises')}</p>
+                            )}
+                          </div>
                         </div>
-                      ))}
-                      {plan.exercises?.length > 3 && (
-                        <p className="text-sm text-muted-foreground text-center">
-                          +{plan.exercises.length - 3} more exercises
-                        </p>
-                      )}
-                    </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">{t('clientProfile.noWorkoutPlanExercises')}</p>
+                    )}
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                <Card className="border-dashed" data-testid="workout-plan-empty">
+                  <CardHeader>
+                    <CardTitle>{t('clientProfile.noWorkoutPlanTitle')}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground space-y-2">
+                    <p>{t('clientProfile.noWorkoutPlanDescription')}</p>
+                    <p>{t('clientProfile.noWorkoutPlanAction')}</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 

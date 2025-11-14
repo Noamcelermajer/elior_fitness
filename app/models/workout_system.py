@@ -42,7 +42,7 @@ class WorkoutPlanV2(Base):
     trainer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)  # e.g., "Hypertrophy Phase 1"
     description = Column(Text)
-    split_type = Column(Enum(WorkoutSplitType), nullable=False)  # e.g., PUSH_PULL_LEGS
+    split_type = Column(Enum(WorkoutSplitType), nullable=True)  # Optional - deprecated, kept for backward compatibility
     days_per_week = Column(Integer)  # e.g., 6 (PPLPPL)
     duration_weeks = Column(Integer)  # How many weeks this plan lasts
     is_active = Column(Boolean, default=True)
@@ -62,7 +62,7 @@ class WorkoutDay(Base):
     id = Column(Integer, primary_key=True, index=True)
     workout_plan_id = Column(Integer, ForeignKey("workout_plans_v2.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)  # e.g., "Push Day", "Pull Day", "Leg Day"
-    day_type = Column(Enum(DayType), nullable=False)  # PUSH, PULL, LEGS, etc.
+    day_type = Column(Enum(DayType), nullable=True)  # Optional - trainer defines custom names
     order_index = Column(Integer, nullable=False)  # Day 1, Day 2, etc.
     notes = Column(Text)  # Trainer notes for this day
     estimated_duration = Column(Integer)  # minutes
@@ -80,6 +80,7 @@ class WorkoutExerciseV2(Base):
     workout_day_id = Column(Integer, ForeignKey("workout_days_v2.id", ondelete="CASCADE"), nullable=False)
     exercise_id = Column(Integer, ForeignKey("exercises.id", ondelete="CASCADE"), nullable=False)
     order_index = Column(Integer, nullable=False)  # Order in the workout
+    group_name = Column(String)  # Optional grouping label (e.g., Superset A)
     
     # Target parameters set by trainer
     target_sets = Column(Integer, nullable=False)  # e.g., 4

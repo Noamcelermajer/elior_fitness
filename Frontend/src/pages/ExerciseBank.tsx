@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ const muscleGroups = [
 ];
 
 const ExerciseBank = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -261,10 +263,19 @@ const ExerciseBank = () => {
             <h1 className="text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
             <p className="text-muted-foreground">{t('exerciseBank.subtitle')}</p>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)} className="gradient-green">
-            <Plus className="w-4 h-4 me-2" />
-            {t('exerciseBank.addExercise')}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
+              variant="outline"
+            >
+              <Plus className="w-4 h-4 me-2" />
+              {t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}
+            </Button>
+            <Button onClick={() => setCreateDialogOpen(true)} className="gradient-green">
+              <Plus className="w-4 h-4 me-2" />
+              {t('exerciseBank.addExercise')}
+            </Button>
+          </div>
         </div>
 
         {/* Search and Filter */}

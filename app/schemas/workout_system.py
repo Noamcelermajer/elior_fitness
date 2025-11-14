@@ -34,13 +34,14 @@ class DayType(str, Enum):
 class WorkoutExerciseBase(BaseModel):
     exercise_id: int
     order_index: int
-    target_sets: int = Field(..., ge=1, le=10)
-    target_reps: str  # e.g., "8-12", "15", "to failure"
+    target_sets: Optional[int] = Field(None, ge=1, le=10)
+    target_reps: Optional[str] = None  # e.g., "8-12", "15", "to failure"
     target_weight: Optional[float] = None
-    rest_seconds: int = Field(..., ge=0, le=600)
+    rest_seconds: Optional[int] = Field(None, ge=0, le=600)
     tempo: Optional[str] = None
     notes: Optional[str] = None
     video_url: Optional[str] = None
+    group_name: Optional[str] = None
 
 class WorkoutExerciseCreate(WorkoutExerciseBase):
     workout_day_id: int
@@ -54,6 +55,7 @@ class WorkoutExerciseUpdate(BaseModel):
     tempo: Optional[str] = None
     notes: Optional[str] = None
     video_url: Optional[str] = None
+    group_name: Optional[str] = None
 
 class WorkoutExerciseResponse(WorkoutExerciseBase):
     id: int
@@ -67,7 +69,7 @@ class WorkoutExerciseResponse(WorkoutExerciseBase):
 
 class WorkoutDayBase(BaseModel):
     name: str
-    day_type: DayType
+    day_type: Optional[DayType] = None  # Optional - trainer defines custom day names
     order_index: int
     notes: Optional[str] = None
     estimated_duration: Optional[int] = None
@@ -96,7 +98,7 @@ class WorkoutDayResponse(WorkoutDayBase):
 class WorkoutPlanBase(BaseModel):
     name: str
     description: Optional[str] = None
-    split_type: WorkoutSplitType
+    split_type: Optional[WorkoutSplitType] = None  # Optional - trainer defines custom workout structure
     days_per_week: Optional[int] = Field(None, ge=1, le=7)
     duration_weeks: Optional[int] = None
     is_active: bool = True
@@ -135,25 +137,28 @@ class WorkoutPlanResponse(WorkoutPlanBase):
 class CompleteWorkoutExercise(BaseModel):
     exercise_id: int
     order_index: int
-    target_sets: int = Field(..., ge=1, le=10)
-    target_reps: str
+    target_sets: Optional[int] = Field(None, ge=1, le=10)
+    target_reps: Optional[str] = None
     target_weight: Optional[float] = None
-    rest_seconds: int = Field(..., ge=0, le=600)
+    rest_seconds: Optional[int] = Field(None, ge=0, le=600)
     tempo: Optional[str] = None
     notes: Optional[str] = None
+    video_url: Optional[str] = None
+    group_name: Optional[str] = None
 
 class CompleteWorkoutDay(BaseModel):
     name: str
-    day_type: DayType
+    day_type: Optional[DayType] = None  # Optional - trainer defines custom day names
     order_index: int
     notes: Optional[str] = None
+    estimated_duration: Optional[int] = None
     exercises: List[CompleteWorkoutExercise]
 
 class CompleteWorkoutPlanCreate(BaseModel):
     client_id: int
     name: str
     description: Optional[str] = None
-    split_type: WorkoutSplitType
+    split_type: Optional[WorkoutSplitType] = None  # Optional - trainer defines custom workout structure
     days_per_week: Optional[int] = Field(None, ge=1, le=7)
     duration_weeks: Optional[int] = None
     notes: Optional[str] = None

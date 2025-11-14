@@ -1,21 +1,25 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BadgeHelp,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Dumbbell,
   History,
   Loader2,
+  MoreHorizontal,
   PlayCircle,
+  PlusCircle,
   Video,
   Weight,
+  ChevronRight,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -59,6 +63,7 @@ interface WorkoutExercise {
   tempo?: string | null;
   notes?: string | null;
   video_url?: string | null;
+  group_name?: string | null;
 }
 
 interface WorkoutDay {
@@ -150,15 +155,10 @@ const normalizeDays = (days: WorkoutDay[]) => [...days].sort((a, b) => a.order_i
 const TrainingPlanV2: React.FC = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
-  const [exerciseDetails, setExerciseDetails] = useState<Record<number, ExerciseDetail>>({});
-  const [setCompletions, setSetCompletions] = useState<SetCompletion[]>([]);
-  const [previousSessions, setPreviousSessions] = useState<Record<number, PreviousSession>>({});
-  const [tempSets, setTempSets] = useState<Record<string, { reps: string; weight: string }>>({});
-  const [customSetCounts, setCustomSetCounts] = useState<Record<number, number>>({});
-  const [bodyweightExercises, setBodyweightExercises] = useState<Record<number, boolean>>({});
-  const [activeDayId, setActiveDayId] = useState<string>('');
+  const [dayCompletions, setDayCompletions] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -177,40 +177,58 @@ const TrainingPlanV2: React.FC = () => {
           throw new Error('missing_token');
         }
 
-        const [plan, completions] = await Promise.all([
-          fetchWorkoutPlan(user.id, token),
-          fetchSetCompletions(user.id, token),
-        ]);
+        const plan = await fetchWorkoutPlan(user.id, token);
 
         if (plan) {
           setWorkoutPlan(plan);
-          const normalizedDays = normalizeDays(plan.workout_days);
-          if (normalizedDays.length > 0) {
-            setActiveDayId(String(normalizedDays[0].id));
-          }
-
-          const uniqueExerciseIds = Array.from(
-            new Set(
-              normalizedDays.flatMap((day) =>
-                day.workout_exercises.map((exercise) => exercise.exercise_id),
-              ),
-            ),
-          );
-
-          if (uniqueExerciseIds.length > 0) {
-            const detailsMap = await fetchExerciseDetails(uniqueExerciseIds, token);
-            setExerciseDetails(detailsMap);
+          
+          // Fetch day completions only if plan has days
+          if (plan.workout_days && plan.workout_days.length > 0) {
+            const completionsMap: Record<number, boolean> = {};
+            const today = new Date().toISOString().split('T')[0];
+            
+            await Promise.all(
+              plan.workout_days.map(async (day) => {
+                try {
+                  // Check for today's completed session first, then most recent
+                  const sessionResponse = await fetch(
+                    `${API_BASE_URL}/v2/workouts/sessions?client_id=${user.id}&workout_day_id=${day.id}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  );
+                  if (sessionResponse.ok) {
+                    const sessions = await sessionResponse.json();
+                    if (Array.isArray(sessions) && sessions.length > 0) {
+                      // Sort by completed_at descending (most recent first)
+                      const sortedSessions = sessions
+                        .filter((s: any) => s.completed_at)
+                        .sort((a: any, b: any) => 
+                          new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+                        );
+                      
+                      // Check if most recent session is completed
+                      const mostRecentSession = sortedSessions[0];
+                      completionsMap[day.id] = mostRecentSession ? mostRecentSession.is_completed === true : false;
+                    } else {
+                      completionsMap[day.id] = false;
+                    }
+                  } else {
+                    completionsMap[day.id] = false;
+                  }
+                } catch (err) {
+                  console.error(`Failed to fetch completion for day ${day.id}:`, err);
+                  completionsMap[day.id] = false;
+                }
+              })
+            );
+            
+            setDayCompletions(completionsMap);
           } else {
-            setExerciseDetails({});
+            setDayCompletions({});
           }
         } else {
           setWorkoutPlan(null);
-          setExerciseDetails({});
+          setDayCompletions({});
         }
-
-        const { todays, previous } = processCompletions(completions);
-        setSetCompletions(todays);
-        setPreviousSessions(previous);
       } catch (err) {
         console.error('Failed to load training data:', err);
         const message =
@@ -226,124 +244,6 @@ const TrainingPlanV2: React.FC = () => {
     loadData();
   }, [user, t]);
 
-  useEffect(() => {
-    if (workoutPlan?.workout_days?.length && !activeDayId) {
-      const firstDay = normalizeDays(workoutPlan.workout_days)[0];
-      if (firstDay) {
-        setActiveDayId(String(firstDay.id));
-      }
-    }
-  }, [workoutPlan, activeDayId]);
-
-  const handleBodyweightToggle = (exerciseId: number) => {
-    const newValue = !bodyweightExercises[exerciseId];
-    setBodyweightExercises((prev) => ({
-      ...prev,
-      [exerciseId]: newValue,
-    }));
-
-    setTempSets((prev) => {
-      const next = { ...prev };
-      Object.keys(next).forEach((key) => {
-        if (key.startsWith(`${exerciseId}-`)) {
-          next[key] = {
-            ...next[key],
-            weight: newValue ? '0' : '',
-          };
-        }
-      });
-      return next;
-    });
-  };
-
-  const updateTempSet = (
-    exerciseId: number,
-    setNumber: number,
-    field: 'reps' | 'weight',
-    value: string,
-  ) => {
-    const key = `${exerciseId}-${setNumber}`;
-    setTempSets((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [field]: value,
-      },
-    }));
-  };
-
-  const handleAddSet = (exerciseId: number) => {
-    setCustomSetCounts((prev) => ({
-      ...prev,
-      [exerciseId]: (prev[exerciseId] ?? 0) + 1,
-    }));
-  };
-
-  const isSetCompleted = (exerciseId: number, setNumber: number) =>
-    setCompletions.some(
-      (completion) =>
-        completion.workout_exercise_id === exerciseId && completion.set_number === setNumber,
-    );
-
-  const getCompletedSet = (exerciseId: number, setNumber: number) =>
-    setCompletions.find(
-      (completion) =>
-        completion.workout_exercise_id === exerciseId && completion.set_number === setNumber,
-    );
-
-  const getPreviousSet = (exerciseId: number, setNumber: number) =>
-    previousSessions[exerciseId]?.sets?.[setNumber];
-
-  const handleLogSet = async (exerciseId: number, setNumber: number) => {
-    const key = `${exerciseId}-${setNumber}`;
-    const payload = tempSets[key];
-
-    if (!payload?.reps || (!bodyweightExercises[exerciseId] && !payload.weight)) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('missing_token');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/v2/workouts/set-completions`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          workout_exercise_id: exerciseId,
-          set_number: setNumber,
-          reps_completed: Number(payload.reps),
-          weight_used: Number(bodyweightExercises[exerciseId] ? '0' : payload.weight),
-          completed_at: new Date().toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('failed_request');
-      }
-
-      const newCompletion: SetCompletion = await response.json();
-      setSetCompletions((prev) => [...prev, newCompletion]);
-
-      setTempSets((prev) => {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      });
-    } catch (err) {
-      console.error('Failed to log set:', err);
-      const message = t(
-        'training.errors.logFailed',
-        'לא הצלחנו לשמור את הסט. בדוק את החיבור ונסה שוב.',
-      );
-      setError(message);
-    }
-  };
 
   const planDays = useMemo(
     () => (workoutPlan ? normalizeDays(workoutPlan.workout_days) : []),
@@ -393,8 +293,8 @@ const TrainingPlanV2: React.FC = () => {
   }
 
   return (
-    <div className="pb-24 lg:pb-10">
-      <div className="bg-gradient-to-br from-card to-secondary px-4 lg:px-6 py-6 lg:py-8 shadow-sm">
+    <div className="pb-20">
+      <div className="bg-gradient-to-br from-card to-secondary px-4 lg:px-6 py-4 lg:py-6 shadow-sm">
         <div className="max-w-6xl mx-auto space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
             <div>
@@ -408,12 +308,12 @@ const TrainingPlanV2: React.FC = () => {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {workoutPlan.split_type ? (
-                <Badge variant="outline" className="px-3 py-1 text-sm">
+                <Badge variant="outline" className="px-3 py-3 text-sm">
                   {t(`training.splitTypes.${workoutPlan.split_type}`, workoutPlan.split_type)}
                 </Badge>
               ) : null}
               {workoutPlan.days_per_week ? (
-                <Badge variant="outline" className="px-3 py-1 text-sm">
+                <Badge variant="outline" className="px-3 py-3 text-sm">
                   {t('training.daysPerWeek', {
                     defaultValue: '{{count}} אימונים בשבוע',
                     count: workoutPlan.days_per_week,
@@ -425,407 +325,86 @@ const TrainingPlanV2: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto space-y-6 px-4 lg:px-6 py-6">
+      <div className="max-w-6xl mx-auto space-y-4 md:space-y-6 px-4 lg:px-6 py-4 md:py-6">
         {error && (
           <Card className="border-destructive/40 bg-destructive/10">
-            <CardContent className="flex items-center gap-3 pt-6">
-              <BadgeHelp className="h-5 w-5 text-destructive" />
-              <p className="text-sm text-destructive">{error}</p>
+            <CardContent className="flex items-center gap-3 pt-4 md:pt-6 px-4 md:px-6">
+              <BadgeHelp className="h-5 w-5 text-destructive shrink-0" />
+              <p className="text-xs md:text-sm text-destructive">{error}</p>
             </CardContent>
           </Card>
         )}
 
-        <Tabs value={activeDayId} onValueChange={setActiveDayId} className="space-y-6">
-          <div className="flex flex-col gap-3">
-            <TabsList className="flex w-full justify-start gap-2 overflow-x-auto rounded-xl bg-muted/60 p-1">
-              {planDays.map((day) => (
-                <TabsTrigger
+        {/* Training Days List - Similar to Meal Plan UI */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold">
+            {t('training.trainingDays', 'ימי אימון')} ({planDays.length})
+          </h2>
+          
+          <div className="space-y-3">
+            {planDays.map((day, index) => {
+              const isCompleted = dayCompletions[day.id] || false;
+              const totalExercises = day.workout_exercises.length;
+              
+              return (
+                <Card
                   key={day.id}
-                  value={String(day.id)}
                   className={cn(
-                    'flex min-w-[140px] flex-col items-center gap-1 rounded-lg px-3 py-3 text-xs md:text-sm',
+                    'border rounded-lg cursor-pointer transition-all hover:shadow-lg hover:scale-[1.01]',
+                    isCompleted && 'border-green-500/30 bg-green-500/5',
+                    !isCompleted && 'border-border/60 hover:border-primary/30'
                   )}
+                  onClick={() => navigate(`/training/day/${day.id}`)}
                 >
-                  <span className="font-semibold">
-                    {day.name || t(`training.dayTypes.${day.day_type}`, day.day_type)}
-                  </span>
-                  <span className="text-muted-foreground text-[11px] md:text-xs">
-                    {t('training.exercisesCount', {
-                      defaultValue: '{{count}} תרגילים',
-                      count: day.workout_exercises.length,
-                    })}
-                  </span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-
-          {planDays.map((day) => (
-            <TabsContent key={day.id} value={String(day.id)} className="space-y-5">
-              <Card className="border-muted">
-                <CardContent className="py-4">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold">
-                        {day.name || t(`training.dayTypes.${day.day_type}`, day.day_type)}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Dumbbell className="h-4 w-4" />
-                          {t('training.exercisesCount', {
-                            defaultValue: '{{count}} תרגילים',
-                            count: day.workout_exercises.length,
-                          })}
-                        </span>
-                        {day.estimated_duration ? (
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {t('training.estimatedDuration', {
-                              defaultValue: '{{minutes}} דק׳',
-                              minutes: day.estimated_duration,
-                            })}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                    {day.notes ? (
-                      <p className="text-xs text-muted-foreground lg:max-w-md">
-                        {day.notes}
-                      </p>
-                    ) : null}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="space-y-5">
-                {day.workout_exercises.map((exercise, index) => {
-                  const detail = exerciseDetails[exercise.exercise_id];
-                  const resolvedVideoUrl =
-                    exercise.video_url || detail?.video_url || VIDEO_FALLBACK_URL;
-                  const thumbnail = getVideoThumbnail(resolvedVideoUrl);
-                  const exerciseName = detail?.name || exercise.exercise?.name;
-                  const machine = detail?.equipment_needed || exercise.exercise?.equipment;
-                  const muscleGroup = detail?.muscle_group || exercise.exercise?.muscle_group;
-                  const cardSetCount =
-                    exercise.target_sets + (customSetCounts[exercise.id] ?? 0);
-
-                  return (
-                    <Card
-                      key={exercise.id}
-                      className="overflow-hidden border border-border/60 shadow-sm"
-                    >
-                      <CardHeader className="gap-4 space-y-0 pb-0">
-                        <div className="flex gap-4">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <button
-                                type="button"
-                                className="relative w-28 shrink-0 overflow-hidden rounded-xl border border-border/60 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                                aria-label={t('training.watchVideo', 'צפה בווידאו')}
-                              >
-                                <AspectRatio ratio={9 / 16}>
-                                  {thumbnail ? (
-                                    <img
-                                      src={thumbnail}
-                                      alt={exerciseName || t('training.exercise', 'תרגיל')}
-                                      className="h-full w-full object-cover"
-                                      loading="lazy"
-                                    />
-                                  ) : (
-                                    <div className="flex h-full w-full items-center justify-center bg-muted">
-                                      <Video className="h-8 w-8 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                    <PlayCircle className="h-10 w-10 text-white drop-shadow" />
-                                  </div>
-                                </AspectRatio>
-                              </button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-3xl">
-                              <DialogHeader>
-                                <DialogTitle>{exerciseName}</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <AspectRatio ratio={16 / 9} className="overflow-hidden rounded-xl">
-                                  <iframe
-                                    src={resolvedVideoUrl.replace('watch?v=', 'embed/')}
-                                    title={exerciseName || ''}
-                                    className="h-full w-full"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                  />
-                                </AspectRatio>
-                                <p className="text-sm text-muted-foreground">
-                                  {resolvedVideoUrl === VIDEO_FALLBACK_URL
-                                    ? t(
-                                        'training.videoFallback',
-                                        'לא סופק וידאו, מציגים סרטון חלופי.',
-                                      )
-                                    : resolvedVideoUrl}
-                                </p>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-
-                          <div className="flex flex-1 flex-col justify-between gap-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <CardTitle className="text-lg font-semibold leading-tight">
-                                  <span className="ml-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/90 text-xs font-bold text-primary-foreground shadow-sm">
-                                    {index + 1}
-                                  </span>
-                                  {exerciseName}
-                                </CardTitle>
-                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                  {muscleGroup ? (
-                                    <Badge variant="secondary" className="rounded-full px-2 py-1">
-                                      {t(`training.muscleGroupsLabels.${muscleGroup}`, muscleGroup)}
-                                    </Badge>
-                                  ) : null}
-                                  {machine ? (
-                                    <Badge variant="secondary" className="rounded-full px-2 py-1">
-                                      {machine}
-                                    </Badge>
-                                  ) : null}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Checkbox
-                                  id={`bw-${exercise.id}`}
-                                  checked={!!bodyweightExercises[exercise.id]}
-                                  onCheckedChange={() => handleBodyweightToggle(exercise.id)}
-                                />
-                                <label
-                                  htmlFor={`bw-${exercise.id}`}
-                                  className="text-xs font-medium text-muted-foreground"
-                                >
-                                  {t('training.bodyweight', 'משקל גוף')}
-                                </label>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                              <InfoTile label={t('training.sets')} value={exercise.target_sets} />
-                              <InfoTile label={t('training.reps')} value={exercise.target_reps} />
-                              <InfoTile label={t('training.rest')} value={formatRestTime(exercise.rest_seconds)} />
-                              {exercise.target_weight ? (
-                                <InfoTile
-                                  label={t('training.targetWeightLabel', 'משקל יעד')}
-                                  value={`${exercise.target_weight} ${t('training.kg', 'ק״ג')}`}
-                                  icon={Weight}
-                                />
-                              ) : (
-                                <InfoTile
-                                  label={t('training.tempo')}
-                                  value={exercise.tempo || t('training.tempoNA', 'ללא')}
-                                />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </CardHeader>
-
-                      <CardContent className="space-y-4">
-                        {detail?.instructions ? (
-                          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-                            {detail.instructions}
-                          </div>
-                        ) : null}
-
-                        {exercise.notes ? (
-                          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary">
-                            {exercise.notes}
-                          </div>
-                        ) : null}
-
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold">
-                              {t('training.trackSets', 'עקוב אחרי הסטים שלך')}
-                            </p>
-                            {previousSessions[exercise.id]?.sessionDate ? (
-                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <History className="h-3 w-3" />
-                                {t('training.lastSession', {
-                                  defaultValue: 'האימון הקודם: {{date}}',
-                                  date: previousSessions[exercise.id]?.sessionDate,
+                  <CardContent className="px-6 py-4">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className="text-2xl shrink-0">💪</div>
+                        <div className="text-left flex-1 min-w-0">
+                          <p className="font-semibold text-lg truncate">
+                            {day.name || `${t('training.day', 'יום')} ${index + 1}`}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-1">
+                            <span className="flex items-center gap-1">
+                              <Dumbbell className="w-3.5 h-3.5" />
+                              {t('training.exercisesCount', {
+                                defaultValue: '{{count}} תרגילים',
+                                count: totalExercises,
+                              })}
+                            </span>
+                            {day.estimated_duration && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                {t('training.estimatedDuration', {
+                                  defaultValue: '{{minutes}} דק׳',
+                                  minutes: day.estimated_duration,
                                 })}
                               </span>
-                            ) : null}
+                            )}
                           </div>
-
-                          <div className="space-y-2">
-                            {Array.from({ length: cardSetCount }).map((_, indexSet) => {
-                              const setNumber = indexSet + 1;
-                              const completed = isSetCompleted(exercise.id, setNumber);
-                              const currentKey = `${exercise.id}-${setNumber}`;
-                              const previous = getPreviousSet(exercise.id, setNumber);
-
-                              return (
-                                <div
-                                  key={currentKey}
-                                  className={cn(
-                                    'flex flex-col gap-3 rounded-xl border border-border/60 p-4 transition-colors sm:flex-row sm:items-center',
-                                    completed ? 'border-emerald-500/40 bg-emerald-500/10' : 'bg-card',
-                                  )}
-                                >
-                                  <div className="flex items-center gap-2 text-sm font-semibold">
-                                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                      {setNumber}
-                                    </span>
-                                  </div>
-
-                                  {completed ? (
-                                    <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                      <div className="flex items-center gap-2 text-sm font-medium">
-                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                        {t('training.completedSet', {
-                                          defaultValue: '{{reps}} חזרות · {{weight}} ק״ג',
-                                          reps: getCompletedSet(exercise.id, setNumber)?.reps_completed ?? 0,
-                                          weight: getCompletedSet(exercise.id, setNumber)?.weight_used ?? 0,
-                                        })}
-                                      </div>
-                                      <Badge variant="outline" className="border-emerald-500/40 text-emerald-600">
-                                        {t('training.completed')}
-                                      </Badge>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                                        <div className="flex flex-col gap-1">
-                                          <label className="text-xs text-muted-foreground">
-                                            {t('training.reps')}
-                                          </label>
-                                          <Input
-                                            type="number"
-                                            inputMode="numeric"
-                                            min={0}
-                                            placeholder={
-                                              previous
-                                                ? t('training.previousRepsPlaceholder', {
-                                                    defaultValue: 'קודם: {{value}}',
-                                                    value: previous.reps_completed,
-                                                  })
-                                                : t('training.enterReps', 'מספר חזרות')
-                                            }
-                                            value={tempSets[currentKey]?.reps ?? ''}
-                                            onChange={(event) =>
-                                              updateTempSet(
-                                                exercise.id,
-                                                setNumber,
-                                                'reps',
-                                                event.target.value,
-                                              )
-                                            }
-                                            className="w-full sm:w-32"
-                                          />
-                                        </div>
-
-                                        <div className="flex flex-col gap-1">
-                                          <label className="text-xs text-muted-foreground">
-                                            {t('training.weight')}
-                                          </label>
-                                          <Input
-                                            type="number"
-                                            inputMode="decimal"
-                                            min={0}
-                                            step="0.5"
-                                            disabled={bodyweightExercises[exercise.id]}
-                                            placeholder={
-                                              bodyweightExercises[exercise.id]
-                                                ? t('training.bodyweight', 'משקל גוף')
-                                                : previous
-                                                ? t('training.previousWeightPlaceholder', {
-                                                    defaultValue: 'קודם: {{value}} ק״ג',
-                                                    value: previous.weight_used,
-                                                  })
-                                                : t('training.enterWeight', 'משקל (ק״ג)')
-                                            }
-                                            value={
-                                              bodyweightExercises[exercise.id]
-                                                ? '0'
-                                                : tempSets[currentKey]?.weight ?? ''
-                                            }
-                                            onChange={(event) =>
-                                              updateTempSet(
-                                                exercise.id,
-                                                setNumber,
-                                                'weight',
-                                                event.target.value,
-                                              )
-                                            }
-                                            className="w-full sm:w-32"
-                                          />
-                                        </div>
-                                      </div>
-
-                                      <div className="flex items-center gap-2">
-                                        {previous ? (
-                                          <TooltipProvider delayDuration={200}>
-                                            <Tooltip>
-                                              <TooltipTrigger asChild>
-                                                <Badge
-                                                  variant="outline"
-                                                  className="hidden border-dashed text-xs text-muted-foreground sm:inline-flex"
-                                                >
-                                                  {t('training.previousSetShort', {
-                                                    defaultValue: '{{reps}}×{{weight}}',
-                                                    reps: previous.reps_completed,
-                                                    weight: previous.weight_used,
-                                                  })}
-                                                </Badge>
-                                              </TooltipTrigger>
-                                              <TooltipContent>
-                                                {t('training.previousSet', {
-                                                  defaultValue: 'האימון הקודם: {{reps}} חזרות · {{weight}} ק״ג',
-                                                  reps: previous.reps_completed,
-                                                  weight: previous.weight_used,
-                                                })}
-                                              </TooltipContent>
-                                            </Tooltip>
-                                          </TooltipProvider>
-                                        ) : null}
-
-                                        <Button
-                                          size="sm"
-                                          className="bg-primary text-primary-foreground hover:bg-primary/90"
-                                          onClick={() => handleLogSet(exercise.id, setNumber)}
-                                          disabled={
-                                            !tempSets[currentKey]?.reps ||
-                                            (!bodyweightExercises[exercise.id] &&
-                                              !tempSets[currentKey]?.weight)
-                                          }
-                                        >
-                                          {t('training.saveSet', 'שמור סט')}
-                                        </Button>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          <div className="pt-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              className="text-sm text-primary"
-                              onClick={() => handleAddSet(exercise.id)}
-                            >
-                              + {t('training.addSet', 'הוסף סט')}
-                            </Button>
-                          </div>
+                          {day.notes && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                              {day.notes}
+                            </p>
+                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {isCompleted && (
+                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {t('training.completed', 'הושלם')}
+                          </Badge>
+                        )}
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -848,21 +427,45 @@ const InfoTile: React.FC<InfoTileProps> = ({ label, value, icon: Icon }) => (
 );
 
 const fetchWorkoutPlan = async (clientId: number, token: string): Promise<WorkoutPlan | null> => {
-  const response = await fetch(
-    `${API_BASE_URL}/v2/workouts/plans?client_id=${clientId}&active_only=true`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/v2/workouts/plans?client_id=${clientId}&active_only=true`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    },
-  );
+    );
 
-  if (!response.ok) {
-    throw new Error('failed_plan_request');
+    if (!response.ok) {
+      console.error('Failed to fetch workout plan:', response.status, response.statusText);
+      throw new Error('failed_plan_request');
+    }
+
+    const data: WorkoutPlan[] = await response.json();
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      return null;
+    }
+    
+    // Prioritize plans with multiple days, then plans with any days, then any plan
+    const plansWithDays = data.filter((plan) => plan.workout_days && plan.workout_days.length > 0);
+    if (plansWithDays.length === 0) {
+      return data[0];
+    }
+    
+    // Sort by number of days (descending) to prioritize plans with more days
+    const sortedPlans = plansWithDays.sort((a, b) => {
+      const aDays = a.workout_days?.length || 0;
+      const bDays = b.workout_days?.length || 0;
+      return bDays - aDays;
+    });
+    
+    return sortedPlans[0];
+  } catch (err) {
+    console.error('Error fetching workout plan:', err);
+    throw err;
   }
-
-  const data: WorkoutPlan[] = await response.json();
-  return data.length ? data[0] : null;
 };
 
 const fetchSetCompletions = async (clientId: number, token: string): Promise<SetCompletion[]> => {
@@ -972,6 +575,103 @@ const processCompletions = (completions: SetCompletion[]) => {
   });
 
   return { todays, previous: previousSessions };
+};
+
+const ExerciseHistoryDialog: React.FC<{ exerciseId: number }> = ({ exerciseId }) => {
+  const { user } = useAuth();
+  const { t } = useTranslation();
+  const [history, setHistory] = useState<SetCompletion[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token || !user?.id) return;
+
+        const response = await fetch(
+          `${API_BASE_URL}/v2/workouts/set-completions?client_id=${user.id}&workout_exercise_id=${exerciseId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data: SetCompletion[] = await response.json();
+          // Group by date
+          const grouped = data.sort(
+            (a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+          );
+          setHistory(grouped);
+        }
+      } catch (error) {
+        console.error('Failed to fetch exercise history:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, [exerciseId, user?.id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (history.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>{t('training.noHistory', 'אין היסטוריה זמינה')}</p>
+      </div>
+    );
+  }
+
+  // Group by date
+  const groupedByDate = history.reduce<Record<string, SetCompletion[]>>((acc, completion) => {
+    const date = new Date(completion.completed_at).toISOString().split('T')[0];
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(completion);
+    return acc;
+  }, {});
+
+  return (
+    <div className="space-y-4">
+      {Object.entries(groupedByDate)
+        .sort((a, b) => (a[0] > b[0] ? -1 : 1))
+        .map(([date, completions]) => (
+          <div key={date} className="space-y-2">
+            <div className="text-sm font-semibold text-foreground border-b border-border pb-1">
+              {new Date(date).toLocaleDateString()}
+            </div>
+            <div className="space-y-1">
+              {completions
+                .sort((a, b) => a.set_number - b.set_number)
+                .map((completion) => (
+                  <div
+                    key={completion.id}
+                    className="flex items-center justify-between text-sm py-1 px-2 rounded bg-muted/50"
+                  >
+                    <span className="text-muted-foreground">
+                      Set {completion.set_number}
+                    </span>
+                    <span className="text-foreground">
+                      {completion.weight_used} kg × {completion.reps_completed} reps
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        ))}
+    </div>
+  );
 };
 
 export default TrainingPlanV2;
