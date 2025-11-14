@@ -240,13 +240,14 @@ else:
         is_public_url = "proxy.rlwy.net" in SQLALCHEMY_DATABASE_URL or "railway.app" in SQLALCHEMY_DATABASE_URL
         is_internal_url = ".railway.internal" in SQLALCHEMY_DATABASE_URL
     
-    # SSL configuration: public URLs need SSL, internal might not
+    # SSL configuration: try different modes for Railway connectivity issues
     if is_public_url:
-        ssl_mode = "require"  # Public URLs require SSL
-        logger.info("Using SSL mode 'require' for public Railway URL")
+        # Public URLs might need allow or disable if require fails
+        ssl_mode = "allow"  # Changed from require to allow for Railway compatibility
+        logger.info("Using SSL mode 'allow' for public Railway URL (more permissive)")
     elif is_internal_url:
-        ssl_mode = "prefer"  # Internal URLs can use SSL but don't require it
-        logger.info("Using SSL mode 'prefer' for internal Railway URL")
+        ssl_mode = "disable"  # Internal URLs often don't need SSL
+        logger.info("Using SSL mode 'disable' for internal Railway URL")
     else:
         ssl_mode = "prefer"  # Default to prefer for other URLs
         logger.info("Using SSL mode 'prefer' for database connection")
@@ -261,7 +262,7 @@ else:
         echo=False,  # Set to True for debugging
         connect_args={
             "options": "-c statement_timeout=30000",  # 30 second timeout
-            "connect_timeout": 60,  # Increased timeout for Railway (was 30)
+            "connect_timeout": 10,  # Reduced timeout to fail faster and retry
             "application_name": "elior_fitness_api",
             "keepalives": 1,
             "keepalives_idle": 30,
