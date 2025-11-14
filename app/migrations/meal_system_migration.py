@@ -212,9 +212,33 @@ def _ensure_meal_slot_targets() -> None:
 
 def _ensure_meal_completion_table() -> None:
     with engine.begin() as connection:
-        connection.execute(
-            text(
-                """
+        if IS_POSTGRESQL:
+            # PostgreSQL syntax
+            connection.execute(
+                text(
+                    """
+CREATE TABLE IF NOT EXISTS meal_completion_status_v2 (
+    id SERIAL PRIMARY KEY,
+    client_id INTEGER NOT NULL,
+    meal_slot_id INTEGER NOT NULL,
+    date TIMESTAMP NOT NULL,
+    is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    completion_method VARCHAR(255),
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    UNIQUE(client_id, meal_slot_id, date),
+    FOREIGN KEY(client_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(meal_slot_id) REFERENCES meal_slots_v2(id) ON DELETE CASCADE
+)
+"""
+                )
+            )
+        else:
+            # SQLite syntax
+            connection.execute(
+                text(
+                    """
 CREATE TABLE IF NOT EXISTS meal_completion_status_v2 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     client_id INTEGER NOT NULL,
@@ -230,8 +254,8 @@ CREATE TABLE IF NOT EXISTS meal_completion_status_v2 (
     FOREIGN KEY(meal_slot_id) REFERENCES meal_slots_v2(id) ON DELETE CASCADE
 )
 """
+                )
             )
-        )
 
 
 def run_meal_system_migrations() -> None:
