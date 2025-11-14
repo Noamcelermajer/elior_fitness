@@ -4,7 +4,8 @@ import hashlib
 from typing import Optional, List, Tuple
 from datetime import datetime
 from fastapi import UploadFile, HTTPException
-from PIL import Image
+# Lazy load heavy libraries to reduce startup memory
+# from PIL import Image  # Lazy loaded when needed
 import magic
 import aiofiles
 from pathlib import Path
@@ -104,12 +105,14 @@ class FileService:
                 if mime_type not in self.ALLOWED_IMAGE_TYPES:
                     return False, f"Invalid image type: {mime_type}. Allowed: {list(self.ALLOWED_IMAGE_TYPES.keys())}"
                 
-                # Additional image validation using PIL
+                # Additional image validation using PIL (lazy loaded)
                 try:
                     from io import BytesIO
+                    from PIL import Image
                     image = Image.open(BytesIO(content))
                     image.verify()
                     file.file.seek(0)  # Reset after PIL check
+                    del image  # Free memory
                 except Exception as e:
                     return False, f"Invalid image file: {str(e)}"
                     
@@ -203,6 +206,7 @@ class FileService:
         Uses JPEG with optimized quality settings and resizes if needed.
         """
         from io import BytesIO
+        from PIL import Image  # Lazy load PIL only when processing images
         
         try:
             # Open image from bytes
@@ -226,7 +230,7 @@ class FileService:
             compressed_filename = f"progress_photo_{entity_id}_{unique_id}_compressed.jpg"
             compressed_path = os.path.join(directory, compressed_filename)
             
-            # Save with optimization flags
+            # Save with optimization flags - memory efficient
             img.save(
                 compressed_path,
                 'JPEG',
@@ -235,6 +239,9 @@ class FileService:
                 progressive=True,  # Progressive JPEG for better compression
                 subsampling='4:2:0'  # Chroma subsampling for smaller file size
             )
+            
+            # Free memory immediately
+            del img
             
             # Get compressed file size
             compressed_size = os.path.getsize(compressed_path)
@@ -251,39 +258,56 @@ class FileService:
             return original_path, len(content)
     
     async def _process_image(self, original_path: str, category: str, entity_id: int, unique_id: str) -> dict:
-        """Process image to create thumbnails and resized versions."""
+        """Process image to create thumbnails and resized versions - OPTIMIZED for minimal memory."""
+        from PIL import Image  # Lazy load PIL only when processing images
+        
         try:
+            # Process images one at a time to minimize memory usage
+            thumbnail_path = f"{self.base_upload_path}/thumbnails/{category}_{entity_id}_{unique_id}_thumb.jpg"
+            medium_path = f"{self.base_upload_path}/thumbnails/{category}_{entity_id}_{unique_id}_medium.jpg"
+            large_path = None
+            original_dimensions = None
+            
+            # Open and process thumbnail (smallest first, then close)
             with Image.open(original_path) as img:
-                # Convert to RGB if necessary
                 if img.mode in ('RGBA', 'LA', 'P'):
                     img = img.convert('RGB')
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                original_dimensions = img.size
                 
-                # Create thumbnail
-                thumbnail_path = f"{self.base_upload_path}/thumbnails/{category}_{entity_id}_{unique_id}_thumb.jpg"
+                # Create thumbnail with lower quality for memory savings
                 thumbnail = img.copy()
                 thumbnail.thumbnail(self.THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
-                thumbnail.save(thumbnail_path, 'JPEG', quality=85, optimize=True)
+                thumbnail.save(thumbnail_path, 'JPEG', quality=75, optimize=True)  # Reduced from 85 to 75
+                del thumbnail  # Free memory immediately
+            
+            # Process medium size (reopen to avoid keeping multiple images in memory)
+            with Image.open(original_path) as img:
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    img = img.convert('RGB')
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
                 
-                # Create medium size
-                medium_path = f"{self.base_upload_path}/thumbnails/{category}_{entity_id}_{unique_id}_medium.jpg"
                 medium = img.copy()
                 medium.thumbnail(self.MEDIUM_SIZE, Image.Resampling.LANCZOS)
-                medium.save(medium_path, 'JPEG', quality=90, optimize=True)
+                medium.save(medium_path, 'JPEG', quality=75, optimize=True)  # Reduced from 90 to 75
+                del medium  # Free memory immediately
                 
-                # Create large size (if original is larger)
-                large_path = None
+                # Create large size if original is larger (only if needed)
                 if img.size[0] > self.LARGE_SIZE[0] or img.size[1] > self.LARGE_SIZE[1]:
                     large_path = f"{self.base_upload_path}/thumbnails/{category}_{entity_id}_{unique_id}_large.jpg"
                     large = img.copy()
                     large.thumbnail(self.LARGE_SIZE, Image.Resampling.LANCZOS)
-                    large.save(large_path, 'JPEG', quality=95, optimize=True)
-                
-                return {
-                    "thumbnail_path": thumbnail_path,
-                    "medium_path": medium_path,
-                    "large_path": large_path,
-                    "original_dimensions": img.size
-                }
+                    large.save(large_path, 'JPEG', quality=80, optimize=True)  # Reduced from 95 to 80
+                    del large  # Free memory immediately
+            
+            return {
+                "thumbnail_path": thumbnail_path,
+                "medium_path": medium_path,
+                "large_path": large_path,
+                "original_dimensions": original_dimensions
+            }
                 
         except Exception as e:
             # If image processing fails, return original only

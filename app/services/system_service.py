@@ -1,6 +1,4 @@
 import os
-import psutil
-import docker
 import platform
 import subprocess
 from datetime import datetime, timedelta
@@ -16,8 +14,31 @@ DB_PATH = os.getenv("DATABASE_PATH", "/data/app.db")
 
 class SystemService:
     def __init__(self):
-        try:
-            self.docker_client = docker.from_env()
+        # Lazy load heavy libraries to reduce startup memory
+        self.docker_client = None
+        self._psutil = None
+        self._docker = None
+        
+    def _get_psutil(self):
+        """Lazy load psutil only when needed."""
+        if self._psutil is None:
+            import psutil
+            self._psutil = psutil
+        return self._psutil
+    
+    def _get_docker(self):
+        """Lazy load docker only when needed."""
+        if self._docker is None:
+            import docker
+            self._docker = docker
+        return self._docker
+    
+    def _get_docker_client(self):
+        """Lazy load docker client only when needed."""
+        if self.docker_client is None:
+            try:
+                docker = self._get_docker()
+                self.docker_client = docker.from_env()
         except Exception as e:
             logger.warning(f"Docker client initialization failed: {e}")
             self.docker_client = None
@@ -25,6 +46,7 @@ class SystemService:
     def get_system_uptime(self) -> str:
         """Get system uptime."""
         try:
+            psutil = self._get_psutil()
             boot_time = datetime.fromtimestamp(psutil.boot_time())
             uptime = datetime.now() - boot_time
             days = uptime.days
@@ -36,6 +58,7 @@ class SystemService:
     
     def get_docker_stats(self) -> Dict[str, Any]:
         """Get Docker container statistics."""
+        self._get_docker_client()  # Ensure docker client is initialized
         if not self.docker_client:
             # Try to check if Docker is installed via command line
             docker_installed = self._check_docker_cli()
@@ -139,27 +162,37 @@ class SystemService:
             return f"Error checking Docker: {str(e)}"
     
     def get_process_stats(self) -> List[Dict[str, Any]]:
-        """Get stats for key processes when Docker is not available."""
+        """Get stats for key processes when Docker is not available - OPTIMIZED for minimal memory."""
         processes = []
         try:
-            # Get all processes
-            for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
-                try:
-                    pinfo = proc.info
-                    # Filter for relevant processes
-                    if any(name in pinfo['name'].lower() for name in ['python', 'uvicorn', 'node', 'npm']):
+            # Limit to only current process and immediate children to save memory
+            psutil = self._get_psutil()
+            current_pid = os.getpid()
+            try:
+                current_proc = psutil.Process(current_pid)
+                processes.append({
+                    'pid': current_pid,
+                    'name': current_proc.name(),
+                    'cpu_percent': round(current_proc.cpu_percent(interval=0.1) or 0, 2),
+                    'memory_percent': round(current_proc.memory_percent() or 0, 2)
+                })
+                # Only get direct children to minimize memory usage
+                for child in current_proc.children(recursive=False):
+                    try:
                         processes.append({
-                            'pid': pinfo['pid'],
-                            'name': pinfo['name'],
-                            'cpu_percent': round(pinfo['cpu_percent'] or 0, 2),
-                            'memory_percent': round(pinfo['memory_percent'] or 0, 2)
+                            'pid': child.pid,
+                            'name': child.name(),
+                            'cpu_percent': round(child.cpu_percent(interval=0.1) or 0, 2),
+                            'memory_percent': round(child.memory_percent() or 0, 2)
                         })
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
             
             # Sort by memory usage
             processes.sort(key=lambda x: x['memory_percent'], reverse=True)
-            return processes[:10]  # Return top 10 processes
+            return processes[:5]  # Return top 5 processes only (reduced from 10)
         except Exception as e:
             logger.error(f"Error getting process stats: {e}")
             return []
@@ -167,6 +200,7 @@ class SystemService:
     def get_system_resources(self) -> Dict[str, Any]:
         """Get system resource usage."""
         try:
+            psutil = self._get_psutil()
             # CPU usage
             cpu_percent = psutil.cpu_percent(interval=1)
             

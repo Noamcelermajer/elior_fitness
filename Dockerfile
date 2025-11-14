@@ -67,7 +67,7 @@ ls -la ./static/ || echo "Static directory not found"\n\
 echo "Setting up admin user..."\n\
 python /app/setup_admin.py\n\
 echo "Starting FastAPI on port ${PORT:-8000}..."\n\
-exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1\n\
+exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --limit-concurrency 50 --timeout-keep-alive 30\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
 # Expose port - Railway will provide PORT env var dynamically
