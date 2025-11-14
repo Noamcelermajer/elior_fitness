@@ -301,15 +301,27 @@ async def performance_monitoring_middleware(request: Request, call_next):
 def is_allowed_origin(origin: str) -> bool:
     if not origin:
         return False
+    
+    # Check against configured CORS_ORIGINS first
+    if origin in CORS_ORIGINS:
+        return True
+    
     # Allow localhost and 127.0.0.1 for dev
     if re.match(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", origin):
         return True
+    
     # Allow any subdomain of duckdns.org
     if re.match(r"^https?://([a-zA-Z0-9-]+\.)*duckdns\.org(:\d+)?$", origin):
         return True
+    
     # Allow any subdomain of up.railway.app
     if re.match(r"^https?://([a-zA-Z0-9-]+\.)*up\.railway\.app(:\d+)?$", origin):
         return True
+    
+    # Allow ecshape.org and its subdomains
+    if re.match(r"^https?://([a-zA-Z0-9-]+\.)*ecshape\.org(:\d+)?$", origin):
+        return True
+    
     return False
 
 class WildcardCORSMiddleware(BaseHTTPMiddleware):
