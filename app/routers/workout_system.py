@@ -662,6 +662,7 @@ def update_workout_session(
 @router.get("/sessions", response_model=List[WorkoutSessionResponse])
 def get_workout_sessions(
     client_id: int = None,
+    workout_day_id: int = None,
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -673,6 +674,10 @@ def get_workout_sessions(
     elif current_user.role == "TRAINER" and client_id:
         query = query.filter(NewWorkoutSession.client_id == client_id)
     # Admins see all
+    
+    # Filter by workout_day_id if provided
+    if workout_day_id is not None:
+        query = query.filter(NewWorkoutSession.workout_day_id == workout_day_id)
     
     return query.all()
 
@@ -794,6 +799,33 @@ def get_set_completions(
         query = query.filter(func.date(SetCompletion.completed_at) == target_date)
     
     return query.all()
+
+@router.delete("/set-completions/{completion_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_set_completion(
+    completion_id: int,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a set completion"""
+    set_completion = db.query(SetCompletion).filter(SetCompletion.id == completion_id).first()
+    
+    if not set_completion:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Set completion not found"
+        )
+    
+    # Check permissions - clients can only delete their own, trainers/admins can delete any
+    if current_user.role == "CLIENT" and set_completion.client_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to delete this set completion"
+        )
+    
+    db.delete(set_completion)
+    db.commit()
+    
+    return None
 
 @router.post("/prs", response_model=PersonalRecordResponse, status_code=status.HTTP_201_CREATED)
 def record_personal_record(

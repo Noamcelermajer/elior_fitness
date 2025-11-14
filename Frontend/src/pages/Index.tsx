@@ -8,6 +8,7 @@ import { Dumbbell, Target, Utensils, TrendingUp, Plus, Calendar, Clock, CheckCir
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../config/api';
 
 interface DashboardStats {
   totalClients: number;
@@ -55,21 +56,116 @@ const Index = () => {
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clientStats, setClientStats] = useState<{
+    totalDays: number;
+    completedDays: number;
+    totalMeals: number;
+    completedMeals: number;
+  } | null>(null);
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
-    // Clients don't need trainer-specific data, just show their stats
-    if (!isTrainer) {
-      setLoading(false);
-      return;
-    }
-
     try {
       const token = localStorage.getItem('access_token');
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       };
+
+      // If client, fetch their real stats
+      if (!isTrainer && !isAdmin && user?.id) {
+        // Fetch workout plans and sessions
+        const [workoutPlansRes, mealPlansRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/v2/workouts/plans?client_id=${user.id}`, { headers }),
+          fetch(`${API_BASE_URL}/v2/meals/plans?client_id=${user.id}`, { headers })
+        ]);
+
+        const workoutPlans = workoutPlansRes.ok ? await workoutPlansRes.json() : [];
+        const mealPlans = mealPlansRes.ok ? await mealPlansRes.json() : [];
+
+        // Count total workouts (workout days) in the training plan
+        let totalWorkouts = 0;
+        let completedWorkouts = 0;
+        
+        for (const plan of workoutPlans) {
+          if (plan.workout_days && Array.isArray(plan.workout_days)) {
+            totalWorkouts += plan.workout_days.length;
+            
+            // Check completed sessions for each day
+            for (const day of plan.workout_days) {
+              try {
+                const sessionsRes = await fetch(
+                  `${API_BASE_URL}/v2/workouts/sessions?client_id=${user.id}&workout_day_id=${day.id}`,
+                  { headers }
+                );
+                if (sessionsRes.ok) {
+                  const sessions = await sessionsRes.json();
+                  const hasCompleted = Array.isArray(sessions) && sessions.some((s: any) => s.is_completed === true);
+                  if (hasCompleted) {
+                    completedWorkouts++;
+                  }
+                }
+              } catch (err) {
+                console.error(`Failed to fetch sessions for day ${day.id}:`, err);
+              }
+            }
+          }
+        }
+
+        // Count meals per day from active meal plan and completed meals for today
+        // Meals reset at midnight (00:00)
+        let totalMealsPerDay = 0;
+        let completedMealsToday = 0;
+        const today = new Date().toISOString().split('T')[0];
+
+        // Find active meal plan to get number_of_meals per day
+        const activeMealPlan = mealPlans.find((plan: any) => plan.is_active === true);
+        if (activeMealPlan && activeMealPlan.number_of_meals) {
+          totalMealsPerDay = activeMealPlan.number_of_meals;
+        }
+
+        // Fetch today's meal completions (resets at midnight)
+        try {
+          const completionsRes = await fetch(
+            `${API_BASE_URL}/v2/meals/completions?date=${today}`,
+            { headers }
+          );
+          if (completionsRes.ok) {
+            const completions = await completionsRes.json();
+            completedMealsToday = Array.isArray(completions) 
+              ? completions.filter((c: any) => c.is_completed === true).length
+              : 0;
+          }
+        } catch (err) {
+          console.error('Failed to fetch meal completions:', err);
+        }
+
+        setStats({
+          totalClients: 0,
+          totalWorkoutPlans: workoutPlans.length,
+          totalMealPlans: mealPlans.length,
+          totalCompletions: completedWorkouts,
+          activeClients: 0,
+          completionRate: totalWorkouts > 0 ? (completedWorkouts / totalWorkouts) * 100 : 0
+        });
+
+        // Store client-specific stats for display
+        setClientStats({
+          totalDays: totalWorkouts, // Total workouts in plan
+          completedDays: completedWorkouts, // Completed workouts
+          totalMeals: totalMealsPerDay, // Meals per day (resets at midnight)
+          completedMeals: completedMealsToday // Completed meals today
+        });
+
+        setLoading(false);
+        return;
+      }
+
+      // Trainer/Admin dashboard logic continues below...
+      if (!isTrainer) {
+        setLoading(false);
+        return;
+      }
 
       // Fetch clients
       const clientsResponse = await fetch('http://localhost:8000/api/users/', { headers });
@@ -289,13 +385,25 @@ const Index = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-bold text-foreground">
-                    {isTrainer ? `${stats.totalWorkoutPlans} ${t('training.workoutPlans')}` : `3/4 ${t('training.workouts')}`}
+                    {isTrainer ? `${stats.totalWorkoutPlans} ${t('training.workoutPlans')}` : 
+                      clientStats 
+                        ? `${clientStats.totalDays} ${t('training.workouts')}`
+                        : `0 ${t('training.workouts')}`}
                   </span>
                   <Badge className="gradient-orange text-background">
-                    {isTrainer ? `${stats.totalCompletions} ${t('training.completed')}` : `75% ${t('training.completed')}`}
+                    {isTrainer ? `${stats.totalCompletions} ${t('training.completed')}` : 
+                      clientStats && clientStats.totalDays > 0
+                        ? `${clientStats.completedDays}/${clientStats.totalDays} ${t('training.completed')}`
+                        : `0/0 ${t('training.completed')}`}
                   </Badge>
                 </div>
-                <Progress value={isTrainer ? stats.completionRate : 75} className="h-3 bg-secondary" />
+                <Progress 
+                  value={isTrainer ? stats.completionRate : 
+                    (clientStats && clientStats.totalDays > 0
+                      ? (clientStats.completedDays / clientStats.totalDays) * 100
+                      : 0)} 
+                  className="h-3 bg-secondary" 
+                />
                 <Button 
                   onClick={() => navigate('/training')}
                   className="w-full gradient-orange text-background font-semibold transform hover:scale-105 transition-all duration-200"
@@ -317,13 +425,25 @@ const Index = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-bold text-foreground">
-                    {isTrainer ? `${stats.totalMealPlans} ${t('meals.mealPlans')}` : `2/3 ${t('meals.meals')}`}
+                    {isTrainer ? `${stats.totalMealPlans} ${t('meals.mealPlans')}` : 
+                      clientStats 
+                        ? `${clientStats.completedMeals}/${clientStats.totalMeals} ${t('meals.meals')}`
+                        : `0/0 ${t('meals.meals')}`}
                   </span>
                   <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                    {isTrainer ? `${stats.activeClients} ${t('client.clients')}` : t('dashboard.overview')}
+                    {isTrainer ? `${stats.activeClients} ${t('client.clients')}` : 
+                      clientStats && clientStats.totalMeals > 0
+                        ? `${Math.round((clientStats.completedMeals / clientStats.totalMeals) * 100)}% ${t('meals.completed')}`
+                        : `0% ${t('meals.completed')}`}
                   </Badge>
                 </div>
-                <Progress value={isTrainer ? (stats.totalMealPlans > 0 ? 67 : 0) : 67} className="h-3 bg-secondary" />
+                <Progress 
+                  value={isTrainer ? (stats.totalMealPlans > 0 ? 67 : 0) : 
+                    (clientStats && clientStats.totalMeals > 0
+                      ? (clientStats.completedMeals / clientStats.totalMeals) * 100
+                      : 0)} 
+                  className="h-3 bg-secondary" 
+                />
                 <Button 
                   onClick={() => navigate('/meals')}
                   className="w-full bg-green-500 hover:bg-green-600 text-background font-semibold transform hover:scale-105 transition-all duration-200"

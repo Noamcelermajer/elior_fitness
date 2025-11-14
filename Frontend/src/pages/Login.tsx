@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '../components/LanguageSelector';
+import ThemeToggle from '../components/ThemeToggle';
 
 interface UserLoginInfo {
   id: number;
@@ -123,8 +124,9 @@ const Login = () => {
           </div>
           <h1 className="text-3xl font-bold text-gradient mb-2">FitTrainer Pro</h1>
           <p className="text-muted-foreground">{t('auth.welcomeBack')}</p>
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 right-4 flex items-center gap-2">
             <LanguageSelector />
+            <ThemeToggle />
           </div>
         </div>
 

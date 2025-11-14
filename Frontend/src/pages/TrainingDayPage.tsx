@@ -117,8 +117,12 @@ const TrainingDayPage: React.FC = () => {
   const [customSetCounts, setCustomSetCounts] = useState<Record<number, number>>({});
   const [bodyweightExercises, setBodyweightExercises] = useState<Record<number, boolean>>({});
   const [dayCompleted, setDayCompleted] = useState(false);
+  const [highlightedExerciseId, setHighlightedExerciseId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [swipedSetKey, setSwipedSetKey] = useState<string | null>(null);
+  const [swipeStartX, setSwipeStartX] = useState<number | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState<number>(0);
 
   useEffect(() => {
     if (!user?.id || !dayId) return;
@@ -247,6 +251,24 @@ const TrainingDayPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkDayCompletion, dayCompleted, workoutDay, loading]);
 
+  // When day is marked as completed, highlight only the first completed exercise
+  useEffect(() => {
+    if (dayCompleted && workoutDay && !highlightedExerciseId) {
+      const firstCompleteExercise = workoutDay.workout_exercises.find((exercise) => {
+        const completedSets = setCompletions.filter((c) => c.workout_exercise_id === exercise.id);
+        const targetSets = exercise.target_sets || 0;
+        return completedSets.length >= targetSets && targetSets > 0;
+      });
+      if (firstCompleteExercise) {
+        setHighlightedExerciseId(firstCompleteExercise.id);
+      }
+    } else if (!dayCompleted) {
+      // Clear highlight when day is uncompleted
+      setHighlightedExerciseId(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayCompleted, workoutDay]);
+
   const handleToggleDayCompletion = async (completed: boolean) => {
     if (!user?.id || !dayId) return;
 
@@ -347,13 +369,126 @@ const TrainingDayPage: React.FC = () => {
   };
 
   const handleAddSet = (exerciseId: number) => {
-    setCustomSetCounts((prev) => ({ ...prev, [exerciseId]: (prev[exerciseId] ?? 0) + 1 }));
+    const completedSets = setCompletions.filter((c) => c.workout_exercise_id === exerciseId);
+    const exercise = workoutDay?.workout_exercises.find(e => e.id === exerciseId);
+    const targetSets = exercise?.target_sets || 0;
+    const currentCustomCount = customSetCounts[exerciseId] ?? 0;
+    const previousSets = previousSessions[exerciseId] || [];
+    const hasHistory = previousSets.length > 0;
+    const hasStarted = completedSets.length > 0;
+    
+    // Calculate what the last displayed set number would be (same logic as cardSetCount)
+    let lastDisplayedSetNumber: number;
+    if (hasStarted) {
+      // Show at least completed sets, target sets, and custom sets
+      lastDisplayedSetNumber = Math.max(targetSets + currentCustomCount, completedSets.length || 0);
+    } else if (hasHistory) {
+      lastDisplayedSetNumber = targetSets + currentCustomCount;
+    } else {
+      // If no history and not started, show at least 1 set if customCount is 0, otherwise show customCount
+      lastDisplayedSetNumber = currentCustomCount === 0 ? 1 : currentCustomCount;
+    }
+    
+    // Check if the last displayed set has any data or is completed
+    const lastSetKey = `${exerciseId}-${lastDisplayedSetNumber}`;
+    const hasLastSetData = !!(tempSets[lastSetKey]?.reps || tempSets[lastSetKey]?.weight);
+    const isLastSetCompleted = isSetCompleted(exerciseId, lastDisplayedSetNumber);
+    
+    // Always allow adding a new set if:
+    // 1. The last displayed set is completed, OR
+    // 2. The last displayed set is completely empty (no temp data)
+    // This allows users to add sets beyond the target number
+    // The key is: if the last set is empty or completed, we can add another one
+    if (isLastSetCompleted || !hasLastSetData) {
+      // Only increment by 1 to prevent multiple sets from being added
+      setCustomSetCounts((prev) => {
+        const current = prev[exerciseId] ?? 0;
+        return { ...prev, [exerciseId]: current + 1 };
+      });
+    }
   };
 
   const isSetCompleted = (exerciseId: number, setNumber: number) =>
     setCompletions.some(
       (c) => c.workout_exercise_id === exerciseId && c.set_number === setNumber
     );
+
+  const handleDeleteSet = async (exerciseId: number, setNumber: number) => {
+    const completed = isSetCompleted(exerciseId, setNumber);
+    
+    if (completed) {
+      // Delete completed set from backend
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        const completion = getCompletedSet(exerciseId, setNumber);
+        if (completion) {
+          const response = await fetch(`${API_BASE_URL}/v2/workouts/set-completions/${completion.id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (response.ok) {
+            setSetCompletions((prev) => prev.filter((c) => c.id !== completion.id));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to delete set:', err);
+      }
+    } else {
+      // Delete temp set (just clear the data)
+      const key = `${exerciseId}-${setNumber}`;
+      setTempSets((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+    
+    // Reset swipe state
+    setSwipedSetKey(null);
+    setSwipeOffset(0);
+  };
+
+  const handleSwipeStart = (e: React.TouchEvent, setKey: string) => {
+    const clientX = e.touches[0].clientX;
+    setSwipeStartX(clientX);
+    setSwipedSetKey(setKey);
+    setSwipeOffset(0);
+  };
+
+  const handleSwipeMove = (e: React.TouchEvent, setKey: string) => {
+    if (swipeStartX === null || swipedSetKey !== setKey) return;
+    
+    const clientX = e.touches[0].clientX;
+    const diff = swipeStartX - clientX;
+    
+    // Only allow swiping left (negative diff) on mobile
+    if (diff > 0) {
+      setSwipeOffset(Math.min(diff, 100)); // Max 100px swipe
+    } else {
+      setSwipeOffset(0);
+    }
+  };
+
+  const handleSwipeEnd = (setKey: string) => {
+    if (swipeOffset > 50) {
+      // Swipe threshold reached - trigger delete
+      handleDeleteSet(
+        parseInt(setKey.split('-')[0]),
+        parseInt(setKey.split('-')[1])
+      );
+      // Reset after delete
+      setSwipeOffset(0);
+      setSwipedSetKey(null);
+    } else {
+      // Reset swipe
+      setSwipeOffset(0);
+      setSwipedSetKey(null);
+    }
+    setSwipeStartX(null);
+  };
 
   const getCompletedSet = (exerciseId: number, setNumber: number) =>
     setCompletions.find(
@@ -397,10 +532,41 @@ const TrainingDayPage: React.FC = () => {
       if (refreshResponse.ok) {
         const refreshed = await refreshResponse.json();
         setSetCompletions(refreshed);
+        
+        // IMPORTANT: Reset customSetCounts for this exercise to prevent multiple empty sets
+        // When a set is saved, we should only show sets up to the next one after the saved set
+        // Don't automatically add empty sets - let user click "Add Set" if they want more
+        const exercise = workoutDay?.workout_exercises.find(e => e.id === exerciseId);
+        const targetSets = exercise?.target_sets || 0;
+        const completedSetsAfterSave = refreshed.filter((c: SetCompletion) => c.workout_exercise_id === exerciseId);
+        
+        // Only keep custom sets if we've exceeded target sets
+        // Otherwise, reset to 0 to prevent empty sets from appearing
+        if (completedSetsAfterSave.length <= targetSets) {
+          setCustomSetCounts((prev) => {
+            const next = { ...prev };
+            delete next[exerciseId];
+            return next;
+          });
+        }
       } else {
         setSetCompletions((prev) => [...prev, newCompletion]);
+        
+        // Fallback: use the new completion we just added
+        const exercise = workoutDay?.workout_exercises.find(e => e.id === exerciseId);
+        const targetSets = exercise?.target_sets || 0;
+        const completedSetsAfterSave = [...setCompletions, newCompletion].filter((c) => c.workout_exercise_id === exerciseId);
+        
+        if (completedSetsAfterSave.length <= targetSets) {
+          setCustomSetCounts((prev) => {
+            const next = { ...prev };
+            delete next[exerciseId];
+            return next;
+          });
+        }
       }
       
+      // Clear the temp set data
       setTempSets((prev) => {
         const next = { ...prev };
         delete next[key];
@@ -427,11 +593,22 @@ const TrainingDayPage: React.FC = () => {
     // If no sets recorded (no history and no completed sets today), show only "Add Set" button
     // If history exists, show last 2 sets as suggestions, then show target sets
     // If sets are already completed today, show them
-    const cardSetCount = hasStarted 
-      ? Math.max(targetSets + (customSetCounts[exercise.id] ?? 0), completedSets.length || 0)
-      : hasHistory
-        ? targetSets + (customSetCounts[exercise.id] ?? 0) // Show target sets if history exists
-        : 0; // Show only "Add Set" button if no history
+    // Allow unlimited sets beyond target - users can do more than recommended
+    const customCount = customSetCounts[exercise.id] ?? 0;
+    let cardSetCount: number;
+    
+    if (hasStarted) {
+      // If started, show at least: completed sets, target sets, and any additional custom sets
+      // This allows users to do more sets than the target
+      cardSetCount = Math.max(targetSets + customCount, completedSets.length || 0);
+    } else if (hasHistory) {
+      // If history exists, show target sets + any additional custom sets
+      cardSetCount = targetSets + customCount;
+    } else {
+      // If no history and not started, show at least 1 set if customCount is 0, otherwise show customCount
+      // This ensures the first "Add Set" click will show a set
+      cardSetCount = customCount === 0 ? 1 : customCount;
+    }
     
     const lastTwoSets = previousSets.slice(0, 2); // Get last 2 sets from history
     const isBodyweight = !!bodyweightExercises[exercise.id];
@@ -443,7 +620,10 @@ const TrainingDayPage: React.FC = () => {
         className={cn(
           'overflow-hidden rounded-2xl border shadow-sm',
           hasStarted && 'border-primary/30 bg-primary/5',
-          isExerciseComplete && 'border-green-500/30 bg-green-500/5'
+          // Only highlight if this is the highlighted exercise AND day is completed
+          dayCompleted && highlightedExerciseId === exercise.id && isExerciseComplete && 'border-green-500/30 bg-green-500/5',
+          // If day is not completed, show normal completion highlighting
+          !dayCompleted && isExerciseComplete && 'border-green-500/30 bg-green-500/5'
         )}
       >
         <CardHeader className="gap-3 space-y-3 pb-3 px-4 md:px-6">
@@ -583,72 +763,127 @@ const TrainingDayPage: React.FC = () => {
                 ? lastTwoSets[lastTwoSets.length - 1] 
                 : null;
 
+              const isSwiped = swipedSetKey === currentKey && swipeOffset > 50;
+              const swipePercentage = Math.min((swipeOffset / 100) * 100, 100);
+              
               return (
                 <div
                   key={currentKey}
-                  className={cn(
-                    'flex items-center gap-2 md:gap-3 rounded-lg border border-border/60 bg-muted/30 p-2.5 md:p-3 transition',
-                    completed && 'bg-muted/50'
-                  )}
+                  className="relative"
+                  onTouchStart={(e) => handleSwipeStart(e, currentKey)}
+                  onTouchMove={(e) => handleSwipeMove(e, currentKey)}
+                  onTouchEnd={() => handleSwipeEnd(currentKey)}
                 >
-                  <span className="flex h-7 w-7 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] md:text-xs font-semibold text-foreground">
-                    {setNumber.toString().padStart(2, '0')}
-                  </span>
-
-                  {completed ? (
-                    <div className="flex flex-1 items-center justify-between gap-3">
-                      <div className="flex flex-col gap-0.5 text-xs md:text-sm">
-                        <span className="text-foreground">
-                          {getCompletedSet(exercise.id, setNumber)?.weight_used ?? 0} kg
-                        </span>
-                        <span className="text-muted-foreground">
-                          {getCompletedSet(exercise.id, setNumber)?.reps_completed ?? 0} reps
-                        </span>
-                      </div>
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted">
-                        <CheckCircle2 className="h-4 w-4 text-foreground" />
-                      </div>
+                  {/* Set box - stays in place */}
+                  <div
+                    className={cn(
+                      'flex items-center gap-2 md:gap-3 rounded-lg border p-2.5 md:p-3 relative overflow-hidden transition-colors duration-300',
+                      completed ? 'bg-muted/50 border-border/60' : 'bg-muted/30 border-border/60'
+                    )}
+                  >
+                    {/* Red fill overlay - fills from right to left on mobile */}
+                    <div
+                      className={cn(
+                        'absolute inset-0 bg-destructive transition-all duration-300 ease-out pointer-events-none',
+                        'md:hidden' // Only show on mobile
+                      )}
+                      style={{
+                        clipPath: `inset(0 ${100 - swipePercentage}% 0 0)`,
+                        opacity: swipePercentage > 0 ? 0.3 + (swipePercentage / 100) * 0.4 : 0,
+                      }}
+                    />
+                    
+                    {/* Delete icon for desktop - always visible */}
+                    <button
+                      onClick={() => handleDeleteSet(exercise.id, setNumber)}
+                      className="hidden md:flex items-center justify-center h-8 w-8 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all duration-200 ml-auto shrink-0"
+                      aria-label={t('training.delete', 'מחק')}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 6h18" />
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      </svg>
+                    </button>
+                    
+                    {/* Delete text overlay for mobile - appears when swiped */}
+                    <div
+                      className={cn(
+                        'absolute right-4 top-1/2 -translate-y-1/2 text-destructive-foreground font-semibold text-sm transition-opacity duration-300 pointer-events-none md:hidden',
+                        isSwiped ? 'opacity-100' : 'opacity-0'
+                      )}
+                    >
+                      {t('training.delete', 'מחק')}
                     </div>
-                  ) : (
-                    <>
-                      <div className="flex flex-1 items-center gap-2 md:gap-3">
-                        <div className="flex-1 grid grid-cols-2 gap-2">
-                          <div className="flex flex-col gap-1">
-                            <Input
-                              type="number"
-                              inputMode="numeric"
-                              min={0}
-                              placeholder={suggestionSet ? String(suggestionSet.reps_completed) : 'reps'}
-                              value={tempSets[currentKey]?.reps ?? ''}
-                              onChange={(e) => updateTempSet(exercise.id, setNumber, 'reps', e.target.value)}
-                              className="h-10 md:h-9 rounded-lg border-border/50 bg-background/90 text-sm"
-                            />
+                    <span className="flex h-7 w-7 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] md:text-xs font-semibold text-foreground">
+                      {setNumber.toString().padStart(2, '0')}
+                    </span>
+
+                    <div className="flex flex-1 items-center gap-2 md:gap-3 relative z-10">
+                      {completed ? (
+                        <>
+                          <div className="flex flex-col gap-0.5 text-xs md:text-sm">
+                            <span className="text-foreground">
+                              {getCompletedSet(exercise.id, setNumber)?.weight_used ?? 0} kg
+                            </span>
+                            <span className="text-muted-foreground">
+                              {getCompletedSet(exercise.id, setNumber)?.reps_completed ?? 0} reps
+                            </span>
                           </div>
-                          <div className="flex flex-col gap-1">
-                            <Input
-                              type="number"
-                              inputMode="decimal"
-                              min={0}
-                              step="0.5"
-                              placeholder={isBodyweight ? 'BW' : (suggestionSet ? String(suggestionSet.weight_used) : 'kg')}
-                              value={isBodyweight ? '0' : tempSets[currentKey]?.weight ?? ''}
-                              onChange={(e) => updateTempSet(exercise.id, setNumber, 'weight', e.target.value)}
-                              disabled={isBodyweight}
-                              className="h-10 md:h-9 rounded-lg border-border/50 bg-background/90 text-sm disabled:opacity-60"
-                            />
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted ml-auto">
+                            <CheckCircle2 className="h-4 w-4 text-foreground" />
                           </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          className="h-10 md:h-9 shrink-0 rounded-lg px-3 md:px-4 text-xs"
-                          onClick={() => handleLogSet(exercise.id, setNumber)}
-                          disabled={!tempSets[currentKey]?.reps || (!isBodyweight && !tempSets[currentKey]?.weight)}
-                        >
-                          {t('training.logSet', 'שמור סט')}
-                        </Button>
-                      </div>
-                    </>
-                  )}
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex-1 grid grid-cols-2 gap-2">
+                            <div className="flex flex-col gap-1">
+                              <Input
+                                type="number"
+                                inputMode="numeric"
+                                min={0}
+                                placeholder={suggestionSet ? String(suggestionSet.reps_completed) : 'reps'}
+                                value={tempSets[currentKey]?.reps ?? ''}
+                                onChange={(e) => updateTempSet(exercise.id, setNumber, 'reps', e.target.value)}
+                                className="h-10 md:h-9 rounded-lg border-border/50 bg-background/90 text-sm"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <Input
+                                type="number"
+                                inputMode="decimal"
+                                min={0}
+                                step="0.5"
+                                placeholder={isBodyweight ? 'BW' : (suggestionSet ? String(suggestionSet.weight_used) : 'kg')}
+                                value={isBodyweight ? '0' : tempSets[currentKey]?.weight ?? ''}
+                                onChange={(e) => updateTempSet(exercise.id, setNumber, 'weight', e.target.value)}
+                                disabled={isBodyweight}
+                                className="h-10 md:h-9 rounded-lg border-border/50 bg-background/90 text-sm disabled:opacity-60"
+                              />
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="h-10 md:h-9 shrink-0 rounded-lg px-3 md:px-4 text-xs"
+                            onClick={() => handleLogSet(exercise.id, setNumber)}
+                            disabled={!tempSets[currentKey]?.reps || (!isBodyweight && !tempSets[currentKey]?.weight)}
+                          >
+                            {t('training.logSet', 'שמור סט')}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               );
             })}

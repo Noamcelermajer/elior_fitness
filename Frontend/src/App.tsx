@@ -264,14 +264,14 @@ const App = () => {
           <Toaster />
           <Sonner />
           <ThemeProvider>
-            <NotificationProvider>
-              <AuthProvider>
+            <AuthProvider>
+              <NotificationProvider>
                 <BrowserRouter>
                   <AppRoutes />
                   <NotificationContainer />
                 </BrowserRouter>
-              </AuthProvider>
-            </NotificationProvider>
+              </NotificationProvider>
+            </AuthProvider>
           </ThemeProvider>
         </TooltipProvider>
       </QueryClientProvider>
