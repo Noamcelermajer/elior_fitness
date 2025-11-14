@@ -17,21 +17,32 @@ async def add_weight_entry(
     weight: float = Form(..., description="Weight in kg"),
     notes: Optional[str] = Form(None, description="Optional notes"),
     photo: Optional[UploadFile] = File(None, description="Optional progress photo"),
+    client_id: Optional[int] = Form(None, description="Client ID (for trainers)"),
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Add a new weight entry with optional photo"""
+    from app.models.user import User
+    
+    # Determine the target client ID
+    target_client_id = current_user.id  # Default to current user
+    if client_id and current_user.role == "TRAINER":
+        # Verify that the client belongs to this trainer
+        client = db.query(User).filter(User.id == client_id).first()
+        if not client or client.trainer_id != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only add entries for your clients")
+        target_client_id = client_id
     
     # Save photo if provided
     photo_path = None
     if photo:
         file_service = FileService()
-        file_result = await file_service.save_file(photo, "progress_photo", current_user.id)
+        file_result = await file_service.save_file(photo, "progress_photo", target_client_id)
         photo_path = file_result["original_path"]
     
     # Create progress entry
     progress_entry = ProgressEntry(
-        client_id=current_user.id,
+        client_id=target_client_id,
         date=date.today(),
         weight=weight,
         photo_path=photo_path,
@@ -87,7 +98,7 @@ async def get_progress_entries(
     from app.models.user import User
     
     # If trainer, they can query their clients' progress
-    if current_user.role == "trainer" and client_id:
+    if current_user.role == "TRAINER" and client_id:
         # Check if the client belongs to this trainer
         client = db.query(User).filter(User.id == client_id).first()
         if not client or client.trainer_id != current_user.id:
@@ -177,7 +188,7 @@ async def update_progress_entry(
         raise HTTPException(status_code=404, detail="Progress entry not found")
     
     # Check permissions
-    if current_user.role == "trainer":
+    if current_user.role == "TRAINER":
         # Check if the client belongs to this trainer
         client = db.query(User).filter(User.id == entry.client_id).first()
         if not client or client.trainer_id != current_user.id:

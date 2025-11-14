@@ -55,6 +55,15 @@ const CreateMealPlan = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Redirect non-trainers away from trainer-only pages
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'CLIENT') {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [user, navigate]);
+
   // Get client from location state
   const client = location.state?.client as Client;
 

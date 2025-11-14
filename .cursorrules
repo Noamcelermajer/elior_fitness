@@ -1,0 +1,175 @@
+# Elior Fitness Project Rules
+
+## PRIMARY DEVELOPMENT METHOD: DOCKER
+
+**CRITICAL: This project runs exclusively with Docker using a single command.**
+
+### Starting the Project
+- **NEVER** run Python or Node.js commands directly
+- **NEVER** create virtual environments manually
+- **NEVER** install dependencies outside Docker
+- **ALWAYS** use Docker Compose for all development and testing
+
+### Single Command to Start Everything
+```bash
+docker-compose up --build
+```
+
+### Single Command to Stop Everything
+```bash
+docker-compose down
+```
+
+That's it. Everything runs in Docker.
+
+## Why Docker Only?
+
+1. **Consistency**: Same environment on all machines
+2. **Simplicity**: One command to start everything
+3. **No Dependencies**: No need to install Python, Node.js, or any packages
+4. **Windows Compatible**: Works on Windows, Mac, and Linux
+5. **Production Parity**: Same setup as production
+
+## Docker Commands Reference
+
+### Start (Build and Run)
+```bash
+docker-compose up --build
+```
+
+### Start (Background)
+```bash
+docker-compose up -d --build
+```
+
+### Stop
+```bash
+docker-compose down
+```
+
+### View Logs
+```bash
+docker-compose logs -f
+```
+
+### Rebuild
+```bash
+docker-compose build --no-cache
+docker-compose up
+```
+
+### Reset Everything
+```bash
+docker-compose down -v
+docker system prune -a
+docker-compose up --build
+```
+
+## Access Points
+
+After running `docker-compose up --build`:
+- **Application**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+## Default Test Users
+
+- **Admin**: admin@elior.com / admin123
+- **Trainer**: trainer@elior.com / trainer123
+- **Client**: client@elior.com / client123
+
+## File Changes and Hot Reload
+
+- Backend changes: Modify files in `app/` folder
+- Frontend changes: Rebuild with `docker-compose up --build`
+- Database reset: Delete `data/elior_fitness.db` and restart
+
+## When Making Code Changes
+
+1. Edit files as needed
+2. Run `docker-compose up --build` to apply changes
+3. Test at http://localhost:8000
+4. Commit changes to git
+
+## Database
+
+- **Type**: SQLite
+- **Location**: `./data/elior_fitness.db`
+- **Persistence**: Mapped to host via volume
+- **Backup**: Just copy the .db file
+- **Reset**: Delete the file and restart
+
+## Testing
+
+Run tests in Docker:
+```bash
+docker-compose exec elior-fitness python tests/run_tests.py
+```
+
+Or rebuild and run:
+```bash
+docker-compose down
+docker-compose up --build
+```
+
+## Git Workflow
+
+- Commit before major changes
+- Current branch: `local-development-fixes`
+- Never commit `.env` files
+- Always commit `docker-compose.yml` and `Dockerfile` changes
+
+## Troubleshooting
+
+### Container won't start
+```bash
+docker-compose down
+docker-compose up --build
+```
+
+### Port already in use
+```bash
+docker-compose down
+# Check what's using port 8000
+netstat -ano | findstr :8000
+# Kill the process or change port in docker-compose.yml
+```
+
+### Database issues
+```bash
+# Delete database and restart
+Remove-Item data\elior_fitness.db
+docker-compose up --build
+```
+
+### Complete reset
+```bash
+docker-compose down -v
+docker system prune -a
+docker-compose up --build
+```
+
+## DO NOT
+
+- ❌ Run `npm install` or `pip install` directly
+- ❌ Create virtual environments (`venv`)
+- ❌ Start backend with `uvicorn`
+- ❌ Start frontend with `npm run dev`
+- ❌ Use any batch files (.bat) - they're deprecated
+
+## DO
+
+- ✅ Use `docker-compose up --build`
+- ✅ Edit code in your IDE
+- ✅ Commit changes to git
+- ✅ Test at http://localhost:8000
+
+## Summary
+
+**One command to rule them all:**
+```bash
+docker-compose up --build
+```
+
+That's the only command you need to know.
+

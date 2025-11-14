@@ -7,7 +7,7 @@ class ProgressEntry(Base):
     __tablename__ = "progress_entries"
 
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     date = Column(Date, nullable=False)
     weight = Column(Float, nullable=False)  # in kg
     photo_path = Column(String)  # optional progress photo

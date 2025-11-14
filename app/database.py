@@ -12,10 +12,18 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
+# Get database path from environment variable, default to local data directory
+# Use ./data/elior_fitness.db for local development
+DATABASE_PATH = os.getenv("DATABASE_PATH", "./data/elior_fitness.db")
+
+# Ensure the path is absolute for better reliability
+if not os.path.isabs(DATABASE_PATH):
+    DATABASE_PATH = os.path.abspath(DATABASE_PATH)
+
 # Get database URL from environment variable, or use SQLite default for development
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "sqlite:///./data/elior_fitness.db"
+    f"sqlite:///{DATABASE_PATH}"
 )
 
 logger.info(f"Database URL: {SQLALCHEMY_DATABASE_URL}")
@@ -26,11 +34,10 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     
     # Ensure the data directory exists
     db_path = SQLALCHEMY_DATABASE_URL.replace("sqlite:///", "")
-    logger.debug(f"Database file path: {db_path}")
-    
+    db_dir = os.path.dirname(db_path)
     try:
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        logger.info(f"Database directory created/verified: {os.path.dirname(db_path)}")
+        os.makedirs(db_dir, exist_ok=True)
+        logger.info(f"Database directory created/verified: {db_dir}")
     except Exception as e:
         logger.error(f"Failed to create database directory: {e}")
         raise

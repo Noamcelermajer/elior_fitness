@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config/api';
 
-export type UserRole = 'admin' | 'trainer' | 'client';
+export type UserRole = 'ADMIN' | 'TRAINER' | 'CLIENT';
 
 export interface User {
   id: number;

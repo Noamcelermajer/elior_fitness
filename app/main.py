@@ -142,7 +142,7 @@ except Exception as e:
 
 try:
     logger.info("Importing router modules...")
-    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications, meal_system, workout_system, muscle_groups, workout_splits
     logger.info("✅ Router modules imported successfully")
     logger.info("📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications")
 except Exception as e:
@@ -188,6 +188,19 @@ async def lifespan(app: FastAPI):
         logger.error("❌ Database initialization failed")
         raise Exception("Database initialization failed")
     logger.info("✅ Database tables initialized successfully")
+
+    try:
+        from app.migrations.meal_system_migration import run_meal_system_migrations
+        from app.migrations.workout_system_migration import run_workout_system_migrations
+
+        run_meal_system_migrations()
+        logger.info("✅ Meal system migrations applied")
+
+        run_workout_system_migrations()
+        logger.info("✅ Workout system migrations applied")
+    except Exception as migration_error:
+        logger.error("❌ Database migrations failed: %s", migration_error)
+        raise
     
     # Log database pool statistics
     pool_stats = get_db_pool_stats()
@@ -361,29 +374,20 @@ try:
     import os
     from datetime import datetime, timedelta
     
-    # Cache the index.html content in memory for better performance
-    _index_html_cache = None
-    _index_html_cache_time = None
-    _cache_duration = timedelta(minutes=5)  # Cache for 5 minutes
-    
+    # Cache disabled for development - always read fresh
     def get_index_html():
-        """Get index.html with caching for better performance."""
-        global _index_html_cache, _index_html_cache_time
-        
-        current_time = datetime.now()
-        
-        # Return cached version if still valid
-        if (_index_html_cache and _index_html_cache_time and 
-            current_time - _index_html_cache_time < _cache_duration):
-            return _index_html_cache
-        
-        # Read and cache the file
+        """Get index.html without caching for development."""
+        import os
         index_path = "static/index.html"
+        abs_path = os.path.abspath(index_path)
+        logger.info(f"Reading index.html from: {abs_path}")
+        logger.info(f"File exists: {os.path.exists(index_path)}")
         if os.path.exists(index_path):
             with open(index_path, 'r', encoding='utf-8') as f:
-                _index_html_cache = f.read()
-                _index_html_cache_time = current_time
-                return _index_html_cache
+                content = f.read()
+                logger.info(f"Index.html content preview: {content[:200]}")
+                return content
+        logger.error(f"Index.html not found at {abs_path}")
         return None
     
     @app.get("/", response_class=HTMLResponse)
@@ -586,6 +590,14 @@ try:
     app.include_router(exercises.router, prefix="/api/exercises", tags=["Exercises"])
     logger.info("✅ Exercises router included")
     
+    logger.info("Including muscle_groups router...")
+    app.include_router(muscle_groups.router, prefix="/api/muscle-groups", tags=["Muscle Groups"])
+    logger.info("✅ Muscle groups router included")
+    
+    logger.info("Including workout_splits router...")
+    app.include_router(workout_splits.router, prefix="/api/workout-splits", tags=["Workout Splits"])
+    logger.info("✅ Workout splits router included")
+    
     logger.info("Including workouts router...")
     app.include_router(workouts.router, prefix="/api/workouts", tags=["Workouts"])
     logger.info("✅ Workouts router included")
@@ -597,6 +609,14 @@ try:
     logger.info("Including meal_plans router...")
     app.include_router(meal_plans.router, prefix="/api/meal-plans", tags=["Meal Plans"])
     logger.info("✅ Meal plans router included")
+    
+    logger.info("Including meal_system router (v2)...")
+    app.include_router(meal_system.router, prefix="/api/v2/meals", tags=["Meal System V2"])
+    logger.info("✅ Meal system V2 router included")
+    
+    logger.info("Including workout_system router (v2)...")
+    app.include_router(workout_system.router, prefix="/api/v2/workouts", tags=["Workout System V2"])
+    logger.info("✅ Workout system V2 router included")
     
     logger.info("Including progress router...")
     app.include_router(progress.router, prefix="/api/progress", tags=["Progress"])

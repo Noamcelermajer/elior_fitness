@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,9 +12,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 
 const MUSCLE_GROUPS = [
-  'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms',
-  'Core', 'Lower Back', 'Glutes', 'Quadriceps', 'Hamstrings',
-  'Calves', 'Full Body', 'Cardio', 'Flexibility'
+  { value: 'chest', label: 'Chest' },
+  { value: 'back', label: 'Back' },
+  { value: 'shoulders', label: 'Shoulders' },
+  { value: 'biceps', label: 'Biceps' },
+  { value: 'triceps', label: 'Triceps' },
+  { value: 'legs', label: 'Legs' },
+  { value: 'core', label: 'Core' },
+  { value: 'cardio', label: 'Cardio' },
+  { value: 'full_body', label: 'Full Body' },
+  { value: 'other', label: 'Other' }
 ];
 
 const EQUIPMENT_OPTIONS = [
@@ -29,6 +36,46 @@ const CreateExercise = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [existingCategories, setExistingCategories] = useState<string[]>([]);
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE_URL}/exercises/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const categories = Array.from(
+            new Set(
+              (Array.isArray(data) ? data : [])
+                .map((exercise: any) => exercise.category)
+                .filter((category: string | null | undefined): category is string => Boolean(category))
+            )
+          );
+          setExistingCategories(categories);
+        }
+      } catch (categoryError) {
+        console.error('Failed to load exercise categories:', categoryError);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+
+  // Redirect non-trainers away from trainer-only pages
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'CLIENT') {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [user, navigate]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -40,7 +87,8 @@ const CreateExercise = () => {
     difficulty_level: 'beginner',
     estimated_duration: '',
     calories_burned: '',
-    tips: ''
+    tips: '',
+    category: ''
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -67,7 +115,8 @@ const CreateExercise = () => {
           ...formData,
           created_by: user?.id,
           calories_burned: formData.calories_burned ? parseInt(formData.calories_burned) : null,
-          estimated_duration: formData.estimated_duration ? parseInt(formData.estimated_duration) : null
+          estimated_duration: formData.estimated_duration ? parseInt(formData.estimated_duration) : null,
+          category: formData.category || null,
         }),
       });
 
@@ -94,7 +143,7 @@ const CreateExercise = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate('/trainer-dashboard')}>
+            <Button variant="ghost" onClick={() => navigate(-1)}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
@@ -132,14 +181,14 @@ const CreateExercise = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {MUSCLE_GROUPS.map(group => (
-                        <SelectItem key={group} value={group}>{group}</SelectItem>
+                        <SelectItem key={group.value} value={group.value}>{group.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="space-y-2">
+                <div className="space-y-2">
                 <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
@@ -179,6 +228,25 @@ const CreateExercise = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Input
+                  id="category"
+                  list="exercise-category-options"
+                  value={formData.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  placeholder="e.g., Strength, Mobility, Hypertrophy"
+                />
+                <datalist id="exercise-category-options">
+                  {existingCategories.map((category) => (
+                    <option key={category} value={category} />
+                  ))}
+                </datalist>
+                <p className="text-xs text-muted-foreground">
+                  Choose an existing category or type a new one.
+                </p>
               </div>
             </CardContent>
           </Card>

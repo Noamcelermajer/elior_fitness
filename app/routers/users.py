@@ -228,9 +228,10 @@ async def update_user(
     db: Session = Depends(get_db)
 ):
     """
-    Update user by ID. Users can only update themselves.
+    Update user by ID. Admins can update anyone, users can only update themselves.
     """
-    if current_user.id != user_id:
+    # Allow admins to edit anyone, but regular users can only edit themselves
+    if current_user.role != UserRole.ADMIN and current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only update your own profile"
@@ -251,15 +252,15 @@ async def delete_user(
     db: Session = Depends(get_db)
 ):
     """
-    Delete a user. Users can delete themselves, trainers can delete their clients.
+    Delete a user. Admins can delete any user, trainers can delete their clients, users can delete themselves.
     """
     # Check if user has permission to delete
-    if current_user.id != user_id and current_user.role != UserRole.TRAINER:
+    if current_user.id != user_id and current_user.role not in [UserRole.TRAINER, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this user"
         )
-    
+
     # If trainer is deleting a client, verify the client belongs to them
     if current_user.role == UserRole.TRAINER and current_user.id != user_id:
         client = user_service.get_user_by_id(db, user_id)
@@ -268,7 +269,7 @@ async def delete_user(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Client not found or not assigned to you"
             )
-    
+    # Admins can delete any user
     deleted = user_service.delete_user(db, user_id)
     if not deleted:
         raise HTTPException(

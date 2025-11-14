@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dumbbell, User, Lock, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from '../components/LanguageSelector';
 
 interface UserLoginInfo {
   id: number;
@@ -28,6 +30,7 @@ const Login = () => {
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
 
   // Fetch registered users from the server
   const fetchRegisteredUsers = async () => {
@@ -61,17 +64,17 @@ const Login = () => {
       if (success) {
         // Redirect to appropriate dashboard based on user role
         const from = location.state?.from?.pathname || '/';
-        if (user?.role === 'admin') {
+        if (user?.role === 'ADMIN') {
           navigate('/admin', { replace: true });
         } else {
           navigate(from, { replace: true });
         }
       } else {
-        setError('Invalid username or password');
+        setError(t('auth.invalidCredentials'));
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('An error occurred during login. Please try again.');
+      setError(t('messages.error.general'));
     } finally {
       setLoading(false);
     }
@@ -94,6 +97,16 @@ const Login = () => {
     return role.charAt(0).toUpperCase() + role.slice(1);
   };
 
+  // Development only: Map of test user passwords
+  const getTestPassword = (email: string) => {
+    const testPasswords: { [key: string]: string } = {
+      'admin@elior.com': 'admin123',
+      'trainer@elior.com': 'trainer123',
+      'client@elior.com': 'client123'
+    };
+    return testPasswords[email] || '(unknown)';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4">
       {/* Animated background elements */}
@@ -109,19 +122,22 @@ const Login = () => {
             <Dumbbell className="w-10 h-10 text-background" />
           </div>
           <h1 className="text-3xl font-bold text-gradient mb-2">FitTrainer Pro</h1>
-          <p className="text-muted-foreground">Welcome back to your fitness journey</p>
+          <p className="text-muted-foreground">{t('auth.welcomeBack')}</p>
+          <div className="absolute top-4 right-4">
+            <LanguageSelector />
+          </div>
         </div>
 
         {/* Login Form */}
         <Card className="glass-effect border-border/50 shadow-2xl transform hover:scale-[1.02] transition-all duration-300">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-foreground">Sign In</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
+            <CardTitle className="text-2xl font-bold text-foreground">{t('auth.signIn')}</CardTitle>
+            <CardDescription>{t('auth.loginToContinue')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-foreground font-medium">Username</Label>
+                <Label htmlFor="username" className="text-foreground font-medium">{t('auth.email')}</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
@@ -130,14 +146,14 @@ const Login = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="pl-10 bg-secondary/50 border-border/50 focus:border-primary transition-colors"
-                    placeholder="Enter your username"
+                    placeholder={t('auth.enterEmail')}
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
+                <Label htmlFor="password" className="text-foreground font-medium">{t('auth.password')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
@@ -146,7 +162,7 @@ const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10 bg-secondary/50 border-border/50 focus:border-primary transition-colors"
-                    placeholder="Enter your password"
+                    placeholder={t('auth.enterPassword')}
                     required
                   />
                   <Button
@@ -175,10 +191,10 @@ const Login = () => {
                 {loading ? (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin"></div>
-                    <span>Signing in...</span>
+                    <span>{t('common.loading')}</span>
                   </div>
                 ) : (
-                  'Sign In'
+                  t('auth.signIn')
                 )}
               </Button>
             </form>
@@ -190,8 +206,8 @@ const Login = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg text-foreground">Registered Users</CardTitle>
-                <CardDescription>Available users for testing the application</CardDescription>
+                <CardTitle className="text-lg text-foreground">{t('admin.users')}</CardTitle>
+                <CardDescription>{t('dashboard.viewAll')}</CardDescription>
               </div>
               <Button
                 variant="ghost"
@@ -208,7 +224,7 @@ const Login = () => {
             {loadingUsers ? (
               <div className="flex items-center justify-center py-8">
                 <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                <span className="ml-2 text-muted-foreground">Loading users...</span>
+                <span className="ml-2 text-muted-foreground">{t('common.loading')}</span>
               </div>
             ) : registeredUsers.length > 0 ? (
               registeredUsers.map((user, index) => (
@@ -223,19 +239,17 @@ const Login = () => {
                     </Badge>
                   </div>
                   <div className="space-y-1 text-sm">
-                    <p><span className="text-muted-foreground">Name:</span> <span className="text-foreground font-medium">{user.full_name}</span></p>
-                    <p><span className="text-muted-foreground">Username:</span> <span className="text-foreground font-mono">{user.username}</span></p>
-                    <p><span className="text-muted-foreground">Email:</span> <span className="text-foreground font-mono">{user.email}</span></p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Note: Passwords are not displayed for security reasons
+                    <p><span className="text-muted-foreground">{t('common.name')}:</span> <span className="text-foreground font-medium">{user.full_name}</span></p>
+                    <p><span className="text-muted-foreground">{t('auth.email')}:</span> <span className="text-foreground font-mono">{user.email}</span></p>
+                    <p className="text-xs mt-2">
+                      <span className="text-muted-foreground">{t('auth.password')}:</span> <span className="text-foreground font-mono font-semibold">{getTestPassword(user.email)}</span>
                     </p>
                   </div>
                 </div>
               ))
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                <p>No registered users found</p>
-                <p className="text-sm">Please register users through the admin panel</p>
+                <p>{t('client.noClients')}</p>
               </div>
             )}
           </CardContent>

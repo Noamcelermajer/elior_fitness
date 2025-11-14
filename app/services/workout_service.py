@@ -123,20 +123,38 @@ class WorkoutService:
 
     # Workout Plan Management
     def create_workout_plan(self, workout_plan_data: WorkoutPlanCreate, trainer_id: int) -> WorkoutPlanResponse:
-        """Create a new workout plan for a client."""
+        """Create a new workout plan for a client, updating the existing one if present."""
+        existing_plan = (
+            self.db.query(WorkoutPlan)
+            .filter(WorkoutPlan.client_id == workout_plan_data.client_id)
+            .first()
+        )
+
+        if existing_plan:
+            existing_plan.name = workout_plan_data.name
+            existing_plan.description = workout_plan_data.description
+            existing_plan.start_date = workout_plan_data.start_date
+            existing_plan.end_date = workout_plan_data.end_date
+            existing_plan.trainer_id = trainer_id
+
+            self.db.commit()
+            self.db.refresh(existing_plan)
+
+            return self._workout_plan_to_response(existing_plan)
+
         workout_plan = WorkoutPlan(
             name=workout_plan_data.name,
             description=workout_plan_data.description,
             trainer_id=trainer_id,
             client_id=workout_plan_data.client_id,
             start_date=workout_plan_data.start_date,
-            end_date=workout_plan_data.end_date
+            end_date=workout_plan_data.end_date,
         )
-        
+
         self.db.add(workout_plan)
         self.db.commit()
         self.db.refresh(workout_plan)
-        
+
         return self._workout_plan_to_response(workout_plan)
 
     def get_workout_plans(self, filter_params: WorkoutPlanFilter) -> Tuple[List[WorkoutPlanResponse], int]:

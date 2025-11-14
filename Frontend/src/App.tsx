@@ -1,9 +1,12 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { NotificationContainer } from "./components/NotificationContainer";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -12,6 +15,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import MealsPage from "./pages/MealsPage";
 import TrainingPage from "./pages/TrainingPage";
+import TrainingDayPage from "./pages/TrainingDayPage";
 import ProgressPage from "./pages/ProgressPage";
 import CreateWorkoutPage from "./pages/CreateWorkoutPage";
 import CreateExercisePage from "./pages/CreateExercisePage";
@@ -26,8 +30,12 @@ import TrainerDashboard from './pages/TrainerDashboard';
 import ClientProfile from './pages/ClientProfile';
 import CreateExercise from './pages/CreateExercise';
 import CreateWorkout from './pages/CreateWorkout';
-import CreateMealPlan from './pages/CreateMealPlan';
+import CreateMealPlanV2 from './pages/CreateMealPlanV2';
 import ExerciseBank from './pages/ExerciseBank';
+import MealBank from './pages/MealBank';
+import SecretUsersPage from './pages/SecretUsersPage';
+import CreateWorkoutPlanV2 from './pages/CreateWorkoutPlanV2';
+import './i18n/config';
 
 const queryClient = new QueryClient();
 
@@ -48,7 +56,7 @@ const AppRoutes = () => {
       <Route 
         path="/admin" 
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRole="ADMIN">
             <AdminDashboard />
           </ProtectedRoute>
         } 
@@ -56,7 +64,7 @@ const AppRoutes = () => {
       <Route 
         path="/users" 
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRole="ADMIN">
             <UsersPage />
           </ProtectedRoute>
         } 
@@ -64,8 +72,16 @@ const AppRoutes = () => {
       <Route 
         path="/system" 
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRole="ADMIN">
             <SystemPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/secret-users" 
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <SecretUsersPage />
           </ProtectedRoute>
         } 
       />
@@ -74,7 +90,7 @@ const AppRoutes = () => {
       <Route 
         path="/trainer-dashboard" 
         element={
-          <ProtectedRoute requiredRole="trainer">
+          <ProtectedRoute requiredRole="TRAINER">
             <TrainerDashboard />
           </ProtectedRoute>
         } 
@@ -82,7 +98,7 @@ const AppRoutes = () => {
       <Route 
         path="/client/:clientId" 
         element={
-          <ProtectedRoute requiredRole="trainer">
+          <ProtectedRoute requiredRole="TRAINER">
             <ClientProfile />
           </ProtectedRoute>
         } 
@@ -90,7 +106,7 @@ const AppRoutes = () => {
       <Route 
         path="/create-exercise" 
         element={
-          <ProtectedRoute requiredRole="trainer">
+          <ProtectedRoute requiredRole="TRAINER">
             <CreateExercise />
           </ProtectedRoute>
         } 
@@ -98,7 +114,7 @@ const AppRoutes = () => {
       <Route 
         path="/create-workout" 
         element={
-          <ProtectedRoute requiredRole="trainer">
+          <ProtectedRoute requiredRole="TRAINER">
             <CreateWorkout />
           </ProtectedRoute>
         } 
@@ -106,16 +122,32 @@ const AppRoutes = () => {
       <Route 
         path="/create-meal-plan" 
         element={
-          <ProtectedRoute requiredRole="trainer">
-            <CreateMealPlan />
+          <ProtectedRoute requiredRole="TRAINER">
+            <CreateMealPlanV2 />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/create-workout-plan-v2" 
+        element={
+          <ProtectedRoute requiredRole="TRAINER">
+            <CreateWorkoutPlanV2 />
           </ProtectedRoute>
         } 
       />
       <Route 
         path="/exercises" 
         element={
-          <ProtectedRoute requiredRole="trainer">
+          <ProtectedRoute requiredRole="TRAINER">
             <ExerciseBank />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/meal-bank" 
+        element={
+          <ProtectedRoute requiredRole="TRAINER">
+            <MealBank />
           </ProtectedRoute>
         } 
       />
@@ -142,6 +174,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <TrainingPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/training/day/:dayId" 
+        element={
+          <ProtectedRoute>
+            <TrainingDayPage />
           </ProtectedRoute>
         } 
       />
@@ -207,21 +247,36 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <NotificationProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <AppRoutes />
-            <NotificationContainer />
-          </BrowserRouter>
-        </AuthProvider>
-      </NotificationProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    // Set initial direction and language based on current language
+    const currentLang = i18n.language || 'he';
+    document.documentElement.dir = currentLang === 'he' ? 'rtl' : 'ltr';
+    document.documentElement.lang = currentLang;
+  }, [i18n.language]);
+
+  return (
+    <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <ThemeProvider>
+            <NotificationProvider>
+              <AuthProvider>
+                <BrowserRouter>
+                  <AppRoutes />
+                  <NotificationContainer />
+                </BrowserRouter>
+              </AuthProvider>
+            </NotificationProvider>
+          </ThemeProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </div>
+  );
+};
 
 export default App;

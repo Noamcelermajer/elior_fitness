@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Plus, X, Search, GripVertical, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Search, GripVertical, Trash2, Dumbbell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
+import { useTranslation } from 'react-i18next';
 
 interface Client {
   id: number;
@@ -49,6 +50,7 @@ const CreateWorkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,6 +72,16 @@ const CreateWorkout = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<WorkoutExercise[]>([]);
   const [loadingExercises, setLoadingExercises] = useState(true);
+
+  // Redirect non-trainers away from trainer-only pages
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'CLIENT') {
+        navigate('/', { replace: true });
+      }
+      // Admin can access (for monitoring purposes)
+    }
+  }, [user, navigate]);
 
   // Fetch exercises from database
   useEffect(() => {
@@ -206,14 +218,14 @@ const CreateWorkout = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate('/trainer-dashboard')}>
+            <Button variant="ghost" onClick={() => navigate(-1)}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              {t('workoutCreation.back')}
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Create Workout Plan</h1>
+              <h1 className="text-3xl font-bold text-foreground">{t('workoutCreation.title')}</h1>
               <p className="text-muted-foreground">
-                {client ? `Creating workout for ${client.full_name}` : 'Create a new workout plan'}
+                {client ? `${t('workoutCreation.creatingWorkoutFor')} ${client.full_name}` : t('workoutCreation.subtitle')}
               </p>
             </div>
           </div>
@@ -223,23 +235,23 @@ const CreateWorkout = () => {
           {/* Workout Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Workout Information</CardTitle>
+              <CardTitle>{t('workoutCreation.workoutInformation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Workout Name *</Label>
+                  <Label htmlFor="name">{t('workoutCreation.workoutNameRequired')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="e.g., Upper Body Strength, Leg Day, Full Body Circuit"
+                    placeholder={t('workoutCreation.workoutNamePlaceholder')}
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sessions">Number of Sessions</Label>
+                  <Label htmlFor="sessions">{t('workoutCreation.numberOfSessions')}</Label>
                   <Input
                     id="sessions"
                     type="number"
@@ -252,33 +264,33 @@ const CreateWorkout = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('workoutCreation.description')}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Describe the workout, its goals, and any special considerations..."
+                  placeholder={t('workoutCreation.descriptionPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="difficulty">Difficulty Level</Label>
+                  <Label htmlFor="difficulty">{t('workoutCreation.difficultyLevel')}</Label>
                   <Select value={formData.difficulty_level} onValueChange={(value) => handleInputChange('difficulty_level', value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
-                      <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="advanced">Advanced</SelectItem>
+                      <SelectItem value="beginner">{t('workoutCreation.beginner')}</SelectItem>
+                      <SelectItem value="intermediate">{t('workoutCreation.intermediate')}</SelectItem>
+                      <SelectItem value="advanced">{t('workoutCreation.advanced')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Estimated Duration (minutes)</Label>
+                  <Label htmlFor="duration">{t('workoutCreation.estimatedDuration')}</Label>
                   <Input
                     id="duration"
                     type="number"
@@ -290,12 +302,12 @@ const CreateWorkout = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">General Notes</Label>
+                  <Label htmlFor="notes">{t('workoutCreation.generalNotes')}</Label>
                   <Input
                     id="notes"
                     value={formData.notes}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder="Any general notes for this workout..."
+                    placeholder={t('workoutCreation.generalNotesPlaceholder')}
                   />
                 </div>
               </div>
@@ -306,16 +318,16 @@ const CreateWorkout = () => {
           {client && (
             <Card>
               <CardHeader>
-                <CardTitle>Client Information</CardTitle>
+                <CardTitle>{t('workoutCreation.clientInformation')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Client Name</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">{t('workoutCreation.clientName')}</Label>
                     <p className="text-foreground font-medium">{client.full_name}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">{t('workoutCreation.email')}</Label>
                     <p className="text-foreground">{client.email}</p>
                   </div>
                   {client.profile?.goals && (
@@ -339,14 +351,14 @@ const CreateWorkout = () => {
             {/* Exercise Database */}
             <Card>
               <CardHeader>
-                <CardTitle>Exercise Database</CardTitle>
+                <CardTitle>{t('workoutCreation.exerciseDatabase')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex space-x-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search exercises..."
+                      placeholder={t('workoutCreation.searchExercises')}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
@@ -357,7 +369,7 @@ const CreateWorkout = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Groups</SelectItem>
+                      <SelectItem value="all">{t('workoutCreation.allGroups')}</SelectItem>
                       {muscleGroups.map(group => (
                         <SelectItem key={group} value={group}>{group}</SelectItem>
                       ))}
@@ -400,14 +412,14 @@ const CreateWorkout = () => {
             {/* Selected Exercises */}
             <Card>
               <CardHeader>
-                <CardTitle>Workout Exercises ({selectedExercises.length})</CardTitle>
+                <CardTitle>{t('workoutCreation.workoutExercises')} ({selectedExercises.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 {selectedExercises.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Dumbbell className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No exercises selected</p>
-                    <p className="text-sm">Click on exercises from the database to add them</p>
+                    <p>{t('workoutCreation.noExercisesSelected')}</p>
+                    <p className="text-sm">{t('workoutCreation.clickToAddExercises')}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -514,7 +526,7 @@ const CreateWorkout = () => {
               onClick={() => navigate('/trainer-dashboard')}
               disabled={loading}
             >
-              Cancel
+              {t('workoutCreation.cancel')}
             </Button>
             <Button
               type="submit"
@@ -529,7 +541,7 @@ const CreateWorkout = () => {
               ) : (
                 <div className="flex items-center space-x-2">
                   <Save className="w-4 h-4" />
-                  <span>Create Workout Plan</span>
+                  <span>{t('workoutCreation.createWorkoutPlan')}</span>
                 </div>
               )}
             </Button>

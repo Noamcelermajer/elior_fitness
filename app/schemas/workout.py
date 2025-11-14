@@ -8,9 +8,10 @@ class ExerciseBase(BaseModel):
     name: str
     description: Optional[str] = Field(None, description="General description of the exercise")
     video_url: Optional[str] = None
-    muscle_group: MuscleGroup
+    muscle_group: str  # Changed to str to support dynamic muscle groups
     equipment_needed: Optional[str] = None
     instructions: Optional[str] = Field(None, description="Step-by-step instructions on how to perform the exercise correctly")
+    category: Optional[str] = Field(None, description="Custom category for organizing exercises (e.g., Strength, Hypertrophy, Endurance, Mobility)")
 
 class ExerciseCreate(ExerciseBase):
     pass
@@ -19,9 +20,10 @@ class ExerciseUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     video_url: Optional[str] = None
-    muscle_group: Optional[MuscleGroup] = None
+    muscle_group: Optional[str] = None  # Changed to str to support dynamic muscle groups
     equipment_needed: Optional[str] = None
     instructions: Optional[str] = None
+    category: Optional[str] = None
 
 class ExerciseResponse(ExerciseBase):
     id: int
@@ -142,7 +144,7 @@ class CompleteWorkoutPlanResponse(WorkoutPlanResponse):
 # Filter Schemas
 class ExerciseFilter(BaseModel):
     trainer_id: Optional[int] = None
-    muscle_group: Optional[MuscleGroup] = None
+    muscle_group: Optional[str] = None  # Changed to str to support dynamic muscle groups
     search: Optional[str] = None
     page: int = 1
     size: int = 20
@@ -178,7 +180,7 @@ class WorkoutSummary(BaseModel):
 class ExerciseProgress(BaseModel):
     exercise_id: int
     exercise_name: str
-    muscle_group: MuscleGroup
+    muscle_group: str  # Changed to str to support dynamic muscle groups
     total_completions: int
     average_sets: float
     average_reps: str

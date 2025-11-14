@@ -11,12 +11,13 @@ import { Label } from "@/components/ui/label";
 import { 
   Dumbbell, Target, Utensils, TrendingUp, Plus, Calendar, Clock, 
   CheckCircle, Users, Trophy, Flame, UserPlus, Activity, 
-  Search, Filter, Eye, Edit, Trash2, PlusCircle, Weight, Camera
+  Search, Filter, Eye, Edit, Trash2, PlusCircle, Weight, Camera, EyeOff
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
+import { useTranslation } from 'react-i18next';
 
 interface Client {
   id: number;
@@ -80,6 +81,7 @@ interface ProgressEntry {
 const TrainerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [stats, setStats] = useState({
     totalClients: 0,
     activeClients: 0,
@@ -95,6 +97,12 @@ const TrainerDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [progressEntries, setProgressEntries] = useState<any[]>([]);
   const [progressLoading, setProgressLoading] = useState(false);
+  const [addClientDialogOpen, setAddClientDialogOpen] = useState(false);
+  const [addClientForm, setAddClientForm] = useState({ username: '', email: '', full_name: '', password: '', confirmPassword: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [addClientLoading, setAddClientLoading] = useState(false);
+  const [addClientError, setAddClientError] = useState('');
 
   const fetchDashboardData = async () => {
     try {
@@ -105,8 +113,8 @@ const TrainerDashboard = () => {
       };
       // Fetch stats only
       const [clientsRes, exercisesRes, workoutPlansRes, mealPlansRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/users/?role=client`, { headers }),
-        fetch(`${API_BASE_URL}/workouts/exercises`, { headers }),
+        fetch(`${API_BASE_URL}/users/clients`, { headers }),
+        fetch(`${API_BASE_URL}/exercises/`, { headers }),
         fetch(`${API_BASE_URL}/workouts/plans`, { headers }),
         fetch(`${API_BASE_URL}/meal-plans/`, { headers })
       ]);
@@ -136,7 +144,7 @@ const TrainerDashboard = () => {
   const fetchClients = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/users/?role=client`, {
+      const response = await fetch(`${API_BASE_URL}/users/clients`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -175,49 +183,53 @@ const TrainerDashboard = () => {
     fetchClients();
   }, []);
   if (loading) {
-    return <Layout currentPage="dashboard"><div className="flex items-center justify-center min-h-screen"><div>Loading...</div></div></Layout>;
+    return <Layout currentPage="dashboard"><div className="flex items-center justify-center min-h-screen"><div>{t('common.loading')}</div></div></Layout>;
   }
   return (
     <Layout currentPage="dashboard">
       <div className="max-w-5xl mx-auto py-10 px-4">
-        <h1 className="text-4xl font-bold mb-10 text-center">Trainer Dashboard</h1>
+        <h1 className="text-4xl font-bold mb-10 text-center">{t('trainerDashboard.title')}</h1>
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
-            <CardContent className="p-6 flex flex-col items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-2 mt-2">
+            <CardContent className="px-6 pt-8 pb-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                 <Users className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.totalClients}</div>
-              <div className="text-muted-foreground text-sm">Total Clients</div>
+              <div className="text-muted-foreground text-sm">{t('trainerDashboard.totalClients')}</div>
             </CardContent>
           </Card>
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
-            <CardContent className="p-6 flex flex-col items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mb-2 mt-2">
+            <CardContent className="px-6 pt-8 pb-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
                 <Dumbbell className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.totalExercises}</div>
-              <div className="text-muted-foreground text-sm">Exercises</div>
+              <div className="text-muted-foreground text-sm">{t('trainerDashboard.exercises')}</div>
             </CardContent>
           </Card>
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
-            <CardContent className="p-6 flex flex-col items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-2 mt-2">
+            <CardContent className="px-6 pt-8 pb-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div className="text-3xl font-bold mb-1">{stats.completionRate.toFixed(1)}%</div>
-              <div className="text-muted-foreground text-sm">Workout Completion</div>
+              <div className="text-muted-foreground text-sm">{t('trainerDashboard.workoutCompletion')}</div>
             </CardContent>
           </Card>
         </div>
+
         {/* Clients Section */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-6 text-center">Your Clients</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-center">{t('client.yourClients')}</h2>
+            <Button onClick={() => setAddClientDialogOpen(true)} className="gradient-orange text-background font-semibold flex items-center"><UserPlus className="w-4 h-4 me-2" />{t('client.addClient')}</Button>
+          </div>
           <div className="flex justify-center mb-8">
             <input
               type="text"
-              placeholder="Search clients..."
+              placeholder={t('client.searchClients')}
               value={clientSearch}
               onChange={e => setClientSearch(e.target.value)}
               className="px-4 py-2 border border-input rounded-lg w-full max-w-md focus:ring-2 focus:ring-primary focus:outline-none"
@@ -229,7 +241,7 @@ const TrainerDashboard = () => {
               client.email.toLowerCase().includes(clientSearch.toLowerCase()) ||
               client.username.toLowerCase().includes(clientSearch.toLowerCase())
             ).length === 0 ? (
-              <div className="col-span-full text-center text-muted-foreground py-12 text-lg">No clients found.</div>
+              <div className="col-span-full text-center text-muted-foreground py-12 text-lg">{t('trainerDashboard.noClientsFound')}</div>
             ) : (
               clients.filter(client =>
                 client.full_name.toLowerCase().includes(clientSearch.toLowerCase()) ||
@@ -238,8 +250,8 @@ const TrainerDashboard = () => {
               ).map(client => (
                 <Card key={client.id} className="rounded-xl shadow-lg border border-border bg-muted/90 hover:-translate-y-1 hover:shadow-2xl transition-transform duration-300 animate-fade-in-up flex flex-col justify-between h-full">
                   <CardContent className="p-6 flex flex-col h-full">
-                    <div className="flex items-center mb-4">
-                      <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-4">
+                    <div className="flex items-center mt-2 mb-4">
+                      <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center me-4">
                         <span className="text-white font-bold text-2xl">
                           {client.full_name.split(' ').map(n => n[0]).join('')}
                         </span>
@@ -249,23 +261,23 @@ const TrainerDashboard = () => {
                         <p className="text-sm text-muted-foreground">{client.email}</p>
                       </div>
                     </div>
-                    <div className="flex space-x-2 mt-auto pt-4">
-                      <Button size="sm" variant="outline" className="flex-1" onClick={() => handleViewProgress(client)}>View Progress</Button>
-                      <Button size="sm" className="flex-1" onClick={() => navigate(`/client/${client.id}`)}>View Profile</Button>
+                    <div className="flex gap-2 mt-auto pt-4">
+                      <Button size="sm" variant="outline" className="flex-1 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors" onClick={() => handleViewProgress(client)}>{t('client.viewProgress')}</Button>
+                      <Button size="sm" variant="outline" className="flex-1 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors" onClick={() => navigate(`/client/${client.id}`)}>{t('client.viewProfile')}</Button>
                     </div>
                   </CardContent>
                 </Card>
               ))
             )}
           </div>
-          {/* Progress Modal */}
-          <Dialog open={progressModalOpen} onOpenChange={setProgressModalOpen}>
+        </div>
+        <Dialog open={progressModalOpen} onOpenChange={setProgressModalOpen}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Weight Progress - {selectedClient?.full_name}</DialogTitle>
+                <DialogTitle>{t('trainerDashboard.weightProgress')} - {selectedClient?.full_name}</DialogTitle>
               </DialogHeader>
               {progressLoading ? (
-                <div className="p-8 text-center">Loading...</div>
+                <div className="p-8 text-center">{t('trainerDashboard.loading')}</div>
               ) : (
                 <ClientWeightProgress
                   clientId={selectedClient?.id?.toString() || ''}
@@ -276,7 +288,108 @@ const TrainerDashboard = () => {
               )}
             </DialogContent>
           </Dialog>
-        </div>
+        <Dialog open={addClientDialogOpen} onOpenChange={setAddClientDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>{t('trainerDashboard.addNewClient')}</DialogTitle>
+              <DialogDescription>{t('trainerDashboard.registerNewClient')}</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={async e => {
+              e.preventDefault();
+              setAddClientError('');
+              if (addClientForm.password !== addClientForm.confirmPassword) {
+                setAddClientError(t('trainerDashboard.passwordsDoNotMatch'));
+                return;
+              }
+              setAddClientLoading(true);
+              try {
+                const token = localStorage.getItem('access_token');
+                // Register client
+                const res = await fetch(`${API_BASE_URL}/auth/register/client`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    username: addClientForm.username,
+                    email: addClientForm.email,
+                    full_name: addClientForm.full_name,
+                    password: addClientForm.password,
+                    role: 'CLIENT'
+                  })
+                });
+                if (!res.ok) {
+                  let errMsg = t('trainerDashboard.failedToRegisterClient');
+                  try {
+                    const err = await res.json();
+                    errMsg = err.detail || JSON.stringify(err);
+                  } catch (jsonErr) {
+                    errMsg = await res.text();
+                  }
+                  setAddClientError(errMsg);
+                  setAddClientLoading(false);
+                  return;
+                }
+                const client = await res.json();
+                // Assign client to trainer
+                const assignRes = await fetch(`${API_BASE_URL}/users/clients/${client.id}/assign`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!assignRes.ok) {
+                  let assignErrMsg = t('trainerDashboard.clientRegisteredButFailedToAssign');
+                  try {
+                    const err = await assignRes.json();
+                    assignErrMsg = err.detail || JSON.stringify(err);
+                  } catch (jsonErr) {
+                    assignErrMsg = await assignRes.text();
+                  }
+                  setAddClientError(assignErrMsg);
+                  setAddClientLoading(false);
+                  return;
+                }
+                setAddClientDialogOpen(false);
+                setAddClientForm({ username: '', email: '', full_name: '', password: '', confirmPassword: '' });
+                fetchClients();
+              } catch (err) {
+                setAddClientError(t('trainerDashboard.unexpectedError') + ': ' + (err?.message || err));
+                console.error('Add client error:', err);
+              } finally {
+                setAddClientLoading(false);
+              }
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">{t('trainerDashboard.username')}</Label>
+                <Input id="username" value={addClientForm.username} onChange={e => setAddClientForm({ ...addClientForm, username: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">{t('trainerDashboard.email')}</Label>
+                <Input id="email" type="email" value={addClientForm.email} onChange={e => setAddClientForm({ ...addClientForm, email: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="full_name">{t('trainerDashboard.fullName')}</Label>
+                <Input id="full_name" value={addClientForm.full_name} onChange={e => setAddClientForm({ ...addClientForm, full_name: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">{t('trainerDashboard.password')}</Label>
+                <div className="relative">
+                  <Input id="password" type={showPassword ? 'text' : 'password'} value={addClientForm.password} onChange={e => setAddClientForm({ ...addClientForm, password: e.target.value })} required />
+                  <button type="button" className="absolute right-2 top-2" onClick={() => setShowPassword(v => !v)}>{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">{t('trainerDashboard.confirmPassword')}</Label>
+                <div className="relative">
+                  <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={addClientForm.confirmPassword} onChange={e => setAddClientForm({ ...addClientForm, confirmPassword: e.target.value })} required />
+                  <button type="button" className="absolute right-2 top-2" onClick={() => setShowConfirmPassword(v => !v)}>{showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                </div>
+              </div>
+              {addClientError && <div className="text-red-500 text-sm">{addClientError}</div>}
+              <div className="flex space-x-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setAddClientDialogOpen(false)} className="flex-1">{t('trainerDashboard.cancel')}</Button>
+                <Button type="submit" className="flex-1 gradient-orange text-background" disabled={addClientLoading}>{addClientLoading ? t('trainerDashboard.adding') : t('trainerDashboard.addClient')}</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

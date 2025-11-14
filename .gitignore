@@ -39,4 +39,33 @@ Thumbs.db
 .temp
 
 # Backups
-backups/ 
+backups/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Deprecated batch files
+*.bat
+
+# AI context files
+context/
+
+# Scripts (unused with Docker)
+scripts/
+
+# Playwright artifacts
+.playwright-mcp/
+playwright-report/
+test-results/
+
+# Logs (keep directory, ignore files)
+logs/*.log
+logs/*.json 

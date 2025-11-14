@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const MealMenu = () => {
   const { user } = useAuth();
-  const isTrainer = user?.role === 'trainer';
+  const isTrainer = user?.role === 'TRAINER';
 
   const trainerMeals = [
     {

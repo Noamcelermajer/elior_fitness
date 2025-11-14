@@ -13,6 +13,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
+import { useTranslation } from 'react-i18next';
+import MealHistory from '../components/MealHistory';
 
 interface Client {
   id: number;
@@ -39,9 +41,10 @@ interface WorkoutPlan {
   name: string;
   description?: string;
   created_at: string;
-  sessions_count: number;
-  completed_sessions: number;
-  exercises: WorkoutExercise[];
+  sessions_count?: number;
+  completed_sessions?: number;
+  workout_days?: any[];
+  exercises?: WorkoutExercise[];
 }
 
 interface WorkoutExercise {
@@ -58,15 +61,45 @@ interface WorkoutExercise {
   notes: string; // Personalized notes for this client
 }
 
+interface MealPlanFoodOption {
+  name: string;
+  name_hebrew?: string;
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+  serving_size?: string;
+}
+
+interface MealPlanMacroCategory {
+  macro_type: 'protein' | 'carb' | 'fat';
+  quantity_instruction?: string;
+  food_options?: MealPlanFoodOption[];
+}
+
+interface MealPlanSlot {
+  id?: number;
+  name: string;
+  order_index?: number;
+  time_suggestion?: string;
+  macro_categories?: MealPlanMacroCategory[];
+}
+
 interface MealPlan {
   id: number;
-  title: string;
-  total_calories: number;
-  protein_target: number;
-  carb_target: number;
-  fat_target: number;
+  title?: string;
+  name?: string;
+  description?: string;
+  total_calories?: number;
+  protein_target?: number;
+  carb_target?: number;
+  fat_target?: number;
+  number_of_meals?: number;
+  is_active?: boolean;
   created_at: string;
-  meals: MealEntry[];
+  updated_at?: string;
+  meals?: MealEntry[];
+  meal_slots?: MealPlanSlot[];
 }
 
 interface MealEntry {
@@ -102,6 +135,7 @@ const ClientProfile = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('progress');
   
   // Data states
@@ -135,8 +169,8 @@ const ClientProfile = () => {
       // Fetch client-specific data
       if (clientId) {
         const [workoutRes, mealRes, progressRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/workouts/plans?client_id=${clientId}`, { headers }),
-          fetch(`${API_BASE_URL}/meal-plans/?client_id=${clientId}`, { headers }),
+          fetch(`${API_BASE_URL}/v2/workouts/plans?client_id=${clientId}`, { headers }),
+          fetch(`${API_BASE_URL}/v2/meals/plans?client_id=${clientId}`, { headers }),
           fetch(`${API_BASE_URL}/progress/?client_id=${clientId}`, { headers })
         ]);
 
@@ -144,9 +178,49 @@ const ClientProfile = () => {
         const mealData = mealRes.ok ? await mealRes.json() : [];
         const progressData = progressRes.ok ? await progressRes.json() : [];
 
-        setWorkoutPlans(workoutData);
-        setMealPlans(mealData);
-        setProgressEntries(progressData);
+        // Ensure data is array to avoid undefined errors
+        // Transform v2 workout data to match old format for compatibility
+        const normalizedWorkouts = Array.isArray(workoutData)
+          ? workoutData
+              .filter((plan: any) => plan.is_active !== false)
+              .sort((a: any, b: any) => {
+                const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+                const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+                return dateB - dateA;
+              })
+          : [];
+
+        const transformedWorkouts = normalizedWorkouts.length > 0
+          ? normalizedWorkouts.map((plan: any) => ({
+              ...plan,
+              exercises:
+                plan.workout_days?.flatMap((day: any) =>
+                  (day.workout_exercises || []).map((ex: any) => ({
+                    ...ex,
+                    exercise_name: ex.exercise_name || ex.name,
+                    sets: ex.target_sets,
+                    reps: ex.target_reps,
+                    rest_time: ex.rest_seconds,
+                  })),
+                ) || [],
+              sessions_count: plan.workout_days?.length || 0,
+              completed_sessions: 0,
+            }))
+          : [];
+        
+        const normalizedMealPlans = Array.isArray(mealData)
+          ? mealData
+              .filter((plan: any) => plan.is_active !== false)
+              .sort((a: any, b: any) => {
+                const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+                const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+                return dateB - dateA;
+              })
+          : [];
+
+        setWorkoutPlans(transformedWorkouts.slice(0, 1));
+        setMealPlans(normalizedMealPlans.slice(0, 1));
+        setProgressEntries(Array.isArray(progressData) ? progressData : []);
       }
 
     } catch (error) {
@@ -161,7 +235,7 @@ const ClientProfile = () => {
   }, [clientId, location.state]);
 
   const handleCreateWorkout = () => {
-    navigate('/create-workout', { state: { client } });
+    navigate('/create-workout-plan-v2', { state: { client } });
   };
 
   const handleCreateMealPlan = () => {
@@ -195,8 +269,8 @@ const ClientProfile = () => {
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-foreground mb-2">Client Not Found</h2>
-            <p className="text-muted-foreground mb-4">The client you're looking for doesn't exist.</p>
-            <Button onClick={() => navigate('/')}>Back to Dashboard</Button>
+            <p className="text-muted-foreground mb-4">{t('clientProfile.clientNotFound')}</p>
+            <Button onClick={() => navigate('/')}>{t('clientProfile.backToDashboard')}</Button>
           </div>
         </div>
       </Layout>
@@ -222,33 +296,61 @@ const ClientProfile = () => {
     created_at: entry.created_at || entry.recorded_at || '',
   }));
 
+  const activeMealPlan = mealPlans.length > 0 ? mealPlans[0] : null;
+  const activeWorkoutPlan = workoutPlans.length > 0 ? workoutPlans[0] : null;
+
+  const handleEditWorkoutPlan = () => {
+    if (!activeWorkoutPlan) {
+      handleCreateWorkout();
+      return;
+    }
+
+    navigate('/create-workout-plan-v2', {
+      state: {
+        client,
+        workoutPlan: activeWorkoutPlan,
+      },
+    });
+  };
+
+  const handleEditMealPlan = () => {
+    const planForEdit = activeMealPlan || mealPlans[0];
+    if (!planForEdit) {
+      handleCreateMealPlan();
+      return;
+    }
+
+    navigate('/create-meal-plan', {
+      state: {
+        client,
+        mealPlan: planForEdit,
+      },
+    });
+  };
+
   return (
     <Layout currentPage="dashboard">
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-6 space-y-6 min-h-screen">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={() => navigate('/')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              {t('clientProfile.back')}
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">{client.full_name}</h1>
-              <p className="text-muted-foreground">Client Profile</p>
+              <h1 className="text-3xl font-bold text-foreground">{client?.full_name || 'Client'}</h1>
+              <p className="text-muted-foreground">{t('clientProfile.title')}</p>
             </div>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleEditClient}>
               <Edit className="w-4 h-4 mr-2" />
-              Edit Profile
+              {t('clientProfile.editProfile')}
             </Button>
             <Button onClick={handleCreateWorkout} className="gradient-green">
               <Plus className="w-4 h-4 mr-2" />
-              Create Workout
-            </Button>
-            <Button onClick={handleCreateMealPlan} className="gradient-orange">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Meal Plan
+              {t('clientProfile.createWorkout')}
             </Button>
           </div>
         </div>
@@ -256,75 +358,62 @@ const ClientProfile = () => {
         {/* Client Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <User className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Status</p>
-                  <Badge variant={client.is_active ? "default" : "secondary"}>
-                    {client.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+              <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <User className="w-7 h-7 text-white" />
               </div>
+              <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.lastLogin')}</p>
+              <p className="text-sm font-bold text-foreground">
+                {client.last_login ? new Date(client.last_login).toLocaleDateString() : 'Never'}
+              </p>
             </CardContent>
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                  <Weight className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Current Weight</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {latestWeight?.weight ? `${latestWeight.weight}kg` : 'N/A'}
-                  </p>
-                </div>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+              <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                <Weight className="w-7 h-7 text-white" />
               </div>
+              <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.currentWeight')}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {latestWeight?.weight ? `${latestWeight.weight}kg` : 'N/A'}
+              </p>
             </CardContent>
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-                  <Dumbbell className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Active Plans</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {workoutPlans.length + mealPlans.length}
-                  </p>
-                </div>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+              <div className="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                <Dumbbell className="w-7 h-7 text-white" />
               </div>
+              <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.activePlans')}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {(workoutPlans?.length || 0) + (mealPlans?.length || 0)}
+              </p>
             </CardContent>
           </Card>
 
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
-            <CardContent className="py-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex flex-col justify-center">
-                  <p className="text-sm font-medium text-muted-foreground">Member Since</p>
-                  <p className="text-sm font-bold text-foreground">{new Date(client.created_at).toLocaleDateString()}</p>
-                </div>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+              <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <Calendar className="w-7 h-7 text-white" />
               </div>
+              <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.memberSince')}</p>
+              <p className="text-sm font-bold text-foreground">{new Date(client.created_at).toLocaleDateString()}</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="progress">Weight Progress</TabsTrigger>
-            <TabsTrigger value="workouts">Workout Plans</TabsTrigger>
-            <TabsTrigger value="meals">Meal Plans</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <div className="pt-4">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="progress">{t('clientProfile.weightProgress')}</TabsTrigger>
+              <TabsTrigger value="workouts">{t('clientProfile.workoutPlans')}</TabsTrigger>
+              <TabsTrigger value="meals">{t('clientProfile.mealPlans')}</TabsTrigger>
+              <TabsTrigger value="nutrition">{t('clientProfile.nutritionHistory')}</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
@@ -428,7 +517,7 @@ const ClientProfile = () => {
                       <div className="flex-1">
                         <p className="font-medium text-foreground">{plan.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {plan.total_calories} calories • {plan.meals.length} meals
+                          {plan.total_calories} calories • {plan.meals?.length || 0} meals
                         </p>
                       </div>
                       <span className="text-xs text-muted-foreground">
@@ -444,107 +533,236 @@ const ClientProfile = () => {
           {/* Workouts Tab */}
           <TabsContent value="workouts" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Workout Plans</h3>
-              <Button onClick={handleCreateWorkout} className="gradient-green">
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Workout
+              <h3 className="text-lg font-semibold">{t('clientProfile.workoutPlans')}</h3>
+              <Button
+                data-testid="workout-plan-action"
+                onClick={activeWorkoutPlan ? handleEditWorkoutPlan : handleCreateWorkout}
+                className="gradient-green"
+              >
+                {!activeWorkoutPlan && <Plus className="w-4 h-4 mr-2" />}
+                <span>
+                  {activeWorkoutPlan
+                    ? t('clientProfile.updateWorkoutPlan')
+                    : t('clientProfile.createNewWorkout')}
+                </span>
               </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {workoutPlans.map((plan) => (
-                <Card key={plan.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>{plan.name}</span>
-                      <Badge variant="outline">
-                        {plan.completed_sessions}/{plan.sessions_count}
-                      </Badge>
-                    </CardTitle>
-                    {plan.description && (
-                      <p className="text-sm text-muted-foreground">{plan.description}</p>
-                    )}
+              {activeWorkoutPlan ? (
+                <Card className="hover:shadow-lg transition-shadow" data-testid="workout-plan-card">
+                  <CardHeader className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-2">
+                        <CardTitle className="text-lg font-semibold">
+                          {activeWorkoutPlan.name}
+                        </CardTitle>
+                        {activeWorkoutPlan.description && (
+                          <p className="text-sm text-muted-foreground">{activeWorkoutPlan.description}</p>
+                        )}
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          {activeWorkoutPlan.split_type && (
+                            <Badge variant="outline">
+                              {activeWorkoutPlan.split_type.replace(/_/g, ' ')}
+                            </Badge>
+                          )}
+                          {activeWorkoutPlan.days_per_week && (
+                            <Badge variant="outline">
+                              {t('clientProfile.daysPerWeek', { count: activeWorkoutPlan.days_per_week })}
+                            </Badge>
+                          )}
+                          {activeWorkoutPlan.duration_weeks && (
+                            <Badge variant="outline">
+                              {t('clientProfile.durationWeeks', { count: activeWorkoutPlan.duration_weeks })}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{t('clientProfile.activePlan')}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleEditWorkoutPlan}
+                          aria-label={t('clientProfile.updateWorkoutPlan')}
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">{t('clientProfile.updateWorkoutPlan')}</span>
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {plan.exercises.slice(0, 3).map((exercise) => (
-                        <div key={exercise.id} className="flex items-center justify-between p-2 rounded border">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{exercise.exercise_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {exercise.sets} sets • {exercise.reps} • {exercise.rest_time}s rest
-                            </p>
-                            {exercise.notes && (
-                              <p className="text-xs text-orange-600 mt-1">
-                                Note: {exercise.notes}
-                              </p>
+                  <CardContent className="space-y-4">
+                    {activeWorkoutPlan.workout_days?.length ? (
+                      activeWorkoutPlan.workout_days.map((day: any) => (
+                        <div key={day.id || day.order_index} className="p-3 rounded border bg-muted/40 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-sm">{day.name}</p>
+                            {day.estimated_duration && (
+                              <span className="text-xs text-muted-foreground">
+                                {day.estimated_duration} {t('clientProfile.minutesShort')}
+                              </span>
                             )}
                           </div>
-                          <Badge variant="outline" className="text-xs">
-                            {exercise.muscle_group}
-                          </Badge>
+                          <div className="space-y-2">
+                            {day.workout_exercises?.length ? (
+                              day.workout_exercises.map((exercise: any) => (
+                                <div key={exercise.id || exercise.order_index} className="text-xs border rounded px-2 py-1 bg-background">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium text-foreground">
+                                      {exercise.exercise?.name || exercise.exercise_name}
+                                    </span>
+                                    {exercise.exercise?.muscle_group && (
+                                      <Badge variant="outline" className="text-[10px]">
+                                        {exercise.exercise.muscle_group}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-muted-foreground mt-1">
+                                    {[
+                                      exercise.target_sets ? t('clientProfile.setsShort', { count: exercise.target_sets }) : null,
+                                      exercise.target_reps || null,
+                                      exercise.rest_seconds ? t('clientProfile.restShort', { seconds: exercise.rest_seconds }) : null,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(' • ') || t('clientProfile.noWorkoutDetails')}
+                                  </div>
+                                  {exercise.notes ? (
+                                    <div className="mt-1 text-[11px] text-orange-600">
+                                      {t('clientProfile.notePrefix')} {exercise.notes}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-xs text-muted-foreground">{t('clientProfile.noWorkoutPlanExercises')}</p>
+                            )}
+                          </div>
                         </div>
-                      ))}
-                      {plan.exercises.length > 3 && (
-                        <p className="text-sm text-muted-foreground text-center">
-                          +{plan.exercises.length - 3} more exercises
-                        </p>
-                      )}
-                    </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">{t('clientProfile.noWorkoutPlanExercises')}</p>
+                    )}
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                <Card className="border-dashed" data-testid="workout-plan-empty">
+                  <CardHeader>
+                    <CardTitle>{t('clientProfile.noWorkoutPlanTitle')}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground space-y-2">
+                    <p>{t('clientProfile.noWorkoutPlanDescription')}</p>
+                    <p>{t('clientProfile.noWorkoutPlanAction')}</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 
           {/* Meals Tab */}
           <TabsContent value="meals" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Meal Plans</h3>
-              <Button onClick={handleCreateMealPlan} className="gradient-orange">
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Meal Plan
-              </Button>
+              <h3 className="text-lg font-semibold">{t('clientProfile.mealPlans')}</h3>
+            <Button
+              onClick={activeMealPlan ? handleEditMealPlan : handleCreateMealPlan}
+              className="gradient-orange"
+            >
+              {!activeMealPlan && <Plus className="w-4 h-4 mr-2" />}
+              <span>{activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}</span>
+            </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {mealPlans.map((plan) => (
-                <Card key={plan.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle>{plan.title}</CardTitle>
-                    <div className="flex space-x-4 text-sm text-muted-foreground">
-                      <span>{plan.total_calories} cal</span>
-                      <span>{plan.protein_target}g protein</span>
-                      <span>{plan.carb_target}g carbs</span>
-                      <span>{plan.fat_target}g fat</span>
+              {activeMealPlan ? (
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-2">
+                        <CardTitle className="text-lg font-semibold">
+                          {activeMealPlan.name || activeMealPlan.title}
+                        </CardTitle>
+                        {activeMealPlan.description && (
+                          <p className="text-sm text-muted-foreground">{activeMealPlan.description}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {t('clientProfile.lastUpdated')} {new Date(activeMealPlan.updated_at || activeMealPlan.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{t('clientProfile.activePlan')}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleEditMealPlan}
+                          aria-label={t('clientProfile.updateMealPlan')}
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">{t('clientProfile.updateMealPlan')}</span>
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                      {activeMealPlan.total_calories && <span>{activeMealPlan.total_calories} {t('meals.calories')}</span>}
+                      {activeMealPlan.protein_target && <span>{activeMealPlan.protein_target}g {t('meals.protein')}</span>}
+                      {activeMealPlan.carb_target && <span>{activeMealPlan.carb_target}g {t('meals.carbs')}</span>}
+                      {activeMealPlan.fat_target && <span>{activeMealPlan.fat_target}g {t('meals.fat')}</span>}
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {plan.meals.map((meal) => (
-                        <div key={meal.id} className="p-3 rounded border">
-                          <h4 className="font-medium text-sm mb-2">{meal.name}</h4>
-                          <div className="space-y-1">
-                            {meal.components.map((component) => (
-                              <div key={component.id} className="flex items-center justify-between text-xs">
-                                <span className={component.is_optional ? 'text-muted-foreground' : 'text-foreground'}>
-                                  {component.description}
-                                  {component.is_optional && ' (optional)'}
-                                </span>
-                                <span className="text-muted-foreground">{component.calories} cal</span>
-                              </div>
-                            ))}
+                      {activeMealPlan.meal_slots && activeMealPlan.meal_slots.length > 0 ? (
+                        activeMealPlan.meal_slots.map((meal: any, index: number) => (
+                          <div key={meal.id || index} className="p-3 rounded border bg-muted/40">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-medium text-sm">{meal.name}</h4>
+                              {meal.time_suggestion && (
+                                <span className="text-xs text-muted-foreground">{meal.time_suggestion}</span>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              {meal.macro_categories && meal.macro_categories.map((macro: any, macroIndex: number) => (
+                                <div key={macroIndex} className="text-xs text-muted-foreground">
+                                  <span className="font-medium capitalize text-foreground">{macro.macro_type}: </span>
+                                  <span>{macro.quantity_instruction || t('clientProfile.noQuantitySet')}</span>
+                                  {macro.food_options?.length > 0 && (
+                                    <span className="ml-2">
+                                      ({macro.food_options.map((f: any) => f.name_hebrew || f.name).join(', ')})
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          {meal.notes && (
-                            <p className="text-xs text-orange-600 mt-2">Note: {meal.notes}</p>
-                          )}
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">{t('clientProfile.noMealsConfigured')}</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                <Card className="border-dashed">
+                  <CardHeader>
+                    <CardTitle>{t('clientProfile.noMealPlanTitle')}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground space-y-2">
+                    <p>{t('clientProfile.noMealPlanDescription')}</p>
+                    <p>{t('clientProfile.noMealPlanAction')}</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="nutrition" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">{t('clientProfile.nutritionHistory')}</h3>
+              <Button variant="outline" onClick={handleCreateMealPlan}>
+                <Utensils className="w-4 h-4 mr-2" />
+                {activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}
+              </Button>
+            </div>
+            <MealHistory clientId={client.id} />
           </TabsContent>
 
           {/* Progress Tab */}
@@ -561,7 +779,7 @@ const ClientProfile = () => {
           <TabsContent value="profile" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Complete Profile Information</CardTitle>
+                <CardTitle>{t('clientProfile.completeProfileInfo')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

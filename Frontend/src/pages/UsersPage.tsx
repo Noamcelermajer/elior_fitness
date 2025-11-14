@@ -10,18 +10,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { Pencil, Trash2, Eye, Shield, User, Loader2, UserPlus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Pencil, Trash2, Eye, Shield, User, Loader2, UserPlus, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
-
-const roleOptions = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'trainer', label: 'Trainer' },
-  { value: 'client', label: 'Client' },
-];
 
 const UsersPage = () => {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
+  const { t } = useTranslation();
+  
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -31,16 +28,19 @@ const UsersPage = () => {
   const [editForm, setEditForm] = useState({ full_name: '', email: '', role: '' });
   const [actionLoading, setActionLoading] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
-  const [registerForm, setRegisterForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    full_name: '',
-    role: 'trainer'
-  });
+  const [registerForm, setRegisterForm] = useState({ username: '', email: '', password: '', confirmPassword: '', full_name: '', role: 'TRAINER' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  
+  const roleOptions = [
+    { value: 'ADMIN', label: t('roles.ADMIN') },
+    { value: 'TRAINER', label: t('roles.TRAINER') },
+    { value: 'CLIENT', label: t('roles.CLIENT') },
+  ];
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') return;
+    if (!user || user.role !== 'ADMIN') return;
     fetchUsers();
   }, [user]);
 
@@ -56,14 +56,20 @@ const UsersPage = () => {
       const data = await res.json();
       setUsers(data);
     } catch (err) {
-      setError('Failed to load users');
+      setError(t('admin.fetchFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    // Prevent admin from deleting themselves
+    if (user?.id === userId) {
+      alert(t('admin.cannotDeleteSelf'));
+      return;
+    }
+    
+    if (!window.confirm(t('admin.deleteConfirm'))) return;
     setActionLoading(true);
     try {
       const token = localStorage.getItem('access_token');
@@ -74,7 +80,7 @@ const UsersPage = () => {
       if (!res.ok) throw new Error('Failed to delete user');
       setUsers((prev) => prev.filter((u) => u.id !== userId));
     } catch (err) {
-      alert('Failed to delete user');
+      alert(t('admin.deleteFailed'));
     } finally {
       setActionLoading(false);
     }
@@ -109,14 +115,14 @@ const UsersPage = () => {
       setEditDialogOpen(false);
       addNotification({
         type: 'success',
-        title: 'User Updated',
-        message: 'User information has been updated successfully.'
+        title: t('admin.userUpdated'),
+        message: t('admin.userUpdatedMessage')
       });
     } catch (err) {
       addNotification({
         type: 'error',
-        title: 'Update Failed',
-        message: 'Failed to update user. Please try again.'
+        title: t('admin.updateFailed'),
+        message: t('admin.updateFailedMessage')
       });
     } finally {
       setActionLoading(false);
@@ -140,14 +146,14 @@ const UsersPage = () => {
       setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
       addNotification({
         type: 'success',
-        title: 'Role Updated',
-        message: `User role has been changed to ${newRole}.`
+        title: t('admin.roleUpdated'),
+        message: `${t('admin.roleUpdatedMessage')} ${newRole}.`
       });
     } catch (err) {
       addNotification({
         type: 'error',
-        title: 'Role Change Failed',
-        message: 'Failed to change user role. Please try again.'
+        title: t('admin.roleChangeFailed'),
+        message: t('admin.roleChangeFailedMessage')
       });
     } finally {
       setActionLoading(false);
@@ -171,26 +177,26 @@ const UsersPage = () => {
       if (response.ok) {
         addNotification({
           type: 'success',
-          title: 'Trainer Registered',
-          message: 'New trainer account has been created successfully.'
+          title: t('admin.trainerRegistered'),
+          message: t('admin.trainerRegisteredMessage')
         });
         setRegisterDialogOpen(false);
-        setRegisterForm({ username: '', email: '', password: '', full_name: '', role: 'trainer' });
+        setRegisterForm({ username: '', email: '', password: '', confirmPassword: '', full_name: '', role: 'trainer' });
         fetchUsers(); // Refresh the users list
       } else {
         const errorData = await response.json();
         addNotification({
           type: 'error',
-          title: 'Registration Failed',
-          message: errorData.detail || 'Failed to register trainer. Please try again.'
+          title: t('admin.registrationFailedTitle'),
+          message: errorData.detail || t('admin.registrationFailedMessage')
         });
       }
     } catch (error) {
       console.error('Registration error:', error);
       addNotification({
         type: 'error',
-        title: 'Registration Error',
-        message: 'An error occurred during registration. Please try again.'
+        title: t('admin.registrationError'),
+        message: t('admin.registrationErrorMessage')
       });
     } finally {
       setActionLoading(false);
@@ -203,11 +209,11 @@ const UsersPage = () => {
       u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (!user || user.role !== 'admin') {
+  if (!user || user.role !== 'ADMIN') {
     return (
       <Layout currentPage="users">
         <div className="max-w-2xl mx-auto py-20 text-center text-lg font-bold text-red-500">
-          Access denied. Admins only.
+          {t('admin.accessDenied')}
         </div>
       </Layout>
     );
@@ -218,12 +224,12 @@ const UsersPage = () => {
       <div className="max-w-6xl mx-auto py-8">
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Users</CardTitle>
+            <CardTitle>{t('admin.users')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
               <Input
-                placeholder="Search by username or email..."
+                placeholder={t('admin.searchUsersPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-xs"
@@ -233,7 +239,7 @@ const UsersPage = () => {
                 className="gradient-orange hover:gradient-orange-dark text-background font-semibold"
               >
                 <UserPlus className="w-4 h-4 mr-2" />
-                Register Trainer
+                {t('admin.registerTrainer')}
               </Button>
             </div>
             {loading ? (
@@ -245,13 +251,13 @@ const UsersPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Full Name</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{t('admin.username')}</TableHead>
+                      <TableHead>{t('admin.email')}</TableHead>
+                      <TableHead>{t('admin.fullName')}</TableHead>
+                      <TableHead>{t('admin.role')}</TableHead>
+                      <TableHead>{t('admin.status')}</TableHead>
+                      <TableHead>{t('admin.created')}</TableHead>
+                      <TableHead>{t('admin.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -278,9 +284,9 @@ const UsersPage = () => {
                         </TableCell>
                         <TableCell>
                           {u.is_active ? (
-                            <Badge className="bg-green-500/20 text-green-700 border-green-500/30">Active</Badge>
+                            <Badge className="bg-green-500/20 text-green-700 border-green-500/30">{t('admin.active')}</Badge>
                           ) : (
-                            <Badge className="bg-red-500/20 text-red-700 border-red-500/30">Inactive</Badge>
+                            <Badge className="bg-red-500/20 text-red-700 border-red-500/30">{t('admin.inactive')}</Badge>
                           )}
                         </TableCell>
                         <TableCell>{u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}</TableCell>
@@ -301,12 +307,12 @@ const UsersPage = () => {
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Edit User</DialogTitle>
-              <DialogDescription>Update user details and role.</DialogDescription>
+              <DialogTitle>{t('admin.editUser')}</DialogTitle>
+              <DialogDescription>{t('admin.updateUserDetails')}</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="full_name">Full Name</Label>
+                <Label htmlFor="full_name">{t('admin.fullName')}</Label>
                 <Input
                   id="full_name"
                   value={editForm.full_name}
@@ -315,7 +321,7 @@ const UsersPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('admin.email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -325,7 +331,7 @@ const UsersPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
+                <Label htmlFor="role">{t('admin.role')}</Label>
                 <Select
                   value={editForm.role}
                   onValueChange={(val) => setEditForm({ ...editForm, role: val })}
@@ -341,9 +347,9 @@ const UsersPage = () => {
                 </Select>
               </div>
               <div className="flex space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} className="flex-1">Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} className="flex-1">{t('admin.cancel')}</Button>
                 <Button type="submit" className="flex-1 gradient-orange text-background" disabled={actionLoading}>
-                  {actionLoading ? 'Saving...' : 'Save Changes'}
+                  {actionLoading ? t('admin.saving') : t('admin.saveChanges')}
                 </Button>
               </div>
             </form>
@@ -354,58 +360,80 @@ const UsersPage = () => {
         <Dialog open={registerDialogOpen} onOpenChange={setRegisterDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Register New Trainer</DialogTitle>
-              <DialogDescription>Create a new trainer account. Fill in the details below.</DialogDescription>
+              <DialogTitle>{t('admin.registerNewTrainer')}</DialogTitle>
+              <DialogDescription>{t('admin.registerNewTrainerDesc')}</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleRegisterTrainer} className="space-y-4">
+            <form onSubmit={e => { e.preventDefault(); if (registerForm.password !== registerForm.confirmPassword) { setPasswordError(t('admin.passwordsDoNotMatch')); return; } setPasswordError(''); handleRegisterTrainer(e); }} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">{t('admin.username')}</Label>
                 <Input
                   id="username"
                   value={registerForm.username}
                   onChange={(e) => setRegisterForm({...registerForm, username: e.target.value})}
-                  placeholder="Enter username"
+                  placeholder={t('admin.enterUsername')}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('admin.email')}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={registerForm.email}
                   onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
-                  placeholder="Enter email"
+                  placeholder={t('admin.enterEmail')}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="full_name">Full Name</Label>
+                <Label htmlFor="full_name">{t('admin.fullName')}</Label>
                 <Input
                   id="full_name"
                   value={registerForm.full_name}
                   onChange={(e) => setRegisterForm({...registerForm, full_name: e.target.value})}
-                  placeholder="Enter full name"
+                  placeholder={t('admin.enterFullName')}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={registerForm.password}
-                  onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
-                  placeholder="Enter password"
-                  required
-                />
+                <Label htmlFor="password">{t('admin.password')}</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={registerForm.password}
+                    onChange={e => setRegisterForm({ ...registerForm, password: e.target.value })}
+                    placeholder={t('admin.enterPassword')}
+                    required
+                  />
+                  <button type="button" className="absolute right-2 top-2" onClick={() => setShowPassword(v => !v)}>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">{t('admin.confirmPassword')}</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={registerForm.confirmPassword}
+                    onChange={e => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                    placeholder={t('admin.reEnterPassword')}
+                    required
+                  />
+                  <button type="button" className="absolute right-2 top-2" onClick={() => setShowConfirmPassword(v => !v)}>
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              {passwordError && <div className="text-red-500 text-sm">{passwordError}</div>}
               <div className="flex space-x-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setRegisterDialogOpen(false)} className="flex-1">
-                  Cancel
+                  {t('admin.cancel')}
                 </Button>
                 <Button type="submit" className="flex-1 gradient-orange text-background" disabled={actionLoading}>
-                  {actionLoading ? 'Registering...' : 'Register Trainer'}
+                  {actionLoading ? t('admin.registering') : t('admin.registerTrainer')}
                 </Button>
               </div>
             </form>

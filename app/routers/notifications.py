@@ -58,7 +58,7 @@ async def create_notification(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Create a new notification (admin/trainer only)"""
-    if current_user.role not in ["admin", "trainer"]:
+    if current_user.role not in ["ADMIN", "TRAINER"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins and trainers can create notifications"
@@ -131,7 +131,7 @@ async def create_system_notification(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Create system notifications (admin only)"""
-    if current_user.role != "admin":
+    if current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can create system notifications"
@@ -157,7 +157,7 @@ async def trigger_weekly_checks(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Manually trigger weekly notification checks (admin only)"""
-    if current_user.role != "admin":
+    if current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can trigger weekly checks"
@@ -179,7 +179,7 @@ async def trigger_goal_check(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Manually trigger goal check for a specific client (admin/trainer only)"""
-    if current_user.role not in ["admin", "trainer"]:
+    if current_user.role not in ["ADMIN", "TRAINER"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins and trainers can trigger goal checks"
@@ -202,7 +202,7 @@ async def trigger_critical_error_notification(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Trigger a critical error notification (admin only)"""
-    if current_user.role != "admin":
+    if current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can trigger critical error notifications"

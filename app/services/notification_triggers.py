@@ -18,7 +18,7 @@ class NotificationTriggers:
         notification_type: str = "error"
     ):
         """Send critical notifications to all admins"""
-        admins = db.query(User).filter(User.role == "admin").all()
+        admins = db.query(User).filter(User.role == "ADMIN").all()
         
         for admin in admins:
             notification_data = NotificationCreate(
@@ -78,7 +78,7 @@ class NotificationTriggers:
         week_end = week_start + timedelta(days=7)
         
         # Get all clients with their trainers
-        clients = db.query(User).filter(User.role == "client").all()
+        clients = db.query(User).filter(User.role == "CLIENT").all()
         
         for client in clients:
             if not client.trainer_id:
@@ -129,7 +129,7 @@ class NotificationTriggers:
         week_end = week_start + timedelta(days=7)
         
         # Get all clients with their trainers
-        clients = db.query(User).filter(User.role == "client").all()
+        clients = db.query(User).filter(User.role == "CLIENT").all()
         
         for client in clients:
             if not client.trainer_id:

@@ -4,9 +4,9 @@ from enum import Enum
 from datetime import datetime
 
 class UserRole(str, Enum):
-    ADMIN = "admin"
-    TRAINER = "trainer"
-    CLIENT = "client"
+    ADMIN = "ADMIN"
+    TRAINER = "TRAINER"
+    CLIENT = "CLIENT"
 
 class UserBase(BaseModel):
     username: str

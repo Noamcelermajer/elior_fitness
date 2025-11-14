@@ -10,9 +10,11 @@ import {
 } from './ui/popover';
 import { ScrollArea } from './ui/scroll-area';
 import { NotificationToast } from './NotificationToast';
+import { useTranslation } from 'react-i18next';
 
 export const NotificationBell: React.FC = () => {
   const { notifications, removeNotification, clearAll } = useNotifications();
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   const unreadCount = notifications.length;
@@ -39,7 +41,7 @@ export const NotificationBell: React.FC = () => {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-4 border-b">
-          <h4 className="font-semibold">Notifications</h4>
+          <h4 className="font-semibold">{t('notifications.notifications')}</h4>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -47,7 +49,7 @@ export const NotificationBell: React.FC = () => {
               onClick={handleClearAll}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Clear all
+              {t('notifications.markAllAsRead')}
             </Button>
           )}
         </div>
@@ -55,7 +57,7 @@ export const NotificationBell: React.FC = () => {
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
               <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No notifications</p>
+              <p>{t('notifications.noNotifications')}</p>
             </div>
           ) : (
             <div className="p-2 space-y-2">

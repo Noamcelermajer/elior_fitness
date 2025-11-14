@@ -18,20 +18,24 @@ class MealStatus(str, enum.Enum):
     SKIPPED = "skipped"
 
 class ComponentType(str, enum.Enum):
+    """Food category types for meal components.
+    
+    Each meal is divided into 3 main categories:
+    - CARBS: Rice, bread, pasta, fruits, etc.
+    - PROTEIN: Chicken, fish, eggs, protein powder, yogurt, etc.
+    - FAT: Oils, nuts, peanut butter, avocado, etc.
+    """
+    CARBS = "carbs"
     PROTEIN = "protein"
-    CARB = "carb"
     FAT = "fat"
-    VEGETABLE = "vegetable"
-    FRUIT = "fruit"
-    OTHER = "other"
 
 # Legacy models (keeping for backward compatibility)
 class NutritionPlan(Base):
     __tablename__ = "nutrition_plans"
 
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    trainer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    trainer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     description = Column(String)
     daily_calories = Column(Integer)
@@ -50,7 +54,7 @@ class Recipe(Base):
     __tablename__ = "recipes"
 
     id = Column(Integer, primary_key=True, index=True)
-    trainer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    trainer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     description = Column(String)
     instructions = Column(String)
@@ -85,7 +89,7 @@ class MealCompletion(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     planned_meal_id = Column(Integer, ForeignKey("planned_meals.id"), nullable=False)
-    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status = Column(Enum(MealStatus), nullable=False)
     photo_path = Column(String)
     completed_at = Column(DateTime, default=func.now())  # SQLite compatible
@@ -98,7 +102,7 @@ class WeighIn(Base):
     __tablename__ = "weigh_ins"
 
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     weight = Column(Float, nullable=False)  # in kg
     body_fat = Column(Float)  # percentage
     notes = Column(String)
@@ -109,8 +113,8 @@ class MealPlan(Base):
     __tablename__ = "meal_plans"
 
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    trainer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    trainer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     date = Column(Date, nullable=False)
     title = Column(String)  # e.g., "Cutting Phase", "Mass Gain Week 1"
     total_calories = Column(Integer)
@@ -157,7 +161,7 @@ class MealUpload(Base):
     __tablename__ = "meal_uploads"
 
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     meal_entry_id = Column(Integer, ForeignKey("meal_entries.id"), nullable=False)
     image_path = Column(String)
     marked_ok = Column(Boolean)  # ✅ or ❌
@@ -171,7 +175,7 @@ class NutritionEntry(Base):
     __tablename__ = "nutrition_entries"
 
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     date = Column(Date, nullable=False)
     weight = Column(Float, nullable=False)  # in kg
     notes = Column(String)

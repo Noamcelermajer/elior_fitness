@@ -7,21 +7,21 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dumbbell, Target, Utensils, TrendingUp, Plus, Calendar, Clock, CheckCircle, Users, Trophy, Flame, UserPlus, Shield, Settings } from 'lucide-react';
+import { Dumbbell, Target, Utensils, TrendingUp, Plus, Calendar, Clock, CheckCircle, Users, Trophy, Flame, UserPlus, Shield, Settings, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
-  const [registerForm, setRegisterForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    full_name: ''
-  });
+  const [registerForm, setRegisterForm] = useState({ username: '', email: '', password: '', confirmPassword: '', full_name: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
 
   // --- New state for real stats ---
@@ -41,7 +41,7 @@ const AdminDashboard = () => {
       try {
         const token = localStorage.getItem('access_token');
         if (!token) {
-          setStatsError('No access token found. Please log in again.');
+          setStatsError(t('admin.noAccessToken'));
           navigate('/login');
           return;
         }
@@ -73,14 +73,22 @@ const AdminDashboard = () => {
         const users = await usersRes.json();
         const trainers = await trainersRes.json();
         const clients = await clientsRes.json();
+        
+        // Fetch real system health
+        const healthRes = await fetch(`${API_BASE_URL}/system/status`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const systemHealth = healthRes.ok ? await healthRes.json() : null;
+        const healthPercent = systemHealth?.system_health === 'healthy' ? '100%' : systemHealth?.system_health === 'degraded' ? '75%' : '50%';
+        
         setStats({
           totalUsers: users.length,
           totalTrainers: trainers.length,
           totalClients: clients.length,
-          systemHealth: '100%', // Placeholder, can be dynamic if backend provides
+          systemHealth: healthPercent,
         });
       } catch (err: any) {
-        setStatsError(err.message || 'Failed to load stats');
+        setStatsError(err.message || t('admin.failedToLoadStats'));
         console.error('Stats error:', err);
       } finally {
         setStatsLoading(false);
@@ -91,54 +99,83 @@ const AdminDashboard = () => {
 
   const statsCards = [
     {
-      label: 'Total Users',
+      label: t('admin.totalUsers'),
       value: statsLoading ? '...' : stats.totalUsers.toString(),
       icon: Users,
       gradient: 'bg-gradient-to-r from-blue-500 to-blue-600',
     },
     {
-      label: 'Active Trainers',
+      label: t('admin.activeTrainers'),
       value: statsLoading ? '...' : stats.totalTrainers.toString(),
       icon: Shield,
       gradient: 'bg-gradient-to-r from-green-500 to-green-600',
     },
     {
-      label: 'Total Clients',
+      label: t('admin.totalClients'),
       value: statsLoading ? '...' : stats.totalClients.toString(),
       icon: Users,
       gradient: 'bg-gradient-to-r from-purple-500 to-purple-600',
     },
     {
-      label: 'System Health',
+      label: t('admin.systemHealth'),
       value: stats.systemHealth,
       icon: CheckCircle,
       gradient: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
     },
   ];
 
-  const recentActivity = [
-    {
-      title: 'New trainer registered: Coach Sarah',
-      description: 'Sarah Johnson joined the platform',
-      time: '2 hours ago',
-      icon: UserPlus,
-      color: 'bg-gradient-to-tr from-green-500 to-green-700',
-    },
-    {
-      title: 'System maintenance completed',
-      description: 'Database optimization successful',
-      time: 'Yesterday',
-      icon: Settings,
-      color: 'bg-gradient-to-tr from-blue-500 to-blue-700',
-    },
-    {
-      title: 'New client registration',
-      description: 'Mike Davis joined as a client',
-      time: '3 days ago',
-      icon: Users,
-      color: 'bg-gradient-to-tr from-purple-500 to-purple-700',
-    },
-  ];
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+
+  // Fetch recent activity from recent user registrations
+  useEffect(() => {
+    const fetchActivity = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+        const usersRes = await fetch(`${API_BASE_URL}/users/`, { headers });
+        if (usersRes.ok) {
+          const users = await usersRes.json();
+          // Sort by created_at and take last 5
+          const sortedUsers = users.sort((a: any, b: any) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          ).slice(0, 5);
+          
+          const activities = sortedUsers.map((u: any) => {
+            const roleKey = u.role === 'ADMIN' || u.role === 'admin' ? 'admin' : 
+                           u.role === 'TRAINER' || u.role === 'trainer' ? 'trainer' : 'client';
+            return {
+              title: `${t(`time.${roleKey}Registered`)}: ${u.full_name}`,
+              description: `${u.email} ${t('admin.entered')}`,
+              time: formatTimeAgo(new Date(u.created_at)),
+              icon: UserPlus,
+              color: (u.role === 'ADMIN' || u.role === 'admin') ? 'bg-gradient-to-tr from-red-500 to-red-700' : 
+                     (u.role === 'TRAINER' || u.role === 'trainer') ? 'bg-gradient-to-tr from-green-500 to-green-700' : 
+                     'bg-gradient-to-tr from-purple-500 to-purple-700',
+            };
+          });
+          setRecentActivity(activities);
+        }
+      } catch (error) {
+        console.error('Error fetching activity:', error);
+      }
+    };
+    if (user && user.role === 'admin') {
+      fetchActivity();
+    }
+  }, [user]);
+
+  const formatTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    if (diffInMinutes < 1) return t('time.justNow');
+    if (diffInMinutes < 60) return diffInMinutes === 1 ? t('time.minuteAgo') : `${diffInMinutes} ${t('time.minutesAgo')}`;
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return diffInHours === 1 ? t('time.hourAgo') : `${diffInHours} ${t('time.hoursAgo')}`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return t('time.yesterday');
+    if (diffInDays < 7) return `${diffInDays} ${t('time.daysAgo')}`;
+    return date.toLocaleDateString();
+  };
 
   const handleRegisterTrainer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,21 +191,21 @@ const AdminDashboard = () => {
         },
         body: JSON.stringify({
           ...registerForm,
-          role: 'trainer'
+          role: 'TRAINER'
         }),
       });
 
       if (response.ok) {
-        alert('Trainer registered successfully!');
+        alert(t('admin.trainerRegisteredSuccess'));
         setIsRegisterDialogOpen(false);
-        setRegisterForm({ username: '', email: '', password: '', full_name: '' });
+        setRegisterForm({ username: '', email: '', password: '', confirmPassword: '', full_name: '' });
       } else {
         const errorData = await response.json();
-        alert(`Registration failed: ${errorData.detail || 'Unknown error'}`);
+        alert(`${t('admin.registrationFailed')}: ${errorData.detail || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Registration error:', error);
-      alert('An error occurred during registration');
+      alert(t('admin.errorOccurred'));
     } finally {
       setLoading(false);
     }
@@ -181,7 +218,7 @@ const AdminDashboard = () => {
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="flex items-center space-x-2">
             <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-            <span className="text-muted-foreground">Loading admin dashboard...</span>
+            <span className="text-muted-foreground">{t('admin.loadingAdminDashboard')}</span>
           </div>
         </div>
       </Layout>
@@ -197,72 +234,94 @@ const AdminDashboard = () => {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
               <div>
                 <h1 className="text-2xl lg:text-3xl font-bold text-gradient">
-                  Admin Dashboard
+                  {t('admin.adminDashboard')}
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                  Manage users, monitor system health, and oversee platform operations
+                  {t('admin.adminDashboardSubtitle')}
                 </p>
               </div>
-              <div className="flex space-x-3">
+              <div className="flex gap-3">
                 <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
                   <DialogTrigger asChild>
                     <Button 
                       className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
                     >
                       <UserPlus className="w-4 h-4 mr-2" />
-                      Register Trainer
+                      {t('admin.registerTrainer')}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                      <DialogTitle>Register New Trainer</DialogTitle>
+                      <DialogTitle>{t('admin.registerNewTrainer')}</DialogTitle>
                       <DialogDescription>
-                        Create a new trainer account. Fill in the details below.
+                        {t('admin.registerNewTrainerDesc')}
                       </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleRegisterTrainer} className="space-y-4">
+                    <form onSubmit={e => { e.preventDefault(); if (registerForm.password !== registerForm.confirmPassword) { setPasswordError(t('admin.passwordsDoNotMatch')); return; } setPasswordError(''); handleRegisterTrainer(e); }} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="username">Username</Label>
+                        <Label htmlFor="username">{t('admin.username')}</Label>
                         <Input
                           id="username"
                           value={registerForm.username}
                           onChange={(e) => setRegisterForm({...registerForm, username: e.target.value})}
-                          placeholder="Enter username"
+                          placeholder={t('admin.enterUsername')}
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">{t('admin.email')}</Label>
                         <Input
                           id="email"
                           type="email"
                           value={registerForm.email}
                           onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
-                          placeholder="Enter email"
+                          placeholder={t('admin.enterEmail')}
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="full_name">Full Name</Label>
+                        <Label htmlFor="full_name">{t('admin.fullName')}</Label>
                         <Input
                           id="full_name"
                           value={registerForm.full_name}
                           onChange={(e) => setRegisterForm({...registerForm, full_name: e.target.value})}
-                          placeholder="Enter full name"
+                          placeholder={t('admin.enterFullName')}
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={registerForm.password}
-                          onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
-                          placeholder="Enter password"
-                          required
-                        />
+                        <Label htmlFor="password">{t('admin.password')}</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            value={registerForm.password}
+                            onChange={e => setRegisterForm({ ...registerForm, password: e.target.value })}
+                            placeholder={t('admin.enterPassword')}
+                            required
+                          />
+                          <button type="button" className="absolute right-2 top-2" onClick={() => setShowPassword(v => !v)}>
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">{t('admin.confirmPassword')}</Label>
+                        <div className="relative">
+                          <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={registerForm.confirmPassword}
+                            onChange={e => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                            placeholder={t('admin.reEnterPassword')}
+                            required
+                          />
+                          <button type="button" className="absolute right-2 top-2" onClick={() => setShowConfirmPassword(v => !v)}>
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      {passwordError && <div className="text-red-500 text-sm">{passwordError}</div>}
                       <div className="flex space-x-2 pt-4">
                         <Button
                           type="button"
@@ -270,14 +329,14 @@ const AdminDashboard = () => {
                           onClick={() => setIsRegisterDialogOpen(false)}
                           className="flex-1"
                         >
-                          Cancel
+                          {t('admin.cancel')}
                         </Button>
                         <Button
                           type="submit"
                           className="flex-1 gradient-orange text-background"
                           disabled={loading}
                         >
-                          {loading ? 'Registering...' : 'Register Trainer'}
+                          {loading ? t('admin.registering') : t('admin.registerTrainer')}
                         </Button>
                       </div>
                     </form>
@@ -288,7 +347,15 @@ const AdminDashboard = () => {
                   className="font-semibold transform hover:scale-105 transition-all duration-200"
                 >
                   <Settings className="w-4 h-4 mr-2" />
-                  System Settings
+                  {t('admin.systemSettings')}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/secret-users')}
+                  className="font-semibold transform hover:scale-105 transition-all duration-200 bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  {t('admin.secretUsers')}
                 </Button>
               </div>
             </div>
@@ -306,7 +373,7 @@ const AdminDashboard = () => {
                     <p className="text-2xl lg:text-3xl font-bold text-background">
                       {statsLoading ? '...' : stats.totalUsers}
                     </p>
-                    <p className="text-background/80 text-xs lg:text-sm font-medium">Total Users</p>
+                    <p className="text-background/80 text-xs lg:text-sm font-medium">{t('admin.totalUsers')}</p>
                   </div>
                   <Users className="w-8 h-8 lg:w-10 lg:h-10 text-background/90" />
                 </div>
@@ -320,7 +387,7 @@ const AdminDashboard = () => {
                     <p className="text-2xl lg:text-3xl font-bold text-background">
                       {statsLoading ? '...' : stats.totalTrainers}
                     </p>
-                    <p className="text-background/80 text-xs lg:text-sm font-medium">Active Trainers</p>
+                    <p className="text-background/80 text-xs lg:text-sm font-medium">{t('admin.activeTrainers')}</p>
                   </div>
                   <Shield className="w-8 h-8 lg:w-10 lg:h-10 text-background/90" />
                 </div>
@@ -334,7 +401,7 @@ const AdminDashboard = () => {
                     <p className="text-2xl lg:text-3xl font-bold text-background">
                       {statsLoading ? '...' : stats.totalClients}
                     </p>
-                    <p className="text-background/80 text-xs lg:text-sm font-medium">Total Clients</p>
+                    <p className="text-background/80 text-xs lg:text-sm font-medium">{t('admin.totalClients')}</p>
                   </div>
                   <Users className="w-8 h-8 lg:w-10 lg:h-10 text-background/90" />
                 </div>
@@ -348,7 +415,7 @@ const AdminDashboard = () => {
                     <p className="text-2xl lg:text-3xl font-bold text-background">
                       {stats.systemHealth}
                     </p>
-                    <p className="text-background/80 text-xs lg:text-sm font-medium">System Health</p>
+                    <p className="text-background/80 text-xs lg:text-sm font-medium">{t('admin.systemHealth')}</p>
                   </div>
                   <CheckCircle className="w-8 h-8 lg:w-10 lg:h-10 text-background/90" />
                 </div>
@@ -363,16 +430,16 @@ const AdminDashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-foreground">
                   <Users className="w-5 h-5 text-primary" />
-                  <span>User Management</span>
+                  <span>{t('admin.userManagement')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-bold text-foreground">
-                    {statsLoading ? '...' : `${stats.totalUsers} Total Users`}
+                    {statsLoading ? '...' : `${stats.totalUsers} ${t('admin.totalUsers')}`}
                   </span>
                   <Badge className="gradient-orange text-background">
-                    {statsLoading ? '...' : `${stats.totalTrainers} Trainers`}
+                    {statsLoading ? '...' : `${stats.totalTrainers} ${t('admin.trainers')}`}
                   </Badge>
                 </div>
                 <Progress value={stats.totalUsers ? Math.round((stats.totalTrainers / stats.totalUsers) * 100) : 0} className="h-3 bg-secondary" />
@@ -381,7 +448,7 @@ const AdminDashboard = () => {
                   className="w-full gradient-orange text-background font-semibold transform hover:scale-105 transition-all duration-200"
                 >
                   <Users className="w-4 h-4 mr-2" />
-                  Manage Users
+                  {t('admin.manageUsers')}
                 </Button>
               </CardContent>
             </Card>
@@ -391,16 +458,16 @@ const AdminDashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-foreground">
                   <Shield className="w-5 h-5 text-green-500" />
-                  <span>System Health</span>
+                  <span>{t('admin.systemHealth')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-bold text-foreground">
-                    100% Uptime
+                    {t('admin.systemUptime')}
                   </span>
                   <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                    All Systems OK
+                    {t('admin.allSystemsOK')}
                   </Badge>
                 </div>
                 <Progress value={100} className="h-3 bg-secondary" />
@@ -409,7 +476,7 @@ const AdminDashboard = () => {
                   className="w-full bg-green-500 hover:bg-green-600 text-background font-semibold transform hover:scale-105 transition-all duration-200"
                 >
                   <Shield className="w-4 h-4 mr-2" />
-                  View System Status
+                  {t('admin.viewSystemStatus')}
                 </Button>
               </CardContent>
             </Card>
@@ -420,7 +487,7 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-foreground">
                 <TrendingUp className="w-5 h-5 text-blue-500" />
-                <span>Recent System Activity</span>
+                <span>{t('admin.recentSystemActivity')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -445,7 +512,7 @@ const AdminDashboard = () => {
           {statsError && (
             <div className="text-red-500 font-semibold text-center mt-4">
               {statsError}
-              <Button onClick={() => window.location.reload()} className="ml-4">Retry</Button>
+              <Button onClick={() => window.location.reload()} className="ml-4">{t('admin.retry')}</Button>
             </div>
           )}
         </div>

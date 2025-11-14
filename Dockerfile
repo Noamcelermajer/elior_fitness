@@ -34,6 +34,8 @@ WORKDIR /app
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# Install requests for test user initialization
+RUN pip install requests
 
 # Copy backend application
 COPY app/ ./app/
@@ -41,10 +43,15 @@ COPY app/ ./app/
 # Copy built frontend to static directory
 COPY --from=frontend-builder /frontend/dist ./static
 
+# Copy test user initialization script and admin setup
+COPY tests/init_test_users.py ./tests/init_test_users.py
+COPY setup_admin.py ./setup_admin.py
+
 # Set proper permissions
 RUN chmod -R 755 ./static && \
     mkdir -p uploads data logs && \
-    chmod 755 uploads data logs
+    chmod 755 uploads data logs \
+    && mkdir -p /data && chmod 777 /data
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
@@ -55,8 +62,14 @@ echo "Environment: $ENVIRONMENT"\n\
 echo "Port: $PORT"\n\
 echo "Checking static files..."\n\
 ls -la ./static/\n\
-echo "Starting FastAPI on port $PORT..."\n\
-exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1\n\
+echo "Starting FastAPI on port $PORT in background..."\n\
+uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 &\n\
+UVICORN_PID=$!\n\
+sleep 3\n\
+echo "Checking/creating admin user..."\n\
+python /app/setup_admin.py\n\
+echo "Switching to main process..."\n\
+wait $UVICORN_PID\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
 # Expose port for Railway

@@ -8,10 +8,23 @@ const getApiUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
   
-  // Universal detection: Use same domain as frontend with /api path
+  // Local development detection: frontend on port 5173 or 3000, backend on 8000
+  const isDevelopment = window.location.port === '5173' || 
+                       window.location.port === '3000' ||
+                       import.meta.env.DEV;
+  
+  if (isDevelopment) {
+    const apiUrl = 'http://localhost:8000/api';
+    console.log('Local Development API URL:', apiUrl);
+    console.log('Frontend origin:', window.location.origin);
+    console.log('Environment:', import.meta.env.MODE);
+    return apiUrl;
+  }
+  
+  // Production/Docker: Use same domain as frontend with /api path
   // This works for any reverse proxy setup (Caddy, Nginx, Railway, etc.)
   const apiUrl = `${window.location.origin}/api`;
-  console.log('Universal API URL:', apiUrl);
+  console.log('Production API URL:', apiUrl);
   console.log('Frontend origin:', window.location.origin);
   console.log('Environment:', import.meta.env.MODE);
   

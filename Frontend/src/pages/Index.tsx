@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dumbbell, Target, Utensils, TrendingUp, Plus, Calendar, Clock, CheckCircle, Users, Trophy, Flame, UserPlus, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface DashboardStats {
   totalClients: number;
@@ -31,8 +32,9 @@ interface RecentActivity {
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isTrainer = user?.role === 'trainer';
-  const isAdmin = user?.role === 'admin';
+  const { t } = useTranslation();
+  const isTrainer = user?.role === 'TRAINER';
+  const isAdmin = user?.role === 'ADMIN';
   
   // Redirect trainers to trainer dashboard and admins to admin dashboard
   useEffect(() => {
@@ -56,7 +58,11 @@ const Index = () => {
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
-    if (!isTrainer) return;
+    // Clients don't need trainer-specific data, just show their stats
+    if (!isTrainer) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const token = localStorage.getItem('access_token');
@@ -68,7 +74,7 @@ const Index = () => {
       // Fetch clients
       const clientsResponse = await fetch('http://localhost:8000/api/users/', { headers });
       const clients = clientsResponse.ok ? await clientsResponse.json() : [];
-      const clientUsers = clients.filter((u: any) => u.role === 'client');
+      const clientUsers = clients.filter((u: any) => u.role === 'CLIENT');
 
       // Fetch workout plans
       const workoutResponse = await fetch('http://localhost:8000/api/workouts/plans', { headers });
@@ -168,33 +174,33 @@ const Index = () => {
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
-    if (diffInHours < 48) return 'Yesterday';
-    return `${Math.floor(diffInHours / 24)} days ago`;
+    if (diffInHours < 1) return t('dates.today');
+    if (diffInHours < 24) return `${diffInHours} ${t('common.time')}`;
+    if (diffInHours < 48) return t('dates.yesterday');
+    return `${Math.floor(diffInHours / 24)} ${t('dates.today')}`;
   };
 
   const statsCards = [
     {
-      label: 'Total Clients',
+      label: t('dashboard.totalClients'),
       value: stats.totalClients.toString(),
       icon: Users,
       gradient: 'bg-gradient-to-r from-blue-500 to-blue-600',
     },
     {
-      label: 'Active Workout Plans',
+      label: t('training.workoutPlans'),
       value: stats.totalWorkoutPlans.toString(),
       icon: CheckCircle,
       gradient: 'bg-gradient-to-r from-green-500 to-green-600',
     },
     {
-      label: 'Meal Plans Created',
+      label: t('meals.mealPlans'),
       value: stats.totalMealPlans.toString(),
       icon: Utensils,
       gradient: 'bg-gradient-to-r from-orange-500 to-orange-600',
     },
     {
-      label: 'Completion Rate',
+      label: t('training.completionRate'),
       value: `${Math.round(stats.completionRate)}%`,
       icon: Trophy,
       gradient: 'bg-gradient-to-r from-purple-500 to-purple-600',
@@ -207,7 +213,7 @@ const Index = () => {
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="flex items-center space-x-2">
             <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-            <span className="text-muted-foreground">Loading dashboard...</span>
+            <span className="text-muted-foreground">{t('dashboard.loading')}</span>
           </div>
         </div>
       </Layout>
@@ -223,10 +229,10 @@ const Index = () => {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
               <div>
                 <h1 className="text-2xl lg:text-3xl font-bold text-gradient">
-                  {isTrainer ? 'Trainer Dashboard' : `Welcome back, ${user?.full_name}`}
+                  {isTrainer ? t('dashboard.welcome') : `${t('auth.welcomeBack')}, ${user?.full_name}`}
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                  {isTrainer ? 'Manage clients and track their progress' : 'Track your fitness journey and stay motivated'}
+                  {isTrainer ? t('dashboard.overview') : t('dashboard.welcome')}
                 </p>
               </div>
               {isTrainer && (
@@ -236,15 +242,15 @@ const Index = () => {
                     className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
                   >
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Manage Clients
+                    {t('client.clients')}
                   </Button>
                   <Button 
-                    onClick={() => navigate('/create-workout')}
+                    onClick={() => navigate('/create-workout-plan-v2')}
                     variant="outline" 
                     className="font-semibold transform hover:scale-105 transition-all duration-200"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Create Workout
+                    {t('training.createWorkout')}
                   </Button>
                 </div>
               )}
@@ -277,16 +283,16 @@ const Index = () => {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-foreground">
                   <Dumbbell className="w-5 h-5 text-primary" />
-                  <span>{isTrainer ? 'Client Training' : 'My Training'}</span>
+                  <span>{isTrainer ? t('training.training') : t('training.training')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-bold text-foreground">
-                    {isTrainer ? `${stats.totalWorkoutPlans} Active Plans` : '3/4 Workouts'}
+                    {isTrainer ? `${stats.totalWorkoutPlans} ${t('training.workoutPlans')}` : `3/4 ${t('training.workouts')}`}
                   </span>
                   <Badge className="gradient-orange text-background">
-                    {isTrainer ? `${stats.totalCompletions} Completed` : '75% Complete'}
+                    {isTrainer ? `${stats.totalCompletions} ${t('training.completed')}` : `75% ${t('training.completed')}`}
                   </Badge>
                 </div>
                 <Progress value={isTrainer ? stats.completionRate : 75} className="h-3 bg-secondary" />
@@ -295,7 +301,7 @@ const Index = () => {
                   className="w-full gradient-orange text-background font-semibold transform hover:scale-105 transition-all duration-200"
                 >
                   <Target className="w-4 h-4 mr-2" />
-                  {isTrainer ? 'Manage Training Plans' : 'View My Workouts'}
+                  {isTrainer ? t('training.workoutPlans') : t('training.workouts')}
                 </Button>
               </CardContent>
             </Card>
@@ -305,16 +311,16 @@ const Index = () => {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-foreground">
                   <Utensils className="w-5 h-5 text-green-500" />
-                  <span>{isTrainer ? 'Client Nutrition' : 'My Nutrition'}</span>
+                  <span>{isTrainer ? t('meals.meals') : t('meals.meals')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-bold text-foreground">
-                    {isTrainer ? `${stats.totalMealPlans} Meal Plans` : '2/3 Meals'}
+                    {isTrainer ? `${stats.totalMealPlans} ${t('meals.mealPlans')}` : `2/3 ${t('meals.meals')}`}
                   </span>
                   <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                    {isTrainer ? `${stats.activeClients} Active Clients` : 'On Track'}
+                    {isTrainer ? `${stats.activeClients} ${t('client.clients')}` : t('dashboard.overview')}
                   </Badge>
                 </div>
                 <Progress value={isTrainer ? (stats.totalMealPlans > 0 ? 67 : 0) : 67} className="h-3 bg-secondary" />
@@ -323,7 +329,7 @@ const Index = () => {
                   className="w-full bg-green-500 hover:bg-green-600 text-background font-semibold transform hover:scale-105 transition-all duration-200"
                 >
                   <Utensils className="w-4 h-4 mr-2" />
-                  {isTrainer ? 'Manage Meal Plans' : 'View My Meals'}
+                  {isTrainer ? t('meals.mealPlans') : t('meals.meals')}
                 </Button>
               </CardContent>
             </Card>
@@ -334,15 +340,15 @@ const Index = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-foreground">
                 <Activity className="w-5 h-5 text-blue-500" />
-                <span>{isTrainer ? 'Recent Client Activity' : 'Recent Activity'}</span>
+                <span>{isTrainer ? t('dashboard.recentActivity') : t('dashboard.recentActivity')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               {recentActivity.length === 0 ? (
                 <div className="text-center py-8">
                   <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No recent activity yet</p>
-                  <p className="text-sm text-muted-foreground mt-1">Activity will appear here as clients use the platform</p>
+                  <p className="text-muted-foreground">{t('dashboard.noData')}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{t('dashboard.welcome')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">

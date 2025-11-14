@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import { useToast } from '../hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 interface Exercise {
   id: number;
@@ -25,6 +27,7 @@ interface Exercise {
   equipment_needed?: string;
   instructions?: string;
   video_url?: string;
+  category?: string;
   created_by: number;
   created_at: string;
 }
@@ -35,8 +38,10 @@ const muscleGroups = [
 ];
 
 const ExerciseBank = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,13 +55,14 @@ const ExerciseBank = () => {
     muscle_group: '',
     equipment_needed: '',
     instructions: '',
-    video_url: ''
+    video_url: '',
+    category: ''
   });
 
   const fetchExercises = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/workouts/exercises`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -67,8 +73,8 @@ const ExerciseBank = () => {
     } catch (error) {
       console.error('Error fetching exercises:', error);
       toast({
-        title: "Error",
-        description: "Failed to load exercises",
+        title: t('common.error'),
+        description: t('exerciseBank.errorLoad'),
         variant: "destructive"
       });
     } finally {
@@ -97,7 +103,7 @@ const ExerciseBank = () => {
     
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/workouts/exercises`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -112,22 +118,22 @@ const ExerciseBank = () => {
         setCreateDialogOpen(false);
         resetForm();
         toast({
-          title: "Success",
-          description: "Exercise created successfully"
+          title: t('common.success'),
+          description: t('exerciseBank.successCreated')
         });
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.detail || "Failed to create exercise",
+          title: t('common.error'),
+          description: error.detail || t('exerciseBank.errorCreate'),
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Error creating exercise:', error);
       toast({
-        title: "Error",
-        description: "Failed to create exercise",
+        title: t('common.error'),
+        description: t('exerciseBank.errorCreate'),
         variant: "destructive"
       });
     }
@@ -139,7 +145,7 @@ const ExerciseBank = () => {
     
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/workouts/exercises/${editingExercise.id}`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/${editingExercise.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -156,33 +162,33 @@ const ExerciseBank = () => {
         setEditingExercise(null);
         resetForm();
         toast({
-          title: "Success",
-          description: "Exercise updated successfully"
+          title: t('common.success'),
+          description: t('exerciseBank.successUpdated')
         });
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.detail || "Failed to update exercise",
+          title: t('common.error'),
+          description: error.detail || t('exerciseBank.errorUpdate'),
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Error updating exercise:', error);
       toast({
-        title: "Error",
-        description: "Failed to update exercise",
+        title: t('common.error'),
+        description: t('exerciseBank.errorUpdate'),
         variant: "destructive"
       });
     }
   };
 
   const handleDeleteExercise = async (exerciseId: number) => {
-    if (!confirm('Are you sure you want to delete this exercise?')) return;
+    if (!confirm(t('exerciseBank.deleteConfirm'))) return;
     
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/workouts/exercises/${exerciseId}`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/${exerciseId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -190,21 +196,21 @@ const ExerciseBank = () => {
       if (response.ok) {
         setExercises(exercises.filter(ex => ex.id !== exerciseId));
         toast({
-          title: "Success",
-          description: "Exercise deleted successfully"
+          title: t('common.success'),
+          description: t('exerciseBank.successDeleted')
         });
       } else {
         toast({
-          title: "Error",
-          description: "Failed to delete exercise",
+          title: t('common.error'),
+          description: t('exerciseBank.errorDelete'),
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Error deleting exercise:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete exercise",
+        title: t('common.error'),
+        description: t('exerciseBank.errorDelete'),
         variant: "destructive"
       });
     }
@@ -217,7 +223,8 @@ const ExerciseBank = () => {
       muscle_group: '',
       equipment_needed: '',
       instructions: '',
-      video_url: ''
+      video_url: '',
+      category: ''
     });
   };
 
@@ -229,7 +236,8 @@ const ExerciseBank = () => {
       muscle_group: exercise.muscle_group,
       equipment_needed: exercise.equipment_needed || '',
       instructions: exercise.instructions || '',
-      video_url: exercise.video_url || ''
+      video_url: exercise.video_url || '',
+      category: exercise.category || ''
     });
   };
 
@@ -237,9 +245,9 @@ const ExerciseBank = () => {
     return (
       <Layout currentPage="exercises">
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-            <span className="text-muted-foreground">Loading exercises...</span>
+            <span className="text-muted-foreground">{t('exerciseBank.loading')}</span>
           </div>
         </div>
       </Layout>
@@ -252,13 +260,22 @@ const ExerciseBank = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Exercise Bank</h1>
-            <p className="text-muted-foreground">Manage your exercise database</p>
+            <h1 className="text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
+            <p className="text-muted-foreground">{t('exerciseBank.subtitle')}</p>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)} className="gradient-green">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Exercise
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
+              variant="outline"
+            >
+              <Plus className="w-4 h-4 me-2" />
+              {t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}
+            </Button>
+            <Button onClick={() => setCreateDialogOpen(true)} className="gradient-green">
+              <Plus className="w-4 h-4 me-2" />
+              {t('exerciseBank.addExercise')}
+            </Button>
+          </div>
         </div>
 
         {/* Search and Filter */}
@@ -269,7 +286,7 @@ const ExerciseBank = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10"
-                  placeholder="Search exercises..."
+                  placeholder={t('exerciseBank.searchPlaceholder')}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />
@@ -278,9 +295,9 @@ const ExerciseBank = () => {
                 <Select value={selectedMuscleGroup} onValueChange={setSelectedMuscleGroup}>
                   <SelectTrigger className="h-10 w-full" />
                   <SelectContent>
-                    <SelectItem value="all">All Muscle Groups</SelectItem>
+                    <SelectItem value="all">{t('exerciseBank.allMuscleGroups')}</SelectItem>
                     {muscleGroups.map(group => (
-                      <SelectItem key={group} value={group}>{group}</SelectItem>
+                      <SelectItem key={group} value={group}>{t(`exerciseBank.muscleGroups.${group}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -294,9 +311,9 @@ const ExerciseBank = () => {
           {Object.entries(groupedExercises).map(([muscleGroup, groupExercises]) => (
             <div key={muscleGroup}>
               <h2 className="text-xl font-semibold mb-3 flex items-center">
-                <Tag className="w-5 h-5 mr-2" />
-                {muscleGroup.charAt(0).toUpperCase() + muscleGroup.slice(1)}
-                <Badge variant="secondary" className="ml-2">{groupExercises.length}</Badge>
+                <Tag className="w-5 h-5 me-2" />
+                {t(`exerciseBank.muscleGroups.${muscleGroup}`)}
+                <Badge variant="secondary" className="ms-2">{groupExercises.length}</Badge>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {groupExercises.map((exercise) => (
@@ -304,7 +321,7 @@ const ExerciseBank = () => {
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span className="text-lg">{exercise.name}</span>
-                        <div className="flex space-x-1">
+                        <div className="flex gap-1">
                           <Button
                             size="icon"
                             variant="ghost"
@@ -327,24 +344,24 @@ const ExerciseBank = () => {
                       
                       {exercise.equipment_needed && (
                         <div className="flex items-center text-sm">
-                          <Weight className="w-4 h-4 mr-2 text-muted-foreground" />
+                          <Weight className="w-4 h-4 me-2 text-muted-foreground" />
                           <span>{exercise.equipment_needed}</span>
                         </div>
                       )}
                       
                       {exercise.video_url && (
                         <div className="flex items-center text-sm">
-                          <Video className="w-4 h-4 mr-2 text-muted-foreground" />
+                          <Video className="w-4 h-4 me-2 text-muted-foreground" />
                           <a href={exercise.video_url} target="_blank" rel="noopener noreferrer" 
                              className="text-primary hover:underline">
-                            Video Tutorial
+                            {t('exerciseBank.videoTutorial')}
                           </a>
                         </div>
                       )}
                       
                       {exercise.instructions && (
                         <div className="flex items-start text-sm">
-                          <FileText className="w-4 h-4 mr-2 text-muted-foreground mt-0.5" />
+                          <FileText className="w-4 h-4 me-2 text-muted-foreground mt-0.5" />
                           <p className="text-muted-foreground line-clamp-2">{exercise.instructions}</p>
                         </div>
                       )}
@@ -368,40 +385,40 @@ const ExerciseBank = () => {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {editingExercise ? 'Edit Exercise' : 'Add New Exercise'}
+                {editingExercise ? t('exerciseBank.editExercise') : t('exerciseBank.addNewExercise')}
               </DialogTitle>
               <DialogDescription>
                 {editingExercise 
-                  ? 'Update the exercise details below.'
-                  : 'Create a new exercise for your exercise bank.'}
+                  ? t('exerciseBank.editDescription')
+                  : t('exerciseBank.createDescription')}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={editingExercise ? handleUpdateExercise : handleCreateExercise} 
                   className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Exercise Name</Label>
+                  <Label htmlFor="name">{t('exerciseBank.exerciseName')}</Label>
                   <Input
                     id="name"
                     value={exerciseForm.name}
                     onChange={(e) => setExerciseForm({...exerciseForm, name: e.target.value})}
-                    placeholder="e.g., Bench Press"
+                    placeholder={t('exerciseBank.exerciseNamePlaceholder')}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="muscle_group">Muscle Group</Label>
+                  <Label htmlFor="muscle_group">{t('exerciseBank.muscleGroup')}</Label>
                   <Select 
                     value={exerciseForm.muscle_group} 
                     onValueChange={(value) => setExerciseForm({...exerciseForm, muscle_group: value})}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select muscle group" />
+                      <SelectValue placeholder={t('exerciseBank.selectMuscleGroup')} />
                     </SelectTrigger>
                     <SelectContent>
                       {muscleGroups.map(group => (
                         <SelectItem key={group} value={group}>
-                          {group.charAt(0).toUpperCase() + group.slice(1)}
+                          {t(`exerciseBank.muscleGroups.${group}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -410,12 +427,12 @@ const ExerciseBank = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('exerciseBank.description')}</Label>
                 <Textarea
                   id="description"
                   value={exerciseForm.description}
                   onChange={(e) => setExerciseForm({...exerciseForm, description: e.target.value})}
-                  placeholder="Brief description of the exercise"
+                  placeholder={t('exerciseBank.descriptionPlaceholder')}
                   rows={3}
                   required
                 />
@@ -423,38 +440,49 @@ const ExerciseBank = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="equipment_needed">Equipment Needed</Label>
+                  <Label htmlFor="equipment_needed">{t('exerciseBank.equipmentNeeded')}</Label>
                   <Input
                     id="equipment_needed"
                     value={exerciseForm.equipment_needed}
                     onChange={(e) => setExerciseForm({...exerciseForm, equipment_needed: e.target.value})}
-                    placeholder="e.g., Barbell, Bench"
+                    placeholder={t('exerciseBank.equipmentPlaceholder')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="video_url">Video URL</Label>
+                  <Label htmlFor="video_url">{t('exerciseBank.videoUrl')}</Label>
                   <Input
                     id="video_url"
                     type="url"
                     value={exerciseForm.video_url}
                     onChange={(e) => setExerciseForm({...exerciseForm, video_url: e.target.value})}
-                    placeholder="https://youtube.com/..."
+                    placeholder={t('exerciseBank.videoUrlPlaceholder')}
                   />
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="instructions">Instructions</Label>
+                <Label htmlFor="category">{t('exerciseBank.category')}</Label>
+                <Input
+                  id="category"
+                  value={exerciseForm.category}
+                  onChange={(e) => setExerciseForm({...exerciseForm, category: e.target.value})}
+                  placeholder={t('exerciseBank.categoryPlaceholder')}
+                />
+                <p className="text-xs text-muted-foreground">{t('exerciseBank.categoryHint')}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="instructions">{t('exerciseBank.instructions')}</Label>
                 <Textarea
                   id="instructions"
                   value={exerciseForm.instructions}
                   onChange={(e) => setExerciseForm({...exerciseForm, instructions: e.target.value})}
-                  placeholder="Step-by-step instructions for performing the exercise"
+                  placeholder={t('exerciseBank.instructionsPlaceholder')}
                   rows={5}
                 />
               </div>
               
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -464,10 +492,10 @@ const ExerciseBank = () => {
                     resetForm();
                   }}
                 >
-                  Cancel
+                  {t('exerciseBank.cancel')}
                 </Button>
                 <Button type="submit" className="gradient-green">
-                  {editingExercise ? 'Update Exercise' : 'Create Exercise'}
+                  {editingExercise ? t('exerciseBank.updateExercise') : t('exerciseBank.createExercise')}
                 </Button>
               </div>
             </form>

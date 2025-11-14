@@ -10,8 +10,8 @@ class Notification(Base):
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     type = Column(String(50), default="info")  # info, success, warning, error
-    recipient_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    sender_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # null for system notifications
+    recipient_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # null for system notifications
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     read_at = Column(DateTime(timezone=True), nullable=True)
