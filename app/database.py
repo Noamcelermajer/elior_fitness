@@ -13,7 +13,33 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Get environment (production vs development)
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+# Use same auto-detection logic as main.py to handle Railway and other platforms
+def detect_environment():
+    """Universal environment detection that works with any deployment method."""
+    # Check for explicit environment setting
+    env = os.getenv("ENVIRONMENT")
+    if env:
+        return env.lower()
+    
+    # Auto-detect production environments (same logic as main.py)
+    production_indicators = [
+        os.getenv("RAILWAY_PUBLIC_DOMAIN"),      # Railway
+        os.getenv("RAILWAY_STATIC_URL"),         # Railway
+        os.getenv("RENDER_EXTERNAL_URL"),        # Render
+        os.getenv("HEROKU_APP_NAME"),            # Heroku
+        os.getenv("VERCEL_URL"),                 # Vercel
+        os.getenv("NETLIFY_URL"),                # Netlify
+        os.getenv("PORT"),                       # Any cloud platform
+    ]
+    
+    # If any production indicator is present, assume production
+    if any(indicator for indicator in production_indicators):
+        return "production"
+    
+    # Default to development for local development
+    return "development"
+
+ENVIRONMENT = detect_environment()
 
 # Get database path from environment variable, default to local data directory
 # Use ./data/elior_fitness.db for local development
