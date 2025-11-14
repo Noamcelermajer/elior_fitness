@@ -27,6 +27,42 @@ if not os.path.isabs(DATABASE_PATH):
 DATABASE_URL_ENV = os.getenv("DATABASE_URL")
 DATABASE_PUBLIC_URL_ENV = os.getenv("DATABASE_PUBLIC_URL")  # Railway public URL fallback
 
+# Helper function to mask password in connection string for logging
+def mask_password_in_url(url: str) -> str:
+    """Mask password in database URL for safe logging."""
+    if not url:
+        return "None"
+    try:
+        from urllib.parse import urlparse, urlunparse
+        parsed = urlparse(url)
+        if parsed.password:
+            # Replace password with ***
+            masked_netloc = parsed.netloc.replace(f":{parsed.password}@", ":***@")
+            masked_parsed = parsed._replace(netloc=masked_netloc)
+            return urlunparse(masked_parsed)
+        return url
+    except Exception:
+        # If parsing fails, just show first 50 chars
+        return f"{url[:50]}..." if len(url) > 50 else url
+
+# Log received DATABASE_URL (with password masked)
+logger.info("=" * 60)
+logger.info("DATABASE_URL ENVIRONMENT VARIABLE CHECK")
+logger.info("=" * 60)
+logger.info(f"ENVIRONMENT: {ENVIRONMENT}")
+logger.info(f"DATABASE_URL received: {mask_password_in_url(DATABASE_URL_ENV)}")
+logger.info(f"DATABASE_URL is None: {DATABASE_URL_ENV is None}")
+logger.info(f"DATABASE_URL is empty string: {DATABASE_URL_ENV == ''}")
+if DATABASE_URL_ENV:
+    logger.info(f"DATABASE_URL starts with 'postgresql': {DATABASE_URL_ENV.startswith('postgresql')}")
+    logger.info(f"DATABASE_URL starts with 'sqlite': {DATABASE_URL_ENV.startswith('sqlite')}")
+    logger.info(f"DATABASE_URL length: {len(DATABASE_URL_ENV)}")
+if DATABASE_PUBLIC_URL_ENV:
+    logger.info(f"DATABASE_PUBLIC_URL received: {mask_password_in_url(DATABASE_PUBLIC_URL_ENV)}")
+else:
+    logger.info("DATABASE_PUBLIC_URL: Not set")
+logger.info("=" * 60)
+
 # In production, DATABASE_URL MUST be set and MUST be PostgreSQL
 if ENVIRONMENT == "production":
     if not DATABASE_URL_ENV:
@@ -86,7 +122,13 @@ else:
     SQLALCHEMY_DATABASE_URL = DATABASE_URL_ENV or f"sqlite:///{DATABASE_PATH}"
     logger.info(f"Development mode: Database URL: {SQLALCHEMY_DATABASE_URL[:50]}...")
 
-logger.info(f"Database URL configured (type: {'PostgreSQL' if SQLALCHEMY_DATABASE_URL.startswith('postgresql') else 'SQLite'})")
+# Log final DATABASE_URL being used (with password masked)
+logger.info("=" * 60)
+logger.info("FINAL DATABASE CONFIGURATION")
+logger.info("=" * 60)
+logger.info(f"Final SQLALCHEMY_DATABASE_URL: {mask_password_in_url(SQLALCHEMY_DATABASE_URL)}")
+logger.info(f"Database type: {'PostgreSQL' if SQLALCHEMY_DATABASE_URL.startswith('postgresql') else 'SQLite'}")
+logger.info("=" * 60)
 
 # Database configuration based on database type
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
@@ -321,20 +363,50 @@ def init_database(max_retries=5, retry_delay=10):
     try:
         from urllib.parse import urlparse
         parsed = urlparse(SQLALCHEMY_DATABASE_URL)
-        logger.info(f"Attempting to connect to: {parsed.hostname}:{parsed.port or 5432}")
+        hostname = parsed.hostname
+        port = parsed.port or 5432
+        logger.info(f"Attempting to connect to: {hostname}:{port}")
+        
+        # Test DNS resolution first
+        try:
+            resolved_ip = socket.gethostbyname(hostname)
+            logger.info(f"✓ DNS resolution successful: {hostname} -> {resolved_ip}")
+        except socket.gaierror as e:
+            logger.error(f"✗ DNS resolution failed for {hostname}: {e}")
+            logger.error("  This usually means:")
+            logger.error("  - Hostname is incorrect")
+            logger.error("  - Services are not in the same Railway project")
+            logger.error("  - Railway's internal DNS is not working")
+        except Exception as e:
+            logger.warning(f"⚠ DNS resolution test failed: {e}")
         
         # Test basic network connectivity
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            result = sock.connect_ex((parsed.hostname, parsed.port or 5432))
+            sock.settimeout(10)  # Increased timeout for network test
+            result = sock.connect_ex((hostname, port))
             sock.close()
+            
             if result == 0:
-                logger.info("✓ Network connectivity test passed")
+                logger.info("✓ Network connectivity test passed - port is reachable")
             else:
-                logger.warning(f"⚠ Network connectivity test failed (error code: {result})")
+                # Map common socket error codes to human-readable messages
+                error_messages = {
+                    11: "EAGAIN - Resource temporarily unavailable (connection refused or host unreachable)",
+                    111: "ECONNREFUSED - Connection refused (service not running or port closed)",
+                    110: "ETIMEDOUT - Connection timed out (firewall blocking or service not responding)",
+                    113: "EHOSTUNREACH - No route to host (network routing issue)",
+                }
+                error_msg = error_messages.get(result, f"Error code {result}")
+                logger.error(f"✗ Network connectivity test failed: {error_msg}")
+                logger.error("  Possible causes:")
+                logger.error("  1. PostgreSQL service is not running or not ready")
+                logger.error("  2. Services are not properly linked in Railway")
+                logger.error("  3. Network firewall is blocking the connection")
+                logger.error("  4. Services are in different Railway projects/regions")
+                logger.error("  5. Railway's internal network is not configured correctly")
         except socket.gaierror as e:
-            logger.warning(f"⚠ DNS resolution failed for {parsed.hostname}: {e}")
+            logger.error(f"✗ DNS resolution failed during connection test: {e}")
         except Exception as e:
             logger.warning(f"⚠ Network test failed: {e}")
     except Exception as e:
