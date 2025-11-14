@@ -115,14 +115,23 @@ enable_debug = os.getenv("ENABLE_DEBUG_LOGGING", "false").lower() == "true"
 if enable_debug:
     log_level = "DEBUG"
 
+# Optimize logging for minimal memory usage
 logging.basicConfig(
     level=getattr(logging, log_level),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join(LOG_DIR, f"elior_api_{datetime.now().strftime('%Y%m%d')}.log")),
+        logging.FileHandler(
+            os.path.join(LOG_DIR, f"elior_api_{datetime.now().strftime('%Y%m%d')}.log"),
+            delay=False,  # Don't delay file opening
+            encoding='utf-8'
+        ),
         logging.StreamHandler(sys.stdout)
     ]
 )
+# Reduce logging buffer for lower memory usage
+for handler in logging.root.handlers:
+    if isinstance(handler, logging.FileHandler):
+        handler.setLevel(logging.WARNING)  # Only log warnings and above to file
 logger = logging.getLogger(__name__)
 
 # Log startup information

@@ -61,18 +61,18 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
         cursor = dbapi_connection.cursor()
         # Enable WAL mode for better concurrency
         cursor.execute("PRAGMA journal_mode=WAL")
-        # REDUCED cache size for minimal memory usage (was 64MB, now 8MB)
-        cursor.execute("PRAGMA cache_size=-8192")  # 8MB cache
+        # MINIMAL cache size for lowest memory usage (reduced from 8MB to 2MB)
+        cursor.execute("PRAGMA cache_size=-2048")  # 2MB cache (was 8MB)
         # Enable foreign keys
         cursor.execute("PRAGMA foreign_keys=ON")
         # Optimize synchronous mode for better performance
         cursor.execute("PRAGMA synchronous=NORMAL")
-        # Set temp store to memory
+        # Set temp store to memory (minimal)
         cursor.execute("PRAGMA temp_store=MEMORY")
         # Optimize page size
         cursor.execute("PRAGMA page_size=4096")
-        # REDUCED memory mapping for minimal memory usage (was 256MB, now 32MB)
-        cursor.execute("PRAGMA mmap_size=33554432")  # 32MB
+        # MINIMAL memory mapping for lowest memory usage (reduced from 32MB to 8MB)
+        cursor.execute("PRAGMA mmap_size=8388608")  # 8MB (was 32MB)
         cursor.close()
     
     logger.info("SQLite engine created with performance optimizations")
@@ -80,13 +80,13 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
 else:
     logger.info("Configuring PostgreSQL database with connection pooling...")
     
-    # PostgreSQL-specific optimizations
+    # PostgreSQL-specific optimizations - REDUCED for Railway minimal resources
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
-        pool_size=20,  # Number of connections to maintain
-        max_overflow=30,  # Additional connections beyond pool_size
+        pool_size=5,  # Reduced from 20 to 5 for minimal memory
+        max_overflow=5,  # Reduced from 30 to 5 for minimal memory
         pool_pre_ping=True,  # Verify connections before use
-        pool_recycle=3600,  # Recycle connections after 1 hour
+        pool_recycle=1800,  # Recycle connections after 30 minutes (was 1 hour)
         echo=False,  # Set to True for debugging
         connect_args={
             "options": "-c statement_timeout=30000",  # 30 second timeout
@@ -102,10 +102,10 @@ else:
         with dbapi_connection.cursor() as cursor:
             # Enable query plan caching
             cursor.execute("SET plan_cache_mode = 'force_generic_plan'")
-            # Optimize work memory for better sorting/grouping
-            cursor.execute("SET work_mem = '32MB'")
-            # Enable parallel query execution
-            cursor.execute("SET max_parallel_workers_per_gather = 4")
+            # REDUCED work memory for minimal RAM usage
+            cursor.execute("SET work_mem = '16MB'")  # Reduced from 32MB to 16MB
+            # REDUCED parallel workers for minimal RAM usage
+            cursor.execute("SET max_parallel_workers_per_gather = 2")  # Reduced from 4 to 2
             # Optimize random page cost for SSDs
             cursor.execute("SET random_page_cost = 1.1")
             # Enable JIT compilation for complex queries
