@@ -59,20 +59,22 @@ const Login = () => {
       {/* Elior image background - only in dark theme */}
       {theme === 'dark' && (
         <div 
-          className="absolute inset-0 z-0 opacity-[0.12] mix-blend-soft-light"
+          className="absolute inset-0 z-0"
           style={{
             backgroundImage: 'url(/elior.png)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            filter: 'blur(2px) brightness(0.7) contrast(1.1)',
+            opacity: 0.4,
+            mixBlendMode: 'soft-light',
+            filter: 'blur(0.5px) brightness(0.7) contrast(1.1)',
           }}
         />
       )}
       
       {/* Gradient overlay to blend image with background */}
       {theme === 'dark' && (
-        <div className="absolute inset-0 z-[1] bg-gradient-to-br from-background/85 via-background/70 to-background/85" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-br from-background/50 via-background/30 to-background/50" />
       )}
 
       {/* Animated background elements */}
