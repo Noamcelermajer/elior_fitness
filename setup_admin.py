@@ -2,6 +2,7 @@
 """
 Script to ensure admin user exists at startup
 Directly uses database instead of API to avoid dependency on API being up
+Handles fresh installs where database doesn't exist yet
 """
 import sys
 import os
@@ -10,10 +11,25 @@ from pathlib import Path
 # Add app directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from app.database import SessionLocal, engine, Base
+from app.database import SessionLocal, engine, Base, init_database
 from app.models.user import User
 from app.schemas.auth import UserRole
 from app.auth.utils import get_password_hash
+
+# Import all models to ensure Base.metadata knows about all tables
+# This is necessary for table creation
+try:
+    from app.models import *  # Import all models
+except ImportError:
+    # If import fails, at least import the essential ones
+    from app.models.user import User
+    from app.models.workout import Workout
+    from app.models.workout_system import NewWorkoutPlan, WorkoutDay, WorkoutExercise
+    from app.models.meal_system import MealPlan, MealEntry, MealComponent
+    from app.models.nutrition import NutritionEntry
+    from app.models.progress import ProgressEntry
+    from app.models.notification import Notification
+    from app.models.chat import ChatMessage
 
 ADMIN_USER = {
     "username": "admin",
@@ -25,6 +41,23 @@ ADMIN_USER = {
 
 def ensure_admin_exists():
     """Create admin user directly in database if it doesn't exist"""
+    # First, ensure database tables exist (handles fresh installs)
+    print("Initializing database tables if needed...")
+    if not init_database():
+        print("Warning: Database initialization had issues, but continuing...")
+    
+    # Run migrations to ensure all tables are properly set up
+    try:
+        print("Running database migrations...")
+        from app.migrations.meal_system_migration import run_meal_system_migrations
+        from app.migrations.workout_system_migration import run_workout_system_migrations
+        run_meal_system_migrations()
+        run_workout_system_migrations()
+        print("Database migrations completed.")
+    except Exception as migration_error:
+        print(f"Warning: Some migrations may have failed: {migration_error}")
+        # Continue anyway - tables might already exist
+    
     db = SessionLocal()
     try:
         # Check if admin already exists
@@ -59,6 +92,8 @@ def ensure_admin_exists():
         
     except Exception as e:
         print(f"Error ensuring admin exists: {e}")
+        import traceback
+        traceback.print_exc()
         db.rollback()
         return False
     finally:
