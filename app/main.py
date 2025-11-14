@@ -99,8 +99,14 @@ print("=" * 50)
 import os
 from datetime import datetime
 
+# Get persistent storage base path (for Railway single volume)
+PERSISTENT_BASE = os.getenv("PERSISTENT_BASE", "/app")
+# Use persistent volume if available, otherwise use app directory
+PERSISTENT_PATH = os.getenv("PERSISTENT_PATH", PERSISTENT_BASE)
+# Logs directory
+LOG_DIR = os.getenv("LOG_DIR", os.path.join(PERSISTENT_PATH, "logs"))
 # Create logs directory if it doesn't exist
-os.makedirs("logs", exist_ok=True)
+os.makedirs(LOG_DIR, exist_ok=True)
 
 # Configure logging with both file and console output
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -113,7 +119,7 @@ logging.basicConfig(
     level=getattr(logging, log_level),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(f"logs/elior_api_{datetime.now().strftime('%Y%m%d')}.log"),
+        logging.FileHandler(os.path.join(LOG_DIR, f"elior_api_{datetime.now().strftime('%Y%m%d')}.log")),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -334,10 +340,14 @@ app.add_middleware(WildcardCORSMiddleware)
 
 logger.info("CORS middleware configured with frontend integration support")
 
+# Get upload directory (use persistent volume if available)
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", os.path.join(PERSISTENT_PATH, "uploads"))
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 # Mount static files for uploads with optimized settings
 try:
-    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-    logger.info("Static files mounted successfully")
+    app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+    logger.info(f"Static files mounted successfully from {UPLOAD_DIR}")
 except Exception as e:
     logger.warning(f"Could not mount uploads directory: {e}")
 

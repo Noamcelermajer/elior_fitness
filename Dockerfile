@@ -51,7 +51,9 @@ COPY setup_admin.py ./setup_admin.py
 RUN chmod -R 755 ./static && \
     mkdir -p uploads data logs && \
     chmod 755 uploads data logs \
-    && mkdir -p /data && chmod 777 /data
+    && mkdir -p /data && chmod 777 /data \
+    && mkdir -p /app/persistent/data /app/persistent/uploads /app/persistent/logs && \
+    chmod -R 755 /app/persistent
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
@@ -68,10 +70,11 @@ echo "Starting FastAPI on port ${PORT:-8000}..."\n\
 exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
-# Expose port for Railway
+# Expose port - Railway will provide PORT env var dynamically
+# Using 8000 as default for local development, but Railway will override
 EXPOSE 8000
 
-# Health check
+# Health check - uses PORT env var (Railway provides this)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 

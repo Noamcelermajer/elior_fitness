@@ -41,7 +41,11 @@ class FileService:
     PROGRESS_PHOTO_QUALITY = 65  # JPEG quality (60-75 range for good compression/quality balance)
     PROGRESS_PHOTO_WEBP_QUALITY = 70  # WebP quality
     
-    def __init__(self, base_upload_path: str = "uploads"):
+    def __init__(self, base_upload_path: str = None):
+        # Use environment variable or default to uploads in persistent path
+        if base_upload_path is None:
+            persistent_base = os.getenv("PERSISTENT_PATH", "/app")
+            base_upload_path = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
         self.base_upload_path = base_upload_path
         self._ensure_directories()
     

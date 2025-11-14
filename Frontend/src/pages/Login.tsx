@@ -16,7 +16,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
@@ -27,13 +27,18 @@ const Login = () => {
     setError('');
 
     try {
-      const success = await login(username, password);
-      if (success) {
+      const loggedInUser = await login(username, password);
+      if (loggedInUser) {
         // Redirect to appropriate dashboard based on user role
-        const from = location.state?.from?.pathname || '/';
-        if (user?.role === 'ADMIN') {
+        if (loggedInUser.role === 'ADMIN') {
           navigate('/admin', { replace: true });
+        } else if (loggedInUser.role === 'TRAINER') {
+          navigate('/trainer-dashboard', { replace: true });
+        } else if (loggedInUser.role === 'CLIENT') {
+          navigate('/', { replace: true });
         } else {
+          // Fallback to home
+          const from = location.state?.from?.pathname || '/';
           navigate(from, { replace: true });
         }
       } else {

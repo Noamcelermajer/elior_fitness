@@ -16,7 +16,7 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<User | null>;
   logout: () => void;
   isAuthenticated: boolean;
   loading: boolean;
@@ -145,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<User | null> => {
     try {
       console.log('Attempting login with API URL:', `${API_BASE_URL}/auth/login`);
       
@@ -174,7 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (userData) {
           setUser(userData);
           console.log('User set in context:', userData);
-          return true;
+          return userData;
         }
       } else {
         const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -188,7 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
     }
     
-    return false;
+    return null;
   };
 
   const logout = () => {

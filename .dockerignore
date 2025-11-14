@@ -83,6 +83,12 @@ run_tests.sh
 test_fixes.py
 pytest.ini
 
+# Test directories
+tests/
+**/tests/
+**/test_*.py
+**/*_test.py
+
 # Temporary files
 *.tmp
 *.temp 
