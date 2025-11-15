@@ -13,6 +13,30 @@ interface LayoutProps {
   currentPage?: string;
 }
 
+const LogoBadge = ({ variant }: { variant: 'mobile' | 'desktop' }) => {
+  const sizeClasses =
+    variant === 'mobile'
+      ? 'w-20 sm:w-24 md:w-28'
+      : 'w-24 lg:w-28 xl:w-32';
+
+  return (
+    <div
+      className={`${sizeClasses} aspect-square relative flex-shrink-0`}
+      aria-hidden="true"
+    >
+      <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/40 via-primary/10 to-secondary/40 blur-2xl opacity-60" />
+      <div className="relative w-full h-full rounded-[22px] border border-white/10 bg-gradient-to-br from-background/95 via-background/70 to-secondary/20 shadow-xl shadow-primary/10 flex items-center justify-center p-2">
+        <img
+          src="/ecshapelogo.svg"
+          alt="ecshape logo"
+          className="w-full h-full object-contain drop-shadow-[0_8px_25px_rgba(0,0,0,0.35)]"
+          loading="lazy"
+        />
+      </div>
+    </div>
+  );
+};
+
 const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const { user, logout } = useAuth();
@@ -50,9 +74,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50 lg:hidden">
         <div className="flex items-center justify-between px-2 sm:px-4 h-24 sm:h-28 md:h-32 gap-2 overflow-hidden">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-background/50 p-2">
-              <img src="/ecshapelogo.svg" alt="Logo" className="w-full h-full object-contain" />
-            </div>
+            <LogoBadge variant="mobile" />
             <div className="min-w-0 flex-1">
               <p className="text-xs text-muted-foreground truncate">
                 {isAdmin ? t('layout.adminPanel') : isTrainer ? t('layout.trainerDashboard') : t('layout.clientPortal')}
@@ -119,8 +141,8 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex justify-between items-center h-28 lg:h-32 xl:h-36">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-32 h-32 lg:w-36 lg:h-36 xl:w-40 xl:h-40 rounded-xl flex items-center justify-center flex-shrink-0 transform hover:scale-110 transition-transform duration-300 overflow-hidden bg-background/50 p-3">
-                <img src="/ecshapelogo.svg" alt="Logo" className="w-full h-full object-contain" />
+              <div className="transform hover:scale-105 transition-transform duration-300">
+                <LogoBadge variant="desktop" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-muted-foreground truncate">
