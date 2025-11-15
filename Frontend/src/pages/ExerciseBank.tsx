@@ -61,6 +61,7 @@ const ExerciseBank = () => {
 
   const fetchExercises = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('access_token');
       const response = await fetch(`${API_BASE_URL}/exercises/`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -68,7 +69,16 @@ const ExerciseBank = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setExercises(data);
+        console.log('Fetched exercises:', data);
+        setExercises(Array.isArray(data) ? data : []);
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to fetch exercises:', response.status, errorText);
+        toast({
+          title: t('common.error'),
+          description: t('exerciseBank.errorLoad'),
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error fetching exercises:', error);
@@ -200,9 +210,28 @@ const ExerciseBank = () => {
           description: t('exerciseBank.successDeleted')
         });
       } else {
+        // Try to parse error message from response
+        let errorMessage = t('exerciseBank.errorDelete');
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            if (errorData.detail) {
+              errorMessage = errorData.detail;
+            }
+          } else {
+            const text = await response.text();
+            if (text) {
+              errorMessage = text;
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing error response:', parseError);
+        }
+        
         toast({
           title: t('common.error'),
-          description: t('exerciseBank.errorDelete'),
+          description: errorMessage,
           variant: "destructive"
         });
       }
@@ -312,69 +341,89 @@ const ExerciseBank = () => {
 
         {/* Exercise List by Muscle Group */}
         <div className="space-y-6">
-          {Object.entries(groupedExercises).map(([muscleGroup, groupExercises]) => (
-            <div key={muscleGroup}>
-              <h2 className="text-xl font-semibold mb-3 flex items-center">
-                <Tag className="w-5 h-5 me-2" />
-                {t(`exerciseBank.muscleGroups.${muscleGroup}`)}
-                <Badge variant="secondary" className="ms-2">{groupExercises.length}</Badge>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {groupExercises.map((exercise) => (
-                  <Card key={exercise.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <span className="text-lg">{exercise.name}</span>
-                        <div className="flex gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => startEdit(exercise)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDeleteExercise(exercise.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground">{exercise.description}</p>
-                      
-                      {exercise.equipment_needed && (
-                        <div className="flex items-center text-sm">
-                          <Weight className="w-4 h-4 me-2 text-muted-foreground" />
-                          <span>{exercise.equipment_needed}</span>
-                        </div>
-                      )}
-                      
-                      {exercise.video_url && (
-                        <div className="flex items-center text-sm">
-                          <Video className="w-4 h-4 me-2 text-muted-foreground" />
-                          <a href={exercise.video_url} target="_blank" rel="noopener noreferrer" 
-                             className="text-primary hover:underline">
-                            {t('exerciseBank.videoTutorial')}
-                          </a>
-                        </div>
-                      )}
-                      
-                      {exercise.instructions && (
-                        <div className="flex items-start text-sm">
-                          <FileText className="w-4 h-4 me-2 text-muted-foreground mt-0.5" />
-                          <p className="text-muted-foreground line-clamp-2">{exercise.instructions}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+          {Object.keys(groupedExercises).length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Dumbbell className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-lg font-semibold mb-2">{t('exerciseBank.noExercises', 'אין תרגילים')}</p>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm || selectedMuscleGroup !== 'all' 
+                    ? t('exerciseBank.noExercisesFiltered', 'לא נמצאו תרגילים התואמים לחיפוש שלך')
+                    : t('exerciseBank.noExercisesDescription', 'עדיין לא נוצרו תרגילים. צור תרגיל חדש כדי להתחיל.')}
+                </p>
+                {!searchTerm && selectedMuscleGroup === 'all' && (
+                  <Button onClick={() => setCreateDialogOpen(true)} className="gradient-green">
+                    <Plus className="w-4 h-4 mr-2" />
+                    {t('exerciseBank.addExercise')}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            Object.entries(groupedExercises).map(([muscleGroup, groupExercises]) => (
+              <div key={muscleGroup}>
+                <h2 className="text-xl font-semibold mb-3 flex items-center">
+                  <Tag className="w-5 h-5 me-2" />
+                  {t(`exerciseBank.muscleGroups.${muscleGroup}`)}
+                  <Badge variant="secondary" className="ms-2">{groupExercises.length}</Badge>
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {groupExercises.map((exercise) => (
+                    <Card key={exercise.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <span className="text-lg">{exercise.name}</span>
+                          <div className="flex gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => startEdit(exercise)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteExercise(exercise.id)}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm text-muted-foreground">{exercise.description}</p>
+                        
+                        {exercise.equipment_needed && (
+                          <div className="flex items-center text-sm">
+                            <Weight className="w-4 h-4 me-2 text-muted-foreground" />
+                            <span>{exercise.equipment_needed}</span>
+                          </div>
+                        )}
+                        
+                        {exercise.video_url && (
+                          <div className="flex items-center text-sm">
+                            <Video className="w-4 h-4 me-2 text-muted-foreground" />
+                            <a href={exercise.video_url} target="_blank" rel="noopener noreferrer" 
+                               className="text-primary hover:underline">
+                              {t('exerciseBank.videoTutorial')}
+                            </a>
+                          </div>
+                        )}
+                        
+                        {exercise.instructions && (
+                          <div className="flex items-start text-sm">
+                            <FileText className="w-4 h-4 me-2 text-muted-foreground mt-0.5" />
+                            <p className="text-muted-foreground line-clamp-2">{exercise.instructions}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Create/Edit Exercise Dialog */}

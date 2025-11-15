@@ -36,7 +36,6 @@ const ProgressTrackingV2 = () => {
   // Form state
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   const [newWeight, setNewWeight] = useState('');
-  const [newBodyFat, setNewBodyFat] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -132,9 +131,6 @@ const ProgressTrackingV2 = () => {
       formData.append('weight', newWeight);
       formData.append('date', new Date().toISOString());
       
-      if (newBodyFat) {
-        formData.append('body_fat_percentage', newBodyFat);
-      }
       if (newNotes) {
         formData.append('notes', newNotes);
       }
@@ -158,7 +154,6 @@ const ProgressTrackingV2 = () => {
         
         // Reset form
         setNewWeight('');
-        setNewBodyFat('');
         setNewNotes('');
         setPhotoFile(null);
         setPhotoPreview(null);
@@ -232,17 +227,6 @@ const ProgressTrackingV2 = () => {
                       placeholder={t('progress.weightPlaceholder')}
                       value={newWeight}
                       onChange={(e) => setNewWeight(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="body-fat">{t('progress.bodyFatOptional')}</Label>
-                    <Input
-                      id="body-fat"
-                      type="number"
-                      step="0.1"
-                      placeholder={t('progress.bodyFatPlaceholder')}
-                      value={newBodyFat}
-                      onChange={(e) => setNewBodyFat(e.target.value)}
                     />
                   </div>
                   <div>

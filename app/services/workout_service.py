@@ -117,9 +117,30 @@ class WorkoutService:
         if not exercise:
             return False
         
-        self.db.delete(exercise)
-        self.db.commit()
-        return True
+        # Check if exercise is used in any workout exercises (old system)
+        from app.models.workout import WorkoutExercise
+        workout_exercise_count = self.db.query(WorkoutExercise).filter(
+            WorkoutExercise.exercise_id == exercise_id
+        ).count()
+        
+        # Check if exercise is used in any workout exercises v2 (new system)
+        from app.models.workout_system import WorkoutExerciseV2
+        workout_exercise_v2_count = self.db.query(WorkoutExerciseV2).filter(
+            WorkoutExerciseV2.exercise_id == exercise_id
+        ).count()
+        
+        if workout_exercise_count > 0 or workout_exercise_v2_count > 0:
+            # Exercise is being used, cannot delete
+            return False
+        
+        try:
+            self.db.delete(exercise)
+            self.db.commit()
+            return True
+        except Exception as e:
+            self.db.rollback()
+            # If there's a foreign key constraint error, return False
+            return False
 
     # Workout Plan Management
     def create_workout_plan(self, workout_plan_data: WorkoutPlanCreate, trainer_id: int) -> WorkoutPlanResponse:

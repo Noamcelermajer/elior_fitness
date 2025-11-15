@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import logging
 
 from app.database import get_db
 from app.services.workout_service import WorkoutService
@@ -11,6 +12,7 @@ from app.schemas.workout import (
 )
 from app.models.workout import MuscleGroup
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/", response_model=ExerciseResponse, status_code=status.HTTP_201_CREATED)
@@ -109,13 +111,64 @@ def delete_exercise(
             detail="Only trainers can delete exercises"
         )
     
-    workout_service = WorkoutService(db)
-    success = workout_service.delete_exercise(exercise_id, current_user.id)
+    # Check if exercise exists and belongs to the trainer
+    from app.models.workout import Exercise
+    exercise = db.query(Exercise).filter(
+        and_(
+            Exercise.id == exercise_id,
+            Exercise.created_by == current_user.id
+        )
+    ).first()
     
-    if not success:
+    if not exercise:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Exercise not found or you don't have permission to delete it"
+        )
+    
+    # Check if exercise is used in any workout plans
+    from app.models.workout import WorkoutExercise
+    from app.models.workout_system import WorkoutExerciseV2, ExercisePersonalRecord
+    
+    workout_exercise_count = db.query(WorkoutExercise).filter(
+        WorkoutExercise.exercise_id == exercise_id
+    ).count()
+    
+    workout_exercise_v2_count = db.query(WorkoutExerciseV2).filter(
+        WorkoutExerciseV2.exercise_id == exercise_id
+    ).count()
+    
+    exercise_pr_count = db.query(ExercisePersonalRecord).filter(
+        ExercisePersonalRecord.exercise_id == exercise_id
+    ).count()
+    
+    if workout_exercise_count > 0 or workout_exercise_v2_count > 0 or exercise_pr_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot delete exercise: It is currently used in {workout_exercise_count + workout_exercise_v2_count} workout plan(s) and {exercise_pr_count} personal record(s). Please remove it from all workout plans first."
+        )
+    
+    # Try to delete the exercise directly
+    try:
+        db.delete(exercise)
+        db.commit()
+        return None  # 204 No Content
+    except Exception as e:
+        db.rollback()
+        import traceback
+        error_detail = str(e)
+        logger.error(f"Error deleting exercise {exercise_id}: {error_detail}\n{traceback.format_exc()}")
+        
+        # Check if it's a foreign key constraint error
+        if "foreign key" in str(e).lower() or "constraint" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete exercise: It is still referenced in the database. Please ensure it's not used in any workout plans."
+            )
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete exercise: {error_detail}"
         )
 
 @router.get("/test")

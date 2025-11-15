@@ -222,7 +222,13 @@ const CreateWorkoutPlanV2: React.FC = () => {
   };
 
   const createWorkoutSplit = async () => {
+    if (!newSplitName.trim()) {
+      setError('Split name is required');
+      return;
+    }
+    
     try {
+      setError('');
       const token = localStorage.getItem('access_token');
       const response = await fetch(`${API_BASE_URL}/workout-splits/`, {
         method: 'POST',
@@ -232,7 +238,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
         },
         body: JSON.stringify({
           name: newSplitName.trim(),
-          description: newSplitDescription.trim() || null,
+          description: newSplitDescription?.trim() || null,
           days_per_week: newSplitDaysPerWeek || null,
         }),
       });
@@ -245,13 +251,27 @@ const CreateWorkoutPlanV2: React.FC = () => {
         setNewSplitDescription('');
         setNewSplitDaysPerWeek(null);
         setShowCreateSplitDialog(false);
+        setError('');
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || 'Failed to create workout split');
+        const contentType = response.headers.get('content-type');
+        let errorMessage = 'Failed to create workout split';
+        try {
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.detail || errorMessage;
+          } else {
+            const text = await response.text();
+            if (text) errorMessage = text;
+          }
+        } catch (parseError) {
+          console.error('Error parsing error response:', parseError);
+        }
+        setError(errorMessage);
+        console.error('Failed to create workout split:', response.status, errorMessage);
       }
     } catch (error) {
       console.error('Failed to create workout split:', error);
-      setError('Failed to create workout split');
+      setError('Failed to create workout split: ' + (error instanceof Error ? error.message : String(error)));
     }
   };
 
