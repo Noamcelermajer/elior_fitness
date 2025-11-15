@@ -11,7 +11,8 @@ from typing import List
 
 from app.database import get_db
 from app.auth.utils import get_current_user
-from app.schemas.auth import UserResponse
+from app.schemas.auth import UserResponse, UserRole
+from app.models.user import User
 from app.schemas.workout_system import (
     WorkoutPlanCreate,
     WorkoutPlanUpdate,
@@ -88,6 +89,27 @@ def create_workout_plan(
             detail="Only trainers can create workout plans"
         )
     
+    # Validate client exists and belongs to trainer (if trainer is creating)
+    client = db.query(User).filter(User.id == plan_data.client_id).first()
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not found"
+        )
+    
+    if client.role != UserRole.CLIENT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not a client"
+        )
+    
+    # If trainer (not admin), verify client belongs to them
+    if current_user.role == "TRAINER" and client.trainer_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not found or not assigned to you"
+        )
+    
     # Enforce single active plan per client
     existing_plan = db.query(NewWorkoutPlan).filter(
         NewWorkoutPlan.client_id == plan_data.client_id,
@@ -158,6 +180,27 @@ def create_complete_workout_plan(
             detail="Only trainers can create workout plans"
         )
     
+    # Validate client exists and belongs to trainer (if trainer is creating)
+    client = db.query(User).filter(User.id == plan_data.client_id).first()
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not found"
+        )
+    
+    if client.role != UserRole.CLIENT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not a client"
+        )
+    
+    # If trainer (not admin), verify client belongs to them
+    if current_user.role == "TRAINER" and client.trainer_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not found or not assigned to you"
+        )
+    
     existing_plan = db.query(NewWorkoutPlan).filter(
         NewWorkoutPlan.client_id == plan_data.client_id,
         NewWorkoutPlan.is_active == True
@@ -172,9 +215,17 @@ def create_complete_workout_plan(
 
         existing_plan.name = plan_data.name
         existing_plan.description = plan_data.description
-        # Only update split_type if provided (to avoid NULL constraint issues)
+        # Only update split_type if provided and valid enum value (to avoid NULL constraint issues)
         if plan_data.split_type is not None:
-            existing_plan.split_type = plan_data.split_type
+            try:
+                # Try to convert to enum if it's a valid enum value
+                if plan_data.split_type in [e.value for e in WorkoutSplitType]:
+                    existing_plan.split_type = WorkoutSplitType(plan_data.split_type)
+                else:
+                    # If it's not a valid enum, set to CUSTOM to allow flexibility
+                    existing_plan.split_type = WorkoutSplitType.CUSTOM
+            except (ValueError, KeyError):
+                existing_plan.split_type = WorkoutSplitType.CUSTOM
         existing_plan.days_per_week = plan_data.days_per_week
         existing_plan.duration_weeks = plan_data.duration_weeks
         existing_plan.notes = plan_data.notes
@@ -190,7 +241,19 @@ def create_complete_workout_plan(
     else:
         # Use a default split_type if None to avoid NOT NULL constraint
         # SQLite doesn't allow NULL for this column even though model says nullable=True
-        split_type_value = plan_data.split_type if plan_data.split_type is not None else WorkoutSplitType.CUSTOM
+        # Handle string split_type values - convert to enum if valid, otherwise use CUSTOM
+        split_type_value = WorkoutSplitType.CUSTOM
+        if plan_data.split_type is not None:
+            try:
+                # Try to convert to enum if it's a valid enum value
+                if plan_data.split_type in [e.value for e in WorkoutSplitType]:
+                    split_type_value = WorkoutSplitType(plan_data.split_type)
+                else:
+                    # If it's not a valid enum (e.g., workout split ID), use CUSTOM to allow flexibility
+                    split_type_value = WorkoutSplitType.CUSTOM
+            except (ValueError, KeyError):
+                split_type_value = WorkoutSplitType.CUSTOM
+        
         target_plan = NewWorkoutPlan(
             client_id=plan_data.client_id,
             trainer_id=current_user.id,

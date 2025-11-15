@@ -540,30 +540,22 @@ const TrainingDayPage: React.FC = () => {
         const targetSets = exercise?.target_sets || 0;
         const completedSetsAfterSave = refreshed.filter((c: SetCompletion) => c.workout_exercise_id === exerciseId);
         
-        // Only keep custom sets if we've exceeded target sets
-        // Otherwise, reset to 0 to prevent empty sets from appearing
-        if (completedSetsAfterSave.length <= targetSets) {
-          setCustomSetCounts((prev) => {
-            const next = { ...prev };
-            delete next[exerciseId];
-            return next;
-          });
-        }
+        // Always reset customSetCounts when a set is saved to prevent showing empty sets
+        // The cardSetCount logic will handle showing the next set
+        setCustomSetCounts((prev) => {
+          const next = { ...prev };
+          delete next[exerciseId];
+          return next;
+        });
       } else {
         setSetCompletions((prev) => [...prev, newCompletion]);
         
-        // Fallback: use the new completion we just added
-        const exercise = workoutDay?.workout_exercises.find(e => e.id === exerciseId);
-        const targetSets = exercise?.target_sets || 0;
-        const completedSetsAfterSave = [...setCompletions, newCompletion].filter((c) => c.workout_exercise_id === exerciseId);
-        
-        if (completedSetsAfterSave.length <= targetSets) {
-          setCustomSetCounts((prev) => {
-            const next = { ...prev };
-            delete next[exerciseId];
-            return next;
-          });
-        }
+        // Fallback: reset customSetCounts to prevent empty sets
+        setCustomSetCounts((prev) => {
+          const next = { ...prev };
+          delete next[exerciseId];
+          return next;
+        });
       }
       
       // Clear the temp set data
@@ -598,9 +590,21 @@ const TrainingDayPage: React.FC = () => {
     let cardSetCount: number;
     
     if (hasStarted) {
-      // If started, show at least: completed sets, target sets, and any additional custom sets
-      // This allows users to do more sets than the target
-      cardSetCount = Math.max(targetSets + customCount, completedSets.length || 0);
+      // If started, show completed sets + 1 empty set for the next set to fill
+      // Only show all target sets if we've completed all of them
+      const maxCompletedSetNumber = completedSets.length > 0 
+        ? Math.max(...completedSets.map(c => c.set_number))
+        : 0;
+      
+      // Show sets up to the next one after the last completed set, or target sets (whichever is higher)
+      // But don't show all target sets at once - only show one empty set at a time
+      if (maxCompletedSetNumber >= targetSets) {
+        // All target sets completed, show them + any custom sets
+        cardSetCount = targetSets + customCount;
+      } else {
+        // Show completed sets + 1 empty set for next set
+        cardSetCount = Math.max(maxCompletedSetNumber + 1, completedSets.length + 1);
+      }
     } else if (hasHistory) {
       // If history exists, show target sets + any additional custom sets
       cardSetCount = targetSets + customCount;
@@ -963,7 +967,7 @@ const TrainingDayPage: React.FC = () => {
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">{workoutDay.name}</h1>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate" dir="auto">{workoutDay.name}</h1>
                   {workoutDay.notes && (
                     <p className="text-sm sm:text-base text-muted-foreground mt-2 line-clamp-2">{workoutDay.notes}</p>
                   )}

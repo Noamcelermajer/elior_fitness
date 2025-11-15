@@ -100,6 +100,13 @@ const CreateWorkoutPlanV2: React.FC = () => {
     }
   }, [user, navigate]);
 
+  // Update client_id when client is loaded
+  useEffect(() => {
+    if (client?.id && formData.client_id !== client.id) {
+      setFormData(prev => ({ ...prev, client_id: client.id }));
+    }
+  }, [client, formData.client_id]);
+
   // Fetch exercises, clients, and workout splits
   useEffect(() => {
     fetchExercises();
@@ -322,31 +329,37 @@ const CreateWorkoutPlanV2: React.FC = () => {
       setLoading(true);
       setError('');
 
+      // Validate client_id
+      if (!formData.client_id || formData.client_id === 0) {
+        setError('Please select a client');
+        setLoading(false);
+        return;
+      }
+
          const token = localStorage.getItem('access_token');
       const payload: any = {
         client_id: formData.client_id,
-        name: formData.name,
-        description: formData.description || null,
-        days_per_week: formData.days_per_week,
-        duration_weeks: formData.duration_weeks,
-        notes: formData.notes || null,
-        is_active: formData.is_active,
+        name: formData.name.trim(),
+        description: formData.description?.trim() || null,
+        days_per_week: formData.days_per_week || null,
+        duration_weeks: formData.duration_weeks || null,
+        notes: formData.notes?.trim() || null,
         workout_days: formData.workout_days.map((day, dayIdx) => {
           const dayPayload: any = {
-            name: day.name,
+            name: day.name.trim(),
             order_index: dayIdx,
-            notes: sanitizeString(day.notes),
-            estimated_duration: day.estimated_duration,
+            notes: sanitizeString(day.notes) || null,
+            estimated_duration: day.estimated_duration || null,
             exercises: day.exercises.map((exercise, exerciseIdx) => ({
               exercise_id: exercise.exercise_id,
               order_index: exerciseIdx,
-              target_sets: exercise.target_sets ?? null,
-              target_reps: sanitizeString(exercise.target_reps),
-              target_weight: exercise.target_weight ?? null,
-              rest_seconds: exercise.rest_seconds ?? null,
-              tempo: sanitizeString(exercise.tempo),
-              notes: sanitizeString(exercise.notes),
-              group_name: sanitizeString(exercise.group_name),
+              target_sets: exercise.target_sets && exercise.target_sets >= 1 ? exercise.target_sets : null,
+              target_reps: sanitizeString(exercise.target_reps) || null,
+              target_weight: exercise.target_weight || null,
+              rest_seconds: exercise.rest_seconds && exercise.rest_seconds >= 0 ? exercise.rest_seconds : null,
+              tempo: sanitizeString(exercise.tempo) || null,
+              notes: sanitizeString(exercise.notes) || null,
+              group_name: sanitizeString(exercise.group_name) || null,
               video_url: exercise.video_url || null,
             })),
           };
@@ -357,8 +370,15 @@ const CreateWorkoutPlanV2: React.FC = () => {
         }),
       };
       
+      // Only send split_type if it's a valid enum value, not a workout split ID
+      // Workout splits are separate from split_type enum
       if (formData.split_type) {
-        payload.split_type = formData.split_type;
+        const validSplitTypes = ['push_pull_legs', 'upper_lower', 'full_body', 'bro_split', 'custom'];
+        if (validSplitTypes.includes(formData.split_type)) {
+          payload.split_type = formData.split_type;
+        }
+        // If it's not a valid enum (e.g., workout split ID), don't send it
+        // The backend will default to CUSTOM
       }
 
       const response = await fetch(`${API_BASE_URL}/v2/workouts/plans/complete`, {
@@ -372,7 +392,17 @@ const CreateWorkoutPlanV2: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to create workout plan');
+        let errorMessage = 'Failed to create workout plan';
+        if (errorData.detail) {
+          if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map((err: any) => 
+              `${err.loc?.join('.')}: ${err.msg}`
+            ).join(', ');
+          } else {
+            errorMessage = errorData.detail;
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       // Success!
@@ -447,13 +477,13 @@ const CreateWorkoutPlanV2: React.FC = () => {
               <Label htmlFor="client">Client *</Label>
               <select
                 id="client"
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border rounded-md bg-background text-foreground"
                 value={formData.client_id}
                 onChange={(e) => setFormData({ ...formData, client_id: parseInt(e.target.value) })}
               >
-                <option value={0}>Select client...</option>
+                <option value={0} className="bg-background text-foreground">Select client...</option>
                 {clients.map(c => (
-                  <option key={c.id} value={c.id}>{c.full_name} ({c.email})</option>
+                  <option key={c.id} value={c.id} className="bg-background text-foreground">{c.full_name} ({c.email})</option>
                 ))}
               </select>
             </div>
@@ -778,21 +808,27 @@ const CreateWorkoutPlanV2: React.FC = () => {
                             </CardHeader>
                             <CardContent>
                               <div className="space-y-2">
-                                {exercises.map(exercise => (
-                                  <Card
-                                    key={exercise.id}
-                                    className="p-3 cursor-pointer hover:bg-accent"
-                                    onClick={() => addExerciseToDay(dayIndex, exercise.id)}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <p className="font-semibold">{exercise.name}</p>
-                                        <p className="text-sm text-muted-foreground capitalize">{exercise.muscle_group}</p>
+                                {exercises.length === 0 ? (
+                                  <p className="text-center text-muted-foreground py-4">
+                                    No exercises available. Please create exercises first.
+                                  </p>
+                                ) : (
+                                  exercises.map(exercise => (
+                                    <Card
+                                      key={exercise.id}
+                                      className="p-3 cursor-pointer hover:bg-accent"
+                                      onClick={() => addExerciseToDay(dayIndex, exercise.id)}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div>
+                                          <p className="font-semibold">{exercise.name || 'Unnamed Exercise'}</p>
+                                          <p className="text-sm text-muted-foreground capitalize">{exercise.muscle_group}</p>
+                                        </div>
+                                        <Plus className="h-5 w-5" />
                                       </div>
-                                      <Plus className="h-5 w-5" />
-                                    </div>
-                                  </Card>
-                                ))}
+                                    </Card>
+                                  ))
+                                )}
                               </div>
 
                               <div className="flex justify-end mt-4">

@@ -22,7 +22,6 @@ import CreateExercisePage from "./pages/CreateExercisePage";
 import CreateMealPlanPage from "./pages/CreateMealPlanPage";
 import WorkoutDetailPage from "./pages/WorkoutDetailPage";
 import AdminDashboard from "./pages/AdminDashboard";
-import ClientsPage from "./pages/ClientsPage";
 import NotFound from "./pages/NotFound";
 import UsersPage from './pages/UsersPage';
 import SystemPage from './pages/SystemPage';
@@ -240,14 +239,6 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <WorkoutDetailPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/clients" 
-        element={
-          <ProtectedRoute>
-            <ClientsPage />
           </ProtectedRoute>
         } 
       />

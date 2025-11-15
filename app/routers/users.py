@@ -208,23 +208,46 @@ async def get_user(
     db: Session = Depends(get_db)
 ):
     """
-    Get user by ID. Trainers can view any user, clients can only view themselves.
+    Get user by ID. Trainers can view their clients, admins can view any user, clients can only view themselves.
     Returns user data with profile information if available.
     """
-    if current_user.role != UserRole.TRAINER and current_user.id != user_id:
+    # Admins can view anyone
+    if current_user.role == UserRole.ADMIN:
+        pass
+    # Clients can only view themselves
+    elif current_user.role == UserRole.CLIENT:
+        if current_user.id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
+            )
+    # Trainers can view their clients
+    elif current_user.role == UserRole.TRAINER:
+        if current_user.id != user_id:
+            # Check if the requested user is a client of this trainer
+            target_user = user_service.get_user_by_id(db, user_id)
+            if not target_user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found"
+                )
+            if target_user.role != UserRole.CLIENT or target_user.trainer_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Client not found or not assigned to you"
+                )
+    else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied"
         )
+    
     user = user_service.get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
-    # Get profile data if it exists
-    client_profile = db.query(ClientProfile).filter(ClientProfile.user_id == user_id).first()
     
     # Build response with profile data
     response_data = {
@@ -240,18 +263,53 @@ async def get_user(
         "last_login": getattr(user, 'last_login', None),
     }
     
-    if client_profile:
-        response_data["profile"] = {
-            "weight": client_profile.target_weight / 1000 if client_profile.target_weight else None,  # Convert grams to kg
-            "height": client_profile.height,
-            "goals": client_profile.fitness_goals,
-            "injuries": client_profile.medical_conditions,
-            "preferences": client_profile.dietary_restrictions,
-            "phone": client_profile.phone,
-            "address": client_profile.address,
-            "emergency_contact": client_profile.emergency_contact,
-        }
-    else:
+    # Get profile data if it exists (handle missing columns gracefully)
+    try:
+        from sqlalchemy import inspect
+        # Use raw SQL to only select columns that exist
+        inspector = inspect(db.bind)
+        columns = [col['name'] for col in inspector.get_columns('client_profiles')]
+        
+        # Build select statement with only existing columns
+        from sqlalchemy import text
+        select_cols = []
+        if 'height' in columns:
+            select_cols.append('height')
+        if 'target_weight' in columns:
+            select_cols.append('target_weight')
+        if 'fitness_goals' in columns:
+            select_cols.append('fitness_goals')
+        if 'medical_conditions' in columns:
+            select_cols.append('medical_conditions')
+        if 'dietary_restrictions' in columns:
+            select_cols.append('dietary_restrictions')
+        if 'phone' in columns:
+            select_cols.append('phone')
+        if 'address' in columns:
+            select_cols.append('address')
+        if 'emergency_contact' in columns:
+            select_cols.append('emergency_contact')
+        
+        if select_cols:
+            result = db.execute(text(f"SELECT {', '.join(select_cols)} FROM client_profiles WHERE user_id = :user_id"), {"user_id": user_id}).first()
+            if result:
+                profile_dict = dict(result._mapping)
+                response_data["profile"] = {
+                    "weight": profile_dict.get('target_weight', 0) / 1000 if profile_dict.get('target_weight') else None,
+                    "height": profile_dict.get('height'),
+                    "goals": profile_dict.get('fitness_goals'),
+                    "injuries": profile_dict.get('medical_conditions'),
+                    "preferences": profile_dict.get('dietary_restrictions'),
+                    "phone": profile_dict.get('phone'),
+                    "address": profile_dict.get('address'),
+                    "emergency_contact": profile_dict.get('emergency_contact'),
+                }
+            else:
+                response_data["profile"] = None
+        else:
+            response_data["profile"] = None
+    except Exception as e:
+        # If profile query fails (e.g., missing columns or table), just return None for profile
         response_data["profile"] = None
     
     return response_data

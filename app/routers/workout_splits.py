@@ -51,7 +51,7 @@ def create_workout_split(
     
     workout_split = WorkoutSplit(
         name=split_data.name.strip(),
-        description=split_data.description.strip() if split_data.description else None,
+        description=split_data.description.strip() if split_data.description and split_data.description.strip() else None,
         days_per_week=split_data.days_per_week,
         created_by=current_user.id
     )
@@ -60,7 +60,14 @@ def create_workout_split(
     db.commit()
     db.refresh(workout_split)
     
-    return workout_split
+    return WorkoutSplitResponse(
+        id=workout_split.id,
+        name=workout_split.name,
+        description=workout_split.description,
+        days_per_week=workout_split.days_per_week,
+        created_by=workout_split.created_by,
+        created_at=workout_split.created_at.isoformat() if workout_split.created_at else ""
+    )
 
 @router.get("/", response_model=List[WorkoutSplitResponse])
 def get_workout_splits(
@@ -73,7 +80,18 @@ def get_workout_splits(
     else:
         # Clients can see all splits (or filter by created_by if needed)
         splits = db.query(WorkoutSplit).order_by(WorkoutSplit.name).all()
-    return splits
+    
+    return [
+        WorkoutSplitResponse(
+            id=split.id,
+            name=split.name,
+            description=split.description,
+            days_per_week=split.days_per_week,
+            created_by=split.created_by,
+            created_at=split.created_at.isoformat() if split.created_at else ""
+        )
+        for split in splits
+    ]
 
 @router.get("/{split_id}", response_model=WorkoutSplitResponse)
 def get_workout_split(
@@ -90,7 +108,14 @@ def get_workout_split(
             detail="Workout split not found"
         )
     
-    return split
+    return WorkoutSplitResponse(
+        id=split.id,
+        name=split.name,
+        description=split.description,
+        days_per_week=split.days_per_week,
+        created_by=split.created_by,
+        created_at=split.created_at.isoformat() if split.created_at else ""
+    )
 
 @router.put("/{split_id}", response_model=WorkoutSplitResponse)
 def update_workout_split(
@@ -124,7 +149,14 @@ def update_workout_split(
     db.commit()
     db.refresh(split)
     
-    return split
+    return WorkoutSplitResponse(
+        id=split.id,
+        name=split.name,
+        description=split.description,
+        days_per_week=split.days_per_week,
+        created_by=split.created_by,
+        created_at=split.created_at.isoformat() if split.created_at else ""
+    )
 
 @router.delete("/{split_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_workout_split(

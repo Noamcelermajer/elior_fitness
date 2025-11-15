@@ -137,7 +137,7 @@ class WorkoutPlanResponse(WorkoutPlanBase):
 class CompleteWorkoutExercise(BaseModel):
     exercise_id: int
     order_index: int
-    target_sets: Optional[int] = Field(None, ge=1, le=10)
+    target_sets: Optional[int] = Field(None, ge=1)  # Allow any positive number, removed upper limit
     target_reps: Optional[str] = None
     target_weight: Optional[float] = None
     rest_seconds: Optional[int] = Field(None, ge=0, le=600)
@@ -158,7 +158,7 @@ class CompleteWorkoutPlanCreate(BaseModel):
     client_id: int
     name: str
     description: Optional[str] = None
-    split_type: Optional[WorkoutSplitType] = None  # Optional - trainer defines custom workout structure
+    split_type: Optional[str] = None  # Optional - trainer can use any split type name or enum value
     days_per_week: Optional[int] = Field(None, ge=1, le=7)
     duration_weeks: Optional[int] = None
     notes: Optional[str] = None
