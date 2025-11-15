@@ -711,11 +711,16 @@ async def serve_spa_routes(full_path: str):
             mimetype = "application/octet-stream"
         
         logger.info(f"Serving static file: {abs_static_file_path} with mimetype: {mimetype}")
+        # Use shorter cache for SVG files to allow easier updates
+        if full_path.lower().endswith('.svg'):
+            cache_control = "public, max-age=3600"  # Cache for 1 hour
+        else:
+            cache_control = "public, max-age=2592000"  # Cache for 1 month
         return FileResponse(
             abs_static_file_path,
             media_type=mimetype,
             headers={
-                "Cache-Control": "public, max-age=2592000",  # Cache for 1 month
+                "Cache-Control": cache_control,
                 "Vary": "Accept-Encoding"
             }
         )

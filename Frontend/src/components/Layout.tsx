@@ -48,13 +48,12 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
     <div className="h-screen overflow-hidden bg-background flex flex-col">
       {/* Mobile Header */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50 lg:hidden">
-        <div className="flex items-center justify-between px-2 sm:px-4 h-20 gap-2 overflow-hidden">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg flex items-center justify-center flex-shrink-0">
-              <img src="/Untitled.svg" alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
+        <div className="flex items-center justify-between px-2 sm:px-4 h-24 sm:h-28 md:h-32 gap-2 overflow-hidden">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-lg flex items-center justify-center flex-shrink-0">
+              <img src="/Untitled.svg?v=2" alt="Logo" className="w-full h-full object-fill" />
             </div>
-            <div className="min-w-0">
-              <h1 className="text-sm sm:text-lg font-bold text-gradient truncate">{t('layout.brandName')}</h1>
+            <div className="min-w-0 flex-1">
               <p className="text-xs text-muted-foreground truncate">
                 {isAdmin ? t('layout.adminPanel') : isTrainer ? t('layout.trainerDashboard') : t('layout.clientPortal')}
               </p>
@@ -118,14 +117,13 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       {/* Desktop Header */}
       <div className="hidden lg:block sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-between items-center h-24">
-            <div className="flex items-center gap-4">
-              <div className="w-28 h-28 rounded-xl flex items-center justify-center transform hover:scale-110 transition-transform duration-300">
-                <img src="/Untitled.svg" alt="Logo" className="w-28 h-28 object-contain" />
+          <div className="flex justify-between items-center h-28 lg:h-32 xl:h-36">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="w-20 h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 rounded-xl flex items-center justify-center flex-shrink-0 transform hover:scale-110 transition-transform duration-300">
+                <img src="/Untitled.svg?v=2" alt="Logo" className="w-full h-full object-fill" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gradient">{t('layout.brandName')}</h1>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-muted-foreground truncate">
                   {isAdmin ? t('layout.adminSubtitle') : isTrainer ? t('layout.trainerSubtitle') : t('layout.clientSubtitle')}
                 </p>
               </div>

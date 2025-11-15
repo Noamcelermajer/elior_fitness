@@ -56,26 +56,31 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Elior image background - only in dark theme */}
-      {theme === 'dark' && (
-        <div 
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: 'url(/elior.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.6,
-            mixBlendMode: 'multiply',
-            filter: 'brightness(0.5) contrast(1.2)',
-          }}
-        />
-      )}
+      {/* Elior image background - both themes with different blend modes */}
+      <div 
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: 'url(/elior.png)',
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          opacity: theme === 'dark' ? 0.4 : 0.25,
+          mixBlendMode: theme === 'dark' ? 'soft-light' : 'overlay',
+          filter: theme === 'dark' 
+            ? 'brightness(1.35) contrast(1.15) grayscale(0.2)'
+            : 'brightness(0.9) contrast(1.1) grayscale(0.4)',
+        }}
+      />
       
       {/* Gradient overlay to blend image with background */}
-      {theme === 'dark' && (
-        <div className="absolute inset-0 z-[1] bg-gradient-to-br from-background/40 via-background/20 to-background/40" />
-      )}
+      <div 
+        className="absolute inset-0 z-[1]" 
+        style={{
+          background: theme === 'dark' 
+            ? 'linear-gradient(to bottom right, hsl(var(--background) / 0.4), hsl(var(--background) / 0.15), hsl(var(--background) / 0.4))'
+            : 'linear-gradient(to bottom right, hsl(var(--background) / 0.5), hsl(var(--background) / 0.3), hsl(var(--background) / 0.5))'
+        }}
+      />
 
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden z-[2]">
@@ -83,23 +88,34 @@ const Login = () => {
         <div className="absolute -bottom-1/2 -right-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md animate-fade-in">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-48 h-48 rounded-2xl flex items-center justify-center mx-auto mb-4 transform hover:scale-110 transition-transform duration-300">
-            <img src="/Untitled.svg" alt="Logo" className="w-48 h-48 object-contain" />
-          </div>
-          <div className="absolute top-4 right-4 flex items-center gap-2">
-            <LanguageSelector />
-            <ThemeToggle />
-          </div>
-        </div>
+      {/* Language and Theme Toggle - Outside card */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+        <LanguageSelector />
+        <ThemeToggle />
+      </div>
 
+      <div className="relative z-10 w-full max-w-md animate-fade-in mt-24 sm:mt-32 md:mt-40">
         {/* Login Form */}
         <Card className="glass-effect border-border/50 shadow-2xl transform hover:scale-[1.02] transition-all duration-300">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-foreground">{t('auth.signIn')}</CardTitle>
-            <CardDescription>{t('auth.loginToContinue')}</CardDescription>
+          <CardHeader className="text-center py-4">
+            {/* ECShape Brand Text - Inside card */}
+            <div className="mb-4">
+              {/* ECShape text - will use FastFurious font if converted, otherwise Racing Sans One */}
+              <h1 
+                className="text-4xl sm:text-5xl md:text-6xl font-bold text-gradient mb-1" 
+                style={{ 
+                  fontFamily: "'Airbolt', 'Racing Sans One', cursive",
+                  letterSpacing: '0.1em',
+                  textShadow: '0 0 20px rgba(251, 146, 60, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3)',
+                  fontWeight: 'normal'
+                }}
+              >
+                ECShape
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                התחברות למערכת
+              </p>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
