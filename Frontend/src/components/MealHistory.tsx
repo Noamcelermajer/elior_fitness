@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, TrendingUp, CheckCircle, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+import { API_BASE_URL } from '../config/api';
 
 interface MealHistoryChoice {
   choice_id: number;

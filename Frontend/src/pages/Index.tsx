@@ -168,20 +168,20 @@ const Index = () => {
       }
 
       // Fetch clients
-      const clientsResponse = await fetch('http://localhost:8000/api/users/', { headers });
+      const clientsResponse = await fetch(`${API_BASE_URL}/users/`, { headers });
       const clients = clientsResponse.ok ? await clientsResponse.json() : [];
       const clientUsers = clients.filter((u: any) => u.role === 'CLIENT');
 
       // Fetch workout plans
-      const workoutResponse = await fetch('http://localhost:8000/api/workouts/plans', { headers });
+      const workoutResponse = await fetch(`${API_BASE_URL}/workouts/plans`, { headers });
       const workoutPlans = workoutResponse.ok ? await workoutResponse.json() : [];
 
       // Fetch meal plans
-      const mealResponse = await fetch('http://localhost:8000/api/meal-plans/', { headers });
+      const mealResponse = await fetch(`${API_BASE_URL}/meal-plans/`, { headers });
       const mealPlans = mealResponse.ok ? await mealResponse.json() : [];
 
       // Fetch recent completions
-      const completionsResponse = await fetch('http://localhost:8000/api/workouts/completions?size=5', { headers });
+      const completionsResponse = await fetch(`${API_BASE_URL}/workouts/completions?size=5`, { headers });
       const completions = completionsResponse.ok ? await completionsResponse.json() : [];
 
       // Calculate stats

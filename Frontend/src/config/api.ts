@@ -8,12 +8,16 @@ const getApiUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
   
-  // Local development detection: frontend on port 5173 or 3000, backend on 8000
-  const isDevelopment = window.location.port === '5173' || 
-                       window.location.port === '3000' ||
-                       import.meta.env.DEV;
+  // Local development detection: check for specific ports or localhost hostname
+  const isLocalhost = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' ||
+                      window.location.hostname === '';
+  const isDevPort = window.location.port === '5173' || 
+                    window.location.port === '3000' ||
+                    window.location.port === '5174';
   
-  if (isDevelopment) {
+  // Only use localhost:8000 if we're actually on localhost with dev port
+  if (isLocalhost && isDevPort) {
     const apiUrl = 'http://localhost:8000/api';
     console.log('Local Development API URL:', apiUrl);
     console.log('Frontend origin:', window.location.origin);
@@ -21,12 +25,14 @@ const getApiUrl = () => {
     return apiUrl;
   }
   
-  // Production/Docker: Use same domain as frontend with /api path
+  // Production/Docker/Railway: Use same domain as frontend with /api path
   // This works for any reverse proxy setup (Caddy, Nginx, Railway, etc.)
   const apiUrl = `${window.location.origin}/api`;
   console.log('Production API URL:', apiUrl);
   console.log('Frontend origin:', window.location.origin);
   console.log('Environment:', import.meta.env.MODE);
+  console.log('Hostname:', window.location.hostname);
+  console.log('Port:', window.location.port);
   
   return apiUrl;
 };
