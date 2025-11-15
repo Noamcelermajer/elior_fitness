@@ -201,8 +201,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
       const token = getToken();
       if (token) {
+        // Try to fetch user data - if it fails (401), token is invalid/expired
         const userData = await fetchCurrentUser();
-        setUser(userData);
+        if (userData) {
+          setUser(userData);
+        } else {
+          // Token is invalid, clear it
+          removeToken();
+        }
       }
       setLoading(false);
     };

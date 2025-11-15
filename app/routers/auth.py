@@ -5,7 +5,7 @@ from typing import Annotated, Optional, List
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.auth import UserCreate, UserResponse, Token, UserLogin
+from app.schemas.auth import UserCreate, UserResponse, Token, UserLogin, UserRole
 from app.services import auth_service, password_service, user_service
 from app.auth.utils import get_current_user, create_access_token
 from app.services.notification_triggers import NotificationTriggers
@@ -90,24 +90,24 @@ async def register_user(
     """
     # If no current user (public registration), only allow client registration
     if not current_user:
-        if user.role != "CLIENT":
+        if user.role != UserRole.CLIENT:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Public registration is only allowed for clients"
             )
     else:
         # Check role-based permissions
-        if user.role == "TRAINER" and current_user.role != "ADMIN":
+        if user.role == UserRole.TRAINER and current_user.role != UserRole.ADMIN:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only admins can register trainers"
             )
-        elif user.role == "CLIENT" and current_user.role not in ["ADMIN", "TRAINER"]:
+        elif user.role == UserRole.CLIENT and current_user.role not in [UserRole.ADMIN, UserRole.TRAINER]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only admins and trainers can register clients"
             )
-        elif user.role == "ADMIN":
+        elif user.role == UserRole.ADMIN:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Admin registration is not allowed through this endpoint"
@@ -122,7 +122,7 @@ async def setup_admin(user: UserCreate, db: Session = Depends(get_db)):
     Setup the first admin user (only works if no admin users exist)
     """
     # Check if any admin users already exist
-    existing_admin = db.query(User).filter(User.role == "ADMIN").first()
+    existing_admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
     if existing_admin:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -130,7 +130,7 @@ async def setup_admin(user: UserCreate, db: Session = Depends(get_db)):
         )
     
     # Ensure the user being created is an admin
-    if user.role != "ADMIN":
+    if user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This endpoint is for admin setup only"
@@ -148,13 +148,13 @@ async def register_admin(
     """
     Register a new admin user (admin only)
     """
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can register new admin users"
         )
     
-    if user.role != "ADMIN":
+    if user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This endpoint is for admin registration only"
@@ -171,13 +171,13 @@ async def register_trainer(
     """
     Register a new trainer (admin only)
     """
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can register new trainers"
         )
     
-    if user.role != "TRAINER":
+    if user.role != UserRole.TRAINER:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This endpoint is for trainer registration only"
@@ -204,13 +204,13 @@ async def register_client(
     """
     Register a new client (trainer or admin only)
     """
-    if current_user.role not in ["ADMIN", "TRAINER"]:
+    if current_user.role not in [UserRole.ADMIN, UserRole.TRAINER]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins and trainers can register new clients"
         )
     
-    if user.role != "CLIENT":
+    if user.role != UserRole.CLIENT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This endpoint is for client registration only"
@@ -219,7 +219,7 @@ async def register_client(
     created_user = auth_service.create_user(db, user)
     
     # If registered by a trainer, notify the trainer about the new client
-    if current_user.role == "TRAINER":
+    if current_user.role == UserRole.TRAINER:
         NotificationTriggers.notify_trainer_on_client_registration(
             db=db,
             client_id=created_user.id,

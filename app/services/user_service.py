@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.models.user import User
+from app.models.notification import Notification
 from app.schemas.auth import UserRole, UserResponse, UserUpdate
 
 def get_users(db: Session) -> List[User]:
@@ -42,12 +43,32 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[
     return db_user
 
 def delete_user(db: Session, user_id: int) -> bool:
-    """Delete a user."""
+    """
+    Delete a user.
+    - If deleting a trainer, deletes all their clients first
+    - Deletes all notifications for the user before deleting the user
+    """
     try:
         db_user = get_user_by_id(db, user_id)
         if not db_user:
             return False
         
+        # If deleting a trainer, delete all their clients first
+        if db_user.role == UserRole.TRAINER:
+            clients = get_trainer_clients(db, user_id)
+            for client in clients:
+                # Recursively delete each client (which will handle their notifications)
+                delete_user(db, client.id)
+        
+        # Delete all notifications where this user is the recipient
+        # This must be done before deleting the user because recipient_id is NOT NULL
+        db.query(Notification).filter(Notification.recipient_id == user_id).delete()
+        
+        # Delete all notifications where this user is the sender
+        # This is safe because sender_id can be NULL
+        db.query(Notification).filter(Notification.sender_id == user_id).update({"sender_id": None})
+        
+        # Now delete the user
         db.delete(db_user)
         db.commit()
         return True

@@ -65,8 +65,12 @@ const MealBank = () => {
   const fetchItems = async () => {
     try {
       const token = localStorage.getItem('access_token');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const response = await fetch(`${API_BASE_URL}/v2/meals/meal-bank?include_public=true`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers
       });
       
       if (response.ok) {

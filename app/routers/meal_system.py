@@ -260,7 +260,7 @@ def get_meal_plan(
         raise HTTPException(status_code=404, detail="Meal plan not found")
     
     # Check permissions
-    if current_user.role == "CLIENT" and meal_plan.client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and meal_plan.client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this meal plan")
     elif current_user.role == UserRole.TRAINER and meal_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this meal plan")
@@ -521,7 +521,7 @@ def update_meal_choice(
         raise HTTPException(status_code=404, detail="Meal choice not found")
     
     # Clients can only update their own choices
-    if current_user.role == "CLIENT" and choice.client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and choice.client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     for field, value in choice_data.dict(exclude_unset=True).items():
@@ -544,7 +544,7 @@ def delete_meal_choice(
     if not choice:
         raise HTTPException(status_code=404, detail="Meal choice not found")
     
-    if current_user.role == "CLIENT" and choice.client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and choice.client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     db.delete(choice)
@@ -566,7 +566,7 @@ def get_daily_macros(
     target_client_id = client_id if client_id else current_user.id
     
     # Permission check
-    if current_user.role == "CLIENT" and target_client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and target_client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Parse date or use today
@@ -696,7 +696,7 @@ def save_daily_meal_history(
     
     # Ensure clients can only save their own history
     client_id = history_data.client_id if history_data.client_id else current_user.id
-    if current_user.role == "CLIENT" and client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Check if history already exists for this date
@@ -745,7 +745,7 @@ def get_meal_history(
     target_client_id = client_id if client_id else current_user.id
     
     # Permission check
-    if current_user.role == "CLIENT" and target_client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and target_client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     history_entries = db.query(DailyMealHistory).filter(
@@ -944,7 +944,7 @@ def get_average_calories(
     target_client_id = client_id if client_id else current_user.id
     
     # Permission check
-    if current_user.role == "CLIENT" and target_client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and target_client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Calculate date range
@@ -997,7 +997,7 @@ def get_meal_completions(
     """
     target_client_id = client_id if client_id is not None else current_user.id
 
-    if current_user.role == "CLIENT" and target_client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and target_client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     if current_user.role == "TRAINER":
@@ -1041,7 +1041,7 @@ def upsert_meal_completion(
     """
     target_client_id = completion_data.client_id or current_user.id
 
-    if current_user.role == "CLIENT" and target_client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and target_client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     slot = (

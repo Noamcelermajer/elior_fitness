@@ -195,9 +195,13 @@ const CreateWorkoutPlanV2: React.FC = () => {
 
   const fetchExercises = async () => {
     try {
-         const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem('access_token');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const response = await fetch(`${API_BASE_URL}/exercises/`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers,
       });
       if (response.ok) {
         setExercises(await response.json());
@@ -210,8 +214,12 @@ const CreateWorkoutPlanV2: React.FC = () => {
   const fetchWorkoutSplits = async () => {
     try {
       const token = localStorage.getItem('access_token');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const response = await fetch(`${API_BASE_URL}/workout-splits/`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers,
       });
       if (response.ok) {
         setWorkoutSplits(await response.json());
@@ -230,12 +238,15 @@ const CreateWorkoutPlanV2: React.FC = () => {
     try {
       setError('');
       const token = localStorage.getItem('access_token');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const response = await fetch(`${API_BASE_URL}/workout-splits/`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           name: newSplitName.trim(),
           description: newSplitDescription?.trim() || null,

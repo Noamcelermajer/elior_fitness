@@ -10,7 +10,23 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.services.user_service import get_user_by_id
-from app.schemas.auth import UserResponse
+from app.schemas.auth import UserResponse, UserRole
+
+def normalize_role(role) -> UserRole:
+    """Normalize role to UserRole enum - handles both enum objects and strings."""
+    if isinstance(role, UserRole):
+        return role
+    if isinstance(role, str):
+        try:
+            return UserRole(role.upper())
+        except ValueError:
+            # Try case-insensitive match
+            role_upper = role.upper()
+            for enum_role in UserRole:
+                if enum_role.value.upper() == role_upper:
+                    return enum_role
+            raise ValueError(f"Invalid role: {role}")
+    raise TypeError(f"Role must be UserRole enum or string, got {type(role)}")
 
 load_dotenv()
 
@@ -67,19 +83,44 @@ async def get_current_user(
         if user is None:
             raise credentials_exception
         
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is inactive"
+            )
+        
+        # Normalize role - handle both enum and string representations
+        # PostgreSQL might return enum as string, SQLAlchemy might return as enum object
+        try:
+            user_role = normalize_role(user.role)
+        except (ValueError, TypeError) as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Invalid role value for user {user.id}: {user.role} (type: {type(user.role)}), error: {e}")
+            raise credentials_exception
+        
         # Convert to UserResponse
         return UserResponse(
             id=user.id,
             username=user.username,
             email=user.email,
             full_name=user.full_name,
-            role=user.role,
+            role=user_role,
             is_active=user.is_active,
             trainer_id=user.trainer_id,
             created_at=user.created_at,
             updated_at=user.updated_at
         )
-    except JWTError:
+    except JWTError as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"JWT validation error: {e}")
+        raise credentials_exception
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Unexpected error in get_current_user: {e}")
         raise credentials_exception
 
 async def get_current_user_websocket(token: str) -> UserResponse:
@@ -109,13 +150,19 @@ async def get_current_user_websocket(token: str) -> UserResponse:
             if user is None:
                 raise credentials_exception
             
+            # Normalize role - handle both enum and string representations
+            try:
+                user_role = normalize_role(user.role)
+            except (ValueError, TypeError):
+                raise credentials_exception
+            
             # Convert to UserResponse
             return UserResponse(
                 id=user.id,
                 username=user.username,
                 email=user.email,
                 full_name=user.full_name,
-                role=user.role,
+                role=user_role,
                 is_active=user.is_active,
                 trainer_id=user.trainer_id,
                 created_at=user.created_at,

@@ -94,10 +94,16 @@ export const ENDPOINTS = {
 // API Headers
 export const getAuthHeaders = () => {
   const token = localStorage.getItem('access_token');
-  return {
-    'Authorization': `Bearer ${token}`,
+  const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
+  
+  // Only add Authorization header if token exists
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  return headers;
 };
 
 // API Error Handling
