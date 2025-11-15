@@ -141,10 +141,10 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
         className="hidden lg:block sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50 overflow-hidden"
         dir="ltr"
       >
-        <div className="max-w-7xl mx-auto px-4 lg:px-6 h-32">
+        <div className="w-full h-32">
           <div className="flex items-center justify-between h-full gap-2">
             {/* Left side: Logout -> Username & Icon -> Theme & Language */}
-            <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0 pl-4 lg:pl-6">
               {/* Logout */}
               <Button
                 variant="ghost"
@@ -195,7 +195,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
             </div>
 
             {/* Right side: Page Title -> Logo */}
-            <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0 h-full">
+            <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0 h-full pr-4 lg:pr-6">
               {/* Page Title */}
               <div className="flex-shrink-0 border-r border-border/30 pr-2 xl:pr-3 h-full flex items-center">
                 <div className="bg-card border border-border/50 rounded-lg px-2 xl:px-3 py-1.5 xl:py-2 max-w-[160px] xl:max-w-[180px]">
@@ -209,7 +209,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
               </div>
               
               {/* Logo - Constrained to navbar height */}
-              <div className="flex-shrink-0 h-full w-32 xl:w-40 flex items-center justify-end overflow-hidden pr-2">
+              <div className="flex-shrink-0 h-full w-32 xl:w-40 flex items-center justify-end overflow-hidden">
                 <div className="h-full w-full flex items-center justify-end">
                   <img
                     src="/logonavbar.png"
