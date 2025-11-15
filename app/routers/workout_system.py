@@ -404,6 +404,8 @@ def get_workout_plans(
     db: Session = Depends(get_db)
 ):
     """Get workout plans (trainers see their plans, admins see all, clients see their own)"""
+    from app.models.user import User
+    
     query = db.query(NewWorkoutPlan).options(
         joinedload(NewWorkoutPlan.workout_days).joinedload(WorkoutDay.workout_exercises)
     )
@@ -411,6 +413,11 @@ def get_workout_plans(
     if current_user.role == UserRole.CLIENT:
         query = query.filter(NewWorkoutPlan.client_id == current_user.id)
     elif current_user.role == UserRole.TRAINER:
+        # If trainer queries with client_id, verify the client belongs to them
+        if client_id:
+            client = db.query(User).filter(User.id == client_id).first()
+            if not client or client.trainer_id != current_user.id:
+                raise HTTPException(status_code=403, detail="You can only view your clients' workout plans")
         query = query.filter(NewWorkoutPlan.trainer_id == current_user.id)
     # Admins see all
     

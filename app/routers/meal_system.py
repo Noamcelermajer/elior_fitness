@@ -231,11 +231,18 @@ def get_meal_plans(
     db: Session = Depends(get_db)
 ):
     """Get meal plans (trainers see their plans, admins see all, clients see their own)"""
+    from app.models.user import User
+    
     query = db.query(NewMealPlan)
     
-    if current_user.role == "CLIENT":
+    if current_user.role == UserRole.CLIENT:
         query = query.filter(NewMealPlan.client_id == current_user.id)
     elif current_user.role == UserRole.TRAINER:
+        # If trainer queries with client_id, verify the client belongs to them
+        if client_id:
+            client = db.query(User).filter(User.id == client_id).first()
+            if not client or client.trainer_id != current_user.id:
+                raise HTTPException(status_code=403, detail="You can only view your clients' meal plans")
         query = query.filter(NewMealPlan.trainer_id == current_user.id)
     # Admins see all
     

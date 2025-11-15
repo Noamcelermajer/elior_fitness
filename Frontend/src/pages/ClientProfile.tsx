@@ -149,10 +149,12 @@ const ClientProfile = () => {
   const fetchClientData = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const headers = {
-        'Authorization': `Bearer ${token}`,
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
       // If we have client data in location state, use it
       if (location.state?.client) {
@@ -601,11 +603,13 @@ const ClientProfile = () => {
                             if (confirm(confirmMessage)) {
                               try {
                                 const token = localStorage.getItem('access_token');
+                                const headers: Record<string, string> = {};
+                                if (token) {
+                                  headers['Authorization'] = `Bearer ${token}`;
+                                }
                                 const response = await fetch(`${API_BASE_URL}/v2/workouts/plans/${activeWorkoutPlan.id}`, {
                                   method: 'DELETE',
-                                  headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                  },
+                                  headers,
                                 });
                                 if (response.ok) {
                                   await fetchClientData();

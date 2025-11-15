@@ -139,17 +139,38 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       {/* Desktop Header */}
       <div className="hidden lg:block sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 relative overflow-hidden">
-          <div className="flex justify-between items-center h-28 lg:h-32 xl:h-36 gap-4">
-            {/* Tab 1: System Description Text Box */}
-            <div className="flex-shrink-0" style={{ width: '180px', maxWidth: '180px' }}>
-              <div className="bg-card border border-border/50 rounded-lg px-3 py-2 h-full flex items-center">
-                <p className="text-xs xl:text-sm text-muted-foreground break-words leading-tight text-center w-full">
-                  {isAdmin ? t('layout.adminSubtitle') : isTrainer ? t('layout.trainerSubtitle') : t('layout.clientSubtitle')}
-                </p>
+          <div className="flex justify-between items-center h-28 lg:h-32 xl:h-36 gap-3">
+            {/* Left side: Logout -> Username & Icon -> Theme & Language */}
+            <div className="flex items-center gap-3 xl:gap-4 flex-shrink-0">
+              {/* Logout */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={logout}
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0 w-10 h-10 xl:w-12 xl:h-12"
+              >
+                <LogOut className="w-5 h-5 xl:w-6 xl:h-6" />
+              </Button>
+              
+              {/* Username & Icon */}
+              <div className="flex items-center gap-2 xl:gap-3 border-r border-border/30 pr-3 xl:pr-4">
+                <div className="w-10 h-10 xl:w-12 xl:h-12 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-base xl:text-lg shadow-lg flex-shrink-0">
+                  👤
+                </div>
+                <div className="text-end hidden xl:block">
+                  <p className="text-sm font-semibold text-foreground">{user?.full_name}</p>
+                  <p className="text-xs text-muted-foreground">{user?.role ? t(`roles.${user.role}`) : ''}</p>
+                </div>
+              </div>
+              
+              {/* Theme & Language */}
+              <div className="flex items-center gap-2 xl:gap-3 border-r border-border/30 pr-3 xl:pr-4">
+                <ThemeToggle />
+                <LanguageSelector />
               </div>
             </div>
-            
-            {/* Tab 2: Navigation Buttons */}
+
+            {/* Center: 4 Navigation Tabs */}
             <div className="flex-1 min-w-0 flex items-center justify-center">
               <nav className="flex items-center gap-2 lg:gap-3 xl:gap-4 min-w-0 overflow-x-auto scrollbar-hide">
                 {navigationItems.map((item) => (
@@ -170,34 +191,22 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
               </nav>
             </div>
 
-            {/* Tab 3: User Controls */}
-            <div className="flex items-center gap-3 xl:gap-4 ps-4 border-s border-border/30 flex-shrink-0">
-              <LanguageSelector />
-              <ThemeToggle />
-              <NotificationBell />
-              <div className="flex items-center gap-2 xl:gap-3">
-                <div className="w-10 h-10 xl:w-12 xl:h-12 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-base xl:text-lg shadow-lg flex-shrink-0">
-                  👤
-                </div>
-                <div className="text-end hidden xl:block">
-                  <p className="text-sm font-semibold text-foreground">{user?.full_name}</p>
-                  <p className="text-xs text-muted-foreground">{user?.role ? t(`roles.${user.role}`) : ''}</p>
+            {/* Right side: Page Title -> Logo */}
+            <div className="flex items-center gap-3 xl:gap-4 flex-shrink-0">
+              {/* Page Title */}
+              <div className="flex-shrink-0 border-r border-border/30 pr-3 xl:pr-4" style={{ width: '180px', maxWidth: '180px' }}>
+                <div className="bg-card border border-border/50 rounded-lg px-3 py-2 h-full flex items-center">
+                  <p className="text-xs xl:text-sm text-muted-foreground break-words leading-tight text-center w-full">
+                    {isAdmin ? t('layout.adminSubtitle') : isTrainer ? t('layout.trainerSubtitle') : t('layout.clientSubtitle')}
+                  </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={logout}
-                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0 w-10 h-10 xl:w-12 xl:h-12"
-              >
-                <LogOut className="w-5 h-5 xl:w-6 xl:h-6" />
-              </Button>
-            </div>
-            
-            {/* Tab 4: Logo on the right side */}
-            <div className="flex-shrink-0" style={{ width: '160px', maxWidth: '160px' }}>
-              <div className="transform hover:scale-105 transition-transform duration-300 h-full w-full flex items-center justify-end overflow-hidden">
-                <LogoBadge variant="desktop" />
+              
+              {/* Logo */}
+              <div className="flex-shrink-0" style={{ width: '160px', maxWidth: '160px' }}>
+                <div className="transform hover:scale-105 transition-transform duration-300 h-full w-full flex items-center justify-end overflow-hidden">
+                  <LogoBadge variant="desktop" />
+                </div>
               </div>
             </div>
           </div>
