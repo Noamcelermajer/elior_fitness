@@ -45,38 +45,38 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen overflow-hidden bg-background flex flex-col">
       {/* Mobile Header */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50 lg:hidden">
-        <div className="flex items-center justify-between px-4 h-16">
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 ${isAdmin ? 'bg-gradient-to-r from-red-500 to-red-600' : 'gradient-orange'} rounded-lg flex items-center justify-center shadow-lg`}>
-              {isAdmin ? <Shield className="w-5 h-5 text-background" /> : <Dumbbell className="w-5 h-5 text-background" />}
+        <div className="flex items-center justify-between px-2 sm:px-4 h-20 gap-2 overflow-hidden">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg flex items-center justify-center flex-shrink-0">
+              <img src="/Untitled.svg" alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gradient">{t('layout.brandName')}</h1>
-              <p className="text-xs text-muted-foreground">
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-lg font-bold text-gradient truncate">{t('layout.brandName')}</h1>
+              <p className="text-xs text-muted-foreground truncate">
                 {isAdmin ? t('layout.adminPanel') : isTrainer ? t('layout.trainerDashboard') : t('layout.clientPortal')}
               </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <LanguageSelector />
             <ThemeToggle />
-            <div className="flex items-center gap-2 me-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-sm">
+            <div className="flex items-center gap-1 sm:gap-2 me-1 sm:me-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-xs sm:text-sm flex-shrink-0">
                 👤
               </div>
-              <span className="text-sm font-medium text-foreground hidden sm:inline">{user?.full_name}</span>
+              <span className="text-xs sm:text-sm font-medium text-foreground hidden md:inline truncate max-w-[80px]">{user?.full_name}</span>
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden"
+              className="lg:hidden w-8 h-8 flex-shrink-0"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>
           </div>
         </div>
@@ -118,10 +118,10 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       {/* Desktop Header */}
       <div className="hidden lg:block sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-24">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 ${isAdmin ? 'bg-gradient-to-r from-red-500 to-red-600' : 'gradient-orange'} rounded-xl flex items-center justify-center shadow-xl transform hover:scale-110 transition-transform duration-300`}>
-                {isAdmin ? <Shield className="w-7 h-7 text-background" /> : <Dumbbell className="w-7 h-7 text-background" />}
+              <div className="w-28 h-28 rounded-xl flex items-center justify-center transform hover:scale-110 transition-transform duration-300">
+                <img src="/Untitled.svg" alt="Logo" className="w-28 h-28 object-contain" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gradient">{t('layout.brandName')}</h1>
@@ -180,13 +180,13 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       </div>
 
       {/* Main Content */}
-      <main className="min-h-screen">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20 lg:pb-0">
         {children}
       </main>
 
       {/* Mobile Bottom Navigation - Alternative approach */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border/50 lg:hidden mobile-safe shadow-2xl">
-        <div className="flex items-center justify-around px-2 py-2">
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border/50 lg:hidden shadow-2xl z-50">
+        <div className="flex items-center justify-around px-2 pt-2" style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
           {navigationItems.map((item) => (
             <Button
               key={item.id}

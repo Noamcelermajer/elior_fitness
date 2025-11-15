@@ -256,24 +256,28 @@ const ExerciseBank = () => {
 
   return (
     <Layout currentPage="exercises">
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-4 md:p-6 space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
-            <p className="text-muted-foreground">{t('exerciseBank.subtitle')}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">{t('exerciseBank.subtitle')}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button 
               onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
               variant="outline"
+              className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
             >
-              <Plus className="w-4 h-4 me-2" />
-              {t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}
+              <Plus className="w-4 h-4 me-2 flex-shrink-0" />
+              <span className="truncate">{t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}</span>
             </Button>
-            <Button onClick={() => setCreateDialogOpen(true)} className="gradient-green">
-              <Plus className="w-4 h-4 me-2" />
-              {t('exerciseBank.addExercise')}
+            <Button 
+              onClick={() => setCreateDialogOpen(true)} 
+              className="gradient-green w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4 me-2 flex-shrink-0" />
+              <span className="truncate">{t('exerciseBank.addExercise')}</span>
             </Button>
           </div>
         </div>

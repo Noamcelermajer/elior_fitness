@@ -376,9 +376,9 @@ const ClientsPage = () => {
                       <Calendar className="w-4 h-4" />
                       <span>Joined {formatDate(client.created_at)}</span>
                     </div>
-                    <div className="flex space-x-2 pt-2">
-                      <Button size="sm" variant="outline" onClick={() => handleViewProgress(client)}>View Progress</Button>
-                      <Button size="sm" onClick={() => navigate(`/client/${client.id}`)}>View Profile</Button>
+                    <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                      <Button size="sm" variant="outline" className="flex-1 min-w-0 text-xs sm:text-sm" onClick={() => handleViewProgress(client)}>View Progress</Button>
+                      <Button size="sm" className="flex-1 min-w-0 text-xs sm:text-sm" onClick={() => navigate(`/client/${client.id}`)}>View Profile</Button>
                     </div>
                   </CardContent>
                 </Card>

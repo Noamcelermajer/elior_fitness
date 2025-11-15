@@ -292,7 +292,7 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
         </CardHeader>
         <CardContent>
           <div className="h-64 bg-secondary/20 rounded-lg flex items-center justify-center">
-            <p className="text-muted-foreground">{t('weightProgress.chartVisualization')}</p>
+            <p className="text-muted-foreground text-center">{t('weightProgress.chartVisualization')}</p>
           </div>
         </CardContent>
       </Card>

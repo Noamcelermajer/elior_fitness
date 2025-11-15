@@ -142,4 +142,21 @@ async def change_password(
     
     user.hashed_password = get_password_hash(new_password)
     db.commit()
+    return True
+
+async def reset_user_password(
+    db: Session,
+    user_id: int,
+    new_password: str
+) -> bool:
+    """Reset user's password (for trainers/admins, no current password required)."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    user.hashed_password = get_password_hash(new_password)
+    db.commit()
     return True 

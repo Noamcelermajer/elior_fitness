@@ -136,7 +136,7 @@ const ClientProfile = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('progress');
+  const [activeTab, setActiveTab] = useState('profile');
   
   // Data states
   const [client, setClient] = useState<Client | null>(null);
@@ -407,11 +407,12 @@ const ClientProfile = () => {
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="pt-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="progress">{t('clientProfile.weightProgress')}</TabsTrigger>
-              <TabsTrigger value="workouts">{t('clientProfile.workoutPlans')}</TabsTrigger>
-              <TabsTrigger value="meals">{t('clientProfile.mealPlans')}</TabsTrigger>
-              <TabsTrigger value="nutrition">{t('clientProfile.nutritionHistory')}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 gap-1 h-auto min-h-[3rem] p-2">
+              <TabsTrigger value="profile" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.profile', 'Profile')}</TabsTrigger>
+              <TabsTrigger value="progress" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.weightProgress')}</TabsTrigger>
+              <TabsTrigger value="workouts" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.workoutPlans')}</TabsTrigger>
+              <TabsTrigger value="meals" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.mealPlans')}</TabsTrigger>
+              <TabsTrigger value="nutrition" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.nutritionHistory')}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -661,15 +662,15 @@ const ClientProfile = () => {
 
           {/* Meals Tab */}
           <TabsContent value="meals" className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <h3 className="text-lg font-semibold">{t('clientProfile.mealPlans')}</h3>
-            <Button
-              onClick={activeMealPlan ? handleEditMealPlan : handleCreateMealPlan}
-              className="gradient-orange"
-            >
-              {!activeMealPlan && <Plus className="w-4 h-4 mr-2" />}
-              <span>{activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}</span>
-            </Button>
+              <Button
+                onClick={activeMealPlan ? handleEditMealPlan : handleCreateMealPlan}
+                className="gradient-orange w-full sm:w-auto text-sm sm:text-base"
+              >
+                {!activeMealPlan && <Plus className="w-4 h-4 mr-2" />}
+                <span className="whitespace-normal break-words">{activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}</span>
+              </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -755,11 +756,11 @@ const ClientProfile = () => {
           </TabsContent>
 
           <TabsContent value="nutrition" className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <h3 className="text-lg font-semibold">{t('clientProfile.nutritionHistory')}</h3>
-              <Button variant="outline" onClick={handleCreateMealPlan}>
+              <Button variant="outline" onClick={handleCreateMealPlan} className="w-full sm:w-auto text-sm sm:text-base">
                 <Utensils className="w-4 h-4 mr-2" />
-                {activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}
+                <span className="whitespace-normal break-words">{activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}</span>
               </Button>
             </div>
             <MealHistory clientId={client.id} />
@@ -777,77 +778,99 @@ const ClientProfile = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('clientProfile.completeProfileInfo')}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-medium text-foreground mb-3">Personal Information</h4>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                        <p className="text-foreground">{client.full_name}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Email</label>
-                        <p className="text-foreground">{client.email}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Username</label>
-                        <p className="text-foreground">{client.username}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Member Since</label>
-                        <p className="text-foreground">{new Date(client.created_at).toLocaleDateString()}</p>
-                      </div>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Client Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('clientProfile.basicInformation', 'Basic Information')}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <Mail className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-foreground">{client.email}</span>
                   </div>
-
                   <div>
-                    <h4 className="font-medium text-foreground mb-3">Physical Information</h4>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Current Weight</label>
-                        <p className="text-foreground">
-                          {latestWeight?.weight ? `${latestWeight.weight}kg` : 'Not recorded'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Height</label>
-                        <p className="text-foreground">
-                          {client.profile?.height ? `${client.profile.height}cm` : 'Not recorded'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Body Fat %</label>
-                        <p className="text-foreground">
-                          {latestWeight?.body_fat ? `${latestWeight.body_fat}%` : 'Not recorded'}
-                        </p>
-                      </div>
-                    </div>
+                    <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.username', 'Username')}</label>
+                    <p className="text-foreground">{client.username}</p>
                   </div>
-                </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.fullName', 'Full Name')}</label>
+                    <p className="text-foreground">{client.full_name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.memberSince', 'Member Since')}</label>
+                    <p className="text-foreground">{new Date(client.created_at).toLocaleDateString()}</p>
+                  </div>
+                  {client.profile?.phone && (
+                    <div className="flex items-center space-x-3">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">{client.profile.phone}</span>
+                    </div>
+                  )}
+                  {client.profile?.address && (
+                    <div className="flex items-center space-x-3">
+                      <MapPin className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">{client.profile.address}</span>
+                    </div>
+                  )}
+                  {client.profile?.emergency_contact && (
+                    <div className="flex items-center space-x-3">
+                      <Heart className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-foreground">{client.profile.emergency_contact}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-                <div>
-                  <h4 className="font-medium text-foreground mb-3">Goals & Preferences</h4>
-                  <div className="space-y-3">
+              {/* Physical Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('clientProfile.physicalInformation', 'Physical Information')}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.currentWeight', 'Current Weight')}</label>
+                    <p className="text-foreground">
+                      {latestWeight?.weight ? `${latestWeight.weight}kg` : t('clientProfile.notRecorded', 'Not recorded')}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.height', 'Height')}</label>
+                    <p className="text-foreground">
+                      {client.profile?.height ? `${client.profile.height}cm` : t('clientProfile.notRecorded', 'Not recorded')}
+                    </p>
+                  </div>
+                  {client.profile?.weight && (
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Fitness Goals</label>
-                      <p className="text-foreground">{client.profile?.goals || 'Not specified'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Preferences</label>
-                      <p className="text-foreground">{client.profile?.preferences || 'Not specified'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Injuries/Concerns</label>
-                      <p className="text-foreground text-orange-600">
-                        {client.profile?.injuries || 'None reported'}
+                      <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.targetWeight', 'Target Weight')}</label>
+                      <p className="text-foreground">
+                        {client.profile.weight}kg
                       </p>
                     </div>
-                  </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Goals & Preferences */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('clientProfile.goalsAndPreferences', 'Goals & Preferences')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.goals', 'Fitness Goals')}</label>
+                  <p className="text-foreground whitespace-pre-wrap">{client.profile?.goals || t('clientProfile.notSpecified', 'Not specified')}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.preferences', 'Preferences')}</label>
+                  <p className="text-foreground whitespace-pre-wrap">{client.profile?.preferences || t('clientProfile.notSpecified', 'Not specified')}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.injuries', 'Injuries / Medical Conditions')}</label>
+                  <p className="text-foreground text-orange-600 dark:text-orange-400 whitespace-pre-wrap">
+                    {client.profile?.injuries || t('clientProfile.noneReported', 'None reported')}
+                  </p>
                 </div>
               </CardContent>
             </Card>

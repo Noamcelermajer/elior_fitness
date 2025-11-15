@@ -5,6 +5,9 @@ from app.database import get_db
 from app.schemas.auth import UserResponse, UserRole, UserUpdate
 from app.services import user_service
 from app.auth.utils import get_current_user
+from app.models.user import ClientProfile
+from pydantic import BaseModel
+from typing import Optional
 
 router = APIRouter()
 
@@ -198,7 +201,7 @@ async def remove_client_from_trainer(
     updated_client = user_service.get_user_by_id(db, client_id)
     return updated_client
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/{user_id}")
 async def get_user(
     user_id: int,
     current_user: UserResponse = Depends(get_current_user),
@@ -206,6 +209,7 @@ async def get_user(
 ):
     """
     Get user by ID. Trainers can view any user, clients can only view themselves.
+    Returns user data with profile information if available.
     """
     if current_user.role != UserRole.TRAINER and current_user.id != user_id:
         raise HTTPException(
@@ -218,7 +222,39 @@ async def get_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return user
+    
+    # Get profile data if it exists
+    client_profile = db.query(ClientProfile).filter(ClientProfile.user_id == user_id).first()
+    
+    # Build response with profile data
+    response_data = {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        "is_active": user.is_active,
+        "created_at": user.created_at,
+        "updated_at": user.updated_at,
+        "trainer_id": user.trainer_id,
+        "last_login": getattr(user, 'last_login', None),
+    }
+    
+    if client_profile:
+        response_data["profile"] = {
+            "weight": client_profile.target_weight / 1000 if client_profile.target_weight else None,  # Convert grams to kg
+            "height": client_profile.height,
+            "goals": client_profile.fitness_goals,
+            "injuries": client_profile.medical_conditions,
+            "preferences": client_profile.dietary_restrictions,
+            "phone": client_profile.phone,
+            "address": client_profile.address,
+            "emergency_contact": client_profile.emergency_contact,
+        }
+    else:
+        response_data["profile"] = None
+    
+    return response_data
 
 @router.put("/{user_id}", response_model=UserResponse)
 async def update_user(
@@ -228,10 +264,27 @@ async def update_user(
     db: Session = Depends(get_db)
 ):
     """
-    Update user by ID. Admins can update anyone, users can only update themselves.
+    Update user by ID. Admins can update anyone, trainers can update their clients, users can only update themselves.
     """
-    # Allow admins to edit anyone, but regular users can only edit themselves
-    if current_user.role != UserRole.ADMIN and current_user.id != user_id:
+    # Check permissions
+    if current_user.role == UserRole.ADMIN:
+        # Admins can update anyone
+        pass
+    elif current_user.role == UserRole.TRAINER:
+        # Trainers can update their clients
+        target_user = user_service.get_user_by_id(db, user_id)
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        if target_user.trainer_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only update your own clients"
+            )
+    elif current_user.id != user_id:
+        # Regular users can only update themselves
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only update your own profile"
@@ -292,4 +345,108 @@ async def update_user_me(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return updated_user 
+    return updated_user
+
+class ClientProfileUpdate(BaseModel):
+    weight: Optional[float] = None
+    height: Optional[int] = None
+    goals: Optional[str] = None
+    injuries: Optional[str] = None
+    preferences: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    emergency_contact: Optional[str] = None
+
+@router.put("/{user_id}/profile")
+async def update_client_profile(
+    user_id: int,
+    profile_update: ClientProfileUpdate,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update client profile information. Trainers can update their clients' profiles.
+    """
+    # Check permissions
+    if current_user.role == UserRole.ADMIN:
+        # Admins can update anyone
+        pass
+    elif current_user.role == UserRole.TRAINER:
+        # Trainers can update their clients
+        target_user = user_service.get_user_by_id(db, user_id)
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        if target_user.trainer_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only update your own clients' profiles"
+            )
+    elif current_user.id != user_id:
+        # Regular users can only update themselves
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only update your own profile"
+        )
+    
+    # Get or create client profile
+    client_profile = db.query(ClientProfile).filter(ClientProfile.user_id == user_id).first()
+    
+    if not client_profile:
+        # Create new profile if it doesn't exist
+        target_user = user_service.get_user_by_id(db, user_id)
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        client_profile = ClientProfile(
+            user_id=user_id,
+            trainer_id=target_user.trainer_id or current_user.id,
+            height=profile_update.height,
+            target_weight=int(profile_update.weight * 1000) if profile_update.weight else None,  # Convert kg to grams
+            fitness_goals=profile_update.goals,
+            medical_conditions=profile_update.injuries,
+            dietary_restrictions=profile_update.preferences,
+            phone=profile_update.phone,
+            address=profile_update.address,
+            emergency_contact=profile_update.emergency_contact
+        )
+        db.add(client_profile)
+    else:
+        # Update existing profile
+        if profile_update.height is not None:
+            client_profile.height = profile_update.height
+        if profile_update.weight is not None:
+            client_profile.target_weight = int(profile_update.weight * 1000)  # Convert kg to grams
+        if profile_update.goals is not None:
+            client_profile.fitness_goals = profile_update.goals
+        if profile_update.injuries is not None:
+            client_profile.medical_conditions = profile_update.injuries
+        if profile_update.preferences is not None:
+            client_profile.dietary_restrictions = profile_update.preferences
+        if profile_update.phone is not None:
+            client_profile.phone = profile_update.phone
+        if profile_update.address is not None:
+            client_profile.address = profile_update.address
+        if profile_update.emergency_contact is not None:
+            client_profile.emergency_contact = profile_update.emergency_contact
+    
+    db.commit()
+    db.refresh(client_profile)
+    
+    return {
+        "message": "Profile updated successfully",
+        "profile": {
+            "height": client_profile.height,
+            "weight": client_profile.target_weight / 1000 if client_profile.target_weight else None,  # Convert grams to kg
+            "goals": client_profile.fitness_goals,
+            "injuries": client_profile.medical_conditions,
+            "preferences": client_profile.dietary_restrictions,
+            "phone": client_profile.phone,
+            "address": client_profile.address,
+            "emergency_contact": client_profile.emergency_contact
+        }
+    } 

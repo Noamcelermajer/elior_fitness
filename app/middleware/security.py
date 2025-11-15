@@ -45,7 +45,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         
     async def dispatch(self, request: Request, call_next):
         # Skip security checks for health check and static files
-        if request.url.path in ["/health", "/test", "/api/test"] or request.url.path.startswith("/static/"):
+        # Allow static file extensions (images, fonts, etc.)
+        static_extensions = ['.svg', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.woff', '.woff2', '.ttf', '.eot', '.css', '.js', '.json', '.xml', '.txt']
+        is_static_file = (
+            request.url.path in ["/health", "/test", "/api/test"] or 
+            request.url.path.startswith("/static/") or
+            request.url.path.startswith("/assets/") or
+            any(request.url.path.lower().endswith(ext) for ext in static_extensions)
+        )
+        
+        if is_static_file:
             return await call_next(request)
         
         # Skip for login/register endpoints (but still apply rate limiting)
