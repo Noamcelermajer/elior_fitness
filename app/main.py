@@ -692,6 +692,25 @@ except Exception as e:
     logger.error(f"Stack trace: {traceback.format_exc()}")
     raise
 
+# Handle OPTIONS requests for static files (CORS preflight)
+@app.options("/{full_path:path}")
+async def handle_static_options(full_path: str):
+    """Handle OPTIONS requests for static files to support CORS."""
+    static_file_path = os.path.join("static", full_path)
+    abs_static_file_path = os.path.abspath(static_file_path)
+    if os.path.exists(abs_static_file_path) and os.path.isfile(abs_static_file_path):
+        from fastapi.responses import Response
+        return Response(
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Max-Age": "3600"
+            }
+        )
+    raise HTTPException(status_code=404, detail="Not found")
+
 # Catch-all route for SPA routing - MUST BE LAST
 @app.get("/{full_path:path}")
 async def serve_spa_routes(full_path: str):
@@ -725,13 +744,19 @@ async def serve_spa_routes(full_path: str):
             cache_control = "public, max-age=3600"  # Cache for 1 hour
         else:
             cache_control = "public, max-age=2592000"  # Cache for 1 month
+        # Add CORS headers for static files to prevent blocking
+        headers = {
+            "Cache-Control": cache_control,
+            "Vary": "Accept-Encoding",
+            "Access-Control-Allow-Origin": "*",  # Allow all origins for static files
+            "Access-Control-Allow-Methods": "GET, OPTIONS",
+            "Access-Control-Allow-Headers": "*"
+        }
+        
         return FileResponse(
             abs_static_file_path,
             media_type=mimetype,
-            headers={
-                "Cache-Control": cache_control,
-                "Vary": "Accept-Encoding"
-            }
+            headers=headers
         )
     
     # Serve index.html for all other routes (SPA routing)
