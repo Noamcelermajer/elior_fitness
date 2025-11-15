@@ -2,6 +2,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import path from 'path'
 
+const buildVersion =
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.RAILWAY_GIT_COMMIT_SHA ||
+  process.env.GIT_COMMIT_SHA ||
+  Date.now().toString()
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -58,6 +64,7 @@ export default defineConfig({
   },
   // Explicit module resolution for Render.com compatibility
   define: {
-    'process.env.NODE_ENV': '"production"'
+    'process.env.NODE_ENV': '"production"',
+    __STATIC_BUST__: JSON.stringify(buildVersion)
   }
 })

@@ -63,7 +63,7 @@ const Login = () => {
       <div 
         className="absolute inset-0 z-[1]"
         style={{
-          backgroundImage: 'url(/elior.png)',
+          backgroundImage: `url(/elior.png?v=${__STATIC_BUST__})`,
           backgroundSize: 'contain',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
