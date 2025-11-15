@@ -83,7 +83,7 @@ def create_workout_plan(
     db: Session = Depends(get_db)
 ):
     """Create a new workout plan (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create workout plans"
@@ -104,7 +104,7 @@ def create_workout_plan(
         )
     
     # If trainer (not admin), verify client belongs to them
-    if current_user.role == "TRAINER" and client.trainer_id != current_user.id:
+    if current_user.role == UserRole.TRAINER and client.trainer_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Client not found or not assigned to you"
@@ -117,7 +117,7 @@ def create_workout_plan(
     ).first()
 
     if existing_plan:
-        if existing_plan.trainer_id != current_user.id and current_user.role != "ADMIN":
+        if existing_plan.trainer_id != current_user.id and current_user.role != UserRole.ADMIN:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Client already has an active workout plan assigned by another trainer"
@@ -174,7 +174,7 @@ def create_complete_workout_plan(
     db: Session = Depends(get_db)
 ):
     """Create a complete workout plan with all days and exercises at once (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create workout plans"
@@ -195,7 +195,7 @@ def create_complete_workout_plan(
         )
     
     # If trainer (not admin), verify client belongs to them
-    if current_user.role == "TRAINER" and client.trainer_id != current_user.id:
+    if current_user.role == UserRole.TRAINER and client.trainer_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Client not found or not assigned to you"
@@ -207,7 +207,7 @@ def create_complete_workout_plan(
     ).options(joinedload(NewWorkoutPlan.workout_days)).first()
 
     if existing_plan:
-        if existing_plan.trainer_id != current_user.id and current_user.role != "ADMIN":
+        if existing_plan.trainer_id != current_user.id and current_user.role != UserRole.ADMIN:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Client already has an active workout plan assigned by another trainer"
@@ -410,7 +410,7 @@ def get_workout_plans(
     
     if current_user.role == "CLIENT":
         query = query.filter(NewWorkoutPlan.client_id == current_user.id)
-    elif current_user.role == "TRAINER":
+    elif current_user.role == UserRole.TRAINER:
         query = query.filter(NewWorkoutPlan.trainer_id == current_user.id)
     # Admins see all
     
@@ -493,7 +493,7 @@ def get_workout_plan(
     # Check permissions
     if current_user.role == "CLIENT" and workout_plan.client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this workout plan")
-    elif current_user.role == "TRAINER" and workout_plan.trainer_id != current_user.id:
+    elif current_user.role == UserRole.TRAINER and workout_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this workout plan")
     
     # Manually serialize to convert exercise ORM objects to dicts
@@ -568,7 +568,7 @@ def update_workout_plan(
     db: Session = Depends(get_db)
 ):
     """Update a workout plan (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can update workout plans")
     
     workout_plan = db.query(NewWorkoutPlan).options(
@@ -578,7 +578,7 @@ def update_workout_plan(
     if not workout_plan:
         raise HTTPException(status_code=404, detail="Workout plan not found")
     
-    if current_user.role == "TRAINER" and workout_plan.trainer_id != current_user.id:
+    if current_user.role == UserRole.TRAINER and workout_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to update this workout plan")
     
     try:
@@ -673,7 +673,7 @@ def delete_workout_plan(
     db: Session = Depends(get_db)
 ):
     """Delete a workout plan (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can delete workout plans")
     
     workout_plan = db.query(NewWorkoutPlan).filter(NewWorkoutPlan.id == plan_id).first()
@@ -681,7 +681,7 @@ def delete_workout_plan(
     if not workout_plan:
         raise HTTPException(status_code=404, detail="Workout plan not found")
     
-    if current_user.role == "TRAINER" and workout_plan.trainer_id != current_user.id:
+    if current_user.role == UserRole.TRAINER and workout_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this workout plan")
     
     db.delete(workout_plan)
@@ -699,7 +699,7 @@ def add_workout_day(
     db: Session = Depends(get_db)
 ):
     """Add a workout day to a plan (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can add workout days")
     
     # Verify plan exists and trainer owns it
@@ -707,7 +707,7 @@ def add_workout_day(
     if not workout_plan:
         raise HTTPException(status_code=404, detail="Workout plan not found")
     
-    if current_user.role == "TRAINER" and workout_plan.trainer_id != current_user.id:
+    if current_user.role == UserRole.TRAINER and workout_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     workout_day = WorkoutDay(
@@ -746,7 +746,7 @@ def get_workout_day(
     
     if current_user.role == "CLIENT" and workout_plan.client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this workout day")
-    elif current_user.role == "TRAINER" and workout_plan.trainer_id != current_user.id:
+    elif current_user.role == UserRole.TRAINER and workout_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this workout day")
     
     # Manually serialize everything to avoid ORM object issues
@@ -803,7 +803,7 @@ def update_workout_day(
     db: Session = Depends(get_db)
 ):
     """Update a workout day (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can update workout days")
     
     workout_day = db.query(WorkoutDay).filter(WorkoutDay.id == day_id).first()
@@ -829,7 +829,7 @@ def add_workout_exercise(
     db: Session = Depends(get_db)
 ):
     """Add an exercise to a workout day (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can add exercises")
     
     # Verify exercise exists
@@ -865,7 +865,7 @@ def update_workout_exercise(
     db: Session = Depends(get_db)
 ):
     """Update a workout exercise (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can update exercises")
     
     workout_exercise = db.query(NewWorkoutExercise).filter(NewWorkoutExercise.id == exercise_id).first()
@@ -894,7 +894,7 @@ def delete_workout_exercise(
     db: Session = Depends(get_db)
 ):
     """Delete a workout exercise (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can delete exercises")
     
     workout_exercise = db.query(NewWorkoutExercise).filter(NewWorkoutExercise.id == exercise_id).first()

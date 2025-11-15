@@ -11,7 +11,7 @@ from typing import List, Dict, Any, Optional
 
 from app.database import get_db
 from app.auth.utils import get_current_user
-from app.schemas.auth import UserResponse
+from app.schemas.auth import UserResponse, UserRole
 from app.schemas.meal_system import (
     MealPlanCreate,
     MealPlanUpdate,
@@ -65,7 +65,7 @@ def create_meal_plan(
     db: Session = Depends(get_db)
 ):
     """Create a new meal plan (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create meal plans"
@@ -78,7 +78,7 @@ def create_meal_plan(
     ).first()
 
     if existing_plan:
-        if existing_plan.trainer_id != current_user.id and current_user.role != "ADMIN":
+        if existing_plan.trainer_id != current_user.id and current_user.role != UserRole.ADMIN:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Client already has an active meal plan assigned by another trainer"
@@ -135,7 +135,7 @@ def create_complete_meal_plan(
     db: Session = Depends(get_db)
 ):
     """Create a complete meal plan with all meals and food options at once (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create meal plans"
@@ -147,7 +147,7 @@ def create_complete_meal_plan(
     ).first()
 
     if existing_plan:
-        if existing_plan.trainer_id != current_user.id and current_user.role != "ADMIN":
+        if existing_plan.trainer_id != current_user.id and current_user.role != UserRole.ADMIN:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Client already has an active meal plan assigned by another trainer"
@@ -235,7 +235,7 @@ def get_meal_plans(
     
     if current_user.role == "CLIENT":
         query = query.filter(NewMealPlan.client_id == current_user.id)
-    elif current_user.role == "TRAINER":
+    elif current_user.role == UserRole.TRAINER:
         query = query.filter(NewMealPlan.trainer_id == current_user.id)
     # Admins see all
     
@@ -262,7 +262,7 @@ def get_meal_plan(
     # Check permissions
     if current_user.role == "CLIENT" and meal_plan.client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this meal plan")
-    elif current_user.role == "TRAINER" and meal_plan.trainer_id != current_user.id:
+    elif current_user.role == UserRole.TRAINER and meal_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this meal plan")
     
     return meal_plan
@@ -275,7 +275,7 @@ def update_meal_plan(
     db: Session = Depends(get_db)
 ):
     """Update a meal plan (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can update meal plans")
     
     meal_plan = db.query(NewMealPlan).filter(NewMealPlan.id == plan_id).first()
@@ -283,7 +283,7 @@ def update_meal_plan(
     if not meal_plan:
         raise HTTPException(status_code=404, detail="Meal plan not found")
     
-    if current_user.role == "TRAINER" and meal_plan.trainer_id != current_user.id:
+    if current_user.role == UserRole.TRAINER and meal_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to update this meal plan")
     
     # Update fields
@@ -302,7 +302,7 @@ def delete_meal_plan(
     db: Session = Depends(get_db)
 ):
     """Delete a meal plan (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can delete meal plans")
     
     meal_plan = db.query(NewMealPlan).filter(NewMealPlan.id == plan_id).first()
@@ -310,7 +310,7 @@ def delete_meal_plan(
     if not meal_plan:
         raise HTTPException(status_code=404, detail="Meal plan not found")
     
-    if current_user.role == "TRAINER" and meal_plan.trainer_id != current_user.id:
+    if current_user.role == UserRole.TRAINER and meal_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this meal plan")
     
     db.delete(meal_plan)
@@ -328,7 +328,7 @@ def add_meal_slot(
     db: Session = Depends(get_db)
 ):
     """Add a meal slot to a plan (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can add meal slots")
     
     # Verify plan exists and trainer owns it
@@ -336,7 +336,7 @@ def add_meal_slot(
     if not meal_plan:
         raise HTTPException(status_code=404, detail="Meal plan not found")
     
-    if current_user.role == "TRAINER" and meal_plan.trainer_id != current_user.id:
+    if current_user.role == UserRole.TRAINER and meal_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     meal_slot = MealSlot(
@@ -367,7 +367,7 @@ def add_food_option(
     db: Session = Depends(get_db)
 ):
     """Add a food option to a macro category (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can add food options")
     
     food_option = FoodOption(
@@ -397,7 +397,7 @@ def update_food_option(
     db: Session = Depends(get_db)
 ):
     """Update a food option (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can update food options")
     
     food_option = db.query(FoodOption).filter(FoodOption.id == food_id).first()
@@ -420,7 +420,7 @@ def delete_food_option(
     db: Session = Depends(get_db)
 ):
     """Delete a food option (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can delete food options")
     
     food_option = db.query(FoodOption).filter(FoodOption.id == food_id).first()
@@ -486,7 +486,7 @@ def get_meal_choices(
     
     if current_user.role == "CLIENT":
         query = query.filter(ClientMealChoice.client_id == current_user.id)
-    elif current_user.role == "TRAINER" and client_id:
+    elif current_user.role == UserRole.TRAINER and client_id:
         query = query.filter(ClientMealChoice.client_id == client_id)
     elif client_id:
         query = query.filter(ClientMealChoice.client_id == client_id)
@@ -1057,7 +1057,7 @@ def upsert_meal_completion(
     if slot.meal_plan.client_id != target_client_id:
         raise HTTPException(status_code=400, detail="Meal slot does not belong to target client")
 
-    if current_user.role == "TRAINER" and slot.meal_plan.trainer_id != current_user.id:
+    if current_user.role == UserRole.TRAINER and slot.meal_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     normalized_date = _normalize_date(completion_data.date)
@@ -1104,7 +1104,7 @@ def create_meal_bank_item(
     db: Session = Depends(get_db)
 ):
     """Create a new meal bank item (trainer only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create meal bank items"
@@ -1157,7 +1157,7 @@ def get_meal_bank_items(
             )
         else:
             query = query.filter(MealBank.created_by == current_user.id)
-    elif current_user.role == "ADMIN":
+    elif current_user.role == UserRole.ADMIN:
         # Admins see all
         pass
     else:
@@ -1192,7 +1192,7 @@ def get_meal_bank_item(
     
     # Check if user has permission to view
     if meal_bank_item.created_by != current_user.id and not meal_bank_item.is_public:
-        if current_user.role != "ADMIN":
+        if current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Not authorized to view this item")
     
     return meal_bank_item
@@ -1205,7 +1205,7 @@ def update_meal_bank_item(
     db: Session = Depends(get_db)
 ):
     """Update a meal bank item (trainer only, own items)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can update meal bank items")
     
     meal_bank_item = db.query(MealBank).filter(MealBank.id == item_id).first()
@@ -1213,7 +1213,7 @@ def update_meal_bank_item(
     if not meal_bank_item:
         raise HTTPException(status_code=404, detail="Meal bank item not found")
     
-    if current_user.role == "TRAINER" and meal_bank_item.created_by != current_user.id:
+    if current_user.role == UserRole.TRAINER and meal_bank_item.created_by != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to update this item")
     
     # Update fields
@@ -1254,7 +1254,7 @@ def delete_meal_bank_item(
     db: Session = Depends(get_db)
 ):
     """Delete a meal bank item (trainer only, own items)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can delete meal bank items")
     
     meal_bank_item = db.query(MealBank).filter(MealBank.id == item_id).first()
@@ -1262,7 +1262,7 @@ def delete_meal_bank_item(
     if not meal_bank_item:
         raise HTTPException(status_code=404, detail="Meal bank item not found")
     
-    if current_user.role == "TRAINER" and meal_bank_item.created_by != current_user.id:
+    if current_user.role == UserRole.TRAINER and meal_bank_item.created_by != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this item")
     
     db.delete(meal_bank_item)

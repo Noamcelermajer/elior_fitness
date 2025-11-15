@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from app.database import get_db
 from app.auth.utils import get_current_user
-from app.schemas.auth import UserResponse
+from app.schemas.auth import UserResponse, UserRole
 from app.models.workout_split import WorkoutSplit
 
 router = APIRouter()
@@ -43,7 +43,7 @@ def create_workout_split(
     db: Session = Depends(get_db)
 ):
     """Create a new workout split (trainer/admin only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create workout splits"
@@ -75,7 +75,7 @@ def get_workout_splits(
     db: Session = Depends(get_db)
 ):
     """Get all workout splits (trainer/admin see all, clients see public ones)"""
-    if current_user.role == "TRAINER" or current_user.role == "ADMIN":
+    if current_user.role == UserRole.TRAINER or current_user.role == UserRole.ADMIN:
         splits = db.query(WorkoutSplit).order_by(WorkoutSplit.name).all()
     else:
         # Clients can see all splits (or filter by created_by if needed)
@@ -133,7 +133,7 @@ def update_workout_split(
             detail="Workout split not found"
         )
     
-    if current_user.role != "ADMIN" and split.created_by != current_user.id:
+    if current_user.role != UserRole.ADMIN and split.created_by != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only update your own workout splits"
@@ -173,7 +173,7 @@ def delete_workout_split(
             detail="Workout split not found"
         )
     
-    if current_user.role != "ADMIN" and split.created_by != current_user.id:
+    if current_user.role != UserRole.ADMIN and split.created_by != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete your own workout splits"
