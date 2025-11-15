@@ -81,11 +81,17 @@ async def get_current_user(
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("JWT payload missing 'sub' field")
             raise credentials_exception
         
         # Get the full user object from database
         user = get_user_by_id(db, int(user_id))
         if user is None:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"User with ID {user_id} not found in database")
             raise credentials_exception
         
         # Check if user is active
@@ -120,12 +126,16 @@ async def get_current_user(
     except JWTError as e:
         import logging
         logger = logging.getLogger(__name__)
-        logger.error(f"JWT validation error: {e}")
+        logger.error(f"JWT validation error for token (first 20 chars): {token[:20] if token else 'None'}... Error: {e}")
+        logger.error(f"JWT_SECRET configured: {bool(SECRET_KEY and SECRET_KEY != 'your-secret-key-here')}")
+        logger.error(f"JWT_ALGORITHM: {ALGORITHM}")
         raise credentials_exception
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Unexpected error in get_current_user: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise credentials_exception
 
 async def get_current_user_websocket(token: str) -> UserResponse:

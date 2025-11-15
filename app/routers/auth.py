@@ -253,7 +253,10 @@ async def login(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
+    # Normalize role before adding to token
+    from app.auth.utils import normalize_role
+    normalized_role = normalize_role(user.role)
+    access_token = create_access_token(data={"sub": str(user.id), "role": normalized_role.value if hasattr(normalized_role, 'value') else str(normalized_role)})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=Token)
@@ -270,7 +273,10 @@ async def login_json(user_data: UserLogin, db: Session = Depends(get_db)):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
+    # Normalize role before adding to token
+    from app.auth.utils import normalize_role
+    normalized_role = normalize_role(user.role)
+    access_token = create_access_token(data={"sub": str(user.id), "role": normalized_role.value if hasattr(normalized_role, 'value') else str(normalized_role)})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me", response_model=UserResponse)
