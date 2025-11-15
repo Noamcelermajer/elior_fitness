@@ -45,7 +45,13 @@ COPY app/ ./app/
 COPY --from=frontend-builder /frontend/dist ./static
 
 # Explicitly ensure elior.png is copied (in case it's too large for Vite to handle)
-COPY --from=frontend-builder /frontend/public/elior.png ./static/elior.png
+# Check if file exists in public directory first, then copy
+RUN if [ -f /frontend/public/elior.png ]; then \
+    cp /frontend/public/elior.png ./static/elior.png && \
+    echo "elior.png copied successfully"; \
+    else \
+    echo "WARNING: elior.png not found in /frontend/public/"; \
+    fi
 
 # Copy admin setup script only
 COPY setup_admin.py ./setup_admin.py
