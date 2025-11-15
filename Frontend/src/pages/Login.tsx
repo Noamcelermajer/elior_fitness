@@ -74,7 +74,9 @@ const Login = () => {
       <div 
         className="absolute inset-0 z-[2]" 
         style={{
-          backgroundColor: 'hsl(var(--background) / 0.5)',
+          backgroundColor: theme === 'dark' 
+            ? 'hsl(var(--background) / 0.5)'
+            : 'hsl(var(--background) / 0.3)',
         }}
       />
 
@@ -101,8 +103,8 @@ const Login = () => {
             }}
           />
           
-          {/* Matte card - not glossy */}
-          <Card className="border-border/50 shadow-lg transform hover:scale-[1.02] transition-all duration-300 !bg-background/70 backdrop-blur-md">
+          {/* Matte card - completely matte with slight transparency */}
+          <Card className="border-border/50 shadow-lg transform hover:scale-[1.02] transition-all duration-300 !bg-background/85 backdrop-blur-sm">
             <CardHeader className="text-center py-4">
               {/* ECShape Brand Text - Inside card with Airbolt font */}
               <div className="mb-4">
