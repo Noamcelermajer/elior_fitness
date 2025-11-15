@@ -139,62 +139,63 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       {/* Desktop Header */}
       <div className="hidden lg:block sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 relative overflow-hidden">
-          <div className="flex justify-between items-center h-28 lg:h-32 xl:h-36">
-            <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0 lg:pr-24 xl:pr-36 2xl:pr-44" style={{ maxWidth: 'min(200px, 18vw)' }}>
-              <div className="min-w-0">
-                <p className="text-[10px] lg:text-xs xl:text-sm text-muted-foreground break-words leading-tight">
+          <div className="flex justify-between items-center h-28 lg:h-32 xl:h-36 gap-4">
+            {/* Tab 1: System Description Text Box */}
+            <div className="flex-shrink-0" style={{ width: '180px', maxWidth: '180px' }}>
+              <div className="bg-card border border-border/50 rounded-lg px-3 py-2 h-full flex items-center">
+                <p className="text-xs xl:text-sm text-muted-foreground break-words leading-tight text-center w-full">
                   {isAdmin ? t('layout.adminSubtitle') : isTrainer ? t('layout.trainerSubtitle') : t('layout.clientSubtitle')}
                 </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-0.5 flex-1 min-w-0 lg:pr-24 xl:pr-36 2xl:pr-44 overflow-hidden">
-              {/* Desktop Navigation */}
-              <nav className="flex items-center gap-0.5 min-w-0 flex-1 overflow-x-auto scrollbar-hide">
+            {/* Tab 2: Navigation Buttons */}
+            <div className="flex-1 min-w-0 flex items-center justify-center">
+              <nav className="flex items-center gap-2 lg:gap-3 xl:gap-4 min-w-0 overflow-x-auto scrollbar-hide">
                 {navigationItems.map((item) => (
                   <Button
                     key={item.id}
                     variant={currentPage === item.id ? "default" : "ghost"}
-                    className={`flex items-center gap-0.5 px-0.5 lg:px-1 xl:px-2 text-[9px] lg:text-[10px] xl:text-xs 2xl:text-sm whitespace-nowrap transform hover:scale-105 transition-all duration-200 flex-shrink-0 ${
+                    className={`flex items-center gap-2 px-4 lg:px-5 xl:px-6 text-sm xl:text-base whitespace-nowrap transform hover:scale-105 transition-all duration-200 flex-shrink-0 ${
                       currentPage === item.id 
                         ? "gradient-orange text-background font-semibold shadow-lg" 
                         : "hover:bg-secondary"
                     }`}
                     onClick={() => handleNavigation(item.href)}
                   >
-                    <item.icon className="w-2.5 h-2.5 lg:w-3 lg:h-3 xl:w-3.5 xl:h-3.5 2xl:w-4 2xl:h-4 flex-shrink-0" />
-                    <span className="truncate max-w-[50px] lg:max-w-[60px] xl:max-w-[70px] 2xl:max-w-none">{item.label}</span>
+                    <item.icon className="w-4 h-4 xl:w-5 xl:h-5 flex-shrink-0" />
+                    <span>{item.label}</span>
                   </Button>
                 ))}
               </nav>
+            </div>
 
-              {/* User Profile */}
-              <div className="flex items-center gap-0.5 ps-0.5 lg:ps-1 border-s border-border/30 flex-shrink-0">
-                <LanguageSelector />
-                <ThemeToggle />
-                <NotificationBell />
-                <div className="flex items-center gap-0.5 lg:gap-1">
-                  <div className="w-5 h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 2xl:w-9 2xl:h-9 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-[10px] lg:text-xs xl:text-sm 2xl:text-base shadow-lg flex-shrink-0">
-                    👤
-                  </div>
-                  <div className="text-end hidden 2xl:block">
-                    <p className="text-xs font-semibold text-foreground truncate max-w-[100px]">{user?.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{user?.role ? t(`roles.${user.role}`) : ''}</p>
-                  </div>
+            {/* Tab 3: User Controls */}
+            <div className="flex items-center gap-3 xl:gap-4 ps-4 border-s border-border/30 flex-shrink-0">
+              <LanguageSelector />
+              <ThemeToggle />
+              <NotificationBell />
+              <div className="flex items-center gap-2 xl:gap-3">
+                <div className="w-10 h-10 xl:w-12 xl:h-12 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-base xl:text-lg shadow-lg flex-shrink-0">
+                  👤
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={logout}
-                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0 w-5 h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8 2xl:w-9 2xl:h-9"
-                >
-                  <LogOut className="w-2.5 h-2.5 lg:w-3 lg:h-3 xl:w-3.5 xl:h-3.5 2xl:w-4 2xl:h-4" />
-                </Button>
+                <div className="text-end hidden xl:block">
+                  <p className="text-sm font-semibold text-foreground">{user?.full_name}</p>
+                  <p className="text-xs text-muted-foreground">{user?.role ? t(`roles.${user.role}`) : ''}</p>
+                </div>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={logout}
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0 w-10 h-10 xl:w-12 xl:h-12"
+              >
+                <LogOut className="w-5 h-5 xl:w-6 xl:h-6" />
+              </Button>
             </div>
             
-            {/* Logo on the right side - absolutely positioned */}
-            <div className="absolute right-0 top-0 bottom-0 flex items-center justify-end pr-1 lg:pr-2 xl:pr-4" style={{ width: 'min(140px, 10vw)', maxWidth: '140px' }}>
+            {/* Tab 4: Logo on the right side */}
+            <div className="flex-shrink-0" style={{ width: '160px', maxWidth: '160px' }}>
               <div className="transform hover:scale-105 transition-transform duration-300 h-full w-full flex items-center justify-end overflow-hidden">
                 <LogoBadge variant="desktop" />
               </div>

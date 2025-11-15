@@ -1,4 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
+import logging
 from typing import Optional
 import json
 from datetime import datetime
@@ -34,9 +35,23 @@ async def websocket_endpoint(
         try:
             user = await get_current_user_websocket(token)
             if user.id != user_id:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"WebSocket: User ID mismatch - token user {user.id} != requested {user_id}")
                 await websocket.close(code=4003, reason="User ID mismatch")
                 return
+        except HTTPException as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"WebSocket: HTTPException during auth: {e.detail}")
+            await websocket.close(code=4002, reason=f"Authentication failed: {e.detail}")
+            return
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"WebSocket: Exception during auth: {e}")
+            import traceback
+            logger.error(f"WebSocket: Traceback: {traceback.format_exc()}")
             await websocket.close(code=4002, reason="Invalid token")
             return
         

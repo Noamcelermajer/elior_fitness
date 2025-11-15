@@ -155,6 +155,9 @@ async def get_current_user_websocket(token: str) -> UserResponse:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("WebSocket: JWT payload missing 'sub' field")
             raise credentials_exception
         
         # Create database session
@@ -163,12 +166,28 @@ async def get_current_user_websocket(token: str) -> UserResponse:
             # Get the full user object from database
             user = get_user_by_id(db, int(user_id))
             if user is None:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"WebSocket: User with ID {user_id} not found in database")
                 raise credentials_exception
+            
+            # Check if user is active
+            if not user.is_active:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"WebSocket: User {user_id} is inactive")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="User account is inactive"
+                )
             
             # Normalize role - handle both enum and string representations
             try:
                 user_role = normalize_role(user.role)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"WebSocket: Invalid role value for user {user.id}: {user.role} (type: {type(user.role)}), error: {e}")
                 raise credentials_exception
             
             # Convert to UserResponse
@@ -186,5 +205,19 @@ async def get_current_user_websocket(token: str) -> UserResponse:
         finally:
             db.close()
             
-    except JWTError:
+    except JWTError as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"WebSocket: JWT validation error: {e}")
+        logger.error(f"WebSocket: JWT_SECRET configured: {bool(SECRET_KEY and SECRET_KEY != 'your-secret-key-here')}")
+        logger.error(f"WebSocket: JWT_ALGORITHM: {ALGORITHM}")
+        raise credentials_exception
+    except HTTPException:
+        raise
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"WebSocket: Unexpected error in get_current_user_websocket: {e}")
+        import traceback
+        logger.error(f"WebSocket: Traceback: {traceback.format_exc()}")
         raise credentials_exception 
