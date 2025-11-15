@@ -51,4 +51,7 @@ class ClientProfile(Base):
     target_weight = Column(Integer)  # in grams
     fitness_goals = Column(String)
     medical_conditions = Column(String)
-    dietary_restrictions = Column(String) 
+    dietary_restrictions = Column(String)
+    phone = Column(String)
+    address = Column(String)
+    emergency_contact = Column(String) 

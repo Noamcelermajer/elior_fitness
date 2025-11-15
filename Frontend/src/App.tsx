@@ -28,6 +28,7 @@ import UsersPage from './pages/UsersPage';
 import SystemPage from './pages/SystemPage';
 import TrainerDashboard from './pages/TrainerDashboard';
 import ClientProfile from './pages/ClientProfile';
+import EditClient from './pages/EditClient';
 import CreateExercise from './pages/CreateExercise';
 import CreateWorkout from './pages/CreateWorkout';
 import CreateMealPlanV2 from './pages/CreateMealPlanV2';
@@ -101,6 +102,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requiredRole="TRAINER">
             <ClientProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/client/:clientId/edit" 
+        element={
+          <ProtectedRoute requiredRole="TRAINER">
+            <EditClient />
           </ProtectedRoute>
         } 
       />

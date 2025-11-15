@@ -684,9 +684,9 @@ except Exception as e:
     raise
 
 # Catch-all route for SPA routing - MUST BE LAST
-@app.get("/{full_path:path}", response_class=HTMLResponse)
+@app.get("/{full_path:path}")
 async def serve_spa_routes(full_path: str):
-    """Serve index.html for all non-API routes to support SPA routing."""
+    """Serve static files or index.html for all non-API routes to support SPA routing."""
     # Don't serve index.html for API routes or system endpoints
     if (full_path.startswith("api/") or 
         full_path in ["health", "test", "metrics"] or
@@ -695,8 +695,30 @@ async def serve_spa_routes(full_path: str):
         full_path.startswith("status/") or
         full_path.startswith("uploads/") or
         full_path.startswith("docs/") or
-        full_path.startswith("redoc/")):
+        full_path.startswith("redoc/") or
+        full_path.startswith("assets/")):
         raise HTTPException(status_code=404, detail="Not found")
+    
+    # Check if the requested path is a static file
+    static_file_path = os.path.join("static", full_path)
+    abs_static_file_path = os.path.abspath(static_file_path)
+    logger.info(f"Checking static file: {full_path} -> {abs_static_file_path}, exists: {os.path.exists(abs_static_file_path)}")
+    if os.path.exists(abs_static_file_path) and os.path.isfile(abs_static_file_path):
+        # Determine content type
+        import mimetypes
+        mimetype, _ = mimetypes.guess_type(static_file_path)
+        if mimetype is None:
+            mimetype = "application/octet-stream"
+        
+        logger.info(f"Serving static file: {abs_static_file_path} with mimetype: {mimetype}")
+        return FileResponse(
+            abs_static_file_path,
+            media_type=mimetype,
+            headers={
+                "Cache-Control": "public, max-age=2592000",  # Cache for 1 month
+                "Vary": "Accept-Encoding"
+            }
+        )
     
     # Serve index.html for all other routes (SPA routing)
     html_content = get_index_html()

@@ -256,40 +256,28 @@ const ExerciseBank = () => {
 
   return (
     <Layout currentPage="exercises">
-      <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="container mx-auto p-4 md:p-6 space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
             <p className="text-sm sm:text-base text-muted-foreground">{t('exerciseBank.subtitle')}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                navigate('/create-workout-plan-v2?createSplit=true');
-              }}
+              onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
               variant="outline"
-              size="sm"
-              className="text-xs sm:text-sm touch-manipulation"
+              className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
             >
-              <Plus className="w-3 h-3 sm:w-4 sm:h-4 me-1 sm:me-2" />
-              <span className="hidden sm:inline">{t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}</span>
-              <span className="sm:hidden">{t('exerciseBank.createSplit', 'צור פיצול')}</span>
+              <Plus className="w-4 h-4 me-2 flex-shrink-0" />
+              <span className="truncate">{t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}</span>
             </Button>
             <Button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setCreateDialogOpen(true);
-              }} 
-              className="gradient-green text-xs sm:text-sm touch-manipulation"
-              size="sm"
+              onClick={() => setCreateDialogOpen(true)} 
+              className="gradient-green w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
             >
-              <Plus className="w-3 h-3 sm:w-4 sm:h-4 me-1 sm:me-2" />
-              <span className="hidden sm:inline">{t('exerciseBank.addExercise')}</span>
-              <span className="sm:hidden">{t('exerciseBank.add', 'הוסף')}</span>
+              <Plus className="w-4 h-4 me-2 flex-shrink-0" />
+              <span className="truncate">{t('exerciseBank.addExercise')}</span>
             </Button>
           </div>
         </div>

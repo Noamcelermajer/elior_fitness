@@ -50,6 +50,7 @@ const MealBank = () => {
   const [selectedMacroType, setSelectedMacroType] = useState('all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MealBankItem | null>(null);
+  const [activeTab, setActiveTab] = useState('details');
   
   const [itemForm, setItemForm] = useState({
     name: '',
@@ -250,6 +251,7 @@ const MealBank = () => {
       carbs: '',
       fat: ''
     });
+    setActiveTab('details');
   };
 
   const handleCloseDialog = () => {
@@ -282,10 +284,10 @@ const MealBank = () => {
           }
         }}
       >
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto p-4 md:p-6 space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('foodBank.title')}</h1>
               <p className="text-sm sm:text-base text-muted-foreground">{t('foodBank.subtitle')}</p>
             </div>
@@ -296,10 +298,10 @@ const MealBank = () => {
                   resetForm();
                   setCreateDialogOpen(true);
                 }}
-                className="gradient-green w-full sm:w-auto"
+                className="gradient-green w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
               >
-                <Plus className="w-4 h-4 me-2" />
-                {t('foodBank.addFoodItem')}
+                <Plus className="w-4 h-4 me-2 flex-shrink-0" />
+                <span className="truncate">{t('foodBank.addFoodItem')}</span>
               </Button>
             </DialogTrigger>
           </div>
@@ -307,8 +309,8 @@ const MealBank = () => {
           {/* Search and Filter */}
           <Card>
             <CardContent className="p-4">
-              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-x-4 mb-6 mt-2">
-                <div className="flex-1 relative min-w-0">
+              <div className="flex flex-col gap-4 mb-6 mt-2">
+                <div className="flex-1 relative min-w-0 w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder={t('foodBank.searchPlaceholder')}
@@ -318,11 +320,12 @@ const MealBank = () => {
                     dir="auto"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 w-full">
                   <Button
                     variant={selectedMacroType === 'all' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setSelectedMacroType('all')}
+                    className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap"
                   >
                     {t('foodBank.allMacros')}
                   </Button>
@@ -332,8 +335,10 @@ const MealBank = () => {
                       variant={selectedMacroType === macro.value ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setSelectedMacroType(macro.value)}
+                      className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex items-center justify-center"
                     >
-                      {macro.icon} {t(`foodBank.${macro.value}`)}
+                      <span>{macro.icon}</span>
+                      <span className="hidden sm:inline ms-1">{t(`foodBank.${macro.value}`)}</span>
                     </Button>
                   ))}
                 </div>
@@ -343,10 +348,15 @@ const MealBank = () => {
 
           {/* Items by Macro Type */}
           <Tabs defaultValue="protein" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-3 gap-1 p-1 h-auto">
               {macroTypes.map((macro) => (
-                <TabsTrigger key={macro.value} value={macro.value}>
-                  {macro.icon} {t(`foodBank.${macro.value}`)}
+                <TabsTrigger 
+                  key={macro.value} 
+                  value={macro.value} 
+                  className="px-1 sm:px-3 py-1.5 text-xs sm:text-sm flex items-center justify-center h-full min-h-[2rem]"
+                >
+                  <span className="text-base sm:text-lg flex items-center">{macro.icon}</span>
+                  <span className="hidden sm:inline ms-1 flex items-center">{t(`foodBank.${macro.value}`)}</span>
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -431,7 +441,7 @@ const MealBank = () => {
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Tabs defaultValue="details" className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList>
                   <TabsTrigger value="details">{t('common.details')}</TabsTrigger>
                   <TabsTrigger value="nutrition">{t('common.nutrition')}</TabsTrigger>

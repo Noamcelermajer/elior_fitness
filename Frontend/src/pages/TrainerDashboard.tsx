@@ -183,12 +183,12 @@ const TrainerDashboard = () => {
     fetchClients();
   }, []);
   if (loading) {
-    return <Layout currentPage="dashboard"><div className="flex items-center justify-center min-h-screen"><div>{t('common.loading')}</div></div></Layout>;
+    return <Layout currentPage="dashboard"><div className="flex items-center justify-center h-full"><div>{t('common.loading')}</div></div></Layout>;
   }
   return (
     <Layout currentPage="dashboard">
-      <div className="max-w-5xl mx-auto py-6 sm:py-10 px-4">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 sm:mb-10 text-center">{t('trainerDashboard.title')}</h1>
+      <div className="max-w-5xl mx-auto py-6 md:py-10 px-4">
+        <h1 className="text-4xl font-bold mb-10 text-center">{t('trainerDashboard.title')}</h1>
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
@@ -222,9 +222,12 @@ const TrainerDashboard = () => {
 
         {/* Clients Section */}
         <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-center sm:justify-between gap-4 mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-center sm:text-left">{t('client.yourClients')}</h2>
-            <Button onClick={() => setAddClientDialogOpen(true)} className="gradient-orange text-background font-semibold flex items-center justify-center w-full sm:w-auto min-w-0">
+            <Button 
+              onClick={() => setAddClientDialogOpen(true)} 
+              className="gradient-orange text-background font-semibold flex items-center w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+            >
               <UserPlus className="w-4 h-4 me-2 flex-shrink-0" />
               <span className="truncate">{t('client.addClient')}</span>
             </Button>
@@ -252,7 +255,7 @@ const TrainerDashboard = () => {
                 client.username.toLowerCase().includes(clientSearch.toLowerCase())
               ).map(client => (
                 <Card key={client.id} className="rounded-xl shadow-lg border border-border bg-muted/90 hover:-translate-y-1 hover:shadow-2xl transition-transform duration-300 animate-fade-in-up flex flex-col justify-between h-full">
-                  <CardContent className="p-6 flex flex-col h-full">
+                  <CardContent className="p-4 sm:p-6 flex flex-col h-full">
                     <div className="flex items-center mt-2 mb-4">
                       <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center me-4">
                         <span className="text-white font-bold text-2xl">
@@ -264,9 +267,9 @@ const TrainerDashboard = () => {
                         <p className="text-sm text-muted-foreground">{client.email}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2 mt-auto pt-4">
-                      <Button size="sm" variant="outline" className="flex-1 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors" onClick={() => handleViewProgress(client)}>{t('client.viewProgress')}</Button>
-                      <Button size="sm" variant="outline" className="flex-1 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors" onClick={() => navigate(`/client/${client.id}`)}>{t('client.viewProfile')}</Button>
+                    <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-4">
+                      <Button size="sm" variant="outline" className="flex-1 min-w-0 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors text-xs sm:text-sm" onClick={() => handleViewProgress(client)}>{t('client.viewProgress')}</Button>
+                      <Button size="sm" variant="outline" className="flex-1 min-w-0 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors text-xs sm:text-sm" onClick={() => navigate(`/client/${client.id}`)}>{t('client.viewProfile')}</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -374,15 +377,15 @@ const TrainerDashboard = () => {
               <div className="space-y-2">
                 <Label htmlFor="password">{t('trainerDashboard.password')}</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? 'text' : 'password'} value={addClientForm.password} onChange={e => setAddClientForm({ ...addClientForm, password: e.target.value })} required />
-                  <button type="button" className="absolute right-2 top-2" onClick={() => setShowPassword(v => !v)}>{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                  <Input id="password" type={showPassword ? 'text' : 'password'} value={addClientForm.password} onChange={e => setAddClientForm({ ...addClientForm, password: e.target.value })} className="pl-10 pr-3 text-right" required />
+                  <button type="button" className="absolute left-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 flex items-center justify-center hover:bg-transparent" onClick={() => setShowPassword(v => !v)}>{showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}</button>
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">{t('trainerDashboard.confirmPassword')}</Label>
                 <div className="relative">
-                  <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={addClientForm.confirmPassword} onChange={e => setAddClientForm({ ...addClientForm, confirmPassword: e.target.value })} required />
-                  <button type="button" className="absolute right-2 top-2" onClick={() => setShowConfirmPassword(v => !v)}>{showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                  <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={addClientForm.confirmPassword} onChange={e => setAddClientForm({ ...addClientForm, confirmPassword: e.target.value })} className="pl-10 pr-3 text-right" required />
+                  <button type="button" className="absolute left-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 flex items-center justify-center hover:bg-transparent" onClick={() => setShowConfirmPassword(v => !v)}>{showConfirmPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}</button>
                 </div>
               </div>
               {addClientError && <div className="text-red-500 text-sm">{addClientError}</div>}

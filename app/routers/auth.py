@@ -344,4 +344,49 @@ async def change_password(
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Failed to change password"
+    )
+
+class PasswordResetByTrainer(BaseModel):
+    user_id: int
+    new_password: str
+
+@router.post("/password/reset")
+async def reset_password_by_trainer(
+    password_data: PasswordResetByTrainer,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Reset a user's password (for trainers/admins only).
+    Trainers can only reset passwords for their clients.
+    """
+    from app.schemas.auth import UserRole
+    from app.models.user import User
+    
+    # Check if user is trainer or admin
+    if current_user.role not in [UserRole.TRAINER, UserRole.ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers and admins can reset passwords"
+        )
+    
+    # If trainer, verify the target user is their client
+    if current_user.role == UserRole.TRAINER:
+        target_user = db.query(User).filter(User.id == password_data.user_id).first()
+        if not target_user or target_user.trainer_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only reset passwords for your clients"
+            )
+    
+    success = await password_service.reset_user_password(
+        db,
+        password_data.user_id,
+        password_data.new_password
+    )
+    if success:
+        return {"message": "Password reset successfully"}
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Failed to reset password"
     ) 

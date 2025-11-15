@@ -299,10 +299,11 @@ const AdminDashboard = () => {
                             value={registerForm.password}
                             onChange={e => setRegisterForm({ ...registerForm, password: e.target.value })}
                             placeholder={t('admin.enterPassword')}
+                            className="pl-10 pr-3 text-right"
                             required
                           />
-                          <button type="button" className="absolute right-2 top-2" onClick={() => setShowPassword(v => !v)}>
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          <button type="button" className="absolute left-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 flex items-center justify-center hover:bg-transparent" onClick={() => setShowPassword(v => !v)}>
+                            {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
                           </button>
                         </div>
                       </div>
@@ -315,10 +316,11 @@ const AdminDashboard = () => {
                             value={registerForm.confirmPassword}
                             onChange={e => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
                             placeholder={t('admin.reEnterPassword')}
+                            className="pl-10 pr-3 text-right"
                             required
                           />
-                          <button type="button" className="absolute right-2 top-2" onClick={() => setShowConfirmPassword(v => !v)}>
-                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          <button type="button" className="absolute left-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 flex items-center justify-center hover:bg-transparent" onClick={() => setShowConfirmPassword(v => !v)}>
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
                           </button>
                         </div>
                       </div>

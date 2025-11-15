@@ -478,7 +478,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
               />
             </div>
             <div>
-              <Label htmlFor="duration_weeks">Duration (weeks)</Label>
+              <Label htmlFor="duration_weeks">{t('workoutCreation.durationWeeks')}</Label>
               <Input
                 id="duration_weeks"
                 type="number"

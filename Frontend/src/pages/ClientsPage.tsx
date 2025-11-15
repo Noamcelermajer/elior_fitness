@@ -211,11 +211,11 @@ const ClientsPage = () => {
                   Manage your clients and their fitness journeys
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="flex space-x-3">
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                   <DialogTrigger asChild>
                     <Button 
-                      className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg w-full sm:w-auto"
+                      className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
                     >
                       <UserPlus className="w-4 h-4 mr-2" />
                       Add Client
@@ -377,8 +377,8 @@ const ClientsPage = () => {
                       <span>Joined {formatDate(client.created_at)}</span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                      <Button size="sm" variant="outline" onClick={() => handleViewProgress(client)} className="w-full sm:w-auto">View Progress</Button>
-                      <Button size="sm" onClick={() => navigate(`/client/${client.id}`)} className="w-full sm:w-auto">View Profile</Button>
+                      <Button size="sm" variant="outline" className="flex-1 min-w-0 text-xs sm:text-sm" onClick={() => handleViewProgress(client)}>View Progress</Button>
+                      <Button size="sm" className="flex-1 min-w-0 text-xs sm:text-sm" onClick={() => navigate(`/client/${client.id}`)}>View Profile</Button>
                     </div>
                   </CardContent>
                 </Card>

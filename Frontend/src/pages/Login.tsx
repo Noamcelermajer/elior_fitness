@@ -86,11 +86,9 @@ const Login = () => {
       <div className="relative z-10 w-full max-w-md animate-fade-in">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 gradient-orange rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xl transform hover:scale-110 transition-transform duration-300">
-            <Dumbbell className="w-10 h-10 text-background" />
+          <div className="w-48 h-48 rounded-2xl flex items-center justify-center mx-auto mb-4 transform hover:scale-110 transition-transform duration-300">
+            <img src="/Untitled.svg" alt="Logo" className="w-48 h-48 object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-gradient mb-2">FitTrainer Pro</h1>
-          <p className="text-muted-foreground">{t('auth.welcomeBack')}</p>
           <div className="absolute top-4 right-4 flex items-center gap-2">
             <LanguageSelector />
             <ThemeToggle />
@@ -124,13 +122,13 @@ const Login = () => {
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-foreground font-medium">{t('auth.password')}</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 bg-secondary/50 border-border/50 focus:border-primary transition-colors"
+                    className="pl-12 pr-3 text-right bg-secondary/50 border-border/50 focus:border-primary transition-colors"
                     placeholder={t('auth.enterPassword')}
                     required
                   />
@@ -138,10 +136,11 @@ const Login = () => {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-auto p-1 hover:bg-transparent"
+                    className="absolute left-10 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-transparent z-10 flex items-center justify-center"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
                   </Button>
                 </div>
               </div>
