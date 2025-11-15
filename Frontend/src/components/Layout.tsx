@@ -137,11 +137,14 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       </div>
 
       {/* Desktop Header */}
-      <div className="hidden lg:block sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 lg:px-6 relative overflow-hidden">
-          <div className="flex justify-between items-center h-28 lg:h-32 xl:h-36 gap-3">
+      <div
+        className="hidden lg:block sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50 overflow-hidden"
+        dir="ltr"
+      >
+        <div className="max-w-7xl mx-auto px-4 lg:px-6 h-32">
+          <div className="flex items-center justify-between h-full gap-2">
             {/* Left side: Logout -> Username & Icon -> Theme & Language */}
-            <div className="flex items-center gap-3 xl:gap-4 flex-shrink-0">
+            <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0">
               {/* Logout */}
               <Button
                 variant="ghost"
@@ -153,7 +156,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
               </Button>
               
               {/* Username & Icon */}
-              <div className="flex items-center gap-2 xl:gap-3 border-r border-border/30 pr-3 xl:pr-4">
+              <div className="flex items-center gap-2 xl:gap-3 border-r border-border/30 pr-2 xl:pr-3 h-full">
                 <div className="w-10 h-10 xl:w-12 xl:h-12 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-base xl:text-lg shadow-lg flex-shrink-0">
                   👤
                 </div>
@@ -164,20 +167,20 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
               </div>
               
               {/* Theme & Language */}
-              <div className="flex items-center gap-2 xl:gap-3 border-r border-border/30 pr-3 xl:pr-4">
+              <div className="flex items-center gap-2 xl:gap-3 border-r border-border/30 pr-2 xl:pr-3 h-full">
                 <ThemeToggle />
                 <LanguageSelector />
               </div>
             </div>
 
             {/* Center: 4 Navigation Tabs */}
-            <div className="flex-1 min-w-0 flex items-center justify-center">
-              <nav className="flex items-center gap-2 lg:gap-3 xl:gap-4 min-w-0 overflow-x-auto scrollbar-hide">
+            <div className="flex-1 min-w-0 flex items-center justify-center h-full">
+              <nav className="flex items-center gap-1 lg:gap-2 xl:gap-3 overflow-x-auto scrollbar-hide px-2 h-full">
                 {navigationItems.map((item) => (
                   <Button
                     key={item.id}
                     variant={currentPage === item.id ? "default" : "ghost"}
-                    className={`flex items-center gap-2 px-4 lg:px-5 xl:px-6 text-sm xl:text-base whitespace-nowrap transform hover:scale-105 transition-all duration-200 flex-shrink-0 ${
+                    className={`flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 xl:px-5 text-xs lg:text-sm xl:text-base whitespace-nowrap transform hover:scale-105 transition-all duration-200 flex-shrink-0 h-auto ${
                       currentPage === item.id 
                         ? "gradient-orange text-background font-semibold shadow-lg" 
                         : "hover:bg-secondary"
@@ -192,20 +195,28 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
             </div>
 
             {/* Right side: Page Title -> Logo */}
-            <div className="flex items-center gap-3 xl:gap-4 flex-shrink-0">
+            <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0 h-full">
               {/* Page Title */}
-              <div className="flex-shrink-0 border-r border-border/30 pr-3 xl:pr-4" style={{ width: '180px', maxWidth: '180px' }}>
-                <div className="bg-card border border-border/50 rounded-lg px-3 py-2 h-full flex items-center">
-                  <p className="text-xs xl:text-sm text-muted-foreground break-words leading-tight text-center w-full">
+              <div className="flex-shrink-0 border-r border-border/30 pr-2 xl:pr-3 h-full flex items-center">
+                <div className="bg-card border border-border/50 rounded-lg px-2 xl:px-3 py-1.5 xl:py-2 max-w-[160px] xl:max-w-[180px]">
+                  <p
+                    className="text-[10px] xl:text-xs text-muted-foreground break-words leading-tight text-center"
+                    dir="rtl"
+                  >
                     {isAdmin ? t('layout.adminSubtitle') : isTrainer ? t('layout.trainerSubtitle') : t('layout.clientSubtitle')}
                   </p>
                 </div>
               </div>
               
-              {/* Logo */}
-              <div className="flex-shrink-0" style={{ width: '160px', maxWidth: '160px' }}>
-                <div className="transform hover:scale-105 transition-transform duration-300 h-full w-full flex items-center justify-end overflow-hidden">
-                  <LogoBadge variant="desktop" />
+              {/* Logo - Constrained to navbar height */}
+              <div className="flex-shrink-0 h-full w-32 xl:w-40 flex items-center justify-end overflow-hidden pr-2">
+                <div className="h-full w-full flex items-center justify-end">
+                  <img
+                    src="/logonavbar.png"
+                    alt="ECshape logo"
+                    className="h-full w-auto object-contain max-h-full max-w-full"
+                    loading="lazy"
+                  />
                 </div>
               </div>
             </div>
