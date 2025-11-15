@@ -44,6 +44,9 @@ COPY app/ ./app/
 # Copy built frontend to static directory
 COPY --from=frontend-builder /frontend/dist ./static
 
+# Explicitly ensure elior.png is copied (in case it's too large for Vite to handle)
+COPY --from=frontend-builder /frontend/public/elior.png ./static/elior.png
+
 # Copy admin setup script only
 COPY setup_admin.py ./setup_admin.py
 
