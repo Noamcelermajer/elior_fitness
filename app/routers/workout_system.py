@@ -408,7 +408,7 @@ def get_workout_plans(
         joinedload(NewWorkoutPlan.workout_days).joinedload(WorkoutDay.workout_exercises)
     )
     
-    if current_user.role == "CLIENT":
+    if current_user.role == UserRole.CLIENT:
         query = query.filter(NewWorkoutPlan.client_id == current_user.id)
     elif current_user.role == UserRole.TRAINER:
         query = query.filter(NewWorkoutPlan.trainer_id == current_user.id)
@@ -491,7 +491,7 @@ def get_workout_plan(
         raise HTTPException(status_code=404, detail="Workout plan not found")
     
     # Check permissions
-    if current_user.role == "CLIENT" and workout_plan.client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and workout_plan.client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this workout plan")
     elif current_user.role == UserRole.TRAINER and workout_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this workout plan")
@@ -744,7 +744,7 @@ def get_workout_day(
     if not workout_plan:
         raise HTTPException(status_code=404, detail="Workout plan not found")
     
-    if current_user.role == "CLIENT" and workout_plan.client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and workout_plan.client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this workout day")
     elif current_user.role == UserRole.TRAINER and workout_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this workout day")
@@ -916,7 +916,7 @@ def start_workout_session(
     db: Session = Depends(get_db)
 ):
     """Start a new workout session (client only)"""
-    if current_user.role != "CLIENT":
+    if current_user.role != UserRole.CLIENT:
         raise HTTPException(status_code=403, detail="Only clients can start workout sessions")
     
     session = NewWorkoutSession(
@@ -944,7 +944,7 @@ def update_workout_session(
     if not session:
         raise HTTPException(status_code=404, detail="Workout session not found")
     
-    if current_user.role == "CLIENT" and session.client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and session.client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     for field, value in session_data.dict(exclude_unset=True).items():
@@ -965,9 +965,9 @@ def get_workout_sessions(
     """Get workout sessions (trainers see their clients, clients see their own)"""
     query = db.query(NewWorkoutSession)
     
-    if current_user.role == "CLIENT":
+    if current_user.role == UserRole.CLIENT:
         query = query.filter(NewWorkoutSession.client_id == current_user.id)
-    elif current_user.role == "TRAINER" and client_id:
+    elif current_user.role == UserRole.TRAINER and client_id:
         query = query.filter(NewWorkoutSession.client_id == client_id)
     # Admins see all
     
@@ -987,7 +987,7 @@ def record_set_completion(
     db: Session = Depends(get_db)
 ):
     """Record a completed set (client only)"""
-    if current_user.role != "CLIENT":
+    if current_user.role != UserRole.CLIENT:
         raise HTTPException(status_code=403, detail="Only clients can record set completions")
     
     set_completion = SetCompletion(
@@ -1082,7 +1082,7 @@ def get_set_completions(
     
     query = db.query(SetCompletion)
     
-    if current_user.role == "CLIENT":
+    if current_user.role == UserRole.CLIENT:
         query = query.filter(SetCompletion.client_id == current_user.id)
     elif client_id:
         query = query.filter(SetCompletion.client_id == client_id)
@@ -1112,7 +1112,7 @@ def delete_set_completion(
         )
     
     # Check permissions - clients can only delete their own, trainers/admins can delete any
-    if current_user.role == "CLIENT" and set_completion.client_id != current_user.id:
+    if current_user.role == UserRole.CLIENT and set_completion.client_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to delete this set completion"
@@ -1131,7 +1131,7 @@ def record_personal_record(
 ):
     """Record a personal record (client or trainer on behalf of client)"""
     pr = ExercisePersonalRecord(
-        client_id=current_user.id if current_user.role == "CLIENT" else pr_data.client_id,
+        client_id=current_user.id if current_user.role == UserRole.CLIENT else pr_data.client_id,
         exercise_id=pr_data.exercise_id,
         pr_type=pr_data.pr_type,
         weight=pr_data.weight,
@@ -1157,7 +1157,7 @@ def get_personal_records(
     """Get personal records"""
     query = db.query(ExercisePersonalRecord)
     
-    if current_user.role == "CLIENT":
+    if current_user.role == UserRole.CLIENT:
         query = query.filter(ExercisePersonalRecord.client_id == current_user.id)
     elif client_id:
         query = query.filter(ExercisePersonalRecord.client_id == client_id)

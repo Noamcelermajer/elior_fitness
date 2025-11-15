@@ -1000,7 +1000,7 @@ def get_meal_completions(
     if current_user.role == UserRole.CLIENT and target_client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    if current_user.role == "TRAINER":
+    if current_user.role == UserRole.TRAINER:
         plan_exists = db.query(NewMealPlan).filter(
             NewMealPlan.client_id == target_client_id,
             NewMealPlan.trainer_id == current_user.id,
@@ -1149,7 +1149,7 @@ def get_meal_bank_items(
     """Get meal bank items (trainers see their own + public items)"""
     query = db.query(MealBank)
     
-    if current_user.role == "TRAINER":
+    if current_user.role == UserRole.TRAINER:
         # Trainers see their own items and public items
         if include_public:
             query = query.filter(

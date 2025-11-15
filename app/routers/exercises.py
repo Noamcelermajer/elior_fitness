@@ -6,7 +6,7 @@ import logging
 from app.database import get_db
 from app.services.workout_service import WorkoutService
 from app.auth.utils import get_current_user
-from app.schemas.auth import UserResponse
+from app.schemas.auth import UserResponse, UserRole
 from app.schemas.workout import (
     ExerciseCreate, ExerciseUpdate, ExerciseResponse, ExerciseFilter
 )
@@ -22,7 +22,7 @@ def create_exercise(
     db: Session = Depends(get_db)
 ):
     """Create a new exercise in the trainer's exercise bank."""
-    if current_user.role != "TRAINER":
+    if current_user.role != UserRole.TRAINER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create exercises"
@@ -81,7 +81,7 @@ def update_exercise(
     db: Session = Depends(get_db)
 ):
     """Update an exercise (only by the trainer who created it)."""
-    if current_user.role != "TRAINER":
+    if current_user.role != UserRole.TRAINER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can update exercises"
@@ -105,7 +105,7 @@ def delete_exercise(
     db: Session = Depends(get_db)
 ):
     """Delete an exercise (only by the trainer who created it)."""
-    if current_user.role != "TRAINER":
+    if current_user.role != UserRole.TRAINER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can delete exercises"
@@ -113,6 +113,7 @@ def delete_exercise(
     
     # Check if exercise exists and belongs to the trainer
     from app.models.workout import Exercise
+    from sqlalchemy import and_
     exercise = db.query(Exercise).filter(
         and_(
             Exercise.id == exercise_id,

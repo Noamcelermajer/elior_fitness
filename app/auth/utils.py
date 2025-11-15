@@ -17,14 +17,19 @@ def normalize_role(role) -> UserRole:
     if isinstance(role, UserRole):
         return role
     if isinstance(role, str):
+        # Always convert to uppercase for comparison
+        role_upper = role.upper()
         try:
-            return UserRole(role.upper())
+            # Try direct enum conversion with uppercase
+            return UserRole(role_upper)
         except ValueError:
-            # Try case-insensitive match
-            role_upper = role.upper()
+            # Try case-insensitive match against enum values
             for enum_role in UserRole:
                 if enum_role.value.upper() == role_upper:
                     return enum_role
+            # Also handle common variations
+            if role_upper in ["TRAINER", "ADMIN", "CLIENT"]:
+                return UserRole(role_upper)
             raise ValueError(f"Invalid role: {role}")
     raise TypeError(f"Role must be UserRole enum or string, got {type(role)}")
 

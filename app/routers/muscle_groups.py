@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from app.database import get_db
 from app.auth.utils import get_current_user
-from app.schemas.auth import UserResponse
+from app.schemas.auth import UserResponse, UserRole
 from app.models.muscle_group import MuscleGroup
 
 router = APIRouter()
@@ -34,7 +34,7 @@ def create_muscle_group(
     db: Session = Depends(get_db)
 ):
     """Create a new muscle group (trainer/admin only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role not in [UserRole.TRAINER, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create muscle groups"
@@ -78,7 +78,7 @@ def delete_muscle_group(
     db: Session = Depends(get_db)
 ):
     """Delete a muscle group (trainer/admin only)"""
-    if current_user.role != "TRAINER" and current_user.role != "ADMIN":
+    if current_user.role not in [UserRole.TRAINER, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can delete muscle groups"

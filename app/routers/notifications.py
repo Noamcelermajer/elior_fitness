@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
 from app.auth.utils import get_current_user
-from app.schemas.auth import UserResponse
+from app.schemas.auth import UserResponse, UserRole
 from app.schemas.notification import (
     NotificationCreate, 
     NotificationResponse, 
@@ -131,7 +131,7 @@ async def create_system_notification(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Create system notifications (admin only)"""
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can create system notifications"
@@ -157,7 +157,7 @@ async def trigger_weekly_checks(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Manually trigger weekly notification checks (admin only)"""
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can trigger weekly checks"
@@ -202,7 +202,7 @@ async def trigger_critical_error_notification(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Trigger a critical error notification (admin only)"""
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can trigger critical error notifications"

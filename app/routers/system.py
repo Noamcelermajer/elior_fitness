@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 
 from app.database import get_db
 from app.auth.utils import get_current_user
-from app.schemas.auth import UserResponse
+from app.schemas.auth import UserResponse, UserRole
 from app.services.system_service import system_service
 from app.services.user_service import get_users
 
@@ -19,7 +19,7 @@ async def get_system_status(
     db: Session = Depends(get_db)
 ):
     """Get system status and health metrics."""
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Get real system stats
@@ -62,7 +62,7 @@ async def get_system_logs(
     db: Session = Depends(get_db)
 ):
     """Get recent system logs."""
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     return system_service.get_recent_logs(limit=50)
@@ -74,7 +74,7 @@ async def toggle_maintenance_mode(
     db: Session = Depends(get_db)
 ):
     """Toggle maintenance mode."""
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Mock implementation
@@ -86,7 +86,7 @@ async def restart_services(
     db: Session = Depends(get_db)
 ):
     """Restart system services."""
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Mock implementation
@@ -98,7 +98,7 @@ async def create_backup(
     db: Session = Depends(get_db)
 ):
     """Create database backup."""
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     success = system_service.create_backup(db)
@@ -113,7 +113,7 @@ async def optimize_database(
     db: Session = Depends(get_db)
 ):
     """Optimize database."""
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     success = system_service.optimize_database(db)

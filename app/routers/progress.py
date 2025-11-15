@@ -5,7 +5,7 @@ from datetime import datetime, date
 
 from app.database import get_db
 from app.auth.utils import get_current_user
-from app.schemas.auth import UserResponse
+from app.schemas.auth import UserResponse, UserRole
 from app.models.progress import ProgressEntry
 from app.services.file_service import FileService
 from app.services.notification_triggers import check_client_goals
@@ -26,7 +26,7 @@ async def add_weight_entry(
     
     # Determine the target client ID
     target_client_id = current_user.id  # Default to current user
-    if client_id and current_user.role == "TRAINER":
+    if client_id and current_user.role == UserRole.TRAINER:
         # Verify that the client belongs to this trainer
         client = db.query(User).filter(User.id == client_id).first()
         if not client or client.trainer_id != current_user.id:
@@ -98,7 +98,7 @@ async def get_progress_entries(
     from app.models.user import User
     
     # If trainer, they can query their clients' progress
-    if current_user.role == "TRAINER" and client_id:
+    if current_user.role == UserRole.TRAINER and client_id:
         # Check if the client belongs to this trainer
         client = db.query(User).filter(User.id == client_id).first()
         if not client or client.trainer_id != current_user.id:
@@ -188,7 +188,7 @@ async def update_progress_entry(
         raise HTTPException(status_code=404, detail="Progress entry not found")
     
     # Check permissions
-    if current_user.role == "TRAINER":
+    if current_user.role == UserRole.TRAINER:
         # Check if the client belongs to this trainer
         client = db.query(User).filter(User.id == entry.client_id).first()
         if not client or client.trainer_id != current_user.id:

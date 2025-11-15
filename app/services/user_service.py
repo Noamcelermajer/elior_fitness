@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from app.models.user import User
+from app.models.user import User, TrainerProfile, ClientProfile
 from app.models.notification import Notification
 from app.schemas.auth import UserRole, UserResponse, UserUpdate
 
@@ -57,8 +57,21 @@ def delete_user(db: Session, user_id: int) -> bool:
         if db_user.role == UserRole.TRAINER:
             clients = get_trainer_clients(db, user_id)
             for client in clients:
-                # Recursively delete each client (which will handle their notifications)
-                delete_user(db, client.id)
+                # Delete notifications for each client
+                db.query(Notification).filter(Notification.recipient_id == client.id).delete()
+                db.query(Notification).filter(Notification.sender_id == client.id).update({"sender_id": None})
+                # Delete client profile if it exists
+                db.query(ClientProfile).filter(ClientProfile.user_id == client.id).delete()
+                # Delete the client
+                db.delete(client)
+        
+        # Delete trainer profile if it exists (for trainers)
+        if db_user.role == UserRole.TRAINER:
+            db.query(TrainerProfile).filter(TrainerProfile.user_id == user_id).delete()
+        
+        # Delete client profile if it exists (for clients)
+        if db_user.role == UserRole.CLIENT:
+            db.query(ClientProfile).filter(ClientProfile.user_id == user_id).delete()
         
         # Delete all notifications where this user is the recipient
         # This must be done before deleting the user because recipient_id is NOT NULL
