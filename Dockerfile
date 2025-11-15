@@ -2,18 +2,24 @@
 # Multi-stage build for optimal size and security
 # Updated: 2025-07-10 15:20 - Removed Nginx, FastAPI only
 
-# Build argument to force cache invalidation
+# Build argument to force cache invalidation - Railway will pass this
 ARG BUILD_DATE=unknown
+ARG CACHE_BUST=1
 
 # Stage 1: Frontend Builder
 FROM node:18-slim AS frontend-builder
 WORKDIR /frontend
 
+# Use build args to invalidate cache
+ARG BUILD_DATE
+ARG CACHE_BUST
+RUN echo "Build date: ${BUILD_DATE}, Cache bust: ${CACHE_BUST}"
+
 # Copy package files for dependency caching
 COPY Frontend/package*.json ./
 RUN npm ci --legacy-peer-deps --no-audit --no-fund --production=false
 
-# Copy frontend source
+# Copy frontend source - this layer will be invalidated when files change
 COPY Frontend/ ./
 
 # Build frontend (clean npm cache after build)
@@ -44,9 +50,12 @@ COPY app/ ./app/
 # Copy built frontend to static directory
 COPY --from=frontend-builder /frontend/dist ./static
 
-# Explicitly ensure elior.png is copied (in case it's too large for Vite to handle)
+# Explicitly ensure elior.png and favicon are copied fresh (no cache)
+# These are copied separately to ensure Railway doesn't cache old versions
 # Copy from public directory in frontend-builder stage
 COPY --from=frontend-builder /frontend/public/elior.png ./static/elior.png
+# Copy favicon - will fail if not present, but that's okay
+COPY --from=frontend-builder /frontend/public/favicon.png ./static/favicon.png
 
 # Copy admin setup script only
 COPY setup_admin.py ./setup_admin.py

@@ -135,7 +135,11 @@ const Login = () => {
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="pl-10 bg-secondary/50 border-border/50 focus:border-primary transition-colors"
+                      className={`pl-10 border-border/50 focus:border-primary transition-colors ${
+                        theme === 'dark' 
+                          ? 'bg-muted/80 text-foreground' 
+                          : 'bg-secondary text-foreground'
+                      }`}
                       placeholder={t('auth.enterEmail')}
                       required
                     />
@@ -151,7 +155,11 @@ const Login = () => {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-12 pr-3 text-right bg-secondary/50 border-border/50 focus:border-primary transition-colors"
+                      className={`pl-12 pr-3 text-right border-border/50 focus:border-primary transition-colors ${
+                        theme === 'dark' 
+                          ? 'bg-muted/80 text-foreground' 
+                          : 'bg-secondary text-foreground'
+                      }`}
                       placeholder={t('auth.enterPassword')}
                       required
                     />

@@ -387,16 +387,31 @@ try:
             
         async def __call__(self, scope, receive, send):
             # Add cache headers for static assets
-            if scope["path"].startswith("/assets/"):
-                # Cache static assets for 1 year
+            path = scope["path"]
+            
+            # Exclude elior.png and favicon from long caching - they change frequently
+            if path.endswith(("elior.png", "favicon.png", "favicon.ico")):
+                # Short cache for frequently updated files
+                scope["headers"] = [
+                    (b"cache-control", b"public, max-age=3600"),  # 1 hour
+                    (b"vary", b"Accept-Encoding")
+                ]
+            elif path.startswith("/assets/"):
+                # Cache static assets for 1 year (hashed filenames)
                 scope["headers"] = [
                     (b"cache-control", b"public, max-age=31536000, immutable"),
                     (b"vary", b"Accept-Encoding")
                 ]
-            elif scope["path"].endswith((".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico")):
+            elif path.endswith((".css", ".js", ".jpg", ".jpeg", ".gif", ".svg")):
                 # Cache other static files for 1 month
                 scope["headers"] = [
                     (b"cache-control", b"public, max-age=2592000"),
+                    (b"vary", b"Accept-Encoding")
+                ]
+            # PNG files in root (not elior.png) get shorter cache
+            elif path.endswith(".png"):
+                scope["headers"] = [
+                    (b"cache-control", b"public, max-age=86400"),  # 1 day
                     (b"vary", b"Accept-Encoding")
                 ]
             
@@ -449,17 +464,36 @@ try:
             
     @app.get("/favicon.ico")
     async def serve_favicon():
-        """Serve favicon with caching."""
-        favicon_path = "static/favicon.ico"
-        if os.path.exists(favicon_path):
+        """Serve favicon with short cache to allow updates."""
+        # Try multiple favicon locations
+        favicon_paths = [
+            "static/favicon.ico",
+            "static/favicon.png"
+        ]
+        for favicon_path in favicon_paths:
+            if os.path.exists(favicon_path):
+                return FileResponse(
+                    favicon_path,
+                    headers={
+                        "Cache-Control": "public, max-age=3600",  # 1 hour - short cache for updates
+                        "Vary": "Accept-Encoding"
+                    }
+                )
+        return {"message": "Favicon not found"}
+    
+    @app.get("/elior.png")
+    async def serve_elior_png():
+        """Serve elior.png with short cache to allow updates."""
+        elior_path = "static/elior.png"
+        if os.path.exists(elior_path):
             return FileResponse(
-                favicon_path,
+                elior_path,
                 headers={
-                    "Cache-Control": "public, max-age=86400",  # Cache for 1 day
+                    "Cache-Control": "public, max-age=3600",  # 1 hour - short cache for updates
                     "Vary": "Accept-Encoding"
                 }
             )
-        return {"message": "Favicon not found"}
+        return {"message": "elior.png not found"}
         
     @app.get("/robots.txt")
     async def serve_robots():
