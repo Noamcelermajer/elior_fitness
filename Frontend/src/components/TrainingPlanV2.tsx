@@ -357,14 +357,22 @@ const TrainingPlanV2: React.FC = () => {
                   onClick={() => navigate(`/training/day/${day.id}`)}
                 >
                   <CardContent className="px-6 py-4">
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <div className="text-2xl shrink-0">💪</div>
-                        <div className="text-left flex-1 min-w-0">
-                          <p className="font-semibold text-lg truncate">
-                            {day.name || `${t('training.day', 'יום')} ${index + 1}`}
+                    <div className="flex items-center justify-between w-full gap-4">
+                      <div className="flex items-start space-x-3 flex-1 min-w-0">
+                        <div className="text-2xl shrink-0 mt-0.5">💪</div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          {/* Day Name - Top */}
+                          <p className="font-semibold text-lg" dir="auto">
+                            {day.name || `יום ${index + 1}`}
                           </p>
-                          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-1">
+                          {/* Notes/Description - Below name */}
+                          {day.notes && (
+                            <p className="text-sm text-muted-foreground line-clamp-2" dir="auto">
+                              {day.notes}
+                            </p>
+                          )}
+                          {/* Exercise count and duration - Bottom */}
+                          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Dumbbell className="w-3.5 h-3.5" />
                               {t('training.exercisesCount', {
@@ -382,11 +390,6 @@ const TrainingPlanV2: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          {day.notes && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                              {day.notes}
-                            </p>
-                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">

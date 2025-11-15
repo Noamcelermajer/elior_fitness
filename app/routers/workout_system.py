@@ -233,9 +233,26 @@ def create_complete_workout_plan(
         existing_plan.is_active = True
 
         # Remove existing days/exercises
-        for day in list(existing_plan.workout_days):
-            db.delete(day)
-        db.flush()
+        try:
+            # Eagerly load exercises to avoid lazy loading issues
+            existing_plan_with_exercises = db.query(NewWorkoutPlan).options(
+                joinedload(NewWorkoutPlan.workout_days).joinedload(WorkoutDay.workout_exercises)
+            ).filter(NewWorkoutPlan.id == existing_plan.id).first()
+            
+            if existing_plan_with_exercises and existing_plan_with_exercises.workout_days:
+                for day in list(existing_plan_with_exercises.workout_days):
+                    # Delete exercises first to avoid foreign key issues
+                    if day.workout_exercises:
+                        for exercise in list(day.workout_exercises):
+                            db.delete(exercise)
+                    db.delete(day)
+            db.flush()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update workout plan: {str(e)}"
+            )
 
         target_plan = existing_plan
     else:
@@ -288,20 +305,96 @@ def create_complete_workout_plan(
                 exercise_id=exercise_data.exercise_id,
                 order_index=exercise_data.order_index,
                 group_name=getattr(exercise_data, "group_name", None),
-                target_sets=exercise_data.target_sets or 3,
-                target_reps=exercise_data.target_reps or '',
+                target_sets=exercise_data.target_sets,  # Don't force default, allow None
+                target_reps=exercise_data.target_reps,  # Don't force default, allow None
                 target_weight=exercise_data.target_weight,
-                rest_seconds=exercise_data.rest_seconds or 90,
+                rest_seconds=exercise_data.rest_seconds,  # Don't force default, allow None
                 tempo=exercise_data.tempo,
-                notes=exercise_data.notes or '',
+                notes=exercise_data.notes,  # Don't force default, allow None
                 video_url=getattr(exercise_data, "video_url", None),
             )
             db.add(workout_exercise)
     
-    db.commit()
-    db.refresh(target_plan)
-    
-    return target_plan
+    try:
+        db.commit()
+        db.refresh(target_plan)
+        
+        # Manually serialize to convert exercise ORM objects to dicts
+        from app.schemas.workout_system import WorkoutPlanResponse as WorkoutPlanResponseSchema
+        from app.schemas.workout_system import WorkoutDayResponse, WorkoutExerciseResponse
+        
+        # Reload with relationships
+        target_plan = db.query(NewWorkoutPlan).options(
+            joinedload(NewWorkoutPlan.workout_days).joinedload(WorkoutDay.workout_exercises).joinedload(NewWorkoutExercise.exercise)
+        ).filter(NewWorkoutPlan.id == target_plan.id).first()
+        
+        workout_days = []
+        for day in target_plan.workout_days:
+            exercises = []
+            for ex in day.workout_exercises:
+                exercise_dict = None
+                if ex.exercise:
+                    exercise_dict = {
+                        "id": ex.exercise.id,
+                        "name": ex.exercise.name,
+                        "description": ex.exercise.description,
+                        "muscle_group": ex.exercise.muscle_group,
+                        "equipment": ex.exercise.equipment_needed,
+                        "video_url": ex.exercise.video_url,
+                    }
+                exercises.append(WorkoutExerciseResponse(
+                    id=ex.id,
+                    workout_day_id=ex.workout_day_id,
+                    exercise_id=ex.exercise_id,
+                    order_index=ex.order_index,
+                    group_name=ex.group_name,
+                    target_sets=ex.target_sets,
+                    target_reps=ex.target_reps,
+                    target_weight=ex.target_weight,
+                    rest_seconds=ex.rest_seconds,
+                    tempo=ex.tempo,
+                    notes=ex.notes,
+                    video_url=ex.video_url,
+                    created_at=ex.created_at,
+                    exercise=exercise_dict
+                ))
+            workout_days.append(WorkoutDayResponse(
+                id=day.id,
+                workout_plan_id=day.workout_plan_id,
+                name=day.name,
+                day_type=day.day_type,
+                order_index=day.order_index,
+                notes=day.notes,
+                estimated_duration=day.estimated_duration,
+                created_at=day.created_at,
+                workout_exercises=exercises
+            ))
+        
+        return WorkoutPlanResponseSchema(
+            id=target_plan.id,
+            client_id=target_plan.client_id,
+            trainer_id=target_plan.trainer_id,
+            name=target_plan.name,
+            description=target_plan.description,
+            split_type=target_plan.split_type.value if target_plan.split_type else None,
+            days_per_week=target_plan.days_per_week,
+            duration_weeks=target_plan.duration_weeks,
+            is_active=target_plan.is_active,
+            notes=target_plan.notes,
+            start_date=target_plan.start_date,
+            end_date=target_plan.end_date,
+            created_at=target_plan.created_at,
+            updated_at=target_plan.updated_at,
+            workout_days=workout_days
+        )
+    except Exception as e:
+        db.rollback()
+        import traceback
+        error_detail = f"Failed to create workout plan: {str(e)}\n{traceback.format_exc()}"
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": error_detail}
+        )
 
 @router.get("/plans", response_model=List[dict])
 def get_workout_plans(
@@ -391,7 +484,7 @@ def get_workout_plan(
 ):
     """Get a specific workout plan with all details"""
     workout_plan = db.query(NewWorkoutPlan).options(
-        joinedload(NewWorkoutPlan.workout_days).joinedload(WorkoutDay.workout_exercises)
+        joinedload(NewWorkoutPlan.workout_days).joinedload(WorkoutDay.workout_exercises).joinedload(NewWorkoutExercise.exercise)
     ).filter(NewWorkoutPlan.id == plan_id).first()
     
     if not workout_plan:
@@ -403,7 +496,71 @@ def get_workout_plan(
     elif current_user.role == "TRAINER" and workout_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this workout plan")
     
-    return workout_plan
+    # Manually serialize to convert exercise ORM objects to dicts
+    from app.schemas.workout_system import WorkoutPlanResponse as WorkoutPlanResponseSchema
+    from app.schemas.workout_system import WorkoutDayResponse, WorkoutExerciseResponse
+    
+    workout_days = []
+    for day in workout_plan.workout_days:
+        exercises = []
+        for ex in day.workout_exercises:
+            exercise_dict = None
+            if ex.exercise:
+                exercise_dict = {
+                    "id": ex.exercise.id,
+                    "name": ex.exercise.name,
+                    "description": ex.exercise.description,
+                    "muscle_groups": ex.exercise.muscle_groups,
+                    "equipment": ex.exercise.equipment,
+                    "difficulty": ex.exercise.difficulty,
+                    "video_url": ex.exercise.video_url,
+                    "image_url": ex.exercise.image_url,
+                }
+            exercises.append(WorkoutExerciseResponse(
+                id=ex.id,
+                workout_day_id=ex.workout_day_id,
+                exercise_id=ex.exercise_id,
+                order_index=ex.order_index,
+                group_name=ex.group_name,
+                target_sets=ex.target_sets,
+                target_reps=ex.target_reps,
+                target_weight=ex.target_weight,
+                rest_seconds=ex.rest_seconds,
+                tempo=ex.tempo,
+                notes=ex.notes,
+                video_url=ex.video_url,
+                created_at=ex.created_at,
+                exercise=exercise_dict
+            ))
+        workout_days.append(WorkoutDayResponse(
+            id=day.id,
+            workout_plan_id=day.workout_plan_id,
+            name=day.name,
+            day_type=day.day_type,
+            order_index=day.order_index,
+            notes=day.notes,
+            estimated_duration=day.estimated_duration,
+            created_at=day.created_at,
+            workout_exercises=exercises
+        ))
+    
+    return WorkoutPlanResponseSchema(
+        id=workout_plan.id,
+        client_id=workout_plan.client_id,
+        trainer_id=workout_plan.trainer_id,
+        name=workout_plan.name,
+        description=workout_plan.description,
+        split_type=workout_plan.split_type.value if workout_plan.split_type else None,
+        days_per_week=workout_plan.days_per_week,
+        duration_weeks=workout_plan.duration_weeks,
+        is_active=workout_plan.is_active,
+        notes=workout_plan.notes,
+        start_date=workout_plan.start_date,
+        end_date=workout_plan.end_date,
+        created_at=workout_plan.created_at,
+        updated_at=workout_plan.updated_at,
+        workout_days=workout_days
+    )
 
 @router.put("/plans/{plan_id}", response_model=WorkoutPlanResponse)
 def update_workout_plan(
@@ -416,7 +573,9 @@ def update_workout_plan(
     if current_user.role != "TRAINER" and current_user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Only trainers can update workout plans")
     
-    workout_plan = db.query(NewWorkoutPlan).filter(NewWorkoutPlan.id == plan_id).first()
+    workout_plan = db.query(NewWorkoutPlan).options(
+        joinedload(NewWorkoutPlan.workout_days).joinedload(WorkoutDay.workout_exercises).joinedload(NewWorkoutExercise.exercise)
+    ).filter(NewWorkoutPlan.id == plan_id).first()
     
     if not workout_plan:
         raise HTTPException(status_code=404, detail="Workout plan not found")
@@ -424,14 +583,90 @@ def update_workout_plan(
     if current_user.role == "TRAINER" and workout_plan.trainer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to update this workout plan")
     
-    # Update fields
-    for field, value in plan_data.dict(exclude_unset=True).items():
-        setattr(workout_plan, field, value)
-    
-    db.commit()
-    db.refresh(workout_plan)
-    
-    return workout_plan
+    try:
+        # Update fields
+        for field, value in plan_data.dict(exclude_unset=True).items():
+            setattr(workout_plan, field, value)
+        
+        db.commit()
+        db.refresh(workout_plan)
+        
+        # Reload with relationships
+        workout_plan = db.query(NewWorkoutPlan).options(
+            joinedload(NewWorkoutPlan.workout_days).joinedload(WorkoutDay.workout_exercises).joinedload(NewWorkoutExercise.exercise)
+        ).filter(NewWorkoutPlan.id == plan_id).first()
+        
+        # Manually serialize to convert exercise ORM objects to dicts
+        from app.schemas.workout_system import WorkoutPlanResponse as WorkoutPlanResponseSchema
+        from app.schemas.workout_system import WorkoutDayResponse, WorkoutExerciseResponse
+        
+        workout_days = []
+        for day in workout_plan.workout_days:
+            exercises = []
+            for ex in day.workout_exercises:
+                exercise_dict = None
+                if ex.exercise:
+                    exercise_dict = {
+                        "id": ex.exercise.id,
+                        "name": ex.exercise.name,
+                        "description": ex.exercise.description,
+                        "muscle_group": ex.exercise.muscle_group,
+                        "equipment": ex.exercise.equipment_needed,
+                        "video_url": ex.exercise.video_url,
+                    }
+                exercises.append(WorkoutExerciseResponse(
+                    id=ex.id,
+                    workout_day_id=ex.workout_day_id,
+                    exercise_id=ex.exercise_id,
+                    order_index=ex.order_index,
+                    group_name=ex.group_name,
+                    target_sets=ex.target_sets,
+                    target_reps=ex.target_reps,
+                    target_weight=ex.target_weight,
+                    rest_seconds=ex.rest_seconds,
+                    tempo=ex.tempo,
+                    notes=ex.notes,
+                    video_url=ex.video_url,
+                    created_at=ex.created_at,
+                    exercise=exercise_dict
+                ))
+            workout_days.append(WorkoutDayResponse(
+                id=day.id,
+                workout_plan_id=day.workout_plan_id,
+                name=day.name,
+                day_type=day.day_type,
+                order_index=day.order_index,
+                notes=day.notes,
+                estimated_duration=day.estimated_duration,
+                created_at=day.created_at,
+                workout_exercises=exercises
+            ))
+        
+        return WorkoutPlanResponseSchema(
+            id=workout_plan.id,
+            client_id=workout_plan.client_id,
+            trainer_id=workout_plan.trainer_id,
+            name=workout_plan.name,
+            description=workout_plan.description,
+            split_type=workout_plan.split_type.value if workout_plan.split_type else None,
+            days_per_week=workout_plan.days_per_week,
+            duration_weeks=workout_plan.duration_weeks,
+            is_active=workout_plan.is_active,
+            notes=workout_plan.notes,
+            start_date=workout_plan.start_date,
+            end_date=workout_plan.end_date,
+            created_at=workout_plan.created_at,
+            updated_at=workout_plan.updated_at,
+            workout_days=workout_days
+        )
+    except Exception as e:
+        db.rollback()
+        import traceback
+        error_detail = f"Failed to update workout plan: {str(e)}\n{traceback.format_exc()}"
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": error_detail}
+        )
 
 @router.delete("/plans/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_workout_plan(

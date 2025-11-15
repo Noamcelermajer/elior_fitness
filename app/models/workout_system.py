@@ -83,10 +83,10 @@ class WorkoutExerciseV2(Base):
     group_name = Column(String)  # Optional grouping label (e.g., Superset A)
     
     # Target parameters set by trainer
-    target_sets = Column(Integer, nullable=False)  # e.g., 4
-    target_reps = Column(String, nullable=False)  # e.g., "8-12", "15", "to failure"
+    target_sets = Column(Integer, nullable=True)  # e.g., 4 (optional - trainer's choice)
+    target_reps = Column(String, nullable=True)  # e.g., "8-12", "15", "to failure" (optional - trainer's choice)
     target_weight = Column(Float)  # kg (optional, for tracking progression)
-    rest_seconds = Column(Integer, nullable=False)  # e.g., 90 (seconds between sets)
+    rest_seconds = Column(Integer, nullable=True)  # e.g., 90 (seconds between sets) (optional - trainer's choice)
     
     # Additional instructions
     tempo = Column(String)  # e.g., "3-0-1-0" (eccentric-pause-concentric-pause)

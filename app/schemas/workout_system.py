@@ -2,7 +2,7 @@
 Pydantic schemas for the new workout system
 """
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
@@ -34,14 +34,28 @@ class DayType(str, Enum):
 class WorkoutExerciseBase(BaseModel):
     exercise_id: int
     order_index: int
-    target_sets: Optional[int] = Field(None, ge=1, le=10)
+    target_sets: Optional[int] = None  # Optional - trainer's choice
     target_reps: Optional[str] = None  # e.g., "8-12", "15", "to failure"
     target_weight: Optional[float] = None
-    rest_seconds: Optional[int] = Field(None, ge=0, le=600)
+    rest_seconds: Optional[int] = None  # Optional - trainer's choice
     tempo: Optional[str] = None
     notes: Optional[str] = None
     video_url: Optional[str] = None
     group_name: Optional[str] = None
+    
+    @field_validator('target_sets')
+    @classmethod
+    def validate_target_sets(cls, v):
+        if v is not None and (v < 1 or v > 10):
+            raise ValueError('target_sets must be between 1 and 10 if provided')
+        return v
+    
+    @field_validator('rest_seconds')
+    @classmethod
+    def validate_rest_seconds(cls, v):
+        if v is not None and (v < 0 or v > 600):
+            raise ValueError('rest_seconds must be between 0 and 600 if provided')
+        return v
 
 class WorkoutExerciseCreate(WorkoutExerciseBase):
     workout_day_id: int
@@ -137,14 +151,28 @@ class WorkoutPlanResponse(WorkoutPlanBase):
 class CompleteWorkoutExercise(BaseModel):
     exercise_id: int
     order_index: int
-    target_sets: Optional[int] = Field(None, ge=1)  # Allow any positive number, removed upper limit
+    target_sets: Optional[int] = None  # Optional - trainer's choice
     target_reps: Optional[str] = None
     target_weight: Optional[float] = None
-    rest_seconds: Optional[int] = Field(None, ge=0, le=600)
+    rest_seconds: Optional[int] = None  # Optional - trainer's choice
     tempo: Optional[str] = None
     notes: Optional[str] = None
     video_url: Optional[str] = None
     group_name: Optional[str] = None
+    
+    @field_validator('target_sets')
+    @classmethod
+    def validate_target_sets(cls, v):
+        if v is not None and v < 1:
+            raise ValueError('target_sets must be >= 1 if provided')
+        return v
+    
+    @field_validator('rest_seconds')
+    @classmethod
+    def validate_rest_seconds(cls, v):
+        if v is not None and (v < 0 or v > 600):
+            raise ValueError('rest_seconds must be between 0 and 600 if provided')
+        return v
 
 class CompleteWorkoutDay(BaseModel):
     name: str

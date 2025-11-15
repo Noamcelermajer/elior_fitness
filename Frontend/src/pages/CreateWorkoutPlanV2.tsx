@@ -391,16 +391,29 @@ const CreateWorkoutPlanV2: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
         let errorMessage = 'Failed to create workout plan';
-        if (errorData.detail) {
-          if (Array.isArray(errorData.detail)) {
-            errorMessage = errorData.detail.map((err: any) => 
-              `${err.loc?.join('.')}: ${err.msg}`
-            ).join(', ');
-          } else {
-            errorMessage = errorData.detail;
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json();
+            if (errorData.detail) {
+              if (Array.isArray(errorData.detail)) {
+                errorMessage = errorData.detail.map((err: any) => 
+                  `${err.loc?.join('.')}: ${err.msg}`
+                ).join(', ');
+              } else {
+                errorMessage = errorData.detail;
+              }
+            }
+          } catch (parseError) {
+            // If JSON parsing fails, use status text
+            errorMessage = `Server error: ${response.status} ${response.statusText}`;
           }
+        } else {
+          // If response is not JSON (e.g., HTML error page), use status text
+          const text = await response.text();
+          errorMessage = `Server error: ${response.status} ${response.statusText}. ${text.substring(0, 100)}`;
         }
         throw new Error(errorMessage);
       }
@@ -651,10 +664,15 @@ const CreateWorkoutPlanV2: React.FC = () => {
                       <div>
                         <Label>Day Name *</Label>
                         <Input
-                          placeholder="e.g., Push Day, Chest & Triceps"
+                          placeholder={`יום ${dayIndex + 1} (e.g., Push Day, Chest & Triceps)`}
                           value={day.name}
                           onChange={(e) => updateWorkoutDay(dayIndex, 'name', e.target.value)}
+                          required
+                          className={day.name.trim() === '' ? 'border-destructive' : ''}
                         />
+                        {day.name.trim() === '' && (
+                          <p className="text-xs text-destructive mt-1">Please enter a day name</p>
+                        )}
                       </div>
                       <div>
                         <Label>Estimated Duration (min)</Label>

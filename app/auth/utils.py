@@ -75,6 +75,7 @@ async def get_current_user(
             full_name=user.full_name,
             role=user.role,
             is_active=user.is_active,
+            trainer_id=user.trainer_id,
             created_at=user.created_at,
             updated_at=user.updated_at
         )
@@ -116,6 +117,7 @@ async def get_current_user_websocket(token: str) -> UserResponse:
                 full_name=user.full_name,
                 role=user.role,
                 is_active=user.is_active,
+                trainer_id=user.trainer_id,
                 created_at=user.created_at,
                 updated_at=user.updated_at
             )

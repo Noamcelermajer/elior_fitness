@@ -56,12 +56,14 @@ COPY --from=frontend-builder /frontend/dist ./static
 COPY --from=frontend-builder /frontend/public/elior.png ./static/elior.png
 COPY --from=frontend-builder /frontend/public/favicon.png ./static/favicon.png
 COPY --from=frontend-builder /frontend/public/ecshapelogo.svg ./static/ecshapelogo.svg
+COPY --from=frontend-builder /frontend/public/logonavbar.png ./static/logonavbar.png
 
 # Verify critical files exist and show their sizes
 RUN echo "=== Verifying static files ===" && \
     ls -lh ./static/elior.png && \
     ls -lh ./static/favicon.png && \
     ls -lh ./static/ecshapelogo.svg 2>/dev/null || echo "ecshapelogo.svg not found (may be in assets)" && \
+    ls -lh ./static/logonavbar.png 2>/dev/null || echo "logonavbar.png not found" && \
     echo "=== Static files verified ==="
 
 # Copy admin setup script only

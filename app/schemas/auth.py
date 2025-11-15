@@ -39,6 +39,7 @@ class TokenData(BaseModel):
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    trainer_id: Optional[int] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

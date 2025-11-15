@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, User, Target, Weight, Calendar, Clock, 
   Dumbbell, Utensils, TrendingUp, Plus, Edit, Camera,
-  Phone, Mail, MapPin, Activity, Heart, AlertTriangle
+  Phone, Mail, MapPin, Activity, Heart, AlertTriangle, Trash2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
@@ -348,10 +348,12 @@ const ClientProfile = () => {
               <Edit className="w-4 h-4 mr-2" />
               {t('clientProfile.editProfile')}
             </Button>
-            <Button onClick={handleCreateWorkout} className="gradient-green">
-              <Plus className="w-4 h-4 mr-2" />
-              {t('clientProfile.createWorkout')}
-            </Button>
+            {!activeWorkoutPlan && (
+              <Button onClick={handleCreateWorkout} className="gradient-green">
+                <Plus className="w-4 h-4 mr-2" />
+                {t('clientProfile.createWorkout')}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -586,9 +588,44 @@ const ClientProfile = () => {
                           size="icon"
                           onClick={handleEditWorkoutPlan}
                           aria-label={t('clientProfile.updateWorkoutPlan')}
+                          title={t('clientProfile.updateWorkoutPlan')}
                         >
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">{t('clientProfile.updateWorkoutPlan')}</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={async () => {
+                            const confirmMessage = t('clientProfile.confirmDeleteWorkout') || 'האם אתה בטוח שברצונך למחוק את תוכנית האימון הזו?';
+                            if (confirm(confirmMessage)) {
+                              try {
+                                const token = localStorage.getItem('access_token');
+                                const response = await fetch(`${API_BASE_URL}/v2/workouts/plans/${activeWorkoutPlan.id}`, {
+                                  method: 'DELETE',
+                                  headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                  },
+                                });
+                                if (response.ok) {
+                                  await fetchClientData();
+                                } else {
+                                  const errorMessage = t('clientProfile.deleteWorkoutError') || 'מחיקת תוכנית האימון נכשלה';
+                                  alert(errorMessage);
+                                }
+                              } catch (error) {
+                                console.error('Error deleting workout plan:', error);
+                                const errorMessage = t('clientProfile.deleteWorkoutError') || 'מחיקת תוכנית האימון נכשלה';
+                                alert(errorMessage);
+                              }
+                            }
+                          }}
+                          aria-label={t('clientProfile.deleteWorkout')}
+                          title={t('clientProfile.deleteWorkout')}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">{t('clientProfile.deleteWorkout')}</span>
                         </Button>
                       </div>
                     </div>
@@ -598,7 +635,7 @@ const ClientProfile = () => {
                       activeWorkoutPlan.workout_days.map((day: any) => (
                         <div key={day.id || day.order_index} className="p-3 rounded border bg-muted/40 space-y-2">
                           <div className="flex items-center justify-between">
-                            <p className="font-medium text-sm">{day.name}</p>
+                            <p className="font-medium text-sm" dir="auto">{day.name}</p>
                             {day.estimated_duration && (
                               <span className="text-xs text-muted-foreground">
                                 {day.estimated_duration} {t('clientProfile.minutesShort')}
