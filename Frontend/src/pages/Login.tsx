@@ -65,16 +65,16 @@ const Login = () => {
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            opacity: 0.4,
-            mixBlendMode: 'soft-light',
-            filter: 'blur(0.5px) brightness(0.7) contrast(1.1)',
+            opacity: 0.6,
+            mixBlendMode: 'multiply',
+            filter: 'brightness(0.5) contrast(1.2)',
           }}
         />
       )}
       
       {/* Gradient overlay to blend image with background */}
       {theme === 'dark' && (
-        <div className="absolute inset-0 z-[1] bg-gradient-to-br from-background/50 via-background/30 to-background/50" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-br from-background/40 via-background/20 to-background/40" />
       )}
 
       {/* Animated background elements */}

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send, MessageSquare, User, Clock, Check, CheckCheck, Search, ExternalLink, Link2, TrendingUp } from 'lucide-react';
+import { Send, MessageSquare, User, Clock, Check, CheckCheck, Search, ExternalLink, Link2, TrendingUp, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -372,9 +372,12 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
     );
 
     return (
-      <div className="flex h-full w-full bg-background overflow-hidden">
-        {/* Client list sidebar - Mobile: hidden, Desktop: visible */}
-        <div className="hidden md:flex flex-col w-80 lg:w-96 border-r-2 border-border bg-card shrink-0 h-full overflow-hidden">
+      <div className="flex flex-col md:flex-row h-full w-full bg-background overflow-hidden">
+        {/* Client list sidebar - Mobile: show as overlay/drawer, Desktop: visible sidebar */}
+        <div className={cn(
+          "flex flex-col w-full md:w-80 lg:w-96 border-r-2 border-border bg-card shrink-0 h-full overflow-hidden",
+          selectedClient ? "hidden md:flex" : "flex"
+        )}>
           <div className="p-4 md:p-6 border-b border-border bg-card shrink-0">
             <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">{t('chat.conversations', 'שיחות')}</h2>
             {/* Search bar */}
@@ -463,6 +466,14 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
               {/* Chat header */}
               <div className="p-4 md:p-6 border-b border-border bg-card/80 backdrop-blur-sm shrink-0 z-10">
                 <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden shrink-0"
+                    onClick={() => setSelectedClient(null)}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
                   <Avatar className="h-10 w-10 md:h-12 md:w-12 shrink-0">
                     <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                       {getInitials(conversations.find((c) => c.client_id === selectedClient)?.client_name || '')}

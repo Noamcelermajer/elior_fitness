@@ -723,26 +723,28 @@ const MealMenuV2 = () => {
                 {mealPlan.description || t('meals.trackNutrition')}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button 
                 variant="outline" 
                 onClick={() => setShowCustomFoodDialog(true)}
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4" />
-                {t('meals.addCustomFood')}
+                <span className="hidden sm:inline">{t('meals.addCustomFood')}</span>
+                <span className="sm:hidden">{t('meals.addFood', 'הוסף אוכל')}</span>
               </Button>
               <Button 
                 variant="outline" 
                 onClick={() => setShowHistory(!showHistory)}
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <History className="h-4 w-4" />
-                {showHistory ? t('meals.hideHistory') : t('meals.showHistory')}
+                <span className="hidden sm:inline">{showHistory ? t('meals.hideHistory') : t('meals.showHistory')}</span>
+                <span className="sm:hidden">{showHistory ? t('meals.hide', 'הסתר') : t('meals.show', 'הצג')}</span>
               </Button>
               <Button 
                 onClick={finishDay}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
+                className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto"
               >
                 <Check className="h-4 w-4 mr-2" />
                 {t('meals.finishDay')}

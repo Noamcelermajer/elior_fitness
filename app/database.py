@@ -136,7 +136,7 @@ if ENVIRONMENT == "production":
             logger.warning(
                 "Internal Railway URL detected but DATABASE_PUBLIC_URL not set. "
                 "If connection fails, set DATABASE_PUBLIC_URL in Railway variables."
-            )
+)
     else:
         SQLALCHEMY_DATABASE_URL = DATABASE_URL_ENV
     
@@ -486,6 +486,6 @@ def init_database(max_retries=5, retry_delay=10):
                 logger.error("  5. Check Railway service logs for PostgreSQL errors")
                 return False
     
-    return False
+        return False
 
 logger.info("Database configuration completed successfully") 

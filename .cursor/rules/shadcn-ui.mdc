@@ -1,9 +1,7 @@
 ---
 description: shadcn/ui Component Rules
-globs:
-alwaysApply: true
+alwaysApply: false
 ---
-
 # shadcn/ui Components Reference
 
 This project includes the following components in `@/components/ui` (shadcn/ui + custom extensions), all compatible with Vite + React:

@@ -1,10 +1,7 @@
 ---
 description: TypeScript Rules
-globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-
-
 ## General TypeScript Guidelines
 
 - Always use TypeScript for new components and files

@@ -187,8 +187,8 @@ const TrainerDashboard = () => {
   }
   return (
     <Layout currentPage="dashboard">
-      <div className="max-w-5xl mx-auto py-10 px-4">
-        <h1 className="text-4xl font-bold mb-10 text-center">{t('trainerDashboard.title')}</h1>
+      <div className="max-w-5xl mx-auto py-6 sm:py-10 px-4">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 sm:mb-10 text-center">{t('trainerDashboard.title')}</h1>
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
@@ -222,9 +222,12 @@ const TrainerDashboard = () => {
 
         {/* Clients Section */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-center">{t('client.yourClients')}</h2>
-            <Button onClick={() => setAddClientDialogOpen(true)} className="gradient-orange text-background font-semibold flex items-center"><UserPlus className="w-4 h-4 me-2" />{t('client.addClient')}</Button>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-center sm:text-left">{t('client.yourClients')}</h2>
+            <Button onClick={() => setAddClientDialogOpen(true)} className="gradient-orange text-background font-semibold flex items-center justify-center w-full sm:w-auto min-w-0">
+              <UserPlus className="w-4 h-4 me-2 flex-shrink-0" />
+              <span className="truncate">{t('client.addClient')}</span>
+            </Button>
           </div>
           <div className="flex justify-center mb-8">
             <input

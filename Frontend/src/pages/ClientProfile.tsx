@@ -330,33 +330,35 @@ const ClientProfile = () => {
 
   return (
     <Layout currentPage="dashboard">
-      <div className="container mx-auto p-6 space-y-6 min-h-screen">
+      <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6 min-h-screen w-full max-w-full overflow-x-hidden">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate('/')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t('clientProfile.back')}
+          <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
+            <Button variant="ghost" size="sm" className="shrink-0" onClick={() => navigate('/')}>
+              <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">{t('clientProfile.back')}</span>
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">{client?.full_name || 'Client'}</h1>
-              <p className="text-muted-foreground">{t('clientProfile.title')}</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground truncate">{client?.full_name || 'Client'}</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">{t('clientProfile.title')}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleEditClient}>
-              <Edit className="w-4 h-4 mr-2" />
-              {t('clientProfile.editProfile')}
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={handleEditClient}>
+              <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">{t('clientProfile.editProfile')}</span>
+              <span className="sm:hidden">{t('clientProfile.edit', 'ערוך')}</span>
             </Button>
-            <Button onClick={handleCreateWorkout} className="gradient-green">
-              <Plus className="w-4 h-4 mr-2" />
-              {t('clientProfile.createWorkout')}
+            <Button size="sm" className="text-xs sm:text-sm gradient-green" onClick={handleCreateWorkout}>
+              <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">{t('clientProfile.createWorkout')}</span>
+              <span className="sm:hidden">{t('clientProfile.create', 'צור')}</span>
             </Button>
           </div>
         </div>
 
         {/* Client Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 animate-fade-in-up">
             <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
               <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
@@ -405,13 +407,13 @@ const ClientProfile = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="pt-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="progress">{t('clientProfile.weightProgress')}</TabsTrigger>
-              <TabsTrigger value="workouts">{t('clientProfile.workoutPlans')}</TabsTrigger>
-              <TabsTrigger value="meals">{t('clientProfile.mealPlans')}</TabsTrigger>
-              <TabsTrigger value="nutrition">{t('clientProfile.nutritionHistory')}</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+          <div className="pt-2 sm:pt-4">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+              <TabsTrigger value="progress" className="text-xs sm:text-sm py-2 px-2 sm:px-4">{t('clientProfile.weightProgress')}</TabsTrigger>
+              <TabsTrigger value="workouts" className="text-xs sm:text-sm py-2 px-2 sm:px-4">{t('clientProfile.workoutPlans')}</TabsTrigger>
+              <TabsTrigger value="meals" className="text-xs sm:text-sm py-2 px-2 sm:px-4">{t('clientProfile.mealPlans')}</TabsTrigger>
+              <TabsTrigger value="nutrition" className="text-xs sm:text-sm py-2 px-2 sm:px-4">{t('clientProfile.nutritionHistory')}</TabsTrigger>
             </TabsList>
           </div>
 

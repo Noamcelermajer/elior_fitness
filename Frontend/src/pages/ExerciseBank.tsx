@@ -256,24 +256,40 @@ const ExerciseBank = () => {
 
   return (
     <Layout currentPage="exercises">
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
-            <p className="text-muted-foreground">{t('exerciseBank.subtitle')}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">{t('exerciseBank.subtitle')}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button 
-              onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                navigate('/create-workout-plan-v2?createSplit=true');
+              }}
               variant="outline"
+              size="sm"
+              className="text-xs sm:text-sm touch-manipulation"
             >
-              <Plus className="w-4 h-4 me-2" />
-              {t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}
+              <Plus className="w-3 h-3 sm:w-4 sm:h-4 me-1 sm:me-2" />
+              <span className="hidden sm:inline">{t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}</span>
+              <span className="sm:hidden">{t('exerciseBank.createSplit', 'צור פיצול')}</span>
             </Button>
-            <Button onClick={() => setCreateDialogOpen(true)} className="gradient-green">
-              <Plus className="w-4 h-4 me-2" />
-              {t('exerciseBank.addExercise')}
+            <Button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setCreateDialogOpen(true);
+              }} 
+              className="gradient-green text-xs sm:text-sm touch-manipulation"
+              size="sm"
+            >
+              <Plus className="w-3 h-3 sm:w-4 sm:h-4 me-1 sm:me-2" />
+              <span className="hidden sm:inline">{t('exerciseBank.addExercise')}</span>
+              <span className="sm:hidden">{t('exerciseBank.add', 'הוסף')}</span>
             </Button>
           </div>
         </div>

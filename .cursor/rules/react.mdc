@@ -1,10 +1,7 @@
 ---
 description: React Development Rules
-globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-
-
 ## Component Structure
 
 ### Functional Components

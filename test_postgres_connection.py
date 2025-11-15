@@ -76,7 +76,7 @@ def test_connection():
         if result == 0:
             print(f"  ✓ Network connection successful")
         else:
-            print(f"  ❌ Network connection failed (error code: {result})")
+            print(f"  ❌ Network connection failed (error code: {result}, {os.getenv("DATABASE_URL")})")
             print(f"     This suggests the hostname/port is not reachable")
             print(f"     Try using DATABASE_PUBLIC_URL instead of DATABASE_URL")
             return False
@@ -85,7 +85,7 @@ def test_connection():
         print(f"     Hostname '{hostname}' cannot be resolved")
         return False
     except Exception as e:
-        print(f"  ⚠️  Network test failed: {e}")
+        print(f"  ⚠️  Network test failed: {e},{os.getenv("DATABASE_URL")}")
         print(f"     Continuing with connection test anyway...")
     
     # Test basic connection

@@ -414,17 +414,17 @@ const CreateWorkoutPlanV2: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="shrink-0">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('clientProfile.back')}
+            <span className="hidden sm:inline">{t('clientProfile.back')}</span>
           </Button>
           <div>
-              <h1 className="text-3xl font-bold">
+              <h1 className="text-2xl sm:text-3xl font-bold">
                 {isEditing ? t('workoutCreation.updateTitle') : t('workoutCreation.title')}
               </h1>
-              <p className="text-muted-foreground">{t('workoutCreation.subtitle')}</p>
+              <p className="text-sm sm:text-base text-muted-foreground">{t('workoutCreation.subtitle')}</p>
           </div>
         </div>
       </div>

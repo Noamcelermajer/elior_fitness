@@ -240,15 +240,15 @@ const AdminDashboard = () => {
                   {t('admin.adminDashboardSubtitle')}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2 lg:gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 lg:gap-3 w-full sm:w-auto">
                 <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
                   <DialogTrigger asChild>
                     <Button 
-                      className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg text-xs sm:text-sm"
+                      className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg text-xs sm:text-sm w-full sm:w-auto min-w-0"
                     >
-                      <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">{t('admin.registerTrainer')}</span>
-                      <span className="sm:hidden">{t('admin.register')}</span>
+                      <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
+                      <span className="hidden sm:inline truncate">{t('admin.registerTrainer')}</span>
+                      <span className="sm:hidden truncate">{t('admin.register')}</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[425px]">
@@ -345,20 +345,21 @@ const AdminDashboard = () => {
                 </Dialog>
                 <Button 
                   variant="outline" 
-                  className="font-semibold transform hover:scale-105 transition-all duration-200 text-xs sm:text-sm"
+                  onClick={() => navigate('/system')}
+                  className="font-semibold transform hover:scale-105 transition-all duration-200 text-xs sm:text-sm w-full sm:w-auto min-w-0"
                 >
-                  <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">{t('admin.systemSettings')}</span>
-                  <span className="sm:hidden">{t('admin.settings')}</span>
+                  <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
+                  <span className="hidden sm:inline truncate">{t('admin.systemSettings')}</span>
+                  <span className="sm:hidden truncate">{t('admin.settings')}</span>
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => navigate('/secret-users')}
-                  className="font-semibold transform hover:scale-105 transition-all duration-200 bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30 text-xs sm:text-sm"
+                  className="font-semibold transform hover:scale-105 transition-all duration-200 bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30 text-xs sm:text-sm w-full sm:w-auto min-w-0"
                 >
-                  <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">{t('admin.secretUsers')}</span>
-                  <span className="sm:hidden">{t('admin.secret')}</span>
+                  <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
+                  <span className="hidden sm:inline truncate">{t('admin.secretUsers')}</span>
+                  <span className="sm:hidden truncate">{t('admin.secret')}</span>
                 </Button>
               </div>
             </div>

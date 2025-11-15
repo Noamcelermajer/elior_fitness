@@ -952,29 +952,31 @@ const TrainingDayPage: React.FC = () => {
       <div className="pb-20">
         <div className="bg-gradient-to-br from-card to-secondary px-4 lg:px-6 py-4 lg:py-6 shadow-sm">
           <div className="max-w-6xl mx-auto space-y-4">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/training')}
-                className="shrink-0"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="flex-1">
-                <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">{workoutDay.name}</h1>
-                {workoutDay.notes && (
-                  <p className="text-muted-foreground mt-2">{workoutDay.notes}</p>
-                )}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate('/training')}
+                  className="shrink-0"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">{workoutDay.name}</h1>
+                  {workoutDay.notes && (
+                    <p className="text-sm sm:text-base text-muted-foreground mt-2 line-clamp-2">{workoutDay.notes}</p>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <Checkbox
                   id="day-complete"
                   checked={dayCompleted}
                   onCheckedChange={(checked) => handleToggleDayCompletion(Boolean(checked))}
                   className="h-5 w-5"
                 />
-                <label htmlFor="day-complete" className="text-sm font-medium cursor-pointer">
+                <label htmlFor="day-complete" className="text-xs sm:text-sm font-medium cursor-pointer whitespace-nowrap">
                   {dayCompleted ? t('training.dayCompleted', 'יום הושלם') : t('training.markDayComplete', 'סמן יום כמושלם')}
                 </label>
               </div>

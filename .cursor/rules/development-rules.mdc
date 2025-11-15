@@ -1,9 +1,7 @@
 ---
 description: Core development process rules for consistent workflow
-globs: ["**/*.{ts,tsx,js,jsx}"]
-alwaysApply: true
+alwaysApply: false
 ---
-
 # Development Process Rules
 
 ## Core Development Principles

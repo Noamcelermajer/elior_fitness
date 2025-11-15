@@ -284,10 +284,10 @@ const MealBank = () => {
       >
         <div className="container mx-auto p-6 space-y-6">
           {/* Header */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">{t('foodBank.title')}</h1>
-              <p className="text-muted-foreground">{t('foodBank.subtitle')}</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('foodBank.title')}</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">{t('foodBank.subtitle')}</p>
             </div>
             <DialogTrigger asChild>
               <Button
@@ -296,7 +296,7 @@ const MealBank = () => {
                   resetForm();
                   setCreateDialogOpen(true);
                 }}
-                className="gradient-green"
+                className="gradient-green w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4 me-2" />
                 {t('foodBank.addFoodItem')}

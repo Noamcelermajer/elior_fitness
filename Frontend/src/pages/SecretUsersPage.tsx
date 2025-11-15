@@ -154,28 +154,28 @@ const SecretUsersPage = () => {
     <Layout currentPage="dashboard">
       <div className="container mx-auto p-4 sm:p-6 space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-lg">
-              <Shield className="w-8 h-8 text-red-600 dark:text-red-400" />
+              <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-red-600 dark:text-red-400" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Secret Users Management</h1>
-              <p className="text-muted-foreground">Development & Testing Access</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Secret Users Management</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Development & Testing Access</p>
             </div>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               onClick={() => setShowPasswords(!showPasswords)}
-              className="flex items-center space-x-2"
+              className="flex items-center justify-center space-x-2 w-full sm:w-auto min-w-0"
             >
-              {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              <span>{showPasswords ? 'Hide' : 'Show'} Passwords</span>
+              {showPasswords ? <EyeOff className="w-4 h-4 flex-shrink-0" /> : <Eye className="w-4 h-4 flex-shrink-0" />}
+              <span className="truncate">{showPasswords ? 'Hide' : 'Show'} Passwords</span>
             </Button>
-            <Button onClick={fetchUsers} className="flex items-center space-x-2">
-              <RefreshCw className="w-4 h-4" />
-              <span>Refresh</span>
+            <Button onClick={fetchUsers} className="flex items-center justify-center space-x-2 w-full sm:w-auto min-w-0">
+              <RefreshCw className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Refresh</span>
             </Button>
           </div>
         </div>
@@ -229,8 +229,41 @@ const SecretUsersPage = () => {
               <span>Users & Passwords</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
+          <CardContent className="overflow-x-hidden">
+            {/* Mobile View - Compact Cards (NO TABLE, NO SLIDER) */}
+            <div className="xl:hidden space-y-2">
+              {filteredUsers.map((user) => (
+                <Card key={user.id} className="p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                      <p className="font-semibold text-sm truncate flex-1 min-w-0">{user.username}</p>
+                      <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs shrink-0">
+                        {user.role}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => copyToClipboard(`${user.username}:${user.password}`, user.id)}
+                        title="Copy username:password"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  {showPasswords && (
+                    <div className="mt-2 pt-2 border-t">
+                      <code className="text-xs bg-muted px-2 py-1 rounded break-all block">{user.password}</code>
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+
+            {/* Desktop View - Full Table (ONLY ON EXTRA LARGE SCREENS) */}
+            <div className="hidden xl:block">
               <Table>
                 <TableHeader>
                   <TableRow>

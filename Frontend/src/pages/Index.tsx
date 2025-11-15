@@ -332,10 +332,10 @@ const Index = () => {
                 </p>
               </div>
               {isTrainer && (
-                <div className="flex space-x-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                   <Button 
                     onClick={() => navigate('/clients')}
-                    className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
+                    className="gradient-orange hover:gradient-orange-dark text-background font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg w-full sm:w-auto"
                   >
                     <UserPlus className="w-4 h-4 mr-2" />
                     {t('client.clients')}
@@ -343,7 +343,7 @@ const Index = () => {
                   <Button 
                     onClick={() => navigate('/create-workout-plan-v2')}
                     variant="outline" 
-                    className="font-semibold transform hover:scale-105 transition-all duration-200"
+                    className="font-semibold transform hover:scale-105 transition-all duration-200 w-full sm:w-auto"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     {t('training.createWorkout')}

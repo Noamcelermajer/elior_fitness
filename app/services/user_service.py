@@ -43,13 +43,18 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[
 
 def delete_user(db: Session, user_id: int) -> bool:
     """Delete a user."""
-    db_user = get_user_by_id(db, user_id)
-    if not db_user:
-        return False
-    
-    db.delete(db_user)
-    db.commit()
-    return True
+    try:
+        db_user = get_user_by_id(db, user_id)
+        if not db_user:
+            return False
+        
+        db.delete(db_user)
+        db.commit()
+        return True
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting user {user_id}: {str(e)}")
+        raise
 
 def get_trainer_clients(db: Session, trainer_id: int) -> List[User]:
     """Get all clients assigned to a trainer."""

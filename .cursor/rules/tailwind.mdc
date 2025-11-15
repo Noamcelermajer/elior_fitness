@@ -1,10 +1,7 @@
 ---
 description: Tailwind CSS Rules
-globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-
-
 ## General Guidelines
 
 - Use Tailwind CSS classes for all styling

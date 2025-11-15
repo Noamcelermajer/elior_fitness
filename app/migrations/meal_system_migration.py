@@ -146,8 +146,8 @@ CREATE TABLE IF NOT EXISTS client_meal_choices_v2_new (
     FOREIGN KEY(meal_slot_id) REFERENCES meal_slots_v2(id) ON DELETE CASCADE
 )
 """
-                )
             )
+        )
 
         # Copy existing data
         connection.execute(
@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS meal_completion_status_v2 (
             # SQLite syntax
             connection.execute(
                 text(
-                    """
+                """
 CREATE TABLE IF NOT EXISTS meal_completion_status_v2 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     client_id INTEGER NOT NULL,
@@ -254,8 +254,8 @@ CREATE TABLE IF NOT EXISTS meal_completion_status_v2 (
     FOREIGN KEY(meal_slot_id) REFERENCES meal_slots_v2(id) ON DELETE CASCADE
 )
 """
-                )
             )
+        )
 
 
 def run_meal_system_migrations() -> None:

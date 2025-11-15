@@ -270,11 +270,19 @@ async def delete_user(
                 detail="Client not found or not assigned to you"
             )
     # Admins can delete any user
-    deleted = user_service.delete_user(db, user_id)
-    if not deleted:
+    try:
+        deleted = user_service.delete_user(db, user_id)
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete user: {str(e)}"
         )
 
 @router.put("/me", response_model=UserResponse)

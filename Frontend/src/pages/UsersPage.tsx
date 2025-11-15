@@ -65,7 +65,11 @@ const UsersPage = () => {
   const handleDelete = async (userId) => {
     // Prevent admin from deleting themselves
     if (user?.id === userId) {
-      alert(t('admin.cannotDeleteSelf'));
+      addNotification({
+        type: 'error',
+        title: t('admin.cannotDeleteSelf'),
+        message: t('admin.cannotDeleteSelfMessage', 'You cannot delete your own account')
+      });
       return;
     }
     
@@ -73,14 +77,29 @@ const UsersPage = () => {
     setActionLoading(true);
     try {
       const token = localStorage.getItem('access_token');
-      const res = await fetch(`http://localhost:8000/api/users/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Failed to delete user');
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: 'Failed to delete user' }));
+        throw new Error(errorData.detail || 'Failed to delete user');
+      }
+      
       setUsers((prev) => prev.filter((u) => u.id !== userId));
+      addNotification({
+        type: 'success',
+        title: t('admin.userDeleted'),
+        message: t('admin.userDeletedMessage', 'User has been deleted successfully')
+      });
     } catch (err) {
-      alert(t('admin.deleteFailed'));
+      console.error('Delete error:', err);
+      addNotification({
+        type: 'error',
+        title: t('admin.deleteFailed'),
+        message: err.message || t('admin.deleteFailedMessage', 'Failed to delete user. Please try again.')
+      });
     } finally {
       setActionLoading(false);
     }
@@ -226,17 +245,17 @@ const UsersPage = () => {
           <CardHeader>
             <CardTitle>{t('admin.users')}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <CardContent className="overflow-x-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
               <Input
                 placeholder={t('admin.searchUsersPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="max-w-xs"
+                className="w-full sm:max-w-xs"
               />
               <Button 
                 onClick={() => setRegisterDialogOpen(true)}
-                className="gradient-orange hover:gradient-orange-dark text-background font-semibold"
+                className="gradient-orange hover:gradient-orange-dark text-background font-semibold w-full sm:w-auto"
               >
                 <UserPlus className="w-4 h-4 mr-2" />
                 {t('admin.registerTrainer')}
@@ -247,32 +266,20 @@ const UsersPage = () => {
             ) : error ? (
               <div className="text-red-500 font-semibold text-center py-8">{error}</div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('admin.username')}</TableHead>
-                      <TableHead>{t('admin.email')}</TableHead>
-                      <TableHead>{t('admin.fullName')}</TableHead>
-                      <TableHead>{t('admin.role')}</TableHead>
-                      <TableHead>{t('admin.status')}</TableHead>
-                      <TableHead>{t('admin.created')}</TableHead>
-                      <TableHead>{t('admin.actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((u) => (
-                      <TableRow key={u.id}>
-                        <TableCell>{u.username}</TableCell>
-                        <TableCell>{u.email}</TableCell>
-                        <TableCell>{u.full_name}</TableCell>
-                        <TableCell>
+              <>
+                {/* Mobile View - Compact Cards (NO TABLE, NO SLIDER) */}
+                <div className="xl:hidden space-y-2">
+                  {filteredUsers.map((u) => (
+                    <Card key={u.id} className="p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0 flex items-center gap-2">
+                          <p className="font-semibold text-sm truncate flex-1 min-w-0">{u.username}</p>
                           <Select
                             value={u.role}
                             onValueChange={(val) => handleRoleChange(u.id, val)}
                             disabled={actionLoading}
                           >
-                            <SelectTrigger className="w-28">
+                            <SelectTrigger className="h-7 w-20 text-xs px-2 shrink-0">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -281,24 +288,74 @@ const UsersPage = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </TableCell>
-                        <TableCell>
-                          {u.is_active ? (
-                            <Badge className="bg-green-500/20 text-green-700 border-green-500/30">{t('admin.active')}</Badge>
-                          ) : (
-                            <Badge className="bg-red-500/20 text-red-700 border-red-500/30">{t('admin.inactive')}</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>{u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}</TableCell>
-                        <TableCell className="space-x-2">
-                          <Button size="icon" variant="ghost" onClick={() => openEditDialog(u)}><Pencil className="w-4 h-4" /></Button>
-                          <Button size="icon" variant="ghost" onClick={() => handleDelete(u.id)} disabled={actionLoading}><Trash2 className="w-4 h-4 text-red-500" /></Button>
-                        </TableCell>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditDialog(u)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDelete(u.id)} disabled={actionLoading}>
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Desktop View - Full Table (ONLY ON EXTRA LARGE SCREENS) */}
+                <div className="hidden xl:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('admin.username')}</TableHead>
+                        <TableHead>{t('admin.email')}</TableHead>
+                        <TableHead>{t('admin.fullName')}</TableHead>
+                        <TableHead>{t('admin.role')}</TableHead>
+                        <TableHead>{t('admin.status')}</TableHead>
+                        <TableHead>{t('admin.created')}</TableHead>
+                        <TableHead>{t('admin.actions')}</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((u) => (
+                        <TableRow key={u.id}>
+                          <TableCell>{u.username}</TableCell>
+                          <TableCell>{u.email}</TableCell>
+                          <TableCell>{u.full_name}</TableCell>
+                          <TableCell>
+                            <Select
+                              value={u.role}
+                              onValueChange={(val) => handleRoleChange(u.id, val)}
+                              disabled={actionLoading}
+                            >
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {roleOptions.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            {u.is_active ? (
+                              <Badge className="bg-green-500/20 text-green-700 border-green-500/30">{t('admin.active')}</Badge>
+                            ) : (
+                              <Badge className="bg-red-500/20 text-red-700 border-red-500/30">{t('admin.inactive')}</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>{u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell className="space-x-2">
+                            <Button size="icon" variant="ghost" onClick={() => openEditDialog(u)}><Pencil className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" onClick={() => handleDelete(u.id)} disabled={actionLoading}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

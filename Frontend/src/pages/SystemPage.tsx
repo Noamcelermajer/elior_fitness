@@ -292,23 +292,23 @@ const SystemPage: React.FC = () => {
   return (
     <Layout currentPage="system">
       <div className="container mx-auto p-4 sm:p-6 space-y-6 w-full max-w-full overflow-x-hidden">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">System Management</h1>
-            <p className="text-muted-foreground">Monitor and manage system health and performance</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">System Management</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Monitor and manage system health and performance</p>
           </div>
-          <Button onClick={loadSystemData} variant="outline">
+          <Button onClick={loadSystemData} variant="outline" className="w-full sm:w-auto">
             <RotateCcw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
         </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="logs">System Logs</TabsTrigger>
-          <TabsTrigger value="tests">Test Suite</TabsTrigger>
-          <TabsTrigger value="actions">Quick Actions</TabsTrigger>
+        <TabsList className="flex-wrap w-full sm:w-auto">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+          <TabsTrigger value="logs" className="text-xs sm:text-sm">System Logs</TabsTrigger>
+          <TabsTrigger value="tests" className="text-xs sm:text-sm">Test Suite</TabsTrigger>
+          <TabsTrigger value="actions" className="text-xs sm:text-sm">Quick Actions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">

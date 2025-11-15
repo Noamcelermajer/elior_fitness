@@ -34,7 +34,7 @@ except ImportError:
 ADMIN_USER = {
     "username": "admin",
     "email": "admin@elior.com",
-    "password": "2354wetr",
+    "password": "admin123",
     "full_name": "Admin User",
     "role": UserRole.ADMIN
 }
