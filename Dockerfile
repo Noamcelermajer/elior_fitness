@@ -50,12 +50,19 @@ COPY app/ ./app/
 # Copy built frontend to static directory
 COPY --from=frontend-builder /frontend/dist ./static
 
-# Explicitly ensure elior.png and favicon are copied fresh (no cache)
-# These are copied separately to ensure Railway doesn't cache old versions
-# Copy from public directory in frontend-builder stage
+# Explicitly ensure critical static files are copied fresh (no cache)
+# Vite should copy public files to dist root, but we explicitly copy from public as well
+# to ensure they're always present (overwrites if already in dist)
 COPY --from=frontend-builder /frontend/public/elior.png ./static/elior.png
-# Copy favicon - will fail if not present, but that's okay
 COPY --from=frontend-builder /frontend/public/favicon.png ./static/favicon.png
+COPY --from=frontend-builder /frontend/public/ecshapelogo.svg ./static/ecshapelogo.svg
+
+# Verify critical files exist and show their sizes
+RUN echo "=== Verifying static files ===" && \
+    ls -lh ./static/elior.png && \
+    ls -lh ./static/favicon.png && \
+    ls -lh ./static/ecshapelogo.svg 2>/dev/null || echo "ecshapelogo.svg not found (may be in assets)" && \
+    echo "=== Static files verified ==="
 
 # Copy admin setup script only
 COPY setup_admin.py ./setup_admin.py
