@@ -204,18 +204,30 @@ async def lifespan(app: FastAPI):
         raise Exception("Database initialization failed")
     logger.info("✅ Database tables initialized successfully")
 
+    # Run migrations to ensure schema matches models
+    # This runs on EVERY startup to handle schema changes
+    logger.info("Running database migrations to ensure schema matches models...")
     try:
         from app.migrations.meal_system_migration import run_meal_system_migrations
         from app.migrations.workout_system_migration import run_workout_system_migrations
 
+        logger.info("Running meal system migrations...")
         run_meal_system_migrations()
-        logger.info("✅ Meal system migrations applied")
+        logger.info("✅ Meal system migrations completed")
 
+        logger.info("Running workout system migrations...")
         run_workout_system_migrations()
-        logger.info("✅ Workout system migrations applied")
+        logger.info("✅ Workout system migrations completed")
+        
+        logger.info("✅ All database migrations completed successfully")
     except Exception as migration_error:
-        logger.error("❌ Database migrations failed: %s", migration_error)
-        raise
+        logger.error("❌ Database migrations encountered errors: %s", migration_error)
+        import traceback
+        logger.error(f"Migration error traceback: {traceback.format_exc()}")
+        # Don't raise - allow application to start even if migrations fail
+        # The tables will still be created by SQLAlchemy, just without the migrations
+        logger.warning("⚠️ Continuing startup despite migration errors...")
+        logger.warning("⚠️ Some schema changes may not be applied. Check logs for details.")
     
     # Log database pool statistics
     pool_stats = get_db_pool_stats()

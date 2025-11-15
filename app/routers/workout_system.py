@@ -510,11 +510,9 @@ def get_workout_plan(
                     "id": ex.exercise.id,
                     "name": ex.exercise.name,
                     "description": ex.exercise.description,
-                    "muscle_groups": ex.exercise.muscle_groups,
-                    "equipment": ex.exercise.equipment,
-                    "difficulty": ex.exercise.difficulty,
+                    "muscle_group": ex.exercise.muscle_group,
+                    "equipment": ex.exercise.equipment_needed,
                     "video_url": ex.exercise.video_url,
-                    "image_url": ex.exercise.image_url,
                 }
             exercises.append(WorkoutExerciseResponse(
                 id=ex.id,

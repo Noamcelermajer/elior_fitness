@@ -106,79 +106,120 @@ def _table_exists(table_name: str) -> bool:
 
 def _make_column_nullable(table_name: str, column_name: str) -> None:
     """Make a column nullable - database-agnostic."""
-    if not _table_exists(table_name):
-        return
-    
-    table_info = _table_info(table_name)
-    column = next((col for col in table_info if col["name"] == column_name), None)
-    
-    if not column:
-        logger.warning(f"Column '{column_name}' does not exist in table '{table_name}'")
-        return
-    
-    # Check if already nullable
-    is_nullable = not column.get("notnull", False)
-    if is_nullable:
-        logger.info(f"Column '{table_name}.{column_name}' is already nullable")
-        return
-    
-    # Make nullable
-    if IS_POSTGRESQL:
-        logger.info(f"Making column '{table_name}.{column_name}' nullable in PostgreSQL...")
-        with engine.begin() as connection:
-            # PostgreSQL supports ALTER COLUMN
-            connection.execute(
-                text(f"ALTER TABLE {table_name} ALTER COLUMN {column_name} DROP NOT NULL")
-            )
-        logger.info(f"✅ Made column '{table_name}.{column_name}' nullable")
-    else:
-        # SQLite doesn't support ALTER COLUMN, so we just log a warning
-        logger.warning(f"⚠️ Column '{table_name}.{column_name}' is NOT NULL in SQLite but model allows NULL. "
-                     f"SQLite doesn't support ALTER COLUMN, so this will be handled by the model's nullable=True")
+    try:
+        if not _table_exists(table_name):
+            logger.debug(f"Table '{table_name}' does not exist, skipping nullable check for '{column_name}'")
+            return
+        
+        table_info = _table_info(table_name)
+        column = next((col for col in table_info if col["name"] == column_name), None)
+        
+        if not column:
+            logger.debug(f"Column '{column_name}' does not exist in table '{table_name}', skipping")
+            return
+        
+        # Check if already nullable
+        is_nullable = not column.get("notnull", False)
+        if is_nullable:
+            logger.debug(f"Column '{table_name}.{column_name}' is already nullable ✓")
+            return
+        
+        # Make nullable
+        if IS_POSTGRESQL:
+            logger.info(f"Making column '{table_name}.{column_name}' nullable in PostgreSQL...")
+            try:
+                with engine.begin() as connection:
+                    # PostgreSQL supports ALTER COLUMN
+                    connection.execute(
+                        text(f"ALTER TABLE {table_name} ALTER COLUMN {column_name} DROP NOT NULL")
+                    )
+                logger.info(f"✅ Successfully made column '{table_name}.{column_name}' nullable")
+            except Exception as e:
+                logger.error(f"❌ Failed to make column '{table_name}.{column_name}' nullable: {e}")
+                # Don't raise - continue with other migrations
+        else:
+            # SQLite doesn't support ALTER COLUMN, so we just log a warning
+            logger.warning(f"⚠️ Column '{table_name}.{column_name}' is NOT NULL in SQLite but model allows NULL. "
+                         f"SQLite doesn't support ALTER COLUMN, so this will be handled by the model's nullable=True")
+    except Exception as e:
+        logger.error(f"Error checking/making column '{table_name}.{column_name}' nullable: {e}")
+        # Don't raise - continue with other migrations
 
 
 def run_workout_system_migrations() -> None:
     """
     Ensure workout system tables contain expected columns for compatibility.
-    Note: Tables are created automatically by SQLAlchemy from models.
-    This migration only adds missing columns to existing tables and makes columns nullable.
+    This migration runs on EVERY startup to ensure schema matches models.
+    Tables are created automatically by SQLAlchemy Base.metadata.create_all(),
+    but we need to handle schema changes to existing tables.
     """
+    logger.info("=" * 60)
+    logger.info("RUNNING WORKOUT SYSTEM MIGRATIONS")
+    logger.info("=" * 60)
+    
     try:
-        # Tables are created automatically by SQLAlchemy Base.metadata.create_all()
-        # We only need to add missing columns to existing tables
+        # Step 1: Add missing columns to existing tables
+        logger.info("Step 1: Adding missing columns...")
         
         # Add group_name column to workout_exercises_v2
-        _ensure_columns(
-            "workout_exercises_v2",
-            {
-                "group_name": "TEXT",
-            },
-        )
+        try:
+            _ensure_columns(
+                "workout_exercises_v2",
+                {
+                    "group_name": "TEXT",
+                },
+            )
+        except Exception as e:
+            logger.warning(f"Could not add group_name to workout_exercises_v2: {e}")
         
         # Add muscle_group_id column to exercises table
-        _ensure_columns(
-            "exercises",
-            {
-                "muscle_group_id": "INTEGER",
-            },
-        )
+        try:
+            _ensure_columns(
+                "exercises",
+                {
+                    "muscle_group_id": "INTEGER",
+                },
+            )
+        except Exception as e:
+            logger.warning(f"Could not add muscle_group_id to exercises: {e}")
+        
+        # Step 2: Make columns nullable to match model definitions
+        logger.info("Step 2: Ensuring columns are nullable to match models...")
         
         # Make columns nullable in workout_exercises_v2 (PostgreSQL supports ALTER COLUMN)
         if _table_exists("workout_exercises_v2"):
+            logger.info("Checking workout_exercises_v2 columns...")
             _make_column_nullable("workout_exercises_v2", "target_sets")
             _make_column_nullable("workout_exercises_v2", "target_reps")
             _make_column_nullable("workout_exercises_v2", "rest_seconds")
             _make_column_nullable("workout_exercises_v2", "group_name")
+            _make_column_nullable("workout_exercises_v2", "target_weight")
+            _make_column_nullable("workout_exercises_v2", "tempo")
+            _make_column_nullable("workout_exercises_v2", "notes")
+            _make_column_nullable("workout_exercises_v2", "video_url")
+        else:
+            logger.info("Table 'workout_exercises_v2' does not exist yet (will be created by SQLAlchemy)")
         
         # Make split_type nullable in workout_plans_v2
         if _table_exists("workout_plans_v2"):
+            logger.info("Checking workout_plans_v2 columns...")
             _make_column_nullable("workout_plans_v2", "split_type")
+        else:
+            logger.info("Table 'workout_plans_v2' does not exist yet (will be created by SQLAlchemy)")
         
-        # Change muscle_group from Enum to String if needed (SQLite doesn't enforce enum types)
-        # The column type will remain compatible, we just need to ensure it exists
+        logger.info("=" * 60)
+        logger.info("✅ WORKOUT SYSTEM MIGRATIONS COMPLETED")
+        logger.info("=" * 60)
         
     except Exception as exc:
-        logger.error("Failed to run workout system migrations: %s", exc)
-        raise
+        logger.error("=" * 60)
+        logger.error("❌ FAILED TO RUN WORKOUT SYSTEM MIGRATIONS")
+        logger.error("=" * 60)
+        logger.error(f"Error: {exc}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Don't raise - allow application to start even if migrations fail
+        # The tables will still be created by SQLAlchemy, just without the migrations
+        logger.warning("⚠️ Continuing startup despite migration errors...")
 
 

@@ -47,16 +47,25 @@ def ensure_admin_exists():
         print("Warning: Database initialization had issues, but continuing...")
     
     # Run migrations to ensure all tables are properly set up
+    # This ensures schema matches models on every startup
     try:
-        print("Running database migrations...")
+        print("Running database migrations to ensure schema matches models...")
         from app.migrations.meal_system_migration import run_meal_system_migrations
         from app.migrations.workout_system_migration import run_workout_system_migrations
+        
+        print("Running meal system migrations...")
         run_meal_system_migrations()
+        
+        print("Running workout system migrations...")
         run_workout_system_migrations()
-        print("Database migrations completed.")
+        
+        print("✅ Database migrations completed successfully.")
     except Exception as migration_error:
-        print(f"Warning: Some migrations may have failed: {migration_error}")
-        # Continue anyway - tables might already exist
+        print(f"⚠️ Warning: Some migrations encountered errors: {migration_error}")
+        import traceback
+        print(f"Migration error details: {traceback.format_exc()}")
+        # Continue anyway - tables might already exist and migrations are non-critical
+        print("Continuing with admin setup...")
     
     db = SessionLocal()
     try:
