@@ -207,7 +207,6 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
 else:
     logger.info("Configuring PostgreSQL database with connection pooling...")
     
-<<<<<<< HEAD
     # Verify psycopg2 is installed (required for PostgreSQL)
     try:
         import psycopg2
