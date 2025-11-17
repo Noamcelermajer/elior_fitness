@@ -548,6 +548,126 @@ const ExerciseBank = () => {
               <Plus className="w-4 h-4 me-2 flex-shrink-0" />
               <span className="truncate">{t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}</span>
             </Button>
+            <Dialog open={muscleGroupDialogOpen} onOpenChange={setMuscleGroupDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                >
+                  <Settings className="w-4 h-4 me-2 flex-shrink-0" />
+                  <span className="truncate">Manage Muscle Groups</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Manage Muscle Groups</DialogTitle>
+                  <DialogDescription>
+                    Create, edit, or delete custom muscle groups
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {/* Create/Edit Form */}
+                  <div className="space-y-2">
+                    <Label htmlFor="new_muscle_group_name">
+                      {editingMuscleGroup ? 'Edit Muscle Group' : 'Create New Muscle Group'}
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="new_muscle_group_name"
+                        value={newMuscleGroupName}
+                        onChange={(e) => {
+                          setNewMuscleGroupName(e.target.value);
+                          setMuscleGroupError('');
+                        }}
+                        placeholder="Enter muscle group name"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            if (editingMuscleGroup) {
+                              handleUpdateMuscleGroup();
+                            } else {
+                              handleCreateMuscleGroup();
+                            }
+                          }
+                        }}
+                      />
+                      {editingMuscleGroup ? (
+                        <>
+                          <Button
+                            type="button"
+                            onClick={handleUpdateMuscleGroup}
+                            disabled={!newMuscleGroupName.trim()}
+                          >
+                            <Save className="w-4 h-4 mr-1" />
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingMuscleGroup(null);
+                              setNewMuscleGroupName('');
+                              setMuscleGroupError('');
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={handleCreateMuscleGroup}
+                          disabled={!newMuscleGroupName.trim()}
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Create
+                        </Button>
+                      )}
+                    </div>
+                    {muscleGroupError && (
+                      <p className="text-sm text-red-500">{muscleGroupError}</p>
+                    )}
+                  </div>
+
+                  {/* List of Dynamic Muscle Groups */}
+                  {dynamicMuscleGroups.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Your Custom Muscle Groups</Label>
+                      <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
+                        {dynamicMuscleGroups.map((group) => (
+                          <div
+                            key={group.id}
+                            className="flex items-center justify-between p-3 hover:bg-muted/50"
+                          >
+                            <span className="font-medium">{group.name}</span>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditDialog(group)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteMuscleGroup(group.id)}
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
             <Button 
               onClick={() => setCreateDialogOpen(true)} 
               className="gradient-green w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
@@ -707,125 +827,7 @@ const ExerciseBank = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="muscle_group">{t('exerciseBank.muscleGroup')}</Label>
-                    <Dialog open={muscleGroupDialogOpen} onOpenChange={setMuscleGroupDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button type="button" variant="outline" size="sm" className="h-8">
-                          <Settings className="w-4 h-4 mr-1" />
-                          {t('common.manage') || 'Manage'}
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[500px]">
-                        <DialogHeader>
-                          <DialogTitle>Manage Muscle Groups</DialogTitle>
-                          <DialogDescription>
-                            Create, edit, or delete custom muscle groups
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          {/* Create/Edit Form */}
-                          <div className="space-y-2">
-                            <Label htmlFor="new_muscle_group_name">
-                              {editingMuscleGroup ? 'Edit Muscle Group' : 'Create New Muscle Group'}
-                            </Label>
-                            <div className="flex gap-2">
-                              <Input
-                                id="new_muscle_group_name"
-                                value={newMuscleGroupName}
-                                onChange={(e) => {
-                                  setNewMuscleGroupName(e.target.value);
-                                  setMuscleGroupError('');
-                                }}
-                                placeholder="Enter muscle group name"
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter') {
-                                    if (editingMuscleGroup) {
-                                      handleUpdateMuscleGroup();
-                                    } else {
-                                      handleCreateMuscleGroup();
-                                    }
-                                  }
-                                }}
-                              />
-                              {editingMuscleGroup ? (
-                                <>
-                                  <Button
-                                    type="button"
-                                    onClick={handleUpdateMuscleGroup}
-                                    disabled={!newMuscleGroupName.trim()}
-                                  >
-                                    <Save className="w-4 h-4 mr-1" />
-                                    Save
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setEditingMuscleGroup(null);
-                                      setNewMuscleGroupName('');
-                                      setMuscleGroupError('');
-                                    }}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </>
-                              ) : (
-                                <Button
-                                  type="button"
-                                  onClick={handleCreateMuscleGroup}
-                                  disabled={!newMuscleGroupName.trim()}
-                                >
-                                  <Plus className="w-4 h-4 mr-1" />
-                                  Create
-                                </Button>
-                              )}
-                            </div>
-                            {muscleGroupError && (
-                              <p className="text-sm text-red-500">{muscleGroupError}</p>
-                            )}
-                          </div>
-
-                          {/* List of Dynamic Muscle Groups */}
-                          {dynamicMuscleGroups.length > 0 && (
-                            <div className="space-y-2">
-                              <Label>Your Custom Muscle Groups</Label>
-                              <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
-                                {dynamicMuscleGroups.map((group) => (
-                                  <div
-                                    key={group.id}
-                                    className="flex items-center justify-between p-3 hover:bg-muted/50"
-                                  >
-                                    <span className="font-medium">{group.name}</span>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => openEditDialog(group)}
-                                        className="h-8 w-8 p-0"
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleDeleteMuscleGroup(group.id)}
-                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                  <Label htmlFor="muscle_group">{t('exerciseBank.muscleGroup')}</Label>
                   <Select 
                     value={exerciseForm.muscle_group} 
                     onValueChange={(value) => setExerciseForm({...exerciseForm, muscle_group: value})}
@@ -879,42 +881,40 @@ const ExerciseBank = () => {
                     Video takes priority over image. Falls back to image if no video, then Rick Roll.
                   </p>
                 </div>
-              </div>
-              
-              {/* Image Upload Section - always visible */}
-              <div className="space-y-2">
-                <Label htmlFor="exercise_image">Exercise Image (optional)</Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="exercise_image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="cursor-pointer"
-                  />
-                  {imagePreview && (
-                    <div className="relative">
-                      <img
-                        src={imagePreview}
-                        alt="Exercise preview"
-                        className="w-24 h-24 object-cover rounded-lg border"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setImageFile(null);
-                          setImagePreview(null);
-                        }}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
+                <div className="space-y-2">
+                  <Label htmlFor="exercise_image">Exercise Image (optional)</Label>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      id="exercise_image"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="cursor-pointer"
+                    />
+                    {imagePreview && (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Exercise preview"
+                          className="w-24 h-24 object-cover rounded-lg border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFile(null);
+                            setImagePreview(null);
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Upload an image. Will show if no video URL is provided.
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Upload an image. Will show if no video URL is provided. Falls back to Rick Roll if neither is provided.
-                </p>
               </div>
               
               <div className="space-y-2">
