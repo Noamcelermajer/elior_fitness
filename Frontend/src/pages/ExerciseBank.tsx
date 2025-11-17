@@ -270,33 +270,75 @@ const ExerciseBank = () => {
     
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/exercises/${editingExercise.id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(exerciseForm)
-      });
+      
+      // If new image is uploaded, use multipart/form-data
+      if (imageFile) {
+        const exerciseData = {
+          ...exerciseForm,
+          video_url: exerciseForm.video_url || null,
+        };
+        
+        const formDataToSend = new FormData();
+        formDataToSend.append('exercise_json', JSON.stringify(exerciseData));
+        formDataToSend.append('image', imageFile);
+        
+        const response = await fetch(`${API_BASE_URL}/exercises/${editingExercise.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formDataToSend,
+        });
 
-      if (response.ok) {
-        const updatedExercise = await response.json();
-        setExercises(exercises.map(ex => 
-          ex.id === updatedExercise.id ? updatedExercise : ex
-        ));
-        setEditingExercise(null);
-        resetForm();
-        toast({
-          title: t('common.success'),
-          description: t('exerciseBank.successUpdated')
-        });
+        if (response.ok) {
+          const updatedExercise = await response.json();
+          setExercises(exercises.map(ex => 
+            ex.id === updatedExercise.id ? updatedExercise : ex
+          ));
+          setEditingExercise(null);
+          resetForm();
+          toast({
+            title: t('common.success'),
+            description: t('exerciseBank.successUpdated')
+          });
+        } else {
+          const error = await response.json();
+          toast({
+            title: t('common.error'),
+            description: error.detail || t('exerciseBank.errorUpdate'),
+            variant: "destructive"
+          });
+        }
       } else {
-        const error = await response.json();
-        toast({
-          title: t('common.error'),
-          description: error.detail || t('exerciseBank.errorUpdate'),
-          variant: "destructive"
+        // No new image, use JSON
+        const response = await fetch(`${API_BASE_URL}/exercises/${editingExercise.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(exerciseForm)
         });
+
+        if (response.ok) {
+          const updatedExercise = await response.json();
+          setExercises(exercises.map(ex => 
+            ex.id === updatedExercise.id ? updatedExercise : ex
+          ));
+          setEditingExercise(null);
+          resetForm();
+          toast({
+            title: t('common.success'),
+            description: t('exerciseBank.successUpdated')
+          });
+        } else {
+          const error = await response.json();
+          toast({
+            title: t('common.error'),
+            description: error.detail || t('exerciseBank.errorUpdate'),
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
       console.error('Error updating exercise:', error);
@@ -518,6 +560,23 @@ const ExerciseBank = () => {
       video_url: exercise.video_url || '',
       category: exercise.category || ''
     });
+    
+    // Set media type based on what exists
+    if (exercise.video_url) {
+      setMediaType('video');
+      setImageFile(null);
+      setImagePreview(null);
+    } else if (exercise.image_path) {
+      setMediaType('image');
+      setImageFile(null); // No new file selected yet
+      // Construct URL for existing image
+      const imageFileName = exercise.image_path.split('/').pop() || exercise.image_path.split('\\').pop();
+      setImagePreview(`${API_BASE_URL}/files/media/exercise_images/${imageFileName}`);
+    } else {
+      setMediaType('video');
+      setImageFile(null);
+      setImagePreview(null);
+    }
   };
 
   if (loading) {
