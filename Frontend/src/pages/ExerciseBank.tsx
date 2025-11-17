@@ -570,8 +570,16 @@ const ExerciseBank = () => {
       setMediaType('image');
       setImageFile(null); // No new file selected yet
       // Construct URL for existing image
-      const imageFileName = exercise.image_path.split('/').pop() || exercise.image_path.split('\\').pop();
-      setImagePreview(`${API_BASE_URL}/files/media/exercise_images/${imageFileName}`);
+      let imageUrl: string;
+      // Check if path already contains API URL or is a full URL
+      if (exercise.image_path.startsWith('http://') || exercise.image_path.startsWith('https://') || exercise.image_path.startsWith(API_BASE_URL)) {
+        imageUrl = exercise.image_path;
+      } else {
+        // Extract filename from path (handles both / and \ separators)
+        const imageFileName = exercise.image_path.split('/').pop() || exercise.image_path.split('\\').pop();
+        imageUrl = `${API_BASE_URL}/files/media/exercise_images/${imageFileName}`;
+      }
+      setImagePreview(imageUrl);
     } else {
       setMediaType('video');
       setImageFile(null);
@@ -986,6 +994,12 @@ const ExerciseBank = () => {
                               src={imagePreview}
                               alt="Exercise preview"
                               className="w-16 h-16 object-cover rounded-lg border"
+                              onError={(e) => {
+                                // If image fails to load, hide the preview
+                                console.error('Failed to load image preview:', imagePreview);
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
                             />
                             <button
                               type="button"
@@ -993,7 +1007,7 @@ const ExerciseBank = () => {
                                 setImageFile(null);
                                 setImagePreview(null);
                               }}
-                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
+                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs z-10"
                             >
                               <X className="w-3 h-3" />
                             </button>
