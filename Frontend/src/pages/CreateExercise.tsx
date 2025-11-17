@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, Plus, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Upload, Image as ImageIcon, Settings, Edit, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 
@@ -77,6 +78,34 @@ const CreateExercise = () => {
     }
   }, [user, navigate]);
 
+  // Fetch dynamic muscle groups
+  useEffect(() => {
+    const fetchMuscleGroups = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE_URL}/muscle-groups/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setDynamicMuscleGroups(data);
+          // Combine static and dynamic muscle groups
+          const combined = [
+            ...MUSCLE_GROUPS,
+            ...data.map((mg: {id: number, name: string}) => ({ value: mg.name.toLowerCase().replace(/\s+/g, '_'), label: mg.name }))
+          ].filter((v, i, a) => a.findIndex(t => t.value === v.value) === i); // Remove duplicates
+          setMuscleGroups(combined);
+        }
+      } catch (error) {
+        console.error('Failed to load muscle groups:', error);
+      }
+    };
+    fetchMuscleGroups();
+  }, []);
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -92,6 +121,12 @@ const CreateExercise = () => {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [muscleGroups, setMuscleGroups] = useState<Array<{value: string, label: string}>>(MUSCLE_GROUPS);
+  const [dynamicMuscleGroups, setDynamicMuscleGroups] = useState<Array<{id: number, name: string}>>([]);
+  const [muscleGroupDialogOpen, setMuscleGroupDialogOpen] = useState(false);
+  const [editingMuscleGroup, setEditingMuscleGroup] = useState<{id: number, name: string} | null>(null);
+  const [newMuscleGroupName, setNewMuscleGroupName] = useState('');
+  const [muscleGroupError, setMuscleGroupError] = useState('');
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -200,6 +235,125 @@ const CreateExercise = () => {
     return formData.name && formData.description && formData.muscle_group;
   };
 
+  const handleCreateMuscleGroup = async () => {
+    if (!newMuscleGroupName.trim()) {
+      setMuscleGroupError('Muscle group name is required');
+      return;
+    }
+    
+    setMuscleGroupError('');
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/muscle-groups/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newMuscleGroupName.trim() }),
+      });
+
+      if (response.ok) {
+        const newGroup = await response.json();
+        setDynamicMuscleGroups([...dynamicMuscleGroups, newGroup]);
+        const combined = [
+          ...MUSCLE_GROUPS,
+          ...dynamicMuscleGroups.map(mg => ({ value: mg.name.toLowerCase().replace(/\s+/g, '_'), label: mg.name })),
+          { value: newGroup.name.toLowerCase().replace(/\s+/g, '_'), label: newGroup.name }
+        ].filter((v, i, a) => a.findIndex(t => t.value === v.value) === i); // Remove duplicates
+        setMuscleGroups(combined);
+        setNewMuscleGroupName('');
+        setEditingMuscleGroup(null);
+      } else {
+        const errorData = await response.json();
+        setMuscleGroupError(errorData.detail || 'Failed to create muscle group');
+      }
+    } catch (error) {
+      setMuscleGroupError('Network error occurred');
+    }
+  };
+
+  const handleUpdateMuscleGroup = async () => {
+    if (!editingMuscleGroup || !newMuscleGroupName.trim()) {
+      setMuscleGroupError('Muscle group name is required');
+      return;
+    }
+    
+    setMuscleGroupError('');
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/muscle-groups/${editingMuscleGroup.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newMuscleGroupName.trim() }),
+      });
+
+      if (response.ok) {
+        const updatedGroup = await response.json();
+        setDynamicMuscleGroups(dynamicMuscleGroups.map(mg => mg.id === updatedGroup.id ? updatedGroup : mg));
+        const combined = [
+          ...MUSCLE_GROUPS,
+          ...dynamicMuscleGroups.map(mg => 
+            mg.id === updatedGroup.id 
+              ? { value: updatedGroup.name.toLowerCase().replace(/\s+/g, '_'), label: updatedGroup.name }
+              : { value: mg.name.toLowerCase().replace(/\s+/g, '_'), label: mg.name }
+          )
+        ].filter((v, i, a) => a.findIndex(t => t.value === v.value) === i); // Remove duplicates
+        setMuscleGroups(combined);
+        setNewMuscleGroupName('');
+        setEditingMuscleGroup(null);
+      } else {
+        const errorData = await response.json();
+        setMuscleGroupError(errorData.detail || 'Failed to update muscle group');
+      }
+    } catch (error) {
+      setMuscleGroupError('Network error occurred');
+    }
+  };
+
+  const handleDeleteMuscleGroup = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this muscle group? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/muscle-groups/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok || response.status === 204) {
+        setDynamicMuscleGroups(dynamicMuscleGroups.filter(mg => mg.id !== id));
+        const combined = [
+          ...MUSCLE_GROUPS,
+          ...dynamicMuscleGroups.filter(mg => mg.id !== id).map(mg => ({ value: mg.name.toLowerCase().replace(/\s+/g, '_'), label: mg.name }))
+        ];
+        setMuscleGroups(combined);
+        if (editingMuscleGroup?.id === id) {
+          setEditingMuscleGroup(null);
+          setNewMuscleGroupName('');
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.detail || 'Failed to delete muscle group');
+      }
+    } catch (error) {
+      alert('Network error occurred');
+    }
+  };
+
+  const openEditDialog = (group: {id: number, name: string}) => {
+    setEditingMuscleGroup(group);
+    setNewMuscleGroupName(group.name);
+    setMuscleGroupError('');
+  };
+
   return (
     <Layout currentPage="dashboard">
       <div className="container mx-auto p-6 max-w-4xl">
@@ -237,13 +391,131 @@ const CreateExercise = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="muscle_group">Primary Muscle Group *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="muscle_group">Primary Muscle Group *</Label>
+                    <Dialog open={muscleGroupDialogOpen} onOpenChange={setMuscleGroupDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button type="button" variant="outline" size="sm" className="h-8">
+                          <Settings className="w-4 h-4 mr-1" />
+                          Manage
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                          <DialogTitle>Manage Muscle Groups</DialogTitle>
+                          <DialogDescription>
+                            Create, edit, or delete custom muscle groups
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          {/* Create/Edit Form */}
+                          <div className="space-y-2">
+                            <Label htmlFor="new_muscle_group_name">
+                              {editingMuscleGroup ? 'Edit Muscle Group' : 'Create New Muscle Group'}
+                            </Label>
+                            <div className="flex gap-2">
+                              <Input
+                                id="new_muscle_group_name"
+                                value={newMuscleGroupName}
+                                onChange={(e) => {
+                                  setNewMuscleGroupName(e.target.value);
+                                  setMuscleGroupError('');
+                                }}
+                                placeholder="Enter muscle group name"
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    if (editingMuscleGroup) {
+                                      handleUpdateMuscleGroup();
+                                    } else {
+                                      handleCreateMuscleGroup();
+                                    }
+                                  }
+                                }}
+                              />
+                              {editingMuscleGroup ? (
+                                <>
+                                  <Button
+                                    type="button"
+                                    onClick={handleUpdateMuscleGroup}
+                                    disabled={!newMuscleGroupName.trim()}
+                                  >
+                                    <Save className="w-4 h-4 mr-1" />
+                                    Save
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingMuscleGroup(null);
+                                      setNewMuscleGroupName('');
+                                      setMuscleGroupError('');
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  onClick={handleCreateMuscleGroup}
+                                  disabled={!newMuscleGroupName.trim()}
+                                >
+                                  <Plus className="w-4 h-4 mr-1" />
+                                  Create
+                                </Button>
+                              )}
+                            </div>
+                            {muscleGroupError && (
+                              <p className="text-sm text-red-500">{muscleGroupError}</p>
+                            )}
+                          </div>
+
+                          {/* List of Dynamic Muscle Groups */}
+                          {dynamicMuscleGroups.length > 0 && (
+                            <div className="space-y-2">
+                              <Label>Your Custom Muscle Groups</Label>
+                              <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
+                                {dynamicMuscleGroups.map((group) => (
+                                  <div
+                                    key={group.id}
+                                    className="flex items-center justify-between p-3 hover:bg-muted/50"
+                                  >
+                                    <span className="font-medium">{group.name}</span>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => openEditDialog(group)}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteMuscleGroup(group.id)}
+                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <Select value={formData.muscle_group} onValueChange={(value) => handleInputChange('muscle_group', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select muscle group" />
                     </SelectTrigger>
                     <SelectContent>
-                      {MUSCLE_GROUPS.map(group => (
+                      {muscleGroups.map(group => (
                         <SelectItem key={group.value} value={group.value}>{group.label}</SelectItem>
                       ))}
                     </SelectContent>
@@ -381,59 +653,50 @@ const CreateExercise = () => {
                     id="video_url"
                     type="url"
                     value={formData.video_url}
-                    onChange={(e) => {
-                      handleInputChange('video_url', e.target.value);
-                      // Clear image if video URL is provided (video takes priority)
-                      if (e.target.value) {
-                        setImageFile(null);
-                        setImagePreview(null);
-                      }
-                    }}
+                    onChange={(e) => handleInputChange('video_url', e.target.value)}
                     placeholder="https://youtube.com/..."
                   />
                   <p className="text-xs text-muted-foreground">
-                    If no video URL is provided, you can upload an image instead
+                    Video takes priority over image. Falls back to image if no video, then Rick Roll.
                   </p>
                 </div>
               </div>
               
-              {/* Image Upload Section - only show if no video URL */}
-              {!formData.video_url && (
-                <div className="space-y-2">
-                  <Label htmlFor="exercise_image">Exercise Image (optional)</Label>
-                  <div className="flex items-center gap-4">
-                    <Input
-                      id="exercise_image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="cursor-pointer"
-                    />
-                    {imagePreview && (
-                      <div className="relative">
-                        <img
-                          src={imagePreview}
-                          alt="Exercise preview"
-                          className="w-24 h-24 object-cover rounded-lg border"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImageFile(null);
-                            setImagePreview(null);
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Upload an image to show if no video URL is provided. Falls back to Rick Roll if neither is provided.
-                  </p>
+              {/* Image Upload Section - always visible */}
+              <div className="space-y-2">
+                <Label htmlFor="exercise_image">Exercise Image (optional)</Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    id="exercise_image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="cursor-pointer"
+                  />
+                  {imagePreview && (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Exercise preview"
+                        className="w-24 h-24 object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview(null);
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+                <p className="text-xs text-muted-foreground">
+                  Upload an image. Will show if no video URL is provided. Falls back to Rick Roll if neither is provided.
+                </p>
+              </div>
             </CardContent>
           </Card>
 

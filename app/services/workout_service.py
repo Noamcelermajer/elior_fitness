@@ -34,9 +34,11 @@ class WorkoutService:
             name=exercise_data.name,
             description=exercise_data.description,
             video_url=exercise_data.video_url,
+            image_path=exercise_data.image_path,
             muscle_group=exercise_data.muscle_group,
             equipment_needed=exercise_data.equipment_needed,
             instructions=exercise_data.instructions,
+            category=exercise_data.category,
             created_by=trainer_id
         )
         
@@ -620,9 +622,11 @@ class WorkoutService:
             name=exercise.name,
             description=exercise.description,
             video_url=exercise.video_url,
+            image_path=exercise.image_path,
             muscle_group=exercise.muscle_group,
             equipment_needed=exercise.equipment_needed,
             instructions=exercise.instructions,
+            category=exercise.category,
             created_by=exercise.created_by,
             created_at=exercise.created_at
         )
