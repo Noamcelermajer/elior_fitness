@@ -48,6 +48,7 @@ interface Exercise {
   muscle_group: string;
   equipment?: string | null;
   video_url?: string | null;
+  image_path?: string | null;
   instructions?: string | null;
 }
 
@@ -105,6 +106,7 @@ interface ExerciseDetail {
   muscle_group: string;
   equipment_needed?: string | null;
   video_url?: string | null;
+  image_path?: string | null;
   instructions?: string | null;
 }
 

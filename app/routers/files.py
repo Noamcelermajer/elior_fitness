@@ -39,7 +39,7 @@ async def serve_media_file(
     """
     
     # Validate file type
-    allowed_types = ["meal_photos", "profile_photos", "progress_photos", "documents", "thumbnails"]
+    allowed_types = ["meal_photos", "profile_photos", "progress_photos", "documents", "thumbnails", "exercise_images"]
     if file_type not in allowed_types:
         raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {allowed_types}")
     
@@ -148,6 +148,14 @@ async def serve_media_file(
         except (ValueError, IndexError):
             raise HTTPException(status_code=400, detail="Invalid filename format")
     
+    elif file_type == "exercise_images":
+        # Exercise images are accessible to trainers and clients
+        # All authenticated users can view exercise images
+        if current_user.role in [UserRole.TRAINER, UserRole.CLIENT]:
+            return FileResponse(file_path)
+        else:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
     elif file_type == "thumbnails":
         # Thumbnails follow the same access control as their parent files
         # Extract the original file type and entity ID from thumbnail filename
@@ -199,7 +207,7 @@ async def delete_media_file(
     """
     
     # Validate file type
-    allowed_types = ["meal_photos", "profile_photos", "progress_photos", "documents"]
+    allowed_types = ["meal_photos", "profile_photos", "progress_photos", "documents", "exercise_images"]
     if file_type not in allowed_types:
         raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {allowed_types}")
     

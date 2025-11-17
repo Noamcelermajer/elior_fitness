@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 
@@ -90,12 +90,41 @@ const CreateExercise = () => {
     tips: '',
     category: ''
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Image file size must be less than 10MB');
+        return;
+      }
+      
+      setImageFile(file);
+      setError('');
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,26 +134,60 @@ const CreateExercise = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/exercises/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      
+      // If image is uploaded, use multipart/form-data
+      if (imageFile) {
+        const exerciseData = {
           ...formData,
           created_by: user?.id,
           calories_burned: formData.calories_burned ? parseInt(formData.calories_burned) : null,
           estimated_duration: formData.estimated_duration ? parseInt(formData.estimated_duration) : null,
           category: formData.category || null,
-        }),
-      });
+          video_url: formData.video_url || null,
+        };
+        
+        const formDataToSend = new FormData();
+        formDataToSend.append('exercise_json', JSON.stringify(exerciseData));
+        formDataToSend.append('image', imageFile);
+        
+        const response = await fetch(`${API_BASE_URL}/exercises/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            // Don't set Content-Type - browser will set it with boundary for FormData
+          },
+          body: formDataToSend,
+        });
 
-      if (response.ok) {
-        navigate('/trainer-dashboard?tab=exercises');
+        if (response.ok) {
+          navigate('/trainer-dashboard?tab=exercises');
+        } else {
+          const errorData = await response.json();
+          setError(errorData.detail || 'Failed to create exercise');
+        }
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || 'Failed to create exercise');
+        // No image, use JSON
+        const response = await fetch(`${API_BASE_URL}/exercises/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...formData,
+            created_by: user?.id,
+            calories_burned: formData.calories_burned ? parseInt(formData.calories_burned) : null,
+            estimated_duration: formData.estimated_duration ? parseInt(formData.estimated_duration) : null,
+            category: formData.category || null,
+          }),
+        });
+
+        if (response.ok) {
+          navigate('/trainer-dashboard?tab=exercises');
+        } else {
+          const errorData = await response.json();
+          setError(errorData.detail || 'Failed to create exercise');
+        }
       }
     } catch (error) {
       setError('Network error occurred');
@@ -318,11 +381,59 @@ const CreateExercise = () => {
                     id="video_url"
                     type="url"
                     value={formData.video_url}
-                    onChange={(e) => handleInputChange('video_url', e.target.value)}
+                    onChange={(e) => {
+                      handleInputChange('video_url', e.target.value);
+                      // Clear image if video URL is provided (video takes priority)
+                      if (e.target.value) {
+                        setImageFile(null);
+                        setImagePreview(null);
+                      }
+                    }}
                     placeholder="https://youtube.com/..."
                   />
+                  <p className="text-xs text-muted-foreground">
+                    If no video URL is provided, you can upload an image instead
+                  </p>
                 </div>
               </div>
+              
+              {/* Image Upload Section - only show if no video URL */}
+              {!formData.video_url && (
+                <div className="space-y-2">
+                  <Label htmlFor="exercise_image">Exercise Image (optional)</Label>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      id="exercise_image"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="cursor-pointer"
+                    />
+                    {imagePreview && (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Exercise preview"
+                          className="w-24 h-24 object-cover rounded-lg border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFile(null);
+                            setImagePreview(null);
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Upload an image to show if no video URL is provided. Falls back to Rick Roll if neither is provided.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

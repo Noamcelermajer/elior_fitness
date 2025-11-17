@@ -24,6 +24,7 @@ class Exercise(Base):
     name = Column(String, nullable=False)
     description = Column(String)
     video_url = Column(String)
+    image_path = Column(String)  # Optional image path for exercise demonstration
     muscle_group = Column(String, nullable=False)  # Changed to String - can be enum value or custom name
     muscle_group_id = Column(Integer, ForeignKey("muscle_groups.id"), nullable=True)  # FK to dynamic muscle groups
     equipment_needed = Column(String)

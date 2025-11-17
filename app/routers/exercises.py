@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import logging
+import json
 
 from app.database import get_db
 from app.services.workout_service import WorkoutService
+from app.services.file_service import FileService
 from app.auth.utils import get_current_user
 from app.schemas.auth import UserResponse, UserRole
 from app.schemas.workout import (
@@ -15,21 +17,103 @@ from app.models.workout import MuscleGroup
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+def get_file_service():
+    """Dependency to get file service instance."""
+    return FileService()
+
 @router.post("/", response_model=ExerciseResponse, status_code=status.HTTP_201_CREATED)
-def create_exercise(
-    exercise_data: ExerciseCreate,
+async def create_exercise(
+    # Accept either JSON body or form fields
+    exercise_data: Optional[ExerciseCreate] = None,
+    # Form fields for multipart/form-data
+    exercise_json: Optional[str] = Form(None),
+    image: Optional[UploadFile] = File(None),
     current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    file_service: FileService = Depends(get_file_service)
 ):
-    """Create a new exercise in the trainer's exercise bank."""
+    """
+    Create a new exercise in the trainer's exercise bank.
+    Supports both JSON (application/json) and multipart/form-data with optional image upload.
+    
+    For multipart/form-data:
+    - Send exercise_json as a JSON string containing all exercise fields
+    - Optionally send image file for exercise demonstration
+    """
     if current_user.role != UserRole.TRAINER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can create exercises"
         )
     
+    # Handle multipart/form-data (for image uploads)
+    if exercise_json:
+        try:
+            exercise_dict = json.loads(exercise_json)
+            exercise_data = ExerciseCreate(**exercise_dict)
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid JSON in exercise_json field: {str(e)}"
+            )
+    
+    # If no data from form, check if we got JSON body (backward compatibility)
+    if not exercise_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Exercise data is required. Send exercise_json as form field (for multipart/form-data) or JSON body (for application/json)."
+        )
+    
+    # Handle image upload if provided
+    image_path = None
+    if image and image.filename:
+        try:
+            # Validate file
+            is_valid, error_msg = await file_service.validate_file(image, file_type="image")
+            if not is_valid:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_msg
+                )
+            
+            # Save file - use temp directory first, then we'll move it after exercise creation
+            file_result = await file_service.save_file(
+                file=image,
+                category="exercise_image",
+                entity_id=0,  # Temporary ID
+                process_image=True
+            )
+            image_path = file_result["original_path"]
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error uploading exercise image: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error uploading image: {str(e)}"
+            )
+    
+    # Update exercise_data with image_path if uploaded
+    exercise_dict = exercise_data.model_dump()
+    if image_path:
+        exercise_dict["image_path"] = image_path
+    
+    # Don't include image_path if video_url is already set (video takes priority)
+    if exercise_dict.get("video_url") and image_path:
+        # Still save image but video will be used for display
+        pass
+    
+    exercise_data = ExerciseCreate(**exercise_dict)
+    
     workout_service = WorkoutService(db)
-    return workout_service.create_exercise(exercise_data, current_user.id)
+    created_exercise = workout_service.create_exercise(exercise_data, current_user.id)
+    
+    # If image was uploaded and exercise was created successfully, we could rename the file
+    # For now, the path is stored and will work
+    if image_path and created_exercise.id:
+        logger.info(f"Exercise {created_exercise.id} created with image: {image_path}")
+    
+    return created_exercise
 
 @router.get("/", response_model=List[ExerciseResponse])
 def get_exercises(

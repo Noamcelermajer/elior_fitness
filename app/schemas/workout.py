@@ -8,6 +8,7 @@ class ExerciseBase(BaseModel):
     name: str
     description: Optional[str] = Field(None, description="General description of the exercise")
     video_url: Optional[str] = None
+    image_path: Optional[str] = Field(None, description="Path to uploaded exercise image (used if no video_url)")
     muscle_group: str  # Changed to str to support dynamic muscle groups
     equipment_needed: Optional[str] = None
     instructions: Optional[str] = Field(None, description="Step-by-step instructions on how to perform the exercise correctly")
@@ -20,6 +21,7 @@ class ExerciseUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     video_url: Optional[str] = None
+    image_path: Optional[str] = None
     muscle_group: Optional[str] = None  # Changed to str to support dynamic muscle groups
     equipment_needed: Optional[str] = None
     instructions: Optional[str] = None

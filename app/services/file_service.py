@@ -58,6 +58,7 @@ class FileService:
             f"{self.base_upload_path}/profile_photos",
             f"{self.base_upload_path}/progress_photos",
             f"{self.base_upload_path}/documents",
+            f"{self.base_upload_path}/exercise_images",
             f"{self.base_upload_path}/temp",
             f"{self.base_upload_path}/thumbnails"
         ]
@@ -140,7 +141,7 @@ class FileService:
             Dictionary with file paths and metadata
         """
         # Validate file
-        file_type = "image" if category in ["meal_photo", "profile_photo", "progress_photo"] else "document"
+        file_type = "image" if category in ["meal_photo", "profile_photo", "progress_photo", "exercise_image"] else "document"
         is_valid, error_message = await self.validate_file(file, file_type)
         
         if not is_valid:
@@ -158,6 +159,8 @@ class FileService:
             directory = f"{self.base_upload_path}/profile_photos"
         elif category == "progress_photo":
             directory = f"{self.base_upload_path}/progress_photos"
+        elif category == "exercise_image":
+            directory = f"{self.base_upload_path}/exercise_images"
         elif category == "document":
             directory = f"{self.base_upload_path}/documents"
         else:

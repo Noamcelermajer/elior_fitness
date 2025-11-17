@@ -23,6 +23,7 @@ interface Exercise {
   muscle_group: string;
   equipment?: string | null;
   video_url?: string | null;
+  image_path?: string | null;
   instructions?: string | null;
 }
 
@@ -571,8 +572,11 @@ const TrainingDayPage: React.FC = () => {
 
   const renderExerciseCard = (exercise: WorkoutExercise, badgeLabel: string) => {
     const detail = exerciseDetails[exercise.exercise_id];
-    const resolvedVideoUrl = exercise.video_url || detail?.video_url || VIDEO_FALLBACK_URL;
-    const thumbnail = getVideoThumbnail(resolvedVideoUrl);
+    // Priority: video_url > image_path > rick roll
+    const videoUrl = exercise.video_url || detail?.video_url || null;
+    const imagePath = detail?.image_path || null;
+    const resolvedVideoUrl = videoUrl || (imagePath ? null : VIDEO_FALLBACK_URL);
+    const thumbnail = videoUrl ? getVideoThumbnail(videoUrl) : null;
     const exerciseName =
       detail?.name || exercise.exercise?.name || t('training.unnamedExercise', 'תרגיל ללא שם');
     
@@ -641,14 +645,18 @@ const TrainingDayPage: React.FC = () => {
                 >
                   {thumbnail ? (
                     <img src={thumbnail} alt={exerciseName} className="h-full w-full object-cover" loading="lazy" />
+                  ) : imagePath ? (
+                    <img src={`${API_BASE_URL}/files/media/exercise_images/${imagePath.split('/').pop() || imagePath.split('\\').pop()}`} alt={exerciseName} className="h-full w-full object-cover" loading="lazy" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted">
                       <Video className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground" />
                     </div>
                   )}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    <PlayCircle className="h-5 w-5 md:h-6 md:w-6 text-white drop-shadow" />
-                  </div>
+                  {videoUrl && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <PlayCircle className="h-5 w-5 md:h-6 md:w-6 text-white drop-shadow" />
+                    </div>
+                  )}
                 </button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-3xl max-w-[95vw] mx-4 max-h-[90vh] overflow-y-auto">
@@ -656,15 +664,35 @@ const TrainingDayPage: React.FC = () => {
                   <DialogTitle className="text-base md:text-lg">{exerciseName}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <AspectRatio ratio={16 / 9} className="overflow-hidden rounded-xl w-full">
-                    <iframe
-                      src={resolvedVideoUrl.replace('watch?v=', 'embed/')}
-                      title={exerciseName}
-                      className="h-full w-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </AspectRatio>
+                  {videoUrl ? (
+                    <AspectRatio ratio={16 / 9} className="overflow-hidden rounded-xl w-full">
+                      <iframe
+                        src={videoUrl.replace('watch?v=', 'embed/')}
+                        title={exerciseName}
+                        className="h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </AspectRatio>
+                  ) : imagePath ? (
+                    <AspectRatio ratio={16 / 9} className="overflow-hidden rounded-xl w-full">
+                      <img
+                        src={`${API_BASE_URL}/files/media/exercise_images/${imagePath.split('/').pop() || imagePath.split('\\').pop()}`}
+                        alt={exerciseName}
+                        className="h-full w-full object-cover"
+                      />
+                    </AspectRatio>
+                  ) : (
+                    <AspectRatio ratio={16 / 9} className="overflow-hidden rounded-xl w-full">
+                      <iframe
+                        src={VIDEO_FALLBACK_URL.replace('watch?v=', 'embed/')}
+                        title={exerciseName}
+                        className="h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </AspectRatio>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>
