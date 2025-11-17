@@ -559,12 +559,12 @@ const ExerciseBank = () => {
                   className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
                 >
                   <Settings className="w-4 h-4 me-2 flex-shrink-0" />
-                  <span className="truncate">Manage Muscle Groups</span>
+                  <span className="truncate">{t('exerciseBank.manageMuscleGroups')}</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle>Manage Muscle Groups</DialogTitle>
+                  <DialogTitle>{t('exerciseBank.manageMuscleGroups')}</DialogTitle>
                   <DialogDescription>
                     Create, edit, or delete custom muscle groups
                   </DialogDescription>
@@ -876,7 +876,7 @@ const ExerciseBank = () => {
                 </div>
                 <div className="space-y-1.5 col-span-2">
                   <Label htmlFor={mediaType === 'video' ? 'video_url' : 'exercise_image'} className="text-sm">
-                    {mediaType === 'video' ? t('exerciseBank.videoUrl') : 'Exercise Image'} (optional)
+                    {mediaType === 'video' ? t('exerciseBank.videoUrl') : t('exerciseBank.exerciseImageOptional')}
                   </Label>
                   <div className="flex gap-2 items-center">
                     <ToggleGroup 

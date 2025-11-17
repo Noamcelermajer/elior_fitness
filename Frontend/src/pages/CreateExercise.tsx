@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const EQUIPMENT_OPTIONS = [
 
 const CreateExercise = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -405,7 +407,7 @@ const CreateExercise = () => {
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader className="pb-3">
-                          <DialogTitle className="text-lg">Manage Muscle Groups</DialogTitle>
+                          <DialogTitle className="text-lg">{t('exerciseBank.manageMuscleGroups')}</DialogTitle>
                           <DialogDescription className="text-sm">
                             Create, edit, or delete custom muscle groups
                           </DialogDescription>
@@ -659,7 +661,7 @@ const CreateExercise = () => {
 
                 <div className="space-y-1.5 col-span-1 md:col-span-3">
                   <Label htmlFor={mediaType === 'video' ? 'video_url' : 'exercise_image'} className="text-sm">
-                    {mediaType === 'video' ? 'Video URL' : 'Exercise Image'} (optional)
+                    {mediaType === 'video' ? 'Video URL' : t('exerciseBank.exerciseImageOptional')}
                   </Label>
                   <div className="flex gap-2 items-center">
                     <ToggleGroup 

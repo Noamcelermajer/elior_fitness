@@ -572,7 +572,7 @@ const TrainingDayPage: React.FC = () => {
 
   const renderExerciseCard = (exercise: WorkoutExercise, badgeLabel: string) => {
     const detail = exerciseDetails[exercise.exercise_id];
-    // Priority: video_url > image_path > rick roll
+    // Priority: video_url > image_path > fallback
     const videoUrl = exercise.video_url || detail?.video_url || null;
     const imagePath = detail?.image_path || null;
     const resolvedVideoUrl = videoUrl || (imagePath ? null : VIDEO_FALLBACK_URL);
