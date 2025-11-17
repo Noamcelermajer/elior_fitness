@@ -744,10 +744,11 @@ const CreateExercise = () => {
           )}
 
           {/* Submit Buttons */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={() => navigate('/trainer-dashboard')}
               disabled={loading}
             >
@@ -755,17 +756,18 @@ const CreateExercise = () => {
             </Button>
             <Button
               type="submit"
+              size="sm"
               disabled={!isFormValid() || loading}
               className="gradient-green"
             >
               {loading ? (
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   <span>Creating...</span>
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <Save className="w-4 h-4" />
+                  <Save className="w-3 h-3" />
                   <span>Create Exercise</span>
                 </div>
               )}
