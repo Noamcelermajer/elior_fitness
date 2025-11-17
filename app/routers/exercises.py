@@ -158,18 +158,89 @@ def get_exercise(
     return exercise
 
 @router.put("/{exercise_id}", response_model=ExerciseResponse)
-def update_exercise(
+async def update_exercise(
     exercise_id: int,
-    exercise_data: ExerciseUpdate,
+    # Accept either JSON body or form fields
+    exercise_data: Optional[ExerciseUpdate] = None,
+    # Form fields for multipart/form-data
+    exercise_json: Optional[str] = Form(None),
+    image: Optional[UploadFile] = File(None),
     current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    file_service: FileService = Depends(get_file_service)
 ):
-    """Update an exercise (only by the trainer who created it)."""
+    """
+    Update an exercise (only by the trainer who created it).
+    Supports both JSON (application/json) and multipart/form-data with optional image upload.
+    
+    For multipart/form-data:
+    - Send exercise_json as a JSON string containing exercise fields to update
+    - Optionally send image file to update/replace exercise image
+    """
     if current_user.role != UserRole.TRAINER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can update exercises"
         )
+    
+    # Handle multipart/form-data (for image uploads)
+    if exercise_json:
+        try:
+            exercise_dict = json.loads(exercise_json)
+            exercise_data = ExerciseUpdate(**exercise_dict)
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid JSON in exercise_json field: {str(e)}"
+            )
+    
+    # If no data from form, check if we got JSON body (backward compatibility)
+    if not exercise_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Exercise data is required. Send exercise_json as form field (for multipart/form-data) or JSON body (for application/json)."
+        )
+    
+    # Handle image upload if provided
+    image_path = None
+    if image and image.filename:
+        try:
+            # Validate file
+            is_valid, error_msg = await file_service.validate_file(image, file_type="image")
+            if not is_valid:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_msg
+                )
+            
+            # Save file
+            file_result = await file_service.save_file(
+                file=image,
+                category="exercise_image",
+                entity_id=exercise_id,
+                process_image=True
+            )
+            image_path = file_result["original_path"]
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error uploading exercise image: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error uploading image: {str(e)}"
+            )
+    
+    # Update exercise_data with image_path if uploaded
+    exercise_dict = exercise_data.model_dump(exclude_unset=True)
+    if image_path:
+        exercise_dict["image_path"] = image_path
+    
+    # Don't include image_path if video_url is being set (video takes priority)
+    if exercise_dict.get("video_url") and image_path:
+        # Still save image but video will be used for display
+        pass
+    
+    exercise_data = ExerciseUpdate(**exercise_dict)
     
     workout_service = WorkoutService(db)
     exercise = workout_service.update_exercise(exercise_id, exercise_data, current_user.id)
@@ -179,6 +250,9 @@ def update_exercise(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Exercise not found or you don't have permission to update it"
         )
+    
+    if image_path and exercise.id:
+        logger.info(f"Exercise {exercise.id} updated with image: {image_path}")
     
     return exercise
 
