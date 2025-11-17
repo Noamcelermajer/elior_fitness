@@ -52,6 +52,7 @@ const ExerciseBank = () => {
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageRemoved, setImageRemoved] = useState(false); // Track if user clicked X to remove image
   const [mediaType, setMediaType] = useState<'video' | 'image'>('video');
   const [muscleGroups, setMuscleGroups] = useState<string[]>(staticMuscleGroups);
   const [dynamicMuscleGroups, setDynamicMuscleGroups] = useState<Array<{id: number, name: string}>>([]);
@@ -171,6 +172,7 @@ const ExerciseBank = () => {
       }
       
       setImageFile(file);
+      setImageRemoved(false); // Reset removal flag when new image is selected
       
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -311,13 +313,20 @@ const ExerciseBank = () => {
         }
       } else {
         // No new image, use JSON
+        // If image was removed (user clicked X), explicitly set image_path to null
+        const exerciseData = {
+          ...exerciseForm,
+          video_url: exerciseForm.video_url || null,
+          ...(imageRemoved && editingExercise?.image_path ? { image_path: null } : {})
+        };
+        
         const response = await fetch(`${API_BASE_URL}/exercises/${editingExercise.id}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(exerciseForm)
+          body: JSON.stringify(exerciseData)
         });
 
         if (response.ok) {
@@ -414,6 +423,7 @@ const ExerciseBank = () => {
     });
     setImageFile(null);
     setImagePreview(null);
+    setImageRemoved(false);
     setMediaType('video');
   };
 
@@ -562,6 +572,7 @@ const ExerciseBank = () => {
     });
     
     // Set media type based on what exists
+    setImageRemoved(false); // Reset removal flag when starting to edit
     if (exercise.video_url) {
       setMediaType('video');
       setImageFile(null);
@@ -956,8 +967,13 @@ const ExerciseBank = () => {
                           if (value === 'video') {
                             setImageFile(null);
                             setImagePreview(null);
+                            // If switching to video and there was an existing image, mark it as removed
+                            if (editingExercise?.image_path) {
+                              setImageRemoved(true);
+                            }
                           } else {
                             setExerciseForm({...exerciseForm, video_url: ''});
+                            setImageRemoved(false); // Reset removal flag when switching to image
                           }
                         }
                       }}
@@ -1006,6 +1022,10 @@ const ExerciseBank = () => {
                               onClick={() => {
                                 setImageFile(null);
                                 setImagePreview(null);
+                                // Mark that user intentionally removed the image
+                                if (editingExercise?.image_path) {
+                                  setImageRemoved(true);
+                                }
                               }}
                               className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs z-10"
                             >
