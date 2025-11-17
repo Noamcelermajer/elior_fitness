@@ -87,13 +87,8 @@ class WorkoutService:
         return self._exercise_to_response(exercise)
 
     def update_exercise(self, exercise_id: int, exercise_data: ExerciseUpdate, trainer_id: int) -> Optional[ExerciseResponse]:
-        """Update an exercise (only by the trainer who created it)."""
-        exercise = self.db.query(Exercise).filter(
-            and_(
-                Exercise.id == exercise_id,
-                Exercise.created_by == trainer_id
-            )
-        ).first()
+        """Update an exercise. Any trainer can edit any exercise."""
+        exercise = self.db.query(Exercise).filter(Exercise.id == exercise_id).first()
         
         if not exercise:
             return None

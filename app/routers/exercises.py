@@ -279,10 +279,10 @@ async def update_exercise(
     exercise = workout_service.update_exercise(exercise_id, exercise_data, current_user.id)
     
     if not exercise:
-        logger.error(f"Failed to update exercise {exercise_id} for trainer {current_user.id}")
+        logger.error(f"Failed to update exercise {exercise_id} for trainer {current_user.id} - exercise not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Exercise not found or you don't have permission to update it"
+            detail="Exercise not found"
         )
     
     if image_path and exercise.id:
