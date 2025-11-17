@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 from app.database import get_db
-from app.auth.utils import get_current_user
+from app.auth.utils import get_current_user, oauth2_scheme
 from app.schemas.auth import UserResponse, UserRole
 from app.services.file_service import FileService
 from app.services import user_service
@@ -16,6 +16,25 @@ router = APIRouter()
 def get_file_service():
     """Dependency to get file service instance."""
     return FileService()
+
+@router.get("/media/exercise_images/{filename}")
+async def serve_exercise_image(
+    filename: str,
+    db: Session = Depends(get_db),
+    file_service: FileService = Depends(get_file_service)
+):
+    """
+    Serve exercise images publicly (no authentication required).
+    This allows browser img tags to load them without auth headers.
+    Exercise images are meant to be shared between trainer and clients.
+    """
+    file_path = f"uploads/exercise_images/{filename}"
+    
+    # Check if file exists
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(file_path)
 
 @router.get("/media/{file_type}/{filename}")
 async def serve_media_file(
@@ -30,7 +49,7 @@ async def serve_media_file(
     Serve media files with access control.
     
     Args:
-        file_type: Type of file (meal_photos, profile_photos, progress_photos, documents)
+        file_type: Type of file (meal_photos, profile_photos, progress_photos, documents, thumbnails)
         filename: Name of the file
         size: Image size for processed images
         current_user: Authenticated user
@@ -39,7 +58,7 @@ async def serve_media_file(
     """
     
     # Validate file type
-    allowed_types = ["meal_photos", "profile_photos", "progress_photos", "documents", "thumbnails", "exercise_images"]
+    allowed_types = ["meal_photos", "profile_photos", "progress_photos", "documents", "thumbnails"]
     if file_type not in allowed_types:
         raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {allowed_types}")
     
@@ -147,14 +166,6 @@ async def serve_media_file(
                 raise HTTPException(status_code=400, detail="Invalid filename format")
         except (ValueError, IndexError):
             raise HTTPException(status_code=400, detail="Invalid filename format")
-    
-    elif file_type == "exercise_images":
-        # Exercise images are accessible to trainers and clients
-        # All authenticated users can view exercise images
-        if current_user.role in [UserRole.TRAINER, UserRole.CLIENT]:
-            return FileResponse(file_path)
-        else:
-            raise HTTPException(status_code=403, detail="Access denied")
     
     elif file_type == "thumbnails":
         # Thumbnails follow the same access control as their parent files

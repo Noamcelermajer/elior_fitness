@@ -264,9 +264,22 @@ async def update_exercise(
     exercise_data = ExerciseUpdate(**exercise_dict)
     
     workout_service = WorkoutService(db)
+    
+    # Log for debugging
+    logger.info(f"Updating exercise {exercise_id} for trainer {current_user.id} (role: {current_user.role})")
+    
+    # Check if exercise exists and who created it
+    from app.models.workout import Exercise
+    existing_exercise = db.query(Exercise).filter(Exercise.id == exercise_id).first()
+    if existing_exercise:
+        logger.info(f"Exercise {exercise_id} exists, created by user {existing_exercise.created_by}, current user is {current_user.id}")
+    else:
+        logger.warning(f"Exercise {exercise_id} not found in database")
+    
     exercise = workout_service.update_exercise(exercise_id, exercise_data, current_user.id)
     
     if not exercise:
+        logger.error(f"Failed to update exercise {exercise_id} for trainer {current_user.id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Exercise not found or you don't have permission to update it"
