@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Dumbbell, Plus, Search, Filter, Edit, Trash2, 
-  Video, FileText, Tag, Clock, Weight
+  Video, FileText, Tag, Clock, Weight, Settings, Save, X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
@@ -27,12 +27,13 @@ interface Exercise {
   equipment_needed?: string;
   instructions?: string;
   video_url?: string;
+  image_path?: string;
   category?: string;
   created_by: number;
   created_at: string;
 }
 
-const muscleGroups = [
+const staticMuscleGroups = [
   'chest', 'back', 'shoulders', 'biceps', 'triceps', 
   'legs', 'glutes', 'core', 'cardio', 'full body'
 ];
@@ -48,6 +49,14 @@ const ExerciseBank = () => {
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [muscleGroups, setMuscleGroups] = useState<string[]>(staticMuscleGroups);
+  const [dynamicMuscleGroups, setDynamicMuscleGroups] = useState<Array<{id: number, name: string}>>([]);
+  const [muscleGroupDialogOpen, setMuscleGroupDialogOpen] = useState(false);
+  const [editingMuscleGroup, setEditingMuscleGroup] = useState<{id: number, name: string} | null>(null);
+  const [newMuscleGroupName, setNewMuscleGroupName] = useState('');
+  const [muscleGroupError, setMuscleGroupError] = useState('');
   
   const [exerciseForm, setExerciseForm] = useState({
     name: '',
@@ -100,6 +109,32 @@ const ExerciseBank = () => {
     fetchExercises();
   }, []);
 
+  // Fetch dynamic muscle groups
+  useEffect(() => {
+    const fetchMuscleGroups = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE_URL}/muscle-groups/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setDynamicMuscleGroups(data);
+          // Combine static and dynamic muscle groups
+          const dynamicGroupNames = data.map((mg: {id: number, name: string}) => mg.name.toLowerCase().replace(/\s+/g, '_'));
+          const combined = [...staticMuscleGroups, ...dynamicGroupNames].filter((v, i, a) => a.indexOf(v) === i);
+          setMuscleGroups(combined);
+        }
+      } catch (error) {
+        console.error('Failed to load muscle groups:', error);
+      }
+    };
+    fetchMuscleGroups();
+  }, []);
+
   const filteredExercises = exercises.filter(exercise =>
     exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
     (selectedMuscleGroup === 'all' || exercise.muscle_group === selectedMuscleGroup)
@@ -112,36 +147,110 @@ const ExerciseBank = () => {
     return acc;
   }, {} as Record<string, Exercise[]>);
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: t('common.error'),
+          description: 'Please select an image file',
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: t('common.error'),
+          description: 'Image file size must be less than 10MB',
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setImageFile(file);
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCreateExercise = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_BASE_URL}/exercises/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(exerciseForm)
-      });
+      
+      // If image is uploaded, use multipart/form-data
+      if (imageFile) {
+        const exerciseData = {
+          ...exerciseForm,
+          created_by: user?.id,
+          video_url: exerciseForm.video_url || null,
+        };
+        
+        const formDataToSend = new FormData();
+        formDataToSend.append('exercise_json', JSON.stringify(exerciseData));
+        formDataToSend.append('image', imageFile);
+        
+        const response = await fetch(`${API_BASE_URL}/exercises/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formDataToSend,
+        });
 
-      if (response.ok) {
-        const newExercise = await response.json();
-        setExercises([...exercises, newExercise]);
-        setCreateDialogOpen(false);
-        resetForm();
-        toast({
-          title: t('common.success'),
-          description: t('exerciseBank.successCreated')
-        });
+        if (response.ok) {
+          const newExercise = await response.json();
+          setExercises([...exercises, newExercise]);
+          setCreateDialogOpen(false);
+          resetForm();
+          setImageFile(null);
+          setImagePreview(null);
+          toast({
+            title: t('common.success'),
+            description: t('exerciseBank.successCreated')
+          });
+        } else {
+          const error = await response.json();
+          toast({
+            title: t('common.error'),
+            description: error.detail || t('exerciseBank.errorCreate'),
+            variant: "destructive"
+          });
+        }
       } else {
-        const error = await response.json();
-        toast({
-          title: t('common.error'),
-          description: error.detail || t('exerciseBank.errorCreate'),
-          variant: "destructive"
+        // No image, use JSON
+        const response = await fetch(`${API_BASE_URL}/exercises/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(exerciseForm)
         });
+
+        if (response.ok) {
+          const newExercise = await response.json();
+          setExercises([...exercises, newExercise]);
+          setCreateDialogOpen(false);
+          resetForm();
+          toast({
+            title: t('common.success'),
+            description: t('exerciseBank.successCreated')
+          });
+        } else {
+          const error = await response.json();
+          toast({
+            title: t('common.error'),
+            description: error.detail || t('exerciseBank.errorCreate'),
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
       console.error('Error creating exercise:', error);
@@ -259,6 +368,140 @@ const ExerciseBank = () => {
       video_url: '',
       category: ''
     });
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleCreateMuscleGroup = async () => {
+    if (!newMuscleGroupName.trim()) {
+      setMuscleGroupError('Muscle group name is required');
+      return;
+    }
+    
+    setMuscleGroupError('');
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/muscle-groups/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newMuscleGroupName.trim() }),
+      });
+
+      if (response.ok) {
+        const newGroup = await response.json();
+        setDynamicMuscleGroups([...dynamicMuscleGroups, newGroup]);
+        const dynamicGroupNames = [...dynamicMuscleGroups, newGroup].map(mg => mg.name.toLowerCase().replace(/\s+/g, '_'));
+        const combined = [...staticMuscleGroups, ...dynamicGroupNames].filter((v, i, a) => a.indexOf(v) === i);
+        setMuscleGroups(combined);
+        setNewMuscleGroupName('');
+        setEditingMuscleGroup(null);
+        toast({
+          title: t('common.success'),
+          description: 'Muscle group created successfully'
+        });
+      } else {
+        const errorData = await response.json();
+        setMuscleGroupError(errorData.detail || 'Failed to create muscle group');
+      }
+    } catch (error) {
+      setMuscleGroupError('Network error occurred');
+    }
+  };
+
+  const handleUpdateMuscleGroup = async () => {
+    if (!editingMuscleGroup || !newMuscleGroupName.trim()) {
+      setMuscleGroupError('Muscle group name is required');
+      return;
+    }
+    
+    setMuscleGroupError('');
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/muscle-groups/${editingMuscleGroup.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newMuscleGroupName.trim() }),
+      });
+
+      if (response.ok) {
+        const updatedGroup = await response.json();
+        setDynamicMuscleGroups(dynamicMuscleGroups.map(mg => mg.id === updatedGroup.id ? updatedGroup : mg));
+        const dynamicGroupNames = dynamicMuscleGroups.map(mg => 
+          mg.id === updatedGroup.id 
+            ? updatedGroup.name.toLowerCase().replace(/\s+/g, '_')
+            : mg.name.toLowerCase().replace(/\s+/g, '_')
+        );
+        const combined = [...staticMuscleGroups, ...dynamicGroupNames].filter((v, i, a) => a.indexOf(v) === i);
+        setMuscleGroups(combined);
+        setNewMuscleGroupName('');
+        setEditingMuscleGroup(null);
+        toast({
+          title: t('common.success'),
+          description: 'Muscle group updated successfully'
+        });
+      } else {
+        const errorData = await response.json();
+        setMuscleGroupError(errorData.detail || 'Failed to update muscle group');
+      }
+    } catch (error) {
+      setMuscleGroupError('Network error occurred');
+    }
+  };
+
+  const handleDeleteMuscleGroup = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this muscle group? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/muscle-groups/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok || response.status === 204) {
+        setDynamicMuscleGroups(dynamicMuscleGroups.filter(mg => mg.id !== id));
+        const dynamicGroupNames = dynamicMuscleGroups.filter(mg => mg.id !== id).map(mg => mg.name.toLowerCase().replace(/\s+/g, '_'));
+        const combined = [...staticMuscleGroups, ...dynamicGroupNames].filter((v, i, a) => a.indexOf(v) === i);
+        setMuscleGroups(combined);
+        if (editingMuscleGroup?.id === id) {
+          setEditingMuscleGroup(null);
+          setNewMuscleGroupName('');
+        }
+        toast({
+          title: t('common.success'),
+          description: 'Muscle group deleted successfully'
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: t('common.error'),
+          description: errorData.detail || 'Failed to delete muscle group',
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: 'Network error occurred',
+        variant: "destructive"
+      });
+    }
+  };
+
+  const openEditDialog = (group: {id: number, name: string}) => {
+    setEditingMuscleGroup(group);
+    setNewMuscleGroupName(group.name);
+    setMuscleGroupError('');
   };
 
   const startEdit = (exercise: Exercise) => {
@@ -464,7 +707,125 @@ const ExerciseBank = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="muscle_group">{t('exerciseBank.muscleGroup')}</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="muscle_group">{t('exerciseBank.muscleGroup')}</Label>
+                    <Dialog open={muscleGroupDialogOpen} onOpenChange={setMuscleGroupDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button type="button" variant="outline" size="sm" className="h-8">
+                          <Settings className="w-4 h-4 mr-1" />
+                          {t('common.manage') || 'Manage'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                          <DialogTitle>Manage Muscle Groups</DialogTitle>
+                          <DialogDescription>
+                            Create, edit, or delete custom muscle groups
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          {/* Create/Edit Form */}
+                          <div className="space-y-2">
+                            <Label htmlFor="new_muscle_group_name">
+                              {editingMuscleGroup ? 'Edit Muscle Group' : 'Create New Muscle Group'}
+                            </Label>
+                            <div className="flex gap-2">
+                              <Input
+                                id="new_muscle_group_name"
+                                value={newMuscleGroupName}
+                                onChange={(e) => {
+                                  setNewMuscleGroupName(e.target.value);
+                                  setMuscleGroupError('');
+                                }}
+                                placeholder="Enter muscle group name"
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    if (editingMuscleGroup) {
+                                      handleUpdateMuscleGroup();
+                                    } else {
+                                      handleCreateMuscleGroup();
+                                    }
+                                  }
+                                }}
+                              />
+                              {editingMuscleGroup ? (
+                                <>
+                                  <Button
+                                    type="button"
+                                    onClick={handleUpdateMuscleGroup}
+                                    disabled={!newMuscleGroupName.trim()}
+                                  >
+                                    <Save className="w-4 h-4 mr-1" />
+                                    Save
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingMuscleGroup(null);
+                                      setNewMuscleGroupName('');
+                                      setMuscleGroupError('');
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  onClick={handleCreateMuscleGroup}
+                                  disabled={!newMuscleGroupName.trim()}
+                                >
+                                  <Plus className="w-4 h-4 mr-1" />
+                                  Create
+                                </Button>
+                              )}
+                            </div>
+                            {muscleGroupError && (
+                              <p className="text-sm text-red-500">{muscleGroupError}</p>
+                            )}
+                          </div>
+
+                          {/* List of Dynamic Muscle Groups */}
+                          {dynamicMuscleGroups.length > 0 && (
+                            <div className="space-y-2">
+                              <Label>Your Custom Muscle Groups</Label>
+                              <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
+                                {dynamicMuscleGroups.map((group) => (
+                                  <div
+                                    key={group.id}
+                                    className="flex items-center justify-between p-3 hover:bg-muted/50"
+                                  >
+                                    <span className="font-medium">{group.name}</span>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => openEditDialog(group)}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteMuscleGroup(group.id)}
+                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <Select 
                     value={exerciseForm.muscle_group} 
                     onValueChange={(value) => setExerciseForm({...exerciseForm, muscle_group: value})}
@@ -475,7 +836,7 @@ const ExerciseBank = () => {
                     <SelectContent>
                       {muscleGroups.map(group => (
                         <SelectItem key={group} value={group}>
-                          {t(`exerciseBank.muscleGroups.${group}`)}
+                          {t(`exerciseBank.muscleGroups.${group}`) || group}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -514,7 +875,46 @@ const ExerciseBank = () => {
                     onChange={(e) => setExerciseForm({...exerciseForm, video_url: e.target.value})}
                     placeholder={t('exerciseBank.videoUrlPlaceholder')}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Video takes priority over image. Falls back to image if no video, then Rick Roll.
+                  </p>
                 </div>
+              </div>
+              
+              {/* Image Upload Section - always visible */}
+              <div className="space-y-2">
+                <Label htmlFor="exercise_image">Exercise Image (optional)</Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    id="exercise_image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="cursor-pointer"
+                  />
+                  {imagePreview && (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Exercise preview"
+                        className="w-24 h-24 object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview(null);
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Upload an image. Will show if no video URL is provided. Falls back to Rick Roll if neither is provided.
+                </p>
               </div>
               
               <div className="space-y-2">
