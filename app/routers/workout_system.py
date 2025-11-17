@@ -61,18 +61,8 @@ def get_exercise_detail(
     if not exercise:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
 
-    return ExerciseResponse(
-        id=exercise.id,
-        name=exercise.name,
-        description=exercise.description,
-        video_url=exercise.video_url,
-        muscle_group=exercise.muscle_group,
-        equipment_needed=exercise.equipment_needed,
-        instructions=exercise.instructions,
-        category=getattr(exercise, "category", None),
-        created_by=exercise.created_by,
-        created_at=exercise.created_at,
-    )
+    # Use from_attributes to automatically map all fields including image_path
+    return ExerciseResponse.model_validate(exercise)
 
 # ============ Workout Plan Endpoints ============
 

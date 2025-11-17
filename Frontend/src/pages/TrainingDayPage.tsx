@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { CheckCircle2, ArrowLeft, Dumbbell, Clock, PlusCircle, Video, PlayCircle, History } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -70,6 +70,7 @@ interface ExerciseDetail {
   muscle_group: string;
   equipment_needed?: string | null;
   video_url?: string | null;
+  image_path?: string | null;
   instructions?: string | null;
 }
 
@@ -662,6 +663,9 @@ const TrainingDayPage: React.FC = () => {
               <DialogContent className="sm:max-w-3xl max-w-[95vw] mx-4 max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-base md:text-lg">{exerciseName}</DialogTitle>
+                  <DialogDescription>
+                    {detail?.description || exercise.exercise?.description || t('training.exerciseDetails', 'פרטי התרגיל')}
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   {videoUrl ? (
