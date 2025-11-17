@@ -872,59 +872,54 @@ const ExerciseBank = () => {
                   />
                 </div>
                 <div className="space-y-2 col-span-2">
-                  <Label>Media Type (optional)</Label>
-                  <ToggleGroup 
-                    type="single" 
-                    value={mediaType} 
-                    onValueChange={(value) => {
-                      if (value === 'video' || value === 'image') {
-                        setMediaType(value);
-                        // Clear the other field when switching
-                        if (value === 'video') {
-                          setImageFile(null);
-                          setImagePreview(null);
-                        } else {
-                          setExerciseForm({...exerciseForm, video_url: ''});
+                  <Label htmlFor={mediaType === 'video' ? 'video_url' : 'exercise_image'}>
+                    {mediaType === 'video' ? t('exerciseBank.videoUrl') : 'Exercise Image'} (optional)
+                  </Label>
+                  <div className="flex gap-2 items-center">
+                    <ToggleGroup 
+                      type="single" 
+                      value={mediaType} 
+                      onValueChange={(value) => {
+                        if (value === 'video' || value === 'image') {
+                          setMediaType(value);
+                          // Clear the other field when switching
+                          if (value === 'video') {
+                            setImageFile(null);
+                            setImagePreview(null);
+                          } else {
+                            setExerciseForm({...exerciseForm, video_url: ''});
+                          }
                         }
-                      }
-                    }}
-                    className="justify-start"
-                  >
-                    <ToggleGroupItem value="video" aria-label="Video URL">
-                      <Video className="w-4 h-4 mr-2" />
-                      Video URL
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="image" aria-label="Upload Image">
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Upload Image
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                  {mediaType === 'video' && (
-                    <>
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <ToggleGroupItem value="video" aria-label="Video URL" size="sm">
+                        <Video className="w-4 h-4" />
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="image" aria-label="Upload Image" size="sm">
+                        <ImageIcon className="w-4 h-4" />
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                    {mediaType === 'video' ? (
                       <Input
                         id="video_url"
                         type="url"
                         value={exerciseForm.video_url}
                         onChange={(e) => setExerciseForm({...exerciseForm, video_url: e.target.value})}
                         placeholder={t('exerciseBank.videoUrlPlaceholder')}
+                        className="flex-1"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Enter a video URL. Falls back to Rick Roll if not provided.
-                      </p>
-                    </>
-                  )}
-                  {mediaType === 'image' && (
-                    <>
-                      <div className="flex items-center gap-4">
+                    ) : (
+                      <div className="flex items-center gap-4 flex-1">
                         <Input
                           id="exercise_image"
                           type="file"
                           accept="image/*"
                           onChange={handleImageChange}
-                          className="cursor-pointer"
+                          className="cursor-pointer flex-1"
                         />
                         {imagePreview && (
-                          <div className="relative">
+                          <div className="relative flex-shrink-0">
                             <img
                               src={imagePreview}
                               alt="Exercise preview"
@@ -943,11 +938,13 @@ const ExerciseBank = () => {
                           </div>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Upload an image. Falls back to Rick Roll if not provided.
-                      </p>
-                    </>
-                  )}
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {mediaType === 'video' 
+                      ? 'Enter a video URL. Falls back to Rick Roll if not provided.'
+                      : 'Upload an image. Falls back to Rick Roll if not provided.'}
+                  </p>
                 </div>
               </div>
               
