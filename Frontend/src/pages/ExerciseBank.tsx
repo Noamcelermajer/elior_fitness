@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { 
   Dumbbell, Plus, Search, Filter, Edit, Trash2, 
-  Video, FileText, Tag, Clock, Weight, Settings, Save, X
+  Video, FileText, Tag, Clock, Weight, Settings, Save, X, Image as ImageIcon
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
@@ -51,6 +52,7 @@ const ExerciseBank = () => {
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'video' | 'image'>('video');
   const [muscleGroups, setMuscleGroups] = useState<string[]>(staticMuscleGroups);
   const [dynamicMuscleGroups, setDynamicMuscleGroups] = useState<Array<{id: number, name: string}>>([]);
   const [muscleGroupDialogOpen, setMuscleGroupDialogOpen] = useState(false);
@@ -370,6 +372,7 @@ const ExerciseBank = () => {
     });
     setImageFile(null);
     setImagePreview(null);
+    setMediaType('video');
   };
 
   const handleCreateMuscleGroup = async () => {
@@ -868,52 +871,83 @@ const ExerciseBank = () => {
                     placeholder={t('exerciseBank.equipmentPlaceholder')}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="video_url">{t('exerciseBank.videoUrl')}</Label>
-                  <Input
-                    id="video_url"
-                    type="url"
-                    value={exerciseForm.video_url}
-                    onChange={(e) => setExerciseForm({...exerciseForm, video_url: e.target.value})}
-                    placeholder={t('exerciseBank.videoUrlPlaceholder')}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Video takes priority over image. Falls back to image if no video, then Rick Roll.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="exercise_image">Exercise Image (optional)</Label>
-                  <div className="flex items-center gap-4">
-                    <Input
-                      id="exercise_image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="cursor-pointer"
-                    />
-                    {imagePreview && (
-                      <div className="relative">
-                        <img
-                          src={imagePreview}
-                          alt="Exercise preview"
-                          className="w-24 h-24 object-cover rounded-lg border"
+                <div className="space-y-2 col-span-2">
+                  <Label>Media Type (optional)</Label>
+                  <ToggleGroup 
+                    type="single" 
+                    value={mediaType} 
+                    onValueChange={(value) => {
+                      if (value === 'video' || value === 'image') {
+                        setMediaType(value);
+                        // Clear the other field when switching
+                        if (value === 'video') {
+                          setImageFile(null);
+                          setImagePreview(null);
+                        } else {
+                          setExerciseForm({...exerciseForm, video_url: ''});
+                        }
+                      }
+                    }}
+                    className="justify-start"
+                  >
+                    <ToggleGroupItem value="video" aria-label="Video URL">
+                      <Video className="w-4 h-4 mr-2" />
+                      Video URL
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="image" aria-label="Upload Image">
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      Upload Image
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                  {mediaType === 'video' && (
+                    <>
+                      <Input
+                        id="video_url"
+                        type="url"
+                        value={exerciseForm.video_url}
+                        onChange={(e) => setExerciseForm({...exerciseForm, video_url: e.target.value})}
+                        placeholder={t('exerciseBank.videoUrlPlaceholder')}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter a video URL. Falls back to Rick Roll if not provided.
+                      </p>
+                    </>
+                  )}
+                  {mediaType === 'image' && (
+                    <>
+                      <div className="flex items-center gap-4">
+                        <Input
+                          id="exercise_image"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="cursor-pointer"
                         />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImageFile(null);
-                            setImagePreview(null);
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        {imagePreview && (
+                          <div className="relative">
+                            <img
+                              src={imagePreview}
+                              alt="Exercise preview"
+                              className="w-24 h-24 object-cover rounded-lg border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setImageFile(null);
+                                setImagePreview(null);
+                              }}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Upload an image. Will show if no video URL is provided.
-                  </p>
+                      <p className="text-xs text-muted-foreground">
+                        Upload an image. Falls back to Rick Roll if not provided.
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
               
