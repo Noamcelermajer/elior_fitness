@@ -303,10 +303,13 @@ const TrainerDashboard = () => {
             <form onSubmit={async e => {
               e.preventDefault();
               setAddClientError('');
+              
+              // Frontend validation
               if (addClientForm.password !== addClientForm.confirmPassword) {
                 setAddClientError(t('trainerDashboard.passwordsDoNotMatch'));
                 return;
               }
+              
               setAddClientLoading(true);
               try {
                 const token = localStorage.getItem('access_token');
@@ -326,11 +329,27 @@ const TrainerDashboard = () => {
                   let errMsg = t('trainerDashboard.failedToRegisterClient');
                   try {
                     const err = await res.json();
-                    errMsg = err.detail || JSON.stringify(err);
+                    // Handle FastAPI validation errors - detail can be an array or string
+                    if (err.detail) {
+                      if (Array.isArray(err.detail)) {
+                        // Format validation errors array into readable message
+                        errMsg = err.detail.map((e: any) => {
+                          const field = Array.isArray(e.loc) ? e.loc.slice(1).join('.') : 'field';
+                          return `${field}: ${e.msg}`;
+                        }).join('; ');
+                      } else {
+                        // detail is a string
+                        errMsg = String(err.detail);
+                      }
+                    } else {
+                      errMsg = JSON.stringify(err);
+                    }
                   } catch (jsonErr) {
-                    errMsg = await res.text();
+                    const textErr = await res.text();
+                    errMsg = textErr || String(jsonErr);
                   }
-                  setAddClientError(errMsg);
+                  // Ensure errMsg is always a string
+                  setAddClientError(String(errMsg));
                   setAddClientLoading(false);
                   return;
                 }
@@ -344,11 +363,27 @@ const TrainerDashboard = () => {
                   let assignErrMsg = t('trainerDashboard.clientRegisteredButFailedToAssign');
                   try {
                     const err = await assignRes.json();
-                    assignErrMsg = err.detail || JSON.stringify(err);
+                    // Handle FastAPI validation errors - detail can be an array or string
+                    if (err.detail) {
+                      if (Array.isArray(err.detail)) {
+                        // Format validation errors array into readable message
+                        assignErrMsg = err.detail.map((e: any) => {
+                          const field = Array.isArray(e.loc) ? e.loc.slice(1).join('.') : 'field';
+                          return `${field}: ${e.msg}`;
+                        }).join('; ');
+                      } else {
+                        // detail is a string
+                        assignErrMsg = String(err.detail);
+                      }
+                    } else {
+                      assignErrMsg = JSON.stringify(err);
+                    }
                   } catch (jsonErr) {
-                    assignErrMsg = await assignRes.text();
+                    const textErr = await assignRes.text();
+                    assignErrMsg = textErr || String(jsonErr);
                   }
-                  setAddClientError(assignErrMsg);
+                  // Ensure errMsg is always a string
+                  setAddClientError(String(assignErrMsg));
                   setAddClientLoading(false);
                   return;
                 }
@@ -356,7 +391,8 @@ const TrainerDashboard = () => {
                 setAddClientForm({ username: '', email: '', full_name: '', password: '', confirmPassword: '' });
                 fetchClients();
               } catch (err) {
-                setAddClientError(t('trainerDashboard.unexpectedError') + ': ' + (err?.message || err));
+                const errorMsg = err instanceof Error ? err.message : String(err);
+                setAddClientError(t('trainerDashboard.unexpectedError') + ': ' + errorMsg);
                 console.error('Add client error:', err);
               } finally {
                 setAddClientLoading(false);

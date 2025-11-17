@@ -179,6 +179,13 @@ const AdminDashboard = () => {
 
   const handleRegisterTrainer = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Frontend validation
+    if (registerForm.password !== registerForm.confirmPassword) {
+      alert(t('admin.passwordsDoNotMatch'));
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -200,12 +207,31 @@ const AdminDashboard = () => {
         setIsRegisterDialogOpen(false);
         setRegisterForm({ username: '', email: '', password: '', confirmPassword: '', full_name: '' });
       } else {
-        const errorData = await response.json();
-        alert(`${t('admin.registrationFailed')}: ${errorData.detail || 'Unknown error'}`);
+        let errorMsg = t('admin.registrationFailed') + ': ';
+        try {
+          const errorData = await response.json();
+          // Handle FastAPI validation errors - detail can be an array or string
+          if (errorData.detail) {
+            if (Array.isArray(errorData.detail)) {
+              errorMsg += errorData.detail.map((e: any) => {
+                const field = Array.isArray(e.loc) ? e.loc.slice(1).join('.') : 'field';
+                return `${field}: ${e.msg}`;
+              }).join('; ');
+            } else {
+              errorMsg += String(errorData.detail);
+            }
+          } else {
+            errorMsg += 'Unknown error';
+          }
+        } catch (jsonErr) {
+          errorMsg += 'Failed to parse error response';
+        }
+        alert(errorMsg);
       }
     } catch (error) {
       console.error('Registration error:', error);
-      alert(t('admin.errorOccurred'));
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      alert(t('admin.errorOccurred') + ': ' + errorMsg);
     } finally {
       setLoading(false);
     }
@@ -258,7 +284,15 @@ const AdminDashboard = () => {
                         {t('admin.registerNewTrainerDesc')}
                       </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={e => { e.preventDefault(); if (registerForm.password !== registerForm.confirmPassword) { setPasswordError(t('admin.passwordsDoNotMatch')); return; } setPasswordError(''); handleRegisterTrainer(e); }} className="space-y-4">
+                    <form onSubmit={e => { 
+                      e.preventDefault(); 
+                      if (registerForm.password !== registerForm.confirmPassword) { 
+                        setPasswordError(t('admin.passwordsDoNotMatch')); 
+                        return; 
+                      } 
+                      setPasswordError(''); 
+                      handleRegisterTrainer(e); 
+                    }} className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="username">{t('admin.username')}</Label>
                         <Input

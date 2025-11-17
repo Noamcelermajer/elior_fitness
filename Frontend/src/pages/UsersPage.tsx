@@ -181,6 +181,17 @@ const UsersPage = () => {
 
   const handleRegisterTrainer = async (e) => {
     e.preventDefault();
+    
+    // Frontend validation
+    if (registerForm.password !== registerForm.confirmPassword) {
+      addNotification({
+        type: 'error',
+        title: t('admin.registrationFailedTitle'),
+        message: t('admin.passwordsDoNotMatch')
+      });
+      return;
+    }
+    
     setActionLoading(true);
     try {
       const token = localStorage.getItem('access_token');
@@ -190,7 +201,10 @@ const UsersPage = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(registerForm),
+        body: JSON.stringify({
+          ...registerForm,
+          role: 'TRAINER'
+        }),
       });
 
       if (response.ok) {
@@ -203,19 +217,36 @@ const UsersPage = () => {
         setRegisterForm({ username: '', email: '', password: '', confirmPassword: '', full_name: '', role: 'trainer' });
         fetchUsers(); // Refresh the users list
       } else {
-        const errorData = await response.json();
+        let errorMsg = t('admin.registrationFailedMessage');
+        try {
+          const errorData = await response.json();
+          // Handle FastAPI validation errors - detail can be an array or string
+          if (errorData.detail) {
+            if (Array.isArray(errorData.detail)) {
+              errorMsg = errorData.detail.map((e: any) => {
+                const field = Array.isArray(e.loc) ? e.loc.slice(1).join('.') : 'field';
+                return `${field}: ${e.msg}`;
+              }).join('; ');
+            } else {
+              errorMsg = String(errorData.detail);
+            }
+          }
+        } catch (jsonErr) {
+          errorMsg = 'Failed to parse error response';
+        }
         addNotification({
           type: 'error',
           title: t('admin.registrationFailedTitle'),
-          message: errorData.detail || t('admin.registrationFailedMessage')
+          message: errorMsg
         });
       }
     } catch (error) {
       console.error('Registration error:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
       addNotification({
         type: 'error',
         title: t('admin.registrationError'),
-        message: t('admin.registrationErrorMessage')
+        message: t('admin.registrationErrorMessage') + ': ' + errorMsg
       });
     } finally {
       setActionLoading(false);
@@ -420,7 +451,15 @@ const UsersPage = () => {
               <DialogTitle>{t('admin.registerNewTrainer')}</DialogTitle>
               <DialogDescription>{t('admin.registerNewTrainerDesc')}</DialogDescription>
             </DialogHeader>
-            <form onSubmit={e => { e.preventDefault(); if (registerForm.password !== registerForm.confirmPassword) { setPasswordError(t('admin.passwordsDoNotMatch')); return; } setPasswordError(''); handleRegisterTrainer(e); }} className="space-y-4">
+            <form onSubmit={e => { 
+              e.preventDefault(); 
+              if (registerForm.password !== registerForm.confirmPassword) { 
+                setPasswordError(t('admin.passwordsDoNotMatch')); 
+                return; 
+              } 
+              setPasswordError(''); 
+              handleRegisterTrainer(e); 
+            }} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username">{t('admin.username')}</Label>
                 <Input
