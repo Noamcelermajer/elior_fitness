@@ -358,61 +358,62 @@ const CreateExercise = () => {
 
   return (
     <Layout currentPage="dashboard">
-      <div className="container mx-auto p-6 max-w-4xl">
+      <div className="container mx-auto p-4 md:p-6 max-w-4xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate(-1)}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Create New Exercise</h1>
-              <p className="text-muted-foreground">Add a new exercise to your database</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Create New Exercise</h1>
+              <p className="text-sm text-muted-foreground">Add a new exercise to your database</p>
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Basic Information */}
           <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Basic Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Exercise Name *</Label>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-sm">Exercise Name *</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="e.g., Push-ups, Deadlift, Squats"
+                    className="h-9 text-sm"
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="muscle_group">Primary Muscle Group *</Label>
+                    <Label htmlFor="muscle_group" className="text-sm">Primary Muscle Group *</Label>
                     <Dialog open={muscleGroupDialogOpen} onOpenChange={setMuscleGroupDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button type="button" variant="outline" size="sm" className="h-8">
-                          <Settings className="w-4 h-4 mr-1" />
+                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs">
+                          <Settings className="w-3 h-3 mr-1" />
                           Manage
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[500px]">
-                        <DialogHeader>
-                          <DialogTitle>Manage Muscle Groups</DialogTitle>
-                          <DialogDescription>
+                      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+                        <DialogHeader className="pb-3">
+                          <DialogTitle className="text-lg">Manage Muscle Groups</DialogTitle>
+                          <DialogDescription className="text-sm">
                             Create, edit, or delete custom muscle groups
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {/* Create/Edit Form */}
-                          <div className="space-y-2">
-                            <Label htmlFor="new_muscle_group_name">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="new_muscle_group_name" className="text-sm">
                               {editingMuscleGroup ? 'Edit Muscle Group' : 'Create New Muscle Group'}
                             </Label>
                             <div className="flex gap-2">
@@ -424,6 +425,7 @@ const CreateExercise = () => {
                                   setMuscleGroupError('');
                                 }}
                                 placeholder="Enter muscle group name"
+                                className="h-9 text-sm"
                                 onKeyPress={(e) => {
                                   if (e.key === 'Enter') {
                                     if (editingMuscleGroup) {
@@ -438,15 +440,17 @@ const CreateExercise = () => {
                                 <>
                                   <Button
                                     type="button"
+                                    size="sm"
                                     onClick={handleUpdateMuscleGroup}
                                     disabled={!newMuscleGroupName.trim()}
                                   >
-                                    <Save className="w-4 h-4 mr-1" />
+                                    <Save className="w-3 h-3 mr-1" />
                                     Save
                                   </Button>
                                   <Button
                                     type="button"
                                     variant="outline"
+                                    size="sm"
                                     onClick={() => {
                                       setEditingMuscleGroup(null);
                                       setNewMuscleGroupName('');
@@ -459,48 +463,49 @@ const CreateExercise = () => {
                               ) : (
                                 <Button
                                   type="button"
+                                  size="sm"
                                   onClick={handleCreateMuscleGroup}
                                   disabled={!newMuscleGroupName.trim()}
                                 >
-                                  <Plus className="w-4 h-4 mr-1" />
+                                  <Plus className="w-3 h-3 mr-1" />
                                   Create
                                 </Button>
                               )}
                             </div>
                             {muscleGroupError && (
-                              <p className="text-sm text-red-500">{muscleGroupError}</p>
+                              <p className="text-xs text-red-500">{muscleGroupError}</p>
                             )}
                           </div>
 
                           {/* List of Dynamic Muscle Groups */}
                           {dynamicMuscleGroups.length > 0 && (
-                            <div className="space-y-2">
-                              <Label>Your Custom Muscle Groups</Label>
-                              <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Your Custom Muscle Groups</Label>
+                              <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
                                 {dynamicMuscleGroups.map((group) => (
                                   <div
                                     key={group.id}
-                                    className="flex items-center justify-between p-3 hover:bg-muted/50"
+                                    className="flex items-center justify-between p-2 hover:bg-muted/50"
                                   >
-                                    <span className="font-medium">{group.name}</span>
-                                    <div className="flex gap-2">
+                                    <span className="font-medium text-sm">{group.name}</span>
+                                    <div className="flex gap-1">
                                       <Button
                                         type="button"
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => openEditDialog(group)}
-                                        className="h-8 w-8 p-0"
+                                        className="h-7 w-7 p-0"
                                       >
-                                        <Edit className="w-4 h-4" />
+                                        <Edit className="w-3 h-3" />
                                       </Button>
                                       <Button
                                         type="button"
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => handleDeleteMuscleGroup(group.id)}
-                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                                       >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-3 h-3" />
                                       </Button>
                                     </div>
                                   </div>
@@ -513,7 +518,7 @@ const CreateExercise = () => {
                     </Dialog>
                   </div>
                   <Select value={formData.muscle_group} onValueChange={(value) => handleInputChange('muscle_group', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="Select muscle group" />
                     </SelectTrigger>
                     <SelectContent>
@@ -525,23 +530,24 @@ const CreateExercise = () => {
                 </div>
               </div>
 
-                <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
+                <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-sm">Description *</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder="Describe the exercise, what muscles it targets, and its benefits..."
-                  rows={3}
+                  rows={2}
+                  className="text-sm resize-none"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="equipment">Equipment Needed</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="equipment" className="text-sm">Equipment Needed</Label>
                   <Select value={formData.equipment_needed} onValueChange={(value) => handleInputChange('equipment_needed', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="Select equipment" />
                     </SelectTrigger>
                     <SelectContent>
@@ -552,10 +558,10 @@ const CreateExercise = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="difficulty">Difficulty Level</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="difficulty" className="text-sm">Difficulty Level</Label>
                   <Select value={formData.difficulty_level} onValueChange={(value) => handleInputChange('difficulty_level', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -567,52 +573,52 @@ const CreateExercise = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="category" className="text-sm">Category</Label>
                 <Input
                   id="category"
                   list="exercise-category-options"
                   value={formData.category}
                   onChange={(e) => handleInputChange('category', e.target.value)}
                   placeholder="e.g., Strength, Mobility, Hypertrophy"
+                  className="h-9 text-sm"
                 />
                 <datalist id="exercise-category-options">
                   {existingCategories.map((category) => (
                     <option key={category} value={category} />
                   ))}
                 </datalist>
-                <p className="text-xs text-muted-foreground">
-                  Choose an existing category or type a new one.
-                </p>
               </div>
             </CardContent>
           </Card>
 
           {/* Instructions */}
           <Card>
-            <CardHeader>
-              <CardTitle>Instructions</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Instructions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="instructions">Step-by-Step Instructions</Label>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="instructions" className="text-sm">Step-by-Step Instructions</Label>
                 <Textarea
                   id="instructions"
                   value={formData.instructions}
                   onChange={(e) => handleInputChange('instructions', e.target.value)}
                   placeholder="Provide detailed step-by-step instructions on how to perform the exercise correctly..."
-                  rows={6}
+                  rows={4}
+                  className="text-sm resize-none"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="tips">Tips & Safety Notes</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="tips" className="text-sm">Tips & Safety Notes</Label>
                 <Textarea
                   id="tips"
                   value={formData.tips}
                   onChange={(e) => handleInputChange('tips', e.target.value)}
                   placeholder="Add any important tips, common mistakes to avoid, or safety considerations..."
-                  rows={3}
+                  rows={2}
+                  className="text-sm resize-none"
                 />
               </div>
             </CardContent>
@@ -620,13 +626,13 @@ const CreateExercise = () => {
 
           {/* Additional Information */}
           <Card>
-            <CardHeader>
-              <CardTitle>Additional Information</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Additional Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Estimated Duration (minutes)</Label>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="duration" className="text-sm">Estimated Duration (minutes)</Label>
                   <Input
                     id="duration"
                     type="number"
@@ -634,11 +640,12 @@ const CreateExercise = () => {
                     onChange={(e) => handleInputChange('estimated_duration', e.target.value)}
                     placeholder="e.g., 5"
                     min="1"
+                    className="h-9 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="calories">Calories Burned (per set)</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="calories" className="text-sm">Calories Burned (per set)</Label>
                   <Input
                     id="calories"
                     type="number"
@@ -646,11 +653,12 @@ const CreateExercise = () => {
                     onChange={(e) => handleInputChange('calories_burned', e.target.value)}
                     placeholder="e.g., 10"
                     min="1"
+                    className="h-9 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2 col-span-1 md:col-span-3">
-                  <Label htmlFor={mediaType === 'video' ? 'video_url' : 'exercise_image'}>
+                <div className="space-y-1.5 col-span-1 md:col-span-3">
+                  <Label htmlFor={mediaType === 'video' ? 'video_url' : 'exercise_image'} className="text-sm">
                     {mediaType === 'video' ? 'Video URL' : 'Exercise Image'} (optional)
                   </Label>
                   <div className="flex gap-2 items-center">
@@ -685,23 +693,23 @@ const CreateExercise = () => {
                         value={formData.video_url}
                         onChange={(e) => handleInputChange('video_url', e.target.value)}
                         placeholder="https://youtube.com/..."
-                        className="flex-1"
+                        className="flex-1 h-9 text-sm"
                       />
                     ) : (
-                      <div className="flex items-center gap-4 flex-1">
+                      <div className="flex items-center gap-2 flex-1">
                         <Input
                           id="exercise_image"
                           type="file"
                           accept="image/*"
                           onChange={handleImageChange}
-                          className="cursor-pointer flex-1"
+                          className="cursor-pointer flex-1 h-9 text-sm"
                         />
                         {imagePreview && (
                           <div className="relative flex-shrink-0">
                             <img
                               src={imagePreview}
                               alt="Exercise preview"
-                              className="w-24 h-24 object-cover rounded-lg border"
+                              className="w-16 h-16 object-cover rounded-lg border"
                             />
                             <button
                               type="button"
@@ -709,20 +717,15 @@ const CreateExercise = () => {
                                 setImageFile(null);
                                 setImagePreview(null);
                               }}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-3 h-3" />
                             </button>
                           </div>
                         )}
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {mediaType === 'video' 
-                      ? 'Enter a video URL. Falls back to Rick Roll if not provided.'
-                      : 'Upload an image. Falls back to Rick Roll if not provided.'}
-                  </p>
                 </div>
               </div>
             </CardContent>

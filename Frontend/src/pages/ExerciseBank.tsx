@@ -805,37 +805,38 @@ const ExerciseBank = () => {
                     resetForm();
                   }
                 }}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-3">
+              <DialogTitle className="text-lg">
                 {editingExercise ? t('exerciseBank.editExercise') : t('exerciseBank.addNewExercise')}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-sm">
                 {editingExercise 
                   ? t('exerciseBank.editDescription')
                   : t('exerciseBank.createDescription')}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={editingExercise ? handleUpdateExercise : handleCreateExercise} 
-                  className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">{t('exerciseBank.exerciseName')}</Label>
+                  className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-sm">{t('exerciseBank.exerciseName')}</Label>
                   <Input
                     id="name"
                     value={exerciseForm.name}
                     onChange={(e) => setExerciseForm({...exerciseForm, name: e.target.value})}
                     placeholder={t('exerciseBank.exerciseNamePlaceholder')}
+                    className="h-9 text-sm"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="muscle_group">{t('exerciseBank.muscleGroup')}</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="muscle_group" className="text-sm">{t('exerciseBank.muscleGroup')}</Label>
                   <Select 
                     value={exerciseForm.muscle_group} 
                     onValueChange={(value) => setExerciseForm({...exerciseForm, muscle_group: value})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder={t('exerciseBank.selectMuscleGroup')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -849,30 +850,32 @@ const ExerciseBank = () => {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="description">{t('exerciseBank.description')}</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-sm">{t('exerciseBank.description')}</Label>
                 <Textarea
                   id="description"
                   value={exerciseForm.description}
                   onChange={(e) => setExerciseForm({...exerciseForm, description: e.target.value})}
                   placeholder={t('exerciseBank.descriptionPlaceholder')}
-                  rows={3}
+                  rows={2}
+                  className="text-sm resize-none"
                   required
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="equipment_needed">{t('exerciseBank.equipmentNeeded')}</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="equipment_needed" className="text-sm">{t('exerciseBank.equipmentNeeded')}</Label>
                   <Input
                     id="equipment_needed"
                     value={exerciseForm.equipment_needed}
                     onChange={(e) => setExerciseForm({...exerciseForm, equipment_needed: e.target.value})}
                     placeholder={t('exerciseBank.equipmentPlaceholder')}
+                    className="h-9 text-sm"
                   />
                 </div>
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor={mediaType === 'video' ? 'video_url' : 'exercise_image'}>
+                <div className="space-y-1.5 col-span-2">
+                  <Label htmlFor={mediaType === 'video' ? 'video_url' : 'exercise_image'} className="text-sm">
                     {mediaType === 'video' ? t('exerciseBank.videoUrl') : 'Exercise Image'} (optional)
                   </Label>
                   <div className="flex gap-2 items-center">
@@ -907,23 +910,23 @@ const ExerciseBank = () => {
                         value={exerciseForm.video_url}
                         onChange={(e) => setExerciseForm({...exerciseForm, video_url: e.target.value})}
                         placeholder={t('exerciseBank.videoUrlPlaceholder')}
-                        className="flex-1"
+                        className="flex-1 h-9 text-sm"
                       />
                     ) : (
-                      <div className="flex items-center gap-4 flex-1">
+                      <div className="flex items-center gap-2 flex-1">
                         <Input
                           id="exercise_image"
                           type="file"
                           accept="image/*"
                           onChange={handleImageChange}
-                          className="cursor-pointer flex-1"
+                          className="cursor-pointer flex-1 h-9 text-sm"
                         />
                         {imagePreview && (
                           <div className="relative flex-shrink-0">
                             <img
                               src={imagePreview}
                               alt="Exercise preview"
-                              className="w-24 h-24 object-cover rounded-lg border"
+                              className="w-16 h-16 object-cover rounded-lg border"
                             />
                             <button
                               type="button"
@@ -931,49 +934,46 @@ const ExerciseBank = () => {
                                 setImageFile(null);
                                 setImagePreview(null);
                               }}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-3 h-3" />
                             </button>
                           </div>
                         )}
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {mediaType === 'video' 
-                      ? 'Enter a video URL. Falls back to Rick Roll if not provided.'
-                      : 'Upload an image. Falls back to Rick Roll if not provided.'}
-                  </p>
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="category">{t('exerciseBank.category')}</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="category" className="text-sm">{t('exerciseBank.category')}</Label>
                 <Input
                   id="category"
                   value={exerciseForm.category}
                   onChange={(e) => setExerciseForm({...exerciseForm, category: e.target.value})}
                   placeholder={t('exerciseBank.categoryPlaceholder')}
+                  className="h-9 text-sm"
                 />
-                <p className="text-xs text-muted-foreground">{t('exerciseBank.categoryHint')}</p>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="instructions">{t('exerciseBank.instructions')}</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="instructions" className="text-sm">{t('exerciseBank.instructions')}</Label>
                 <Textarea
                   id="instructions"
                   value={exerciseForm.instructions}
                   onChange={(e) => setExerciseForm({...exerciseForm, instructions: e.target.value})}
                   placeholder={t('exerciseBank.instructionsPlaceholder')}
-                  rows={5}
+                  rows={3}
+                  className="text-sm resize-none"
                 />
               </div>
               
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-2">
                 <Button
                   type="button"
                   variant="outline"
+                  size="sm"
                   onClick={() => {
                     setCreateDialogOpen(false);
                     setEditingExercise(null);
@@ -982,7 +982,7 @@ const ExerciseBank = () => {
                 >
                   {t('exerciseBank.cancel')}
                 </Button>
-                <Button type="submit" className="gradient-green">
+                <Button type="submit" size="sm" className="gradient-green">
                   {editingExercise ? t('exerciseBank.updateExercise') : t('exerciseBank.createExercise')}
                 </Button>
               </div>
