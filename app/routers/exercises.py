@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import logging
@@ -160,9 +160,8 @@ def get_exercise(
 @router.put("/{exercise_id}", response_model=ExerciseResponse)
 async def update_exercise(
     exercise_id: int,
-    # Accept either JSON body or form fields
-    exercise_data: Optional[ExerciseUpdate] = None,
-    # Form fields for multipart/form-data
+    request: Request,
+    # Form fields for multipart/form-data (when image is uploaded)
     exercise_json: Optional[str] = Form(None),
     image: Optional[UploadFile] = File(None),
     current_user: UserResponse = Depends(get_current_user),
@@ -176,6 +175,9 @@ async def update_exercise(
     For multipart/form-data:
     - Send exercise_json as a JSON string containing exercise fields to update
     - Optionally send image file to update/replace exercise image
+    
+    For application/json:
+    - Send ExerciseUpdate as JSON body
     """
     if current_user.role != UserRole.TRAINER:
         raise HTTPException(
@@ -183,8 +185,11 @@ async def update_exercise(
             detail="Only trainers can update exercises"
         )
     
+    exercise_data: Optional[ExerciseUpdate] = None
+    
     # Handle multipart/form-data (for image uploads)
-    if exercise_json:
+    if exercise_json is not None:
+        # This is a multipart/form-data request
         try:
             exercise_dict = json.loads(exercise_json)
             exercise_data = ExerciseUpdate(**exercise_dict)
@@ -193,8 +198,24 @@ async def update_exercise(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid JSON in exercise_json field: {str(e)}"
             )
+    elif image is not None and image.filename:
+        # Image uploaded but no exercise_json - need exercise_json
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="exercise_json field is required when uploading an image"
+        )
+    else:
+        # Handle JSON body (backward compatibility - no form data)
+        try:
+            body = await request.json()
+            exercise_data = ExerciseUpdate(**body)
+        except (json.JSONDecodeError, ValueError, TypeError) as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid JSON body: {str(e)}"
+            )
     
-    # If no data from form, check if we got JSON body (backward compatibility)
+    # Validate we have exercise data
     if not exercise_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
