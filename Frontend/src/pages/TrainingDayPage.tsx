@@ -582,8 +582,14 @@ const TrainingDayPage: React.FC = () => {
     const videoUrl = exercise.video_url || detail?.video_url || null;
     const imagePath = detail?.image_path || null;
     const resolvedVideoUrl = videoUrl || (imagePath ? null : VIDEO_FALLBACK_URL);
-    // Only get thumbnail if we have a valid video URL
-    const thumbnail = videoUrl && getYoutubeId(videoUrl) ? getVideoThumbnail(videoUrl) : null;
+    // Get thumbnail for video URL, or fallback video if no video/image
+    let thumbnail: string | null = null;
+    if (videoUrl && getYoutubeId(videoUrl)) {
+      thumbnail = getVideoThumbnail(videoUrl);
+    } else if (!videoUrl && !imagePath) {
+      // Use fallback video thumbnail if no video or image
+      thumbnail = getVideoThumbnail(VIDEO_FALLBACK_URL);
+    }
     const exerciseName =
       detail?.name || exercise.exercise?.name || t('training.unnamedExercise', 'תרגיל ללא שם');
     
@@ -659,7 +665,7 @@ const TrainingDayPage: React.FC = () => {
                       <Video className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground" />
                     </div>
                   )}
-                  {videoUrl && (
+                  {(videoUrl || (!videoUrl && !imagePath)) && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                       <PlayCircle className="h-5 w-5 md:h-6 md:w-6 text-white drop-shadow" />
                     </div>
@@ -795,7 +801,7 @@ const TrainingDayPage: React.FC = () => {
                   <div className="flex flex-1 items-center gap-3">
                     <div className="flex flex-col gap-0.5 text-xs md:text-sm">
                       <span className="text-muted-foreground">
-                        {prevSet.weight_used} kg
+                        {prevSet.weight_used} {t('training.kg')}
                       </span>
                       <span className="text-muted-foreground">
                         {prevSet.reps_completed} {t('training.reps')}
@@ -892,10 +898,10 @@ const TrainingDayPage: React.FC = () => {
                         <>
                           <div className="flex flex-col gap-0.5 text-xs md:text-sm">
                             <span className="text-foreground">
-                              {getCompletedSet(exercise.id, setNumber)?.weight_used ?? 0} kg
+                              {getCompletedSet(exercise.id, setNumber)?.weight_used ?? 0} {t('training.kg')}
                             </span>
                             <span className="text-muted-foreground">
-                              {getCompletedSet(exercise.id, setNumber)?.reps_completed ?? 0} reps
+                              {getCompletedSet(exercise.id, setNumber)?.reps_completed ?? 0} {t('training.reps')}
                             </span>
                           </div>
                           <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted ml-auto">
@@ -910,7 +916,7 @@ const TrainingDayPage: React.FC = () => {
                                 type="number"
                                 inputMode="numeric"
                                 min={0}
-                                placeholder={suggestionSet ? String(suggestionSet.reps_completed) : 'reps'}
+                                placeholder={suggestionSet ? String(suggestionSet.reps_completed) : t('training.enterReps')}
                                 value={tempSets[currentKey]?.reps ?? ''}
                                 onChange={(e) => updateTempSet(exercise.id, setNumber, 'reps', e.target.value)}
                                 className="h-10 md:h-9 rounded-lg border-border/50 bg-background/90 text-sm"
@@ -922,7 +928,7 @@ const TrainingDayPage: React.FC = () => {
                                 inputMode="decimal"
                                 min={0}
                                 step="0.5"
-                                placeholder={isBodyweight ? 'BW' : (suggestionSet ? String(suggestionSet.weight_used) : 'kg')}
+                                placeholder={isBodyweight ? t('training.bodyweight') : (suggestionSet ? String(suggestionSet.weight_used) : t('training.enterWeight'))}
                                 value={isBodyweight ? '0' : tempSets[currentKey]?.weight ?? ''}
                                 onChange={(e) => updateTempSet(exercise.id, setNumber, 'weight', e.target.value)}
                                 disabled={isBodyweight}
