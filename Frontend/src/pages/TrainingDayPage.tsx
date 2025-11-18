@@ -97,11 +97,16 @@ const getYoutubeId = (url?: string | null) => {
 };
 
 const getVideoThumbnail = (url?: string | null) => {
-  const videoId = getYoutubeId(url || undefined);
+  if (!url) return null;
+  
+  const videoId = getYoutubeId(url);
   if (!videoId) {
+    // If no valid video ID found, try fallback
     const fallbackId = getYoutubeId(VIDEO_FALLBACK_URL);
-    return fallbackId ? `https://img.youtube.com/vi/${fallbackId}/hqdefault.jpg` : undefined;
+    return fallbackId ? `https://img.youtube.com/vi/${fallbackId}/hqdefault.jpg` : null;
   }
+  
+  // Return thumbnail URL for the video ID
   return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 };
 
@@ -577,7 +582,8 @@ const TrainingDayPage: React.FC = () => {
     const videoUrl = exercise.video_url || detail?.video_url || null;
     const imagePath = detail?.image_path || null;
     const resolvedVideoUrl = videoUrl || (imagePath ? null : VIDEO_FALLBACK_URL);
-    const thumbnail = videoUrl ? getVideoThumbnail(videoUrl) : null;
+    // Only get thumbnail if we have a valid video URL
+    const thumbnail = videoUrl && getYoutubeId(videoUrl) ? getVideoThumbnail(videoUrl) : null;
     const exerciseName =
       detail?.name || exercise.exercise?.name || t('training.unnamedExercise', 'תרגיל ללא שם');
     
@@ -671,7 +677,14 @@ const TrainingDayPage: React.FC = () => {
                   {videoUrl ? (
                     <AspectRatio ratio={16 / 9} className="overflow-hidden rounded-xl w-full">
                       <iframe
-                        src={videoUrl.replace('watch?v=', 'embed/')}
+                        src={(() => {
+                          const videoId = getYoutubeId(videoUrl);
+                          if (!videoId) return VIDEO_FALLBACK_URL.replace('watch?v=', 'embed/');
+                          // Check if already an embed URL
+                          if (videoUrl.includes('/embed/')) return videoUrl;
+                          // Convert to embed URL
+                          return `https://www.youtube.com/embed/${videoId}`;
+                        })()}
                         title={exerciseName}
                         className="h-full w-full"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -725,16 +738,16 @@ const TrainingDayPage: React.FC = () => {
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] md:text-xs text-muted-foreground">
                     {exercise.target_sets != null && exercise.target_sets > 0 && (
-                      <span>Sets: {exercise.target_sets}</span>
+                      <span>{t('training.sets')}: {exercise.target_sets}</span>
                     )}
                     {exercise.target_reps && (
-                      <span>Reps: {exercise.target_reps}</span>
+                      <span>{t('training.reps')}: {exercise.target_reps}</span>
                     )}
                     {exercise.target_weight != null && exercise.target_weight > 0 && (
-                      <span>Weight: {exercise.target_weight} kg</span>
+                      <span>{t('training.weight')}: {exercise.target_weight} {t('training.kg')}</span>
                     )}
                     {exercise.rest_seconds != null && exercise.rest_seconds > 0 && (
-                      <span>Rest: {formatRestTime(exercise.rest_seconds)}</span>
+                      <span>{t('training.rest')}: {formatRestTime(exercise.rest_seconds)}</span>
                     )}
                   </div>
                 </div>
@@ -746,7 +759,7 @@ const TrainingDayPage: React.FC = () => {
                     className="h-4 w-4"
                   />
                   <label htmlFor={`bw-${exercise.id}`} className="cursor-pointer select-none text-[11px] md:text-xs text-muted-foreground">
-                    BW
+                    {t('training.bodyweight')}
                   </label>
                 </div>
               </div>
@@ -785,7 +798,7 @@ const TrainingDayPage: React.FC = () => {
                         {prevSet.weight_used} kg
                       </span>
                       <span className="text-muted-foreground">
-                        {prevSet.reps_completed} reps
+                        {prevSet.reps_completed} {t('training.reps')}
                       </span>
                     </div>
                     <span className="text-[10px] text-muted-foreground/60 ml-auto">
@@ -940,7 +953,7 @@ const TrainingDayPage: React.FC = () => {
             onClick={() => handleAddSet(exercise.id)}
           >
             <PlusCircle className="h-4 w-4" />
-            + Add Set
+            + {t('training.addSet')}
           </Button>
         </CardContent>
       </Card>

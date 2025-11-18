@@ -296,6 +296,8 @@
     "saveSet": "Save set",
     "addSet": "Add set",
     "completedSet": "{{reps}} reps · {{weight}} kg",
+    "lastTwoSets": "Last 2 sets (suggestions)",
+    "exerciseDetails": "Exercise details",
     "errors": {
       "missingToken": "No access token found. Please sign in again.",
       "loadFailed": "Failed to load the workout plan. Please try again later.",

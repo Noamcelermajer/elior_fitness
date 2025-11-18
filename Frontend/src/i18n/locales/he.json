@@ -314,6 +314,8 @@
     "saveSet": "שמור סט",
     "addSet": "הוסף סט",
     "completedSet": "{{reps}} חזרות · {{weight}} ק״ג",
+    "lastTwoSets": "2 הסטים האחרונים (הצעות)",
+    "exerciseDetails": "פרטי התרגיל",
     "errors": {
       "missingToken": "לא נמצא אסימון התחברות. התחבר מחדש.",
       "loadFailed": "טעינת תוכנית האימון נכשלה. נסה שוב מאוחר יותר.",
