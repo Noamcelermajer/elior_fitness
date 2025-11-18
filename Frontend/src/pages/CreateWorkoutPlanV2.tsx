@@ -24,7 +24,6 @@ interface WorkoutExercise {
   target_reps: string;
   target_weight: number | null;
   rest_seconds: number | null;
-  tempo: string;
   notes: string;
   group_name?: string;
   video_url?: string | null;
@@ -302,7 +301,6 @@ const CreateWorkoutPlanV2: React.FC = () => {
       target_reps: '',
       target_weight: null,
       rest_seconds: null,
-      tempo: '',
       notes: '',
       group_name: '',
       video_url: exercise.video_url || null,
@@ -388,7 +386,6 @@ const CreateWorkoutPlanV2: React.FC = () => {
               target_reps: sanitizeString(exercise.target_reps) || null,
               target_weight: exercise.target_weight || null,
               rest_seconds: exercise.rest_seconds && exercise.rest_seconds >= 0 ? exercise.rest_seconds : null,
-              tempo: sanitizeString(exercise.tempo) || null,
               notes: sanitizeString(exercise.notes) || null,
               group_name: sanitizeString(exercise.group_name) || null,
               video_url: exercise.video_url || null,
@@ -512,20 +509,20 @@ const CreateWorkoutPlanV2: React.FC = () => {
       {/* Plan Information */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Plan Information</CardTitle>
+          <CardTitle>{t('workoutCreation.planInformation', 'מידע התוכנית')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Client Selection */}
           {!client && (
             <div>
-              <Label htmlFor="client">Client *</Label>
+              <Label htmlFor="client">{t('workoutCreation.selectClient')} *</Label>
               <select
                 id="client"
                 className="w-full px-3 py-2 border rounded-md bg-background text-foreground"
                 value={formData.client_id}
                 onChange={(e) => setFormData({ ...formData, client_id: parseInt(e.target.value) })}
               >
-                <option value={0} className="bg-background text-foreground">Select client...</option>
+                <option value={0} className="bg-background text-foreground">{t('workoutCreation.selectClientPlaceholder')}</option>
                 {clients.map(c => (
                   <option key={c.id} value={c.id} className="bg-background text-foreground">{c.full_name} ({c.email})</option>
                 ))}
@@ -535,7 +532,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
 
           {client && (
             <div className="p-4 bg-muted rounded-md">
-              <Label>Client</Label>
+              <Label>{t('workoutCreation.clientName')}</Label>
               <p className="font-semibold">{client.full_name}</p>
               <p className="text-sm text-muted-foreground">{client.email}</p>
             </div>
@@ -568,7 +565,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
             <Label htmlFor="description">{t('workoutCreation.description')}</Label>
             <Textarea
               id="description"
-              placeholder="Overall plan description..."
+              placeholder={t('workoutCreation.descriptionPlaceholder')}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
@@ -670,10 +667,10 @@ const CreateWorkoutPlanV2: React.FC = () => {
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Workout Days ({formData.workout_days.length})</CardTitle>
+            <CardTitle>{t('workoutCreation.workoutDays')} ({formData.workout_days.length})</CardTitle>
             <Button size="sm" onClick={addWorkoutDay}>
               <Plus className="h-4 w-4 mr-2" />
-              {t('workoutCreation.addDay', 'הוסף יום')}
+              {t('workoutCreation.addDay')}
             </Button>
           </div>
         </CardHeader>
@@ -685,7 +682,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">{getDayTypeIcon(day.day_type)}</span>
                     <span className="font-semibold">{day.name}</span>
-                    <Badge variant="outline">{day.exercises.length} exercises</Badge>
+                    <Badge variant="outline">{day.exercises.length} {t('workoutCreation.exercises')}</Badge>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -693,20 +690,20 @@ const CreateWorkoutPlanV2: React.FC = () => {
                     {/* Day Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>Day Name *</Label>
+                        <Label>{t('workoutCreation.dayName')} *</Label>
                         <Input
-                          placeholder={`יום ${dayIndex + 1} (e.g., Push Day, Chest & Triceps)`}
+                          placeholder={t('workoutCreation.dayNamePlaceholder', `יום ${dayIndex + 1} (למשל, יום דחיפה, חזה וטריצפס)`)}
                           value={day.name}
                           onChange={(e) => updateWorkoutDay(dayIndex, 'name', e.target.value)}
                           required
                           className={day.name.trim() === '' ? 'border-destructive' : ''}
                         />
                         {day.name.trim() === '' && (
-                          <p className="text-xs text-destructive mt-1">Please enter a day name</p>
+                          <p className="text-xs text-destructive mt-1">{t('workoutCreation.errorDayName', 'אנא הזן שם יום')}</p>
                         )}
                       </div>
                       <div>
-                        <Label>Estimated Duration (min)</Label>
+                        <Label>{t('workoutCreation.estimatedDuration')}</Label>
                         <Input
                           type="number"
                           placeholder="60"
@@ -717,9 +714,9 @@ const CreateWorkoutPlanV2: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label>Notes</Label>
+                      <Label>{t('workoutCreation.dayNotes')}</Label>
                       <Textarea
-                        placeholder="Day-specific notes..."
+                        placeholder={t('workoutCreation.dayNotesPlaceholder', 'הערות ספציפיות ליום...')}
                         value={day.notes}
                         onChange={(e) => updateWorkoutDay(dayIndex, 'notes', e.target.value)}
                         rows={2}
@@ -731,20 +728,20 @@ const CreateWorkoutPlanV2: React.FC = () => {
                     {/* Exercises */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <Label>Exercises ({day.exercises.length})</Label>
+                        <Label>{t('workoutCreation.exercises')} ({day.exercises.length})</Label>
                         <Button
                           size="sm"
                           variant="outline"
                 onClick={() => setActiveDayIndex(dayIndex)}
                         >
                           <Plus className="h-4 w-4 mr-2" />
-                          Add Exercise
+                          {t('workoutCreation.addExercise')}
                         </Button>
                       </div>
 
                       {day.exercises.length === 0 && (
                         <p className="text-sm text-muted-foreground text-center py-8 border-2 border-dashed rounded">
-                          No exercises yet. Click "Add Exercise" to get started.
+                          {t('workoutCreation.noExercisesYet', 'אין תרגילים עדיין. לחץ על "הוסף תרגיל" כדי להתחיל.')}
                         </p>
                       )}
 
@@ -786,17 +783,18 @@ const CreateWorkoutPlanV2: React.FC = () => {
                               {/* Exercise Parameters */}
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <div>
-                                  <Label className="text-xs">Sets (מס סטים) *</Label>
+                                  <Label className="text-xs">{t('workoutCreation.sets')}</Label>
                                   <Input
                                     type="number"
                                     min={1}
                                     max={10}
-                                value={exercise.target_sets ?? ''}
-                                onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'target_sets', e.target.value ? parseInt(e.target.value) : null)}
+                                    value={exercise.target_sets ?? ''}
+                                    onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'target_sets', e.target.value ? parseInt(e.target.value) : null)}
+                                    placeholder={t('workoutCreation.setsPlaceholder', 'אופציונלי')}
                                   />
                                 </div>
                                 <div>
-                                  <Label className="text-xs">Reps (מס חזרות) *</Label>
+                                  <Label className="text-xs">{t('workoutCreation.reps')}</Label>
                                   <Input
                                     placeholder="8-12"
                                     value={exercise.target_reps}
@@ -804,7 +802,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
                                   />
                                 </div>
                                 <div>
-                                  <Label className="text-xs">Weight (kg) (משקל)</Label>
+                                  <Label className="text-xs">{t('workoutCreation.weight')}</Label>
                                   <Input
                                     type="number"
                                     step="0.5"
@@ -814,30 +812,22 @@ const CreateWorkoutPlanV2: React.FC = () => {
                                   />
                                 </div>
                                 <div>
-                                  <Label className="text-xs">Rest (sec) (מנוחה) *</Label>
+                                  <Label className="text-xs">{t('workoutCreation.rest')}</Label>
                                   <Input
                                     type="number"
                                     step="15"
                                     placeholder="90"
-                                  value={exercise.rest_seconds ?? ''}
-                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'rest_seconds', e.target.value ? parseInt(e.target.value) : null)}
+                                    value={exercise.rest_seconds ?? ''}
+                                    onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'rest_seconds', e.target.value ? parseInt(e.target.value) : null)}
                                   />
                                 </div>
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 gap-3">
                                 <div>
-                                  <Label className="text-xs">Tempo (optional)</Label>
+                                  <Label className="text-xs">{t('workoutCreation.exerciseNotes')}</Label>
                                   <Input
-                                    placeholder="e.g., 3-0-1-0"
-                                    value={exercise.tempo}
-                                    onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'tempo', e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <Label className="text-xs">Notes</Label>
-                                  <Input
-                                    placeholder="Focus on form, controlled descent..."
+                                    placeholder={t('workoutCreation.exerciseNotesPlaceholder', 'הערות לתרגיל...')}
                                     value={exercise.notes}
                                     onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'notes', e.target.value)}
                                   />
@@ -853,13 +843,13 @@ const CreateWorkoutPlanV2: React.FC = () => {
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                           <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
                             <CardHeader>
-                              <CardTitle>Select Exercise</CardTitle>
+                              <CardTitle>{t('workoutCreation.selectExercise')}</CardTitle>
                             </CardHeader>
                             <CardContent>
                               <div className="space-y-2">
                                 {exercises.length === 0 ? (
                                   <p className="text-center text-muted-foreground py-4">
-                                    No exercises available. Please create exercises first.
+                                    {t('workoutCreation.noExercisesAvailable', 'אין תרגילים זמינים. אנא צור תרגילים תחילה.')}
                                   </p>
                                 ) : (
                                   exercises.map(exercise => (
@@ -870,7 +860,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
                                     >
                                       <div className="flex items-center justify-between">
                                         <div>
-                                          <p className="font-semibold">{exercise.name || 'Unnamed Exercise'}</p>
+                                          <p className="font-semibold">{exercise.name || t('workoutCreation.unnamedExercise', 'תרגיל ללא שם')}</p>
                                           <p className="text-sm text-muted-foreground capitalize">{exercise.muscle_group}</p>
                                         </div>
                                         <Plus className="h-5 w-5" />
@@ -882,7 +872,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
 
                               <div className="flex justify-end mt-4">
                                 <Button variant="outline" onClick={() => setActiveDayIndex(null)}>
-                                  Cancel
+                                  {t('workoutCreation.cancel')}
                                 </Button>
                               </div>
                             </CardContent>
@@ -907,7 +897,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
       {/* Action Buttons */}
       <div className="flex justify-end space-x-4">
         <Button variant="outline" onClick={() => navigate(-1)}>
-          Cancel
+          {t('workoutCreation.cancel')}
         </Button>
         <Button
           onClick={handleSubmit}
@@ -925,7 +915,7 @@ const CreateWorkoutPlanV2: React.FC = () => {
       <div className="mt-4 text-sm text-muted-foreground text-center">
         {!isFormValid() && (
           <p>
-            Fill in all required fields and add at least one exercise to each day
+            {t('workoutCreation.formValidationMessage', 'מלא את כל השדות הנדרשים והוסף לפחות תרגיל אחד לכל יום')}
           </p>
         )}
       </div>

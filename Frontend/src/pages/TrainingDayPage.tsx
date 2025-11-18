@@ -724,9 +724,18 @@ const TrainingDayPage: React.FC = () => {
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] md:text-xs text-muted-foreground">
-                    <span>Sets: {exercise.target_sets || '-'}</span>
-                    <span>Reps: {exercise.target_reps || '-'}</span>
-                    <span>Rest: {formatRestTime(exercise.rest_seconds)}</span>
+                    {exercise.target_sets != null && exercise.target_sets > 0 && (
+                      <span>Sets: {exercise.target_sets}</span>
+                    )}
+                    {exercise.target_reps && (
+                      <span>Reps: {exercise.target_reps}</span>
+                    )}
+                    {exercise.target_weight != null && exercise.target_weight > 0 && (
+                      <span>Weight: {exercise.target_weight} kg</span>
+                    )}
+                    {exercise.rest_seconds != null && exercise.rest_seconds > 0 && (
+                      <span>Rest: {formatRestTime(exercise.rest_seconds)}</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
