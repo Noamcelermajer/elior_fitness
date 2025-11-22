@@ -62,6 +62,8 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
   const [loadingProgress, setLoadingProgress] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [profileSidebarOpen, setProfileSidebarOpen] = useState(true);
+  const [linkedProgressEntry, setLinkedProgressEntry] = useState<ProgressEntry | null>(null);
+  const [progressEntriesMap, setProgressEntriesMap] = useState<Record<number, ProgressEntry>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -172,6 +174,12 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
             }
             
             setMessages((prev) => [...prev, newMessage]);
+            
+            // Fetch progress entry if message has one
+            if (newMessage.progress_entry_id) {
+              fetchProgressEntriesForMessages([newMessage.progress_entry_id]);
+            }
+            
             // Mark as read if it's for the current conversation
             if (isCurrentConversation) {
               markMessageRead(newMessage.id);
@@ -236,6 +244,17 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       if (response.ok) {
         const data = await response.json();
         setMessages(data);
+        
+        // Fetch progress entries for messages that have progress_entry_id
+        const entryIds = data
+          .filter((msg: ChatMessage) => msg.progress_entry_id)
+          .map((msg: ChatMessage) => msg.progress_entry_id)
+          .filter((id: number | null): id is number => id !== null);
+        
+        if (entryIds.length > 0) {
+          fetchProgressEntriesForMessages(entryIds);
+        }
+        
         // Mark all messages as read
         data.forEach((msg: ChatMessage) => {
           if (msg.sender_id !== user?.id && !msg.read_at) {
@@ -264,9 +283,16 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
 
       if (response.ok) {
         const data = await response.json();
-        setProgressEntries(data.sort((a: ProgressEntry, b: ProgressEntry) => 
+        const sorted = data.sort((a: ProgressEntry, b: ProgressEntry) => 
           new Date(b.date).getTime() - new Date(a.date).getTime()
-        ));
+        );
+        setProgressEntries(sorted);
+        // Also update the map
+        const map: Record<number, ProgressEntry> = {};
+        sorted.forEach((entry: ProgressEntry) => {
+          map[entry.id] = entry;
+        });
+        setProgressEntriesMap(prev => ({ ...prev, ...map }));
       }
     } catch (err) {
       console.error('Failed to fetch progress entries:', err);
@@ -275,9 +301,57 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
     }
   };
 
+  const fetchProgressEntriesForMessages = async (entryIds: number[]) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      // Fetch each entry
+      const promises = entryIds.map(async (id) => {
+        // Check if we already have it
+        if (progressEntriesMap[id]) return null;
+        
+        const response = await fetch(`${API_BASE}/progress/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const entry = await response.json();
+          return entry;
+        }
+        return null;
+      });
+
+      const entries = await Promise.all(promises);
+      const map: Record<number, ProgressEntry> = {};
+      entries.forEach((entry) => {
+        if (entry) {
+          map[entry.id] = entry;
+        }
+      });
+      setProgressEntriesMap(prev => ({ ...prev, ...map }));
+    } catch (err) {
+      console.error('Failed to fetch progress entries for messages:', err);
+    }
+  };
+
   const handleLinkEntryToChat = (entryId: number) => {
-    // This will be handled when sending a message - we'll add progress_entry_id to the payload
-    setMessageInput(prev => prev + ` [רישום התקדמות #${entryId}]`);
+    // Find the entry in progressEntries
+    const entry = progressEntries.find(e => e.id === entryId);
+    if (entry) {
+      setLinkedProgressEntry(entry);
+      // Focus on message input
+      setTimeout(() => {
+        const input = document.querySelector('input[placeholder*="הקלד הודעה"]') as HTMLInputElement;
+        input?.focus();
+      }, 100);
+    }
+  };
+
+  const removeLinkedProgressEntry = () => {
+    setLinkedProgressEntry(null);
   };
 
   const handleViewFullProfile = (clientId: number) => {
@@ -285,20 +359,15 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
   };
 
   const sendMessage = async () => {
-    if (!messageInput.trim()) return;
+    if (!messageInput.trim() && !linkedProgressEntry) return;
     if (isTrainer && !selectedClient) return;
 
     try {
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      // Extract progress entry ID from message if it contains [רישום התקדמות #ID]
-      const entryIdMatch = messageInput.match(/\[רישום התקדמות #(\d+)\]/);
-      const extractedEntryId = entryIdMatch ? parseInt(entryIdMatch[1]) : null;
-      const cleanMessage = messageInput.replace(/\[רישום התקדמות #\d+\]/, '').trim();
-
       const payload: any = {
-        message: cleanMessage || messageInput.trim(),
+        message: messageInput.trim() || '',
       };
 
       // For trainers, client_id is required
@@ -309,7 +378,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         payload.client_id = user?.id;
       }
 
-      if (progressEntryId || extractedEntryId) {
+      // Use linked progress entry if available
+      if (linkedProgressEntry) {
+        payload.progress_entry_id = linkedProgressEntry.id;
+      } else if (progressEntryId || extractedEntryId) {
         payload.progress_entry_id = progressEntryId || extractedEntryId;
       }
 
@@ -326,6 +398,13 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         const newMessage = await response.json();
         setMessages((prev) => [...prev, newMessage]);
         setMessageInput('');
+        setLinkedProgressEntry(null); // Clear linked entry after sending
+        
+        // Fetch progress entry if message has one
+        if (newMessage.progress_entry_id) {
+          fetchProgressEntriesForMessages([newMessage.progress_entry_id]);
+        }
+        
         fetchConversations();
         scrollToBottom();
       } else {
@@ -592,22 +671,70 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                     : "bg-muted text-foreground rounded-bl-md"
                                 )}
                               >
-                                <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">
-                                  {msg.message}
-                                </p>
-                                {msg.progress_entry_id && (
-                                  <Badge 
-                                    variant="outline" 
-                                    className={cn(
-                                      "mt-2 text-xs",
-                                      isOwnMessage 
-                                        ? "bg-primary-foreground/10 text-primary-foreground border-primary-foreground/20"
-                                        : ""
-                                    )}
-                                  >
-                                    {t('chat.linkedToEntry', 'קשור לרישום התקדמות')}
-                                  </Badge>
+                                {msg.message && (
+                                  <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">
+                                    {msg.message}
+                                  </p>
                                 )}
+                                {msg.progress_entry_id && (() => {
+                                  const entry = progressEntriesMap[msg.progress_entry_id] || 
+                                                progressEntries.find(e => e.id === msg.progress_entry_id);
+                                  return entry ? (
+                                    <Card className={cn(
+                                      "mt-2 border-2",
+                                      isOwnMessage 
+                                        ? "bg-primary/5 border-primary/20"
+                                        : "bg-muted/50 border-border"
+                                    )}>
+                                      <CardContent className="p-3">
+                                        <div className="flex items-start gap-3">
+                                          {entry.photo_path && (
+                                            <div className="shrink-0">
+                                              <img 
+                                                src={`${API_BASE.replace('/api', '')}${entry.photo_path}`}
+                                                alt="Progress photo"
+                                                className="w-16 h-16 object-cover rounded-lg border border-border"
+                                                onError={(e) => {
+                                                  (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                              />
+                                            </div>
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <TrendingUp className="h-4 w-4 text-primary" />
+                                              <span className="text-xs font-semibold text-foreground">
+                                                רישום התקדמות #{entry.id}
+                                              </span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mb-1">
+                                              {formatChatDate(entry.date)}
+                                            </p>
+                                            <div className="flex items-center gap-2 text-sm mb-1">
+                                              <span className="text-muted-foreground">{t('weightProgress.weight')}:</span>
+                                              <span className="font-semibold text-foreground">{entry.weight} {t('weightProgress.kg')}</span>
+                                            </div>
+                                            {entry.notes && (
+                                              <p className="text-xs text-muted-foreground line-clamp-2">{entry.notes}</p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ) : (
+                                    <Badge 
+                                      variant="outline" 
+                                      className={cn(
+                                        "mt-2 text-xs",
+                                        isOwnMessage 
+                                          ? "bg-primary-foreground/10 text-primary-foreground border-primary-foreground/20"
+                                          : ""
+                                      )}
+                                    >
+                                      {t('chat.linkedToEntry', 'קשור לרישום התקדמות')}
+                                    </Badge>
+                                  );
+                                })()}
                               </div>
                               <div className={cn(
                                 "flex items-center gap-1 mt-1 px-1",
@@ -685,7 +812,18 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         {selectedClient && profileSidebarOpen && (() => {
           const selectedClientData = conversations.find((c) => c.client_id === selectedClient);
           return (
-            <div className="hidden lg:flex flex-col w-80 xl:w-96 border-l-2 border-border bg-card shrink-0 h-full overflow-hidden">
+            <div className="hidden lg:flex flex-col w-80 xl:w-96 border-l-2 border-border bg-card shrink-0 h-full overflow-hidden relative">
+              {/* Retract button inside sidebar */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full z-50 h-10 w-10 rounded-r-full rounded-l-none bg-card border-2 border-l-0 border-border shadow-lg hover:shadow-xl hover:bg-muted"
+                onClick={() => setProfileSidebarOpen(false)}
+                aria-label="Hide profile"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              
               {/* Client Profile Card - Simplified */}
               <div className="p-4 md:p-6 border-b border-border bg-card shrink-0">
                 <div className="flex flex-col items-center text-center space-y-3">
@@ -874,19 +1012,65 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                               <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">
                                 {msg.message}
                               </p>
-                              {msg.progress_entry_id && (
-                                <Badge 
-                                  variant="outline" 
-                                  className={cn(
-                                    "mt-2 text-xs",
+                              {msg.progress_entry_id && (() => {
+                                const entry = progressEntriesMap[msg.progress_entry_id] || 
+                                              progressEntries.find(e => e.id === msg.progress_entry_id);
+                                return entry ? (
+                                  <Card className={cn(
+                                    "mt-2 border-2",
                                     isOwnMessage 
-                                      ? "bg-primary-foreground/10 text-primary-foreground border-primary-foreground/20"
-                                      : ""
-                                  )}
-                                >
-                                  {t('chat.linkedToEntry', 'קשור לרישום התקדמות')}
-                                </Badge>
-                              )}
+                                      ? "bg-primary/5 border-primary/20"
+                                      : "bg-muted/50 border-border"
+                                  )}>
+                                    <CardContent className="p-3">
+                                      <div className="flex items-start gap-3">
+                                        {entry.photo_path && (
+                                          <div className="shrink-0">
+                                            <img 
+                                              src={`${API_BASE.replace('/api', '')}${entry.photo_path}`}
+                                              alt="Progress photo"
+                                              className="w-16 h-16 object-cover rounded-lg border border-border"
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                              }}
+                                            />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <TrendingUp className="h-4 w-4 text-primary" />
+                                            <span className="text-xs font-semibold text-foreground">
+                                              רישום התקדמות #{entry.id}
+                                            </span>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground mb-1">
+                                            {formatChatDate(entry.date)}
+                                          </p>
+                                          <div className="flex items-center gap-2 text-sm mb-1">
+                                            <span className="text-muted-foreground">{t('weightProgress.weight')}:</span>
+                                            <span className="font-semibold text-foreground">{entry.weight} {t('weightProgress.kg')}</span>
+                                          </div>
+                                          {entry.notes && (
+                                            <p className="text-xs text-muted-foreground line-clamp-2">{entry.notes}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ) : (
+                                  <Badge 
+                                    variant="outline" 
+                                    className={cn(
+                                      "mt-2 text-xs",
+                                      isOwnMessage 
+                                        ? "bg-primary-foreground/10 text-primary-foreground border-primary-foreground/20"
+                                        : ""
+                                    )}
+                                  >
+                                    {t('chat.linkedToEntry', 'קשור לרישום התקדמות')}
+                                  </Badge>
+                                );
+                              })()}
                             </div>
                             <div className={cn(
                               "flex items-center gap-1 mt-1 px-1",
