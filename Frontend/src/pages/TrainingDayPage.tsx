@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { CheckCircle2, ArrowLeft, Dumbbell, Clock, PlusCircle, Video, PlayCircle, History, Loader2 } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, Dumbbell, Clock, PlusCircle, Video, PlayCircle, History, Loader2, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/Layout';
@@ -90,6 +90,7 @@ const ExerciseHistoryDialog: React.FC<{ exerciseId: number; exerciseName: string
   const { t } = useTranslation();
   const [history, setHistory] = useState<SetCompletion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [displayLimit, setDisplayLimit] = useState(50); // Show first 50 entries, allow scrolling
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -97,6 +98,7 @@ const ExerciseHistoryDialog: React.FC<{ exerciseId: number; exerciseName: string
         const token = localStorage.getItem('access_token');
         if (!token || !user?.id) return;
 
+        // Fetch ALL history (no date filter - never reset)
         const response = await fetch(
           `${API_BASE_URL}/v2/workouts/set-completions?client_id=${user.id}&workout_exercise_id=${exerciseId}`,
           {
@@ -108,10 +110,11 @@ const ExerciseHistoryDialog: React.FC<{ exerciseId: number; exerciseName: string
 
         if (response.ok) {
           const data: SetCompletion[] = await response.json();
-          const grouped = data.sort(
+          // Sort by date (newest first) - all history is preserved
+          const sorted = data.sort(
             (a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
           );
-          setHistory(grouped);
+          setHistory(sorted);
         }
       } catch (error) {
         console.error('Failed to fetch exercise history:', error);
@@ -133,27 +136,79 @@ const ExerciseHistoryDialog: React.FC<{ exerciseId: number; exerciseName: string
     return acc;
   }, {});
 
+  const sortedDates = Object.entries(groupedByDate).sort((a, b) => (a[0] > b[0] ? -1 : 1));
+  const displayedDates = sortedDates.slice(0, displayLimit);
+  const hasMore = sortedDates.length > displayLimit;
+
+  const exportToCSV = () => {
+    // Create CSV content
+    const headers = ['Date', 'Set Number', 'Weight (kg)', 'Reps', 'Rest (s)', 'RPE', 'Form Rating', 'Notes'];
+    const rows = history.map(completion => {
+      const date = new Date(completion.completed_at).toLocaleDateString();
+      return [
+        date,
+        completion.set_number.toString(),
+        completion.weight_used.toString(),
+        completion.reps_completed.toString(),
+        completion.rest_taken?.toString() || '',
+        completion.rpe?.toString() || '',
+        '', // form_rating not in interface
+        '' // notes not in interface
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${exerciseName.replace(/[^a-z0-9]/gi, '_')}_history_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <DialogContent className="sm:max-w-2xl max-w-[95vw] mx-4 max-h-[90vh] overflow-y-auto">
+    <DialogContent className="sm:max-w-2xl max-w-[95vw] mx-4 max-h-[90vh] flex flex-col">
       <DialogHeader>
-        <DialogTitle>{exerciseName} - {t('training.history', 'היסטוריה')}</DialogTitle>
-        <DialogDescription>
-          {t('training.allSetsHistory', 'כל הסטים והחזרות')}
-        </DialogDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <DialogTitle>{exerciseName} - {t('training.history', 'היסטוריה')}</DialogTitle>
+            <DialogDescription>
+              {t('training.allSetsHistory', 'כל הסטים והחזרות')} ({history.length} {t('training.sets', 'סטים')})
+            </DialogDescription>
+          </div>
+          {history.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToCSV}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {t('common.export', 'ייצא')}
+            </Button>
+          )}
+        </div>
       </DialogHeader>
-      {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-      ) : history.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <p>{t('training.noHistory', 'אין היסטוריה זמינה')}</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {Object.entries(groupedByDate)
-            .sort((a, b) => (a[0] > b[0] ? -1 : 1))
-            .map(([date, completions]) => (
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : history.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>{t('training.noHistory', 'אין היסטוריה זמינה')}</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {displayedDates.map(([date, completions]) => (
               <div key={date} className="space-y-2">
                 <div className="text-sm font-semibold text-foreground border-b border-border pb-1">
                   {new Date(date).toLocaleDateString()}
@@ -177,8 +232,20 @@ const ExerciseHistoryDialog: React.FC<{ exerciseId: number; exerciseName: string
                 </div>
               </div>
             ))}
-        </div>
-      )}
+            {hasMore && (
+              <div className="text-center py-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setDisplayLimit(prev => prev + 50)}
+                  className="w-full"
+                >
+                  {t('common.loadMore', 'טען עוד')} ({sortedDates.length - displayLimit} {t('common.remaining', 'נותרו')})
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </DialogContent>
   );
 };

@@ -38,7 +38,10 @@
     "selectLanguage": "Select language",
     "backToHome": "Return to Home",
     "nutrition": "Nutrition",
-    "settings": "Settings"
+    "settings": "Settings",
+    "export": "Export",
+    "loadMore": "Load More",
+    "remaining": "remaining"
   },
   "error": {
     "pageNotFound": "Oops! Page not found",
@@ -206,7 +209,8 @@
     "customFoodFat": "Fat (g)",
     "confirmAddCustomFood": "Save Custom Food",
     "customFoodAdded": "Custom food logged successfully.",
-    "customFoodError": "Failed to log custom food. Please try again."
+    "customFoodError": "Failed to log custom food. Please try again.",
+    "totalCaloriesWeek": "Total Calories (Week)"
   },
   "training": {
     "training": "Training",

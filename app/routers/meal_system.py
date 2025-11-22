@@ -973,10 +973,11 @@ def get_average_calories(
         }
     
     total_calories = sum(h.total_calories for h in histories)
-    average_calories = total_calories / len(histories)
+    average_calories = total_calories / len(histories) if len(histories) > 0 else 0
     
     return {
         "average_calories": round(average_calories, 1),
+        "total_calories": round(total_calories, 1),  # Sum of all calories in the period
         "total_days": len(histories),
         "period": f"Last {days} days",
         "detail_history": [

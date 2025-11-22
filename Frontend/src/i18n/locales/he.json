@@ -40,7 +40,10 @@
     "nutrition": "תזונה",
     "settings": "הגדרות",
     "switchToLight": "עבור למצב בהיר",
-    "switchToDark": "עבור למצב כהה"
+    "switchToDark": "עבור למצב כהה",
+    "export": "ייצא",
+    "loadMore": "טען עוד",
+    "remaining": "נותרו"
   },
   "error": {
     "pageNotFound": "אופס! הדף לא נמצא",
@@ -224,7 +227,8 @@
     "per": "ל",
     "confirmAddCustomFood": "שמור מזון מותאם",
     "customFoodAdded": "המזון המותאם נשמר בהצלחה.",
-    "customFoodError": "שמירת המזון המותאם נכשלה. נסה שוב."
+    "customFoodError": "שמירת המזון המותאם נכשלה. נסה שוב.",
+    "totalCaloriesWeek": "סה\"כ קלוריות בשבוע"
   },
   "training": {
     "training": "אימון",

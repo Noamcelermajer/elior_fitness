@@ -61,7 +61,7 @@ const Index = () => {
     completedDays: number;
     totalMeals: number;
     completedMeals: number;
-    averageCalories7Days: number;
+    averageCalories7Days: number; // Actually total calories for 7 days
   } | null>(null);
 
   // Fetch dashboard data
@@ -141,8 +141,8 @@ const Index = () => {
           console.error('Failed to fetch meal completions:', err);
         }
 
-        // Fetch average calories for last 7 days
-        let averageCalories7Days = 0;
+        // Fetch total calories for last 7 days (sum of calories per day)
+        let totalCalories7Days = 0;
         try {
           const avgCaloriesRes = await fetch(
             `${API_BASE_URL}/v2/meals/history/average?days=7`,
@@ -150,10 +150,15 @@ const Index = () => {
           );
           if (avgCaloriesRes.ok) {
             const avgData = await avgCaloriesRes.json();
-            averageCalories7Days = avgData.average_calories || 0;
+            // Use total_calories if available, otherwise calculate from average
+            if (avgData.total_calories !== undefined) {
+              totalCalories7Days = Math.round(avgData.total_calories);
+            } else if (avgData.average_calories && avgData.total_days) {
+              totalCalories7Days = Math.round(avgData.average_calories * avgData.total_days);
+            }
           }
         } catch (err) {
-          console.error('Failed to fetch average calories:', err);
+          console.error('Failed to fetch calories:', err);
         }
 
         setStats({
@@ -171,7 +176,7 @@ const Index = () => {
           completedDays: completedWorkouts, // Completed workouts
           totalMeals: totalMealsPerDay, // Meals per day (resets at midnight)
           completedMeals: completedMealsToday, // Completed meals today
-          averageCalories7Days: averageCalories7Days // Average calories in 7 days
+          averageCalories7Days: totalCalories7Days // Total calories in 7 days (sum)
         });
 
         setLoading(false);
@@ -293,12 +298,37 @@ const Index = () => {
     return `${Math.floor(diffInHours / 24)} ${t('dates.today')}`;
   };
 
-  const statsCards = [
+  const statsCards = isTrainer || isAdmin ? [
     {
       label: t('dashboard.totalClients'),
       value: stats.totalClients.toString(),
       icon: Users,
       gradient: 'bg-gradient-to-r from-blue-500 to-blue-600',
+    },
+    {
+      label: t('training.workoutPlans'),
+      value: stats.totalWorkoutPlans.toString(),
+      icon: CheckCircle,
+      gradient: 'bg-gradient-to-r from-green-500 to-green-600',
+    },
+    {
+      label: t('meals.mealPlans'),
+      value: stats.totalMealPlans.toString(),
+      icon: Utensils,
+      gradient: 'bg-gradient-to-r from-orange-500 to-orange-600',
+    },
+    {
+      label: t('training.completionRate'),
+      value: `${Math.round(stats.completionRate)}%`,
+      icon: Trophy,
+      gradient: 'bg-gradient-to-r from-purple-500 to-purple-600',
+    },
+  ] : [
+    {
+      label: t('meals.totalCaloriesWeek', 'סה"כ קלוריות בשבוע'),
+      value: clientStats ? `${clientStats.averageCalories7Days} ${t('meals.kcal')}` : `0 ${t('meals.kcal')}`,
+      icon: Flame,
+      gradient: 'bg-gradient-to-r from-orange-500 to-orange-600',
     },
     {
       label: t('training.workoutPlans'),
