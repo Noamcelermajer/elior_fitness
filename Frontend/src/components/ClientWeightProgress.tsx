@@ -89,7 +89,7 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch(`${API_BASE_URL}/v2/progress/weight/${deletingEntry.id}`, {
+      const response = await fetch(`${API_BASE_URL}/progress/weight/${deletingEntry.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
