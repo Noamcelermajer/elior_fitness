@@ -63,17 +63,26 @@ async def serve_media_file(
         raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {allowed_types}")
     
     # Construct file path - try multiple possible locations
+    # Priority: Railway persistent volume, then local paths
     possible_paths = []
+    
+    # Get persistent path from environment (defaults to /app/persistent for Railway)
+    persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+    upload_dir = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
     
     if size != "original" and file_type == "thumbnails":
         possible_paths = [
-            f"uploads/thumbnails/{filename}",
-            f"/app/uploads/thumbnails/{filename}",
+            os.path.join(upload_dir, "thumbnails", filename),  # Railway persistent
+            f"{persistent_base}/uploads/thumbnails/{filename}",  # Alternative persistent path
+            f"uploads/thumbnails/{filename}",  # Local dev
+            f"/app/uploads/thumbnails/{filename}",  # Legacy path
         ]
     else:
         possible_paths = [
-            f"uploads/{file_type}/{filename}",
-            f"/app/uploads/{file_type}/{filename}",
+            os.path.join(upload_dir, file_type, filename),  # Railway persistent (primary)
+            f"{persistent_base}/uploads/{file_type}/{filename}",  # Alternative persistent path
+            f"uploads/{file_type}/{filename}",  # Local dev
+            f"/app/uploads/{file_type}/{filename}",  # Legacy path
         ]
     
     # Try to find the file in any of the possible locations

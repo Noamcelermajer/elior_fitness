@@ -44,8 +44,10 @@ class FileService:
     
     def __init__(self, base_upload_path: str = None):
         # Use environment variable or default to uploads in persistent path
+        # For Railway: use /app/persistent/uploads to save files in persistent volume
+        # For local dev: use /app/uploads (or current directory/uploads)
         if base_upload_path is None:
-            persistent_base = os.getenv("PERSISTENT_PATH", "/app")
+            persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
             base_upload_path = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
         self.base_upload_path = base_upload_path
         self._ensure_directories()
