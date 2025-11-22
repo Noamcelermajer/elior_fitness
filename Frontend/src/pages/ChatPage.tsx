@@ -11,14 +11,25 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     // Prevent body scroll on mobile when chat is open
     document.body.style.overflow = 'hidden';
+    // Prevent main element from scrolling
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      mainElement.style.overflow = 'hidden';
+      mainElement.style.height = '100%';
+    }
     return () => {
       document.body.style.overflow = '';
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        mainElement.style.overflow = '';
+        mainElement.style.height = '';
+      }
     };
   }, []);
 
   return (
     <Layout>
-      <div className="w-full h-[calc(100vh-4rem-64px)] md:h-[calc(100vh-100px)] lg:h-[calc(100vh-100px)] overflow-hidden flex flex-col">
+      <div className="w-full h-full overflow-hidden flex flex-col">
         <Chat
           selectedClientId={clientId ? parseInt(clientId) : null}
           progressEntryId={progressEntryId ? parseInt(progressEntryId) : null}

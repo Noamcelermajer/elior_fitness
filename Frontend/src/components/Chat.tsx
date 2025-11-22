@@ -372,7 +372,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
     );
 
     return (
-      <div className="flex flex-col md:flex-row h-full w-full bg-background overflow-hidden">
+      <div className="flex flex-col md:flex-row h-full w-full bg-background overflow-hidden min-h-0 max-h-full">
         {/* Client list sidebar - Mobile: show as overlay/drawer, Desktop: visible sidebar */}
         <div className={cn(
           "flex flex-col w-full md:w-80 lg:w-96 border-r-2 border-border bg-card shrink-0 h-full overflow-hidden",
@@ -796,7 +796,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
     const trainerConversation = conversations.length > 0 ? conversations[0] : null;
 
     return (
-      <div className="flex flex-col h-full w-full bg-background overflow-hidden">
+      <div className="flex flex-col h-full w-full bg-background overflow-hidden min-h-0 max-h-full">
         {trainerConversation ? (
           <>
             {/* Chat header */}
