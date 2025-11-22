@@ -78,24 +78,24 @@ async def serve_media_file(
         raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {allowed_types}")
     
     # Construct file path - try multiple possible locations
-    # Priority: Railway persistent volume, then local paths
+    # Priority: Use FileService's actual base_upload_path (where files are saved), then fallbacks
     possible_paths = []
     
-    # Get persistent path from environment (defaults to /app/persistent for Railway)
-    persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
-    upload_dir = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
+    # Get the actual path where FileService saves files
+    file_service_base = file_service.base_upload_path
     
     if size != "original" and file_type == "thumbnails":
         possible_paths = [
-            os.path.join(upload_dir, "thumbnails", filename),  # Railway persistent
-            f"{persistent_base}/uploads/thumbnails/{filename}",  # Alternative persistent path
+            os.path.join(file_service_base, "thumbnails", filename),  # Where FileService saves (primary)
+            os.path.join(os.getenv("UPLOAD_DIR", "/app/persistent/uploads"), "thumbnails", filename),  # Env var path
+            f"/app/persistent/uploads/thumbnails/{filename}",  # Explicit Railway persistent
             f"uploads/thumbnails/{filename}",  # Local dev
             f"/app/uploads/thumbnails/{filename}",  # Legacy path
         ]
     else:
         possible_paths = [
-            os.path.join(upload_dir, file_type, filename),  # Railway persistent (primary)
-            f"{persistent_base}/uploads/{file_type}/{filename}",  # Alternative persistent path
+            os.path.join(file_service_base, file_type, filename),  # Where FileService saves (primary)
+            os.path.join(os.getenv("UPLOAD_DIR", "/app/persistent/uploads"), file_type, filename),  # Env var path
             f"/app/persistent/uploads/{file_type}/{filename}",  # Explicit Railway persistent
             f"uploads/{file_type}/{filename}",  # Local dev (relative)
             f"./uploads/{file_type}/{filename}",  # Local dev (explicit relative)
@@ -120,24 +120,32 @@ async def serve_media_file(
         logger = logging.getLogger(__name__)
         logger.error(f"File not found: {filename}")
         logger.error(f"File type: {file_type}")
+        logger.error(f"FileService base_upload_path: {file_service.base_upload_path}")
         logger.error(f"Attempted paths: {possible_paths}")
         logger.error(f"Also tried: {filename}")
         logger.error(f"Current working directory: {os.getcwd()}")
         logger.error(f"PERSISTENT_PATH env: {os.getenv('PERSISTENT_PATH', 'not set')}")
         logger.error(f"UPLOAD_DIR env: {os.getenv('UPLOAD_DIR', 'not set')}")
-        logger.error(f"Persistent base: {persistent_base}")
-        logger.error(f"Upload dir: {upload_dir}")
         
-        # Check if upload directory exists
-        if os.path.exists(upload_dir):
-            logger.error(f"Upload directory exists: {upload_dir}")
+        # Check if FileService base directory exists
+        if os.path.exists(file_service_base):
+            logger.error(f"FileService base directory exists: {file_service_base}")
             try:
-                files_in_dir = os.listdir(upload_dir)
-                logger.error(f"Files in upload dir: {files_in_dir[:10]}")  # First 10 files
+                files_in_dir = os.listdir(file_service_base)
+                logger.error(f"Files in FileService base dir: {files_in_dir[:10]}")  # First 10 files
+                
+                # Check specific file_type directory
+                file_type_dir = os.path.join(file_service_base, file_type)
+                if os.path.exists(file_type_dir):
+                    logger.error(f"File type directory exists: {file_type_dir}")
+                    files_in_type_dir = os.listdir(file_type_dir)
+                    logger.error(f"Files in {file_type} dir ({len(files_in_type_dir)} total): {files_in_type_dir[:20]}")
+                else:
+                    logger.error(f"File type directory does NOT exist: {file_type_dir}")
             except Exception as e:
-                logger.error(f"Error listing upload dir: {e}")
+                logger.error(f"Error listing FileService base dir: {e}")
         else:
-            logger.error(f"Upload directory does not exist: {upload_dir}")
+            logger.error(f"FileService base directory does not exist: {file_service_base}")
         
         raise HTTPException(status_code=404, detail=f"File not found: {filename}. Tried: {possible_paths}")
     
@@ -326,6 +334,70 @@ async def delete_media_file(
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}")
+
+@router.get("/debug/paths")
+async def debug_file_paths(
+    current_user: UserResponse = Depends(get_current_user),
+    file_service: FileService = Depends(get_file_service)
+):
+    """Debug endpoint to check file paths and locations"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+    upload_dir = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
+    
+    debug_info = {
+        "persistent_base": persistent_base,
+        "upload_dir": upload_dir,
+        "persistent_base_exists": os.path.exists(persistent_base),
+        "upload_dir_exists": os.path.exists(upload_dir),
+        "current_working_directory": os.getcwd(),
+        "file_service_base_path": file_service.base_upload_path,
+        "file_service_base_exists": os.path.exists(file_service.base_upload_path),
+        "environment_variables": {
+            "PERSISTENT_PATH": os.getenv("PERSISTENT_PATH"),
+            "UPLOAD_DIR": os.getenv("UPLOAD_DIR"),
+        },
+    }
+    
+    # Check progress_photos directory
+    progress_photos_dir = os.path.join(upload_dir, "progress_photos")
+    debug_info["progress_photos_dir"] = progress_photos_dir
+    debug_info["progress_photos_dir_exists"] = os.path.exists(progress_photos_dir)
+    
+    if os.path.exists(progress_photos_dir):
+        try:
+            files = os.listdir(progress_photos_dir)
+            debug_info["progress_photos_files"] = files[:20]  # First 20 files
+            debug_info["progress_photos_count"] = len(files)
+        except Exception as e:
+            debug_info["progress_photos_list_error"] = str(e)
+    
+    # Check alternative locations
+    alternative_paths = [
+        "/app/persistent/uploads/progress_photos",
+        "/app/uploads/progress_photos",
+        "uploads/progress_photos",
+        "./uploads/progress_photos",
+    ]
+    
+    debug_info["alternative_paths"] = {}
+    for path in alternative_paths:
+        debug_info["alternative_paths"][path] = {
+            "exists": os.path.exists(path),
+            "is_dir": os.path.isdir(path) if os.path.exists(path) else False,
+        }
+        if os.path.exists(path) and os.path.isdir(path):
+            try:
+                files = os.listdir(path)
+                debug_info["alternative_paths"][path]["file_count"] = len(files)
+                debug_info["alternative_paths"][path]["sample_files"] = files[:5]
+            except Exception as e:
+                debug_info["alternative_paths"][path]["list_error"] = str(e)
+    
+    logger.info(f"Debug paths info: {debug_info}")
+    return debug_info
 
 @router.get("/media/stats")
 async def get_media_stats(
