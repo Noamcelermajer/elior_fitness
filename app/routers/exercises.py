@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
+from fastapi import Request as FastAPIRequest
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import logging
@@ -23,8 +24,7 @@ def get_file_service():
 
 @router.post("/", response_model=ExerciseResponse, status_code=status.HTTP_201_CREATED)
 async def create_exercise(
-    # Accept either JSON body or form fields
-    exercise_data: Optional[ExerciseCreate] = None,
+    request: FastAPIRequest,
     # Form fields for multipart/form-data
     exercise_json: Optional[str] = Form(None),
     image: Optional[UploadFile] = File(None),
@@ -39,6 +39,9 @@ async def create_exercise(
     For multipart/form-data:
     - Send exercise_json as a JSON string containing all exercise fields
     - Optionally send image file for exercise demonstration
+    
+    For application/json:
+    - Send exercise data as JSON body
     """
     if current_user.role != UserRole.TRAINER:
         raise HTTPException(
@@ -46,18 +49,34 @@ async def create_exercise(
             detail="Only trainers can create exercises"
         )
     
-    # Handle multipart/form-data (for image uploads)
-    if exercise_json:
+    exercise_data: Optional[ExerciseCreate] = None
+    
+    # Check content type to determine how to parse
+    content_type = request.headers.get("content-type", "")
+    
+    if "multipart/form-data" in content_type:
+        # Handle multipart/form-data (for image uploads)
+        if exercise_json:
+            try:
+                exercise_dict = json.loads(exercise_json)
+                exercise_data = ExerciseCreate(**exercise_dict)
+            except (json.JSONDecodeError, TypeError, ValueError) as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid JSON in exercise_json field: {str(e)}"
+                )
+    elif "application/json" in content_type:
+        # Handle JSON body
         try:
-            exercise_dict = json.loads(exercise_json)
-            exercise_data = ExerciseCreate(**exercise_dict)
-        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            body = await request.json()
+            exercise_data = ExerciseCreate(**body)
+        except (TypeError, ValueError) as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid JSON in exercise_json field: {str(e)}"
+                detail=f"Invalid exercise data: {str(e)}"
             )
     
-    # If no data from form, check if we got JSON body (backward compatibility)
+    # Validate that we have exercise data
     if not exercise_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

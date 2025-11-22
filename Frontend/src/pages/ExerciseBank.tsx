@@ -258,10 +258,16 @@ const ExerciseBank = () => {
             description: t('exerciseBank.successCreated')
           });
         } else {
-          const error = await response.json();
+          let errorMessage = t('exerciseBank.errorCreate');
+          try {
+            const error = await response.json();
+            errorMessage = error.detail || error.message || errorMessage;
+          } catch (e) {
+            errorMessage = `Error ${response.status}: ${response.statusText}`;
+          }
           toast({
             title: t('common.error'),
-            description: error.detail || t('exerciseBank.errorCreate'),
+            description: errorMessage,
             variant: "destructive"
           });
         }
@@ -286,10 +292,16 @@ const ExerciseBank = () => {
             description: t('exerciseBank.successCreated')
           });
         } else {
-          const error = await response.json();
+          let errorMessage = t('exerciseBank.errorCreate');
+          try {
+            const error = await response.json();
+            errorMessage = error.detail || error.message || errorMessage;
+          } catch (e) {
+            errorMessage = `Error ${response.status}: ${response.statusText}`;
+          }
           toast({
             title: t('common.error'),
-            description: error.detail || t('exerciseBank.errorCreate'),
+            description: errorMessage,
             variant: "destructive"
           });
         }
@@ -298,7 +310,7 @@ const ExerciseBank = () => {
       console.error('Error creating exercise:', error);
       toast({
         title: t('common.error'),
-        description: t('exerciseBank.errorCreate'),
+        description: error instanceof Error ? error.message : t('exerciseBank.errorCreate'),
         variant: "destructive"
       });
     }

@@ -470,7 +470,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
             <Button
               variant="ghost"
               size="icon"
-              className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 -translate-x-full z-50 h-10 w-10 rounded-l-full rounded-r-none bg-card border border-l-0 border-r-2 border-border shadow-lg hover:shadow-xl"
+              className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-full z-50 h-10 w-10 rounded-full bg-card border-2 border-border shadow-lg hover:shadow-xl hover:bg-muted"
               onClick={() => setProfileSidebarOpen(!profileSidebarOpen)}
               aria-label={profileSidebarOpen ? 'Hide profile' : 'Show profile'}
             >
@@ -666,13 +666,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         </div>
 
         {/* Client profile & progress sidebar - Only show when client is selected */}
-        {selectedClient && (() => {
+        {selectedClient && profileSidebarOpen && (() => {
           const selectedClientData = conversations.find((c) => c.client_id === selectedClient);
           return (
-            <div className={cn(
-              "hidden lg:flex flex-col w-80 xl:w-96 border-l-2 border-border bg-card shrink-0 h-full overflow-hidden transition-all duration-300 relative",
-              !profileSidebarOpen && "hidden"
-            )}>
+            <div className="hidden lg:flex flex-col w-80 xl:w-96 border-l-2 border-border bg-card shrink-0 h-full overflow-hidden">
               {/* Client Profile Card - Simplified */}
               <div className="p-4 md:p-6 border-b border-border bg-card shrink-0">
                 <div className="flex flex-col items-center text-center space-y-3">
