@@ -390,6 +390,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       entries.forEach((entry) => {
         if (entry) {
           map[entry.id] = entry;
+          // Load photo if it exists
+          if (entry.photo_path && !photoUrls[entry.photo_path]) {
+            loadPhotoWithAuth(entry.photo_path);
+          }
         }
       });
       setProgressEntriesMap(prev => ({ ...prev, ...map }));
@@ -806,24 +810,30 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                                 progressEntries.find(e => e.id === msg.progress_entry_id);
                                   return entry ? (
                                     <Card className={cn(
-                                      "mt-2 border",
+                                      "mt-2 border bg-background shadow-md",
                                       isOwnMessage 
-                                        ? "bg-background/95 border-primary-foreground/20 shadow-md"
-                                        : "bg-muted/50 border-border/50"
+                                        ? "border-primary-foreground/30"
+                                        : "border-border"
                                     )}>
-                                      <CardContent className="p-3">
+                                      <CardContent className="p-3 bg-background">
                                         <div className="flex items-start gap-3">
-                                          {entry.photo_path && photoUrls[entry.photo_path] && (
-                                            <div className="shrink-0">
-                                              <img 
-                                                src={photoUrls[entry.photo_path]}
-                                                alt="Progress photo"
-                                                className="w-16 h-16 object-cover rounded-lg border border-border"
-                                                onError={(e) => {
-                                                  (e.target as HTMLImageElement).style.display = 'none';
-                                                }}
-                                              />
-                                            </div>
+                                          {entry.photo_path && (
+                                            photoUrls[entry.photo_path] ? (
+                                              <div className="shrink-0">
+                                                <img 
+                                                  src={photoUrls[entry.photo_path]}
+                                                  alt="Progress photo"
+                                                  className="w-16 h-16 object-cover rounded-lg border border-border"
+                                                  onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                  }}
+                                                />
+                                              </div>
+                                            ) : (
+                                              <div className="shrink-0 w-16 h-16 bg-muted rounded-lg border border-border flex items-center justify-center">
+                                                <TrendingUp className="h-6 w-6 text-muted-foreground animate-pulse" />
+                                              </div>
+                                            )
                                           )}
                                           <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
@@ -1226,24 +1236,30 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                               progressEntries.find(e => e.id === msg.progress_entry_id);
                                 return entry ? (
                                     <Card className={cn(
-                                      "mt-2 border-2",
+                                      "mt-2 border bg-background shadow-md",
                                       isOwnMessage 
-                                        ? "bg-background border-primary-foreground/20 shadow-lg"
-                                        : "bg-muted/50 border-border"
+                                        ? "border-primary-foreground/30"
+                                        : "border-border"
                                     )}>
-                                    <CardContent className="p-3">
+                                    <CardContent className="p-3 bg-background">
                                       <div className="flex items-start gap-3">
-                                        {entry.photo_path && photoUrls[entry.photo_path] && (
-                                          <div className="shrink-0">
-                                            <img 
-                                              src={photoUrls[entry.photo_path]}
-                                              alt="Progress photo"
-                                              className="w-16 h-16 object-cover rounded-lg border border-border"
-                                              onError={(e) => {
-                                                (e.target as HTMLImageElement).style.display = 'none';
-                                              }}
-                                            />
-                                          </div>
+                                        {entry.photo_path && (
+                                          photoUrls[entry.photo_path] ? (
+                                            <div className="shrink-0">
+                                              <img 
+                                                src={photoUrls[entry.photo_path]}
+                                                alt="Progress photo"
+                                                className="w-16 h-16 object-cover rounded-lg border border-border"
+                                                onError={(e) => {
+                                                  (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                              />
+                                            </div>
+                                          ) : (
+                                            <div className="shrink-0 w-16 h-16 bg-muted rounded-lg border border-border flex items-center justify-center">
+                                              <TrendingUp className="h-6 w-6 text-muted-foreground animate-pulse" />
+                                            </div>
+                                          )
                                         )}
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-2 mb-1">
