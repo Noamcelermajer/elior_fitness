@@ -296,8 +296,11 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       const token = localStorage.getItem('access_token');
       if (!token || photoUrls[photoPath]) return; // Already loaded
       
-      // Extract filename from photo_path (could be full path or just filename)
-      const filename = photoPath.split('/').pop() || photoPath;
+      // Extract filename from photo_path (could be full path like "uploads/progress_photos/filename.jpg" or just "filename.jpg")
+      let filename = photoPath.split('/').pop() || photoPath;
+      // Remove "uploads/progress_photos/" prefix if present
+      filename = filename.replace(/^uploads\/progress_photos\//, '');
+      
       const response = await fetch(`${API_BASE}/files/media/progress_photos/${filename}`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -308,6 +311,8 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         setPhotoUrls(prev => ({ ...prev, [photoPath]: url }));
+      } else {
+        console.error('Failed to load photo:', response.status, filename);
       }
     } catch (error) {
       console.error('Error loading photo:', error);
@@ -809,70 +814,40 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                   const entry = progressEntriesMap[msg.progress_entry_id] || 
                                                 progressEntries.find(e => e.id === msg.progress_entry_id);
                                   return entry ? (
-                                    <Card className={cn(
-                                      "mt-2 border bg-background shadow-md",
-                                      isOwnMessage 
-                                        ? "border-primary-foreground/30"
-                                        : "border-border"
-                                    )}>
-                                      <CardContent className="p-3 bg-background">
-                                        <div className="flex items-start gap-3">
-                                          {entry.photo_path && (
-                                            photoUrls[entry.photo_path] ? (
-                                              <div className="shrink-0">
-                                                <img 
-                                                  src={photoUrls[entry.photo_path]}
-                                                  alt="Progress photo"
-                                                  className="w-16 h-16 object-cover rounded-lg border border-border"
-                                                  onError={(e) => {
-                                                    (e.target as HTMLImageElement).style.display = 'none';
-                                                  }}
-                                                />
-                                              </div>
-                                            ) : (
-                                              <div className="shrink-0 w-16 h-16 bg-muted rounded-lg border border-border flex items-center justify-center">
-                                                <TrendingUp className="h-6 w-6 text-muted-foreground animate-pulse" />
-                                              </div>
-                                            )
-                                          )}
-                                          <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                              <TrendingUp className={cn(
-                                                "h-4 w-4",
-                                                isOwnMessage ? "text-primary" : "text-primary"
-                                              )} />
-                                              <span className={cn(
-                                                "text-xs font-semibold",
-                                                isOwnMessage ? "text-foreground" : "text-foreground"
-                                              )}>
-                                                רישום התקדמות #{entry.id}
-                                              </span>
-                                            </div>
-                                            <p className={cn(
-                                              "text-xs mb-1",
-                                              isOwnMessage ? "text-muted-foreground" : "text-muted-foreground"
-                                            )}>
-                                              {formatChatDate(entry.date)}
-                                            </p>
-                                            <div className="flex items-center gap-2 text-sm mb-1">
-                                              <span className={cn(
-                                                isOwnMessage ? "text-muted-foreground" : "text-muted-foreground"
-                                              )}>{t('weightProgress.weight')}:</span>
-                                              <span className={cn(
-                                                "font-semibold",
-                                                isOwnMessage ? "text-foreground" : "text-foreground"
-                                              )}>{entry.weight} {t('weightProgress.kg')}</span>
-                                            </div>
-                                            {entry.notes && (
-                                              <p className={cn(
-                                                "text-xs line-clamp-2",
-                                                isOwnMessage ? "text-muted-foreground" : "text-muted-foreground"
-                                              )}>{entry.notes}</p>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
+                                    <div className="mt-2 flex flex-col w-[230px] h-[280px] max-h-[330px] bg-white rounded-[10px] shadow-[0px_10px_12px_rgba(0,0,0,0.08),-4px_-4px_12px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 cursor-pointer box-border p-[10px] hover:-translate-y-[10px] hover:shadow-[0px_20px_20px_rgba(0,0,0,0.1),-4px_-4px_12px_rgba(0,0,0,0.08)]">
+                                      <div className="w-full h-[64%] rounded-[10px] mb-3 overflow-hidden bg-[rgb(165,165,165)] flex items-center justify-center">
+                                        {entry.photo_path && photoUrls[entry.photo_path] ? (
+                                          <img 
+                                            src={photoUrls[entry.photo_path]}
+                                            alt="Progress photo"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                          />
+                                        ) : (
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="40"
+                                            height="40"
+                                            viewBox="0 0 1024 1024"
+                                            strokeWidth="0"
+                                            fill="currentColor"
+                                            stroke="currentColor"
+                                            className="text-muted-foreground"
+                                          >
+                                            <path d="M928 160H96c-17.7 0-32 14.3-32 32v640c0 17.7 14.3 32 32 32h832c17.7 0 32-14.3 32-32V192c0-17.7-14.3-32-32-32zM338 304c35.3 0 64 28.7 64 64s-28.7 64-64 64-64-28.7-64-64 28.7-64 64-64zm513.9 437.1a8.11 8.11 0 0 1-5.2 1.9H177.2c-4.4 0-8-3.6-8-8 0-1.9.7-3.7 1.9-5.2l170.3-202c2.8-3.4 7.9-3.8 11.3-1 .3.3.7.6 1 1l99.4 118 158.1-187.5c2.8-3.4 7.9-3.8 11.3-1 .3.3.7.6 1 1l229.6 271.6c2.6 3.3 2.2 8.4-1.2 11.2z"></path>
+                                          </svg>
+                                        )}
+                                      </div>
+                                      <p className="m-0 text-[17px] font-semibold text-[#1797b8] cursor-default overflow-hidden line-clamp-1">
+                                        {t('chat.progressEntry')} #{entry.id}
+                                      </p>
+                                      <p className="overflow-hidden line-clamp-3 m-0 text-[13px] text-[#1797b8] cursor-default mt-1">
+                                        {formatChatDate(entry.date)} • {entry.weight} {t('weightProgress.kg')}
+                                        {entry.notes && ` • ${entry.notes}`}
+                                      </p>
+                                    </div>
                                   ) : (
                                     <Badge 
                                       variant="outline" 
@@ -1235,53 +1210,40 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                 const entry = progressEntriesMap[msg.progress_entry_id] || 
                                               progressEntries.find(e => e.id === msg.progress_entry_id);
                                 return entry ? (
-                                    <Card className={cn(
-                                      "mt-2 border bg-background shadow-md",
-                                      isOwnMessage 
-                                        ? "border-primary-foreground/30"
-                                        : "border-border"
-                                    )}>
-                                    <CardContent className="p-3 bg-background">
-                                      <div className="flex items-start gap-3">
-                                        {entry.photo_path && (
-                                          photoUrls[entry.photo_path] ? (
-                                            <div className="shrink-0">
-                                              <img 
-                                                src={photoUrls[entry.photo_path]}
-                                                alt="Progress photo"
-                                                className="w-16 h-16 object-cover rounded-lg border border-border"
-                                                onError={(e) => {
-                                                  (e.target as HTMLImageElement).style.display = 'none';
-                                                }}
-                                              />
-                                            </div>
-                                          ) : (
-                                            <div className="shrink-0 w-16 h-16 bg-muted rounded-lg border border-border flex items-center justify-center">
-                                              <TrendingUp className="h-6 w-6 text-muted-foreground animate-pulse" />
-                                            </div>
-                                          )
+                                    <div className="mt-2 flex flex-col w-[230px] h-[280px] max-h-[330px] bg-white rounded-[10px] shadow-[0px_10px_12px_rgba(0,0,0,0.08),-4px_-4px_12px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 cursor-pointer box-border p-[10px] hover:-translate-y-[10px] hover:shadow-[0px_20px_20px_rgba(0,0,0,0.1),-4px_-4px_12px_rgba(0,0,0,0.08)]">
+                                      <div className="w-full h-[64%] rounded-[10px] mb-3 overflow-hidden bg-[rgb(165,165,165)] flex items-center justify-center">
+                                        {entry.photo_path && photoUrls[entry.photo_path] ? (
+                                          <img 
+                                            src={photoUrls[entry.photo_path]}
+                                            alt="Progress photo"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                          />
+                                        ) : (
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="40"
+                                            height="40"
+                                            viewBox="0 0 1024 1024"
+                                            strokeWidth="0"
+                                            fill="currentColor"
+                                            stroke="currentColor"
+                                            className="text-muted-foreground"
+                                          >
+                                            <path d="M928 160H96c-17.7 0-32 14.3-32 32v640c0 17.7 14.3 32 32 32h832c17.7 0 32-14.3 32-32V192c0-17.7-14.3-32-32-32zM338 304c35.3 0 64 28.7 64 64s-28.7 64-64 64-64-28.7-64-64 28.7-64 64-64zm513.9 437.1a8.11 8.11 0 0 1-5.2 1.9H177.2c-4.4 0-8-3.6-8-8 0-1.9.7-3.7 1.9-5.2l170.3-202c2.8-3.4 7.9-3.8 11.3-1 .3.3.7.6 1 1l99.4 118 158.1-187.5c2.8-3.4 7.9-3.8 11.3-1 .3.3.7.6 1 1l229.6 271.6c2.6 3.3 2.2 8.4-1.2 11.2z"></path>
+                                          </svg>
                                         )}
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2 mb-1">
-                                            <TrendingUp className="h-4 w-4 text-primary" />
-                                            <span className="text-xs font-semibold text-foreground">
-                                              רישום התקדמות #{entry.id}
-                                            </span>
-                                          </div>
-                                          <p className="text-xs text-muted-foreground mb-1">
-                                            {formatChatDate(entry.date)}
-                                          </p>
-                                          <div className="flex items-center gap-2 text-sm mb-1">
-                                            <span className="text-muted-foreground">{t('weightProgress.weight')}:</span>
-                                            <span className="font-semibold text-foreground">{entry.weight} {t('weightProgress.kg')}</span>
-                                          </div>
-                                          {entry.notes && (
-                                            <p className="text-xs text-muted-foreground line-clamp-2">{entry.notes}</p>
-                                          )}
-                                        </div>
                                       </div>
-                                    </CardContent>
-                                  </Card>
+                                      <p className="m-0 text-[17px] font-semibold text-[#1797b8] cursor-default overflow-hidden line-clamp-1">
+                                        {t('chat.progressEntry')} #{entry.id}
+                                      </p>
+                                      <p className="overflow-hidden line-clamp-3 m-0 text-[13px] text-[#1797b8] cursor-default mt-1">
+                                        {formatChatDate(entry.date)} • {entry.weight} {t('weightProgress.kg')}
+                                        {entry.notes && ` • ${entry.notes}`}
+                                      </p>
+                                    </div>
                                 ) : (
                                   <Badge 
                                     variant="outline" 
