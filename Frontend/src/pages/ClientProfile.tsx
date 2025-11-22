@@ -813,7 +813,7 @@ const ClientProfile = () => {
               clientId={clientId!}
               progressEntries={normalizedProgressEntries}
               onProgressUpdate={fetchClientData}
-              isTrainer={user?.role === 'trainer'}
+              isTrainer={user?.role === 'TRAINER'}
             />
           </TabsContent>
 
