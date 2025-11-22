@@ -147,6 +147,52 @@ async def serve_media_file(
         else:
             logger.error(f"FileService base directory does not exist: {file_service_base}")
         
+        # File not found - check access first, then return placeholder or 404
+        # This handles cases where database references exist but files were deleted/lost
+        # We still need to verify access before returning placeholder to avoid information leakage
+        
+        # Basic access check based on filename pattern
+        has_access = False
+        if file_type == "progress_photos":
+            # Extract client ID from filename (format: progress_photo_{client_id}_{uuid}_compressed.jpg)
+            try:
+                parts = filename.split('_')
+                if len(parts) >= 3:
+                    client_id = int(parts[2])  # progress_photo_{client_id}_{uuid}
+                    # Allow trainers to access all progress photos, clients only their own
+                    if current_user.role == UserRole.TRAINER:
+                        has_access = True
+                    elif current_user.role == UserRole.CLIENT and current_user.id == client_id:
+                        has_access = True
+            except (ValueError, IndexError):
+                pass
+        elif file_type == "meal_photos":
+            # Extract entity ID from filename (format: meal_photo_{entity_id}_{uuid}.jpg)
+            try:
+                parts = filename.split('_')
+                if len(parts) >= 3:
+                    entity_id = int(parts[2])  # meal_photo_{entity_id}_{uuid}
+                    # Allow trainers to access all meal photos, clients only their own
+                    if current_user.role == UserRole.TRAINER:
+                        has_access = True
+                    elif current_user.role == UserRole.CLIENT and str(current_user.id) in filename:
+                        has_access = True
+            except (ValueError, IndexError):
+                pass
+        
+        # Return placeholder for progress/meal photos if user has access, otherwise 404
+        if file_type in ["progress_photos", "meal_photos"] and has_access:
+            # Return a placeholder SVG image instead of 404
+            # This prevents broken image icons in the UI
+            placeholder_svg = f"""<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+                <rect width="400" height="300" fill="#f3f4f6"/>
+                <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af" text-anchor="middle" dominant-baseline="middle">
+                    Photo not available
+                </text>
+            </svg>"""
+            from fastapi.responses import Response
+            return Response(content=placeholder_svg, media_type="image/svg+xml")
+        
         raise HTTPException(status_code=404, detail=f"File not found: {filename}. Tried: {possible_paths}")
     
     # Access control based on file type
