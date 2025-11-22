@@ -852,8 +852,8 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                   const entry = progressEntriesMap[msg.progress_entry_id] || 
                                                 progressEntries.find(e => e.id === msg.progress_entry_id);
                                   return entry ? (
-                                    <div className="mt-2 flex flex-col w-[230px] h-[280px] max-h-[330px] bg-white rounded-[10px] shadow-[0px_10px_12px_rgba(0,0,0,0.08),-4px_-4px_12px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 cursor-pointer box-border p-[10px] hover:-translate-y-[10px] hover:shadow-[0px_20px_20px_rgba(0,0,0,0.1),-4px_-4px_12px_rgba(0,0,0,0.08)]">
-                                      <div className="w-full h-[64%] rounded-[10px] mb-3 overflow-hidden bg-[rgb(165,165,165)] flex items-center justify-center">
+                                    <div className="mt-2 flex flex-col w-[230px] h-[280px] max-h-[330px] bg-card border border-border rounded-[10px] shadow-[0px_10px_12px_rgba(0,0,0,0.08),-4px_-4px_12px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 cursor-pointer box-border p-[10px] hover:-translate-y-[10px] hover:shadow-[0px_20px_20px_rgba(0,0,0,0.1),-4px_-4px_12px_rgba(0,0,0,0.08)]">
+                                      <div className="w-full h-[64%] rounded-[10px] mb-3 overflow-hidden bg-muted flex items-center justify-center">
                                         {entry.photo_path && photoUrls[entry.photo_path] ? (
                                           <img 
                                             src={photoUrls[entry.photo_path]}
@@ -878,10 +878,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                           </svg>
                                         )}
                                       </div>
-                                      <p className="m-0 text-[17px] font-semibold text-[#1797b8] cursor-default overflow-hidden line-clamp-1">
+                                      <p className="m-0 text-[17px] font-semibold text-primary cursor-default overflow-hidden line-clamp-1">
                                         {t('chat.progressEntry')} #{entry.id}
                                       </p>
-                                      <p className="overflow-hidden line-clamp-3 m-0 text-[13px] text-[#1797b8] cursor-default mt-1">
+                                      <p className="overflow-hidden line-clamp-3 m-0 text-[13px] text-primary/80 cursor-default mt-1">
                                         {formatChatDate(entry.date)} • {entry.weight} {t('weightProgress.kg')}
                                         {entry.notes && ` • ${entry.notes}`}
                                       </p>
@@ -1248,8 +1248,8 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                 const entry = progressEntriesMap[msg.progress_entry_id] || 
                                               progressEntries.find(e => e.id === msg.progress_entry_id);
                                 return entry ? (
-                                    <div className="mt-2 flex flex-col w-[230px] h-[280px] max-h-[330px] bg-white rounded-[10px] shadow-[0px_10px_12px_rgba(0,0,0,0.08),-4px_-4px_12px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 cursor-pointer box-border p-[10px] hover:-translate-y-[10px] hover:shadow-[0px_20px_20px_rgba(0,0,0,0.1),-4px_-4px_12px_rgba(0,0,0,0.08)]">
-                                      <div className="w-full h-[64%] rounded-[10px] mb-3 overflow-hidden bg-[rgb(165,165,165)] flex items-center justify-center">
+                                    <div className="mt-2 flex flex-col w-[230px] h-[280px] max-h-[330px] bg-card border border-border rounded-[10px] shadow-[0px_10px_12px_rgba(0,0,0,0.08),-4px_-4px_12px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 cursor-pointer box-border p-[10px] hover:-translate-y-[10px] hover:shadow-[0px_20px_20px_rgba(0,0,0,0.1),-4px_-4px_12px_rgba(0,0,0,0.08)]">
+                                      <div className="w-full h-[64%] rounded-[10px] mb-3 overflow-hidden bg-muted flex items-center justify-center">
                                         {entry.photo_path && photoUrls[entry.photo_path] ? (
                                           <img 
                                             src={photoUrls[entry.photo_path]}
@@ -1274,10 +1274,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                           </svg>
                                         )}
                                       </div>
-                                      <p className="m-0 text-[17px] font-semibold text-[#1797b8] cursor-default overflow-hidden line-clamp-1">
+                                      <p className="m-0 text-[17px] font-semibold text-primary cursor-default overflow-hidden line-clamp-1">
                                         {t('chat.progressEntry')} #{entry.id}
                                       </p>
-                                      <p className="overflow-hidden line-clamp-3 m-0 text-[13px] text-[#1797b8] cursor-default mt-1">
+                                      <p className="overflow-hidden line-clamp-3 m-0 text-[13px] text-primary/80 cursor-default mt-1">
                                         {formatChatDate(entry.date)} • {entry.weight} {t('weightProgress.kg')}
                                         {entry.notes && ` • ${entry.notes}`}
                                       </p>
