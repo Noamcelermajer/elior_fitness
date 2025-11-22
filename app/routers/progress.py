@@ -125,6 +125,39 @@ async def get_progress_entries(
         for entry in entries
     ]
 
+@router.get("/{entry_id}", response_model=dict)
+async def get_progress_entry(
+    entry_id: int,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get a single progress entry by ID (trainers can get their clients' entries)"""
+    from app.models.user import User
+    
+    entry = db.query(ProgressEntry).filter(ProgressEntry.id == entry_id).first()
+    
+    if not entry:
+        raise HTTPException(status_code=404, detail="Progress entry not found")
+    
+    # Check permissions
+    if current_user.role == UserRole.TRAINER:
+        # Check if the client belongs to this trainer
+        client = db.query(User).filter(User.id == entry.client_id).first()
+        if not client or client.trainer_id != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only view your clients' progress")
+    elif current_user.id != entry.client_id:
+        raise HTTPException(status_code=403, detail="You can only view your own progress")
+    
+    return {
+        "id": entry.id,
+        "client_id": entry.client_id,
+        "date": entry.date.isoformat(),
+        "weight": entry.weight,
+        "photo_path": entry.photo_path,
+        "notes": entry.notes,
+        "created_at": entry.created_at.isoformat()
+    }
+
 @router.get("/weight/current")
 async def get_current_weight(
     current_user: UserResponse = Depends(get_current_user),

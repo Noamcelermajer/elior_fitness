@@ -177,14 +177,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('User set in context:', userData);
           
           // Request notification permission after successful login
+          // On mobile, this might not work unless triggered by user interaction
+          // So we'll try, but it may need to be requested from a button click
           setTimeout(() => {
-            requestNotificationPermission().then(permission => {
-              if (permission === 'granted') {
-                console.log('Notification permission granted');
-              } else {
-                console.log('Notification permission denied or not supported');
-              }
-            });
+            // Check if we're on mobile - on mobile, permission request might need user interaction
+            const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (!isMobileDevice) {
+              // On desktop, we can request permission automatically
+              requestNotificationPermission().then(permission => {
+                if (permission === 'granted') {
+                  console.log('Notification permission granted');
+                } else {
+                  console.log('Notification permission denied or not supported');
+                }
+              });
+            } else {
+              // On mobile, log that permission needs to be requested from user interaction
+              console.log('Mobile device detected - notification permission should be requested from user interaction');
+            }
           }, 1000); // Wait 1 second after login to request permission
           
           return userData;

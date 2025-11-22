@@ -612,7 +612,10 @@
     "daysAgo": "ימים",
     "online": "מקוון",
     "linkToChat": "קשר לצ'אט",
-    "viewProfile": "צפה בפרופיל"
+    "viewProfile": "צפה בפרופיל",
+    "enableNotifications": "הפעל התראות",
+    "enableNotificationsDesc": "קבל התראות על הודעות חדשות",
+    "enable": "הפעל"
   },
   "messages": {
     "success": {

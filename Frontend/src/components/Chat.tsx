@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
 import { cn } from '@/lib/utils';
 import { formatChatTime, formatChatDate } from '@/lib/timezone';
-import { showChatNotification, hasNotificationPermission } from '@/lib/notifications';
+import { showChatNotification, hasNotificationPermission, requestNotificationPermission } from '@/lib/notifications';
 
 const API_BASE = API_BASE_URL || 'http://localhost:8000/api';
 
@@ -64,6 +64,8 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
   const [profileSidebarOpen, setProfileSidebarOpen] = useState(true);
   const [linkedProgressEntry, setLinkedProgressEntry] = useState<ProgressEntry | null>(null);
   const [progressEntriesMap, setProgressEntriesMap] = useState<Record<number, ProgressEntry>>({});
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -71,6 +73,16 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
 
   useEffect(() => {
     fetchConversations();
+    
+    // Check notification permission on mount
+    // On mobile, show prompt if permission not granted
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile && !hasNotificationPermission() && Notification.permission === 'default') {
+      // Show prompt after a delay to allow page to load
+      setTimeout(() => {
+        setShowNotificationPrompt(true);
+      }, 3000);
+    }
   }, []);
 
   useEffect(() => {
@@ -90,6 +102,8 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
     if (!isTrainer && conversations.length > 0) {
       // Client has a trainer, fetch messages (client_id is not needed for clients)
       fetchMessages(0); // Pass 0 as placeholder, backend will use current user's trainer
+      // Also fetch progress entries for clients (no client_id needed)
+      fetchProgressEntries(null);
     }
   }, [conversations, isTrainer]);
 
@@ -170,7 +184,15 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                 ? conversations.find(c => c.client_id === newMessage.client_id)?.client_name || 'מתאמן'
                 : conversations.find(c => c.client_id === newMessage.trainer_id)?.client_name || 'מאמן';
               
-              showChatNotification(senderName, newMessage.message);
+              // Determine if message is from trainer (for client view) or from client (for trainer view)
+              const isFromTrainer = !isTrainer; // If current user is client, then sender is trainer
+              
+              try {
+                showChatNotification(senderName, newMessage.message, isFromTrainer);
+              } catch (error) {
+                console.error('Failed to show chat notification:', error);
+                // On mobile, if notification fails, we could show an in-app notification instead
+              }
             }
             
             setMessages((prev) => [...prev, newMessage]);
@@ -269,13 +291,41 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
     }
   };
 
-  const fetchProgressEntries = async (clientId: number) => {
+  const loadPhotoWithAuth = async (photoPath: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token || photoUrls[photoPath]) return; // Already loaded
+      
+      // Extract filename from photo_path (could be full path or just filename)
+      const filename = photoPath.split('/').pop() || photoPath;
+      const response = await fetch(`${API_BASE}/files/media/progress_photos/${filename}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setPhotoUrls(prev => ({ ...prev, [photoPath]: url }));
+      }
+    } catch (error) {
+      console.error('Error loading photo:', error);
+    }
+  };
+
+  const fetchProgressEntries = async (clientId: number | null = null) => {
     try {
       setLoadingProgress(true);
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch(`${API_BASE}/progress/?client_id=${clientId}`, {
+      // For trainers, pass client_id. For clients, don't pass it (backend uses their own ID)
+      const url = isTrainer && clientId
+        ? `${API_BASE}/progress/?client_id=${clientId}`
+        : `${API_BASE}/progress/`;
+
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -293,6 +343,13 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
           map[entry.id] = entry;
         });
         setProgressEntriesMap(prev => ({ ...prev, ...map }));
+        
+        // Load photos for entries that have photo_path
+        sorted.forEach((entry: ProgressEntry) => {
+          if (entry.photo_path && !photoUrls[entry.photo_path]) {
+            loadPhotoWithAuth(entry.photo_path);
+          }
+        });
       }
     } catch (err) {
       console.error('Failed to fetch progress entries:', err);
@@ -319,6 +376,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         
         if (response.ok) {
           const entry = await response.json();
+          // Load photo if it exists
+          if (entry.photo_path && !photoUrls[entry.photo_path]) {
+            loadPhotoWithAuth(entry.photo_path);
+          }
           return entry;
         }
         return null;
@@ -638,6 +699,41 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                     <p className="text-xs text-muted-foreground">{t('chat.online', 'מקוון')}</p>
                   </div>
                 </div>
+                
+                {/* Mobile notification permission prompt */}
+                {showNotificationPrompt && !hasNotificationPermission() && (
+                  <div className="mt-3 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between gap-2">
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-foreground mb-1">
+                        {t('chat.enableNotifications', 'הפעל התראות')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('chat.enableNotificationsDesc', 'קבל התראות על הודעות חדשות')}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={async () => {
+                        const permission = await requestNotificationPermission();
+                        if (permission === 'granted') {
+                          setShowNotificationPrompt(false);
+                        }
+                      }}
+                      className="text-xs h-8"
+                    >
+                      {t('chat.enable', 'הפעל')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowNotificationPrompt(false)}
+                      className="text-xs h-8"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Messages area */}
@@ -710,17 +806,17 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                                 progressEntries.find(e => e.id === msg.progress_entry_id);
                                   return entry ? (
                                     <Card className={cn(
-                                      "mt-2 border-2",
+                                      "mt-2 border",
                                       isOwnMessage 
-                                        ? "bg-background/95 border-primary-foreground/30 shadow-md"
-                                        : "bg-muted/50 border-border"
+                                        ? "bg-background/95 border-primary-foreground/20 shadow-md"
+                                        : "bg-muted/50 border-border/50"
                                     )}>
                                       <CardContent className="p-3">
                                         <div className="flex items-start gap-3">
-                                          {entry.photo_path && (
+                                          {entry.photo_path && photoUrls[entry.photo_path] && (
                                             <div className="shrink-0">
                                               <img 
-                                                src={`${API_BASE.replace('/api', '')}${entry.photo_path}`}
+                                                src={photoUrls[entry.photo_path]}
                                                 alt="Progress photo"
                                                 className="w-16 h-16 object-cover rounded-lg border border-border"
                                                 onError={(e) => {
@@ -1025,6 +1121,41 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                   <p className="text-xs text-muted-foreground">{t('chat.online', 'מקוון')}</p>
                 </div>
               </div>
+              
+              {/* Mobile notification permission prompt */}
+              {showNotificationPrompt && !hasNotificationPermission() && (
+                <div className="mt-3 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between gap-2">
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-foreground mb-1">
+                      {t('chat.enableNotifications', 'הפעל התראות')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('chat.enableNotificationsDesc', 'קבל התראות על הודעות חדשות')}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={async () => {
+                      const permission = await requestNotificationPermission();
+                      if (permission === 'granted') {
+                        setShowNotificationPrompt(false);
+                      }
+                    }}
+                    className="text-xs h-8"
+                  >
+                    {t('chat.enable', 'הפעל')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowNotificationPrompt(false)}
+                    className="text-xs h-8"
+                  >
+                    ×
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Messages area */}
@@ -1102,10 +1233,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                     )}>
                                     <CardContent className="p-3">
                                       <div className="flex items-start gap-3">
-                                        {entry.photo_path && (
+                                        {entry.photo_path && photoUrls[entry.photo_path] && (
                                           <div className="shrink-0">
                                             <img 
-                                              src={`${API_BASE.replace('/api', '')}${entry.photo_path}`}
+                                              src={photoUrls[entry.photo_path]}
                                               alt="Progress photo"
                                               className="w-16 h-16 object-cover rounded-lg border border-border"
                                               onError={(e) => {
