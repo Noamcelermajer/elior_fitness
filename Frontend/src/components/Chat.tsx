@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send, MessageSquare, User, Clock, Check, CheckCheck, Search, ExternalLink, Link2, TrendingUp, ArrowLeft } from 'lucide-react';
+import { Send, MessageSquare, User, Clock, Check, CheckCheck, Search, ExternalLink, Link2, TrendingUp, ArrowLeft, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -59,6 +59,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [profileSidebarOpen, setProfileSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -73,7 +74,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       fetchMessages(selectedClient);
       if (isTrainer) {
         fetchProgressEntries(selectedClient);
+        setProfileSidebarOpen(true); // Open sidebar when client is selected
       }
+    } else {
+      setProfileSidebarOpen(false); // Close sidebar when client is deselected
     }
   }, [selectedClient, isTrainer]);
 
@@ -460,7 +464,23 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         </div>
 
         {/* Chat area */}
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden border-r-2 border-border">
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden border-r-2 border-border relative">
+          {/* Toggle button for profile sidebar */}
+          {selectedClient && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 -translate-x-full z-50 h-10 w-10 rounded-l-full rounded-r-none bg-card border border-l-0 border-r-2 border-border shadow-lg hover:shadow-xl"
+              onClick={() => setProfileSidebarOpen(!profileSidebarOpen)}
+              aria-label={profileSidebarOpen ? 'Hide profile' : 'Show profile'}
+            >
+              {profileSidebarOpen ? (
+                <ChevronRight className="h-5 w-5" />
+              ) : (
+                <ChevronLeft className="h-5 w-5" />
+              )}
+            </Button>
+          )}
           {selectedClient ? (
             <>
               {/* Chat header */}
@@ -649,49 +669,26 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         {selectedClient && (() => {
           const selectedClientData = conversations.find((c) => c.client_id === selectedClient);
           return (
-            <div className="hidden lg:flex flex-col w-80 xl:w-96 border-l-2 border-border bg-card shrink-0 h-full overflow-hidden">
-              {/* Search bar at top */}
-              <div className="p-4 border-b border-border bg-card shrink-0">
-                <div className="relative">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder={t('trainer.searchClients', 'חפש...')}
-                    className="pr-10 rounded-full bg-muted/50 border-border"
-                  />
-                </div>
-              </div>
-
-              {/* Client Profile Card */}
+            <div className={cn(
+              "hidden lg:flex flex-col w-80 xl:w-96 border-l-2 border-border bg-card shrink-0 h-full overflow-hidden transition-all duration-300 relative",
+              !profileSidebarOpen && "hidden"
+            )}>
+              {/* Client Profile Card - Simplified */}
               <div className="p-4 md:p-6 border-b border-border bg-card shrink-0">
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <Avatar className="h-20 w-20 md:h-24 md:w-24">
-                    <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xl">
+                <div className="flex flex-col items-center text-center space-y-3">
+                  <Avatar className="h-16 w-16 md:h-20 md:w-20">
+                    <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-lg">
                       {getInitials(selectedClientData?.client_name || '')}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <h3 className="font-semibold text-lg text-foreground">
+                  <div className="w-full">
+                    <h3 className="font-bold text-xl md:text-2xl text-foreground mb-2">
                       {selectedClientData?.client_name || 'Client'}
                     </h3>
-                    <p className="text-sm text-muted-foreground mt-1">{t('trainer.client', 'מתאמן')}</p>
-                  </div>
-                  <div className="flex gap-2 w-full">
-                    <Button
-                      variant="default"
-                      className="flex-1 gradient-orange hover:gradient-orange-dark"
-                      onClick={() => {
-                        // Focus on chat input
-                        const chatInput = document.querySelector('input[placeholder*="הקלד הודעה"]') as HTMLInputElement;
-                        chatInput?.focus();
-                      }}
-                    >
-                      <MessageSquare className="h-4 w-4 ml-1" />
-                      {t('chat.conversations', 'שיחות')}
-                    </Button>
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      size="sm"
+                      className="w-full"
                       onClick={() => handleViewFullProfile(selectedClient)}
                     >
                       <ExternalLink className="h-4 w-4 ml-1" />
@@ -703,13 +700,13 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
 
               {/* Progress Entries Section */}
               <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-                <div className="p-4 border-b border-border bg-card shrink-0">
+                <div className="p-3 border-b border-border bg-card shrink-0">
                   <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-bold text-foreground">{t('progress.progress', 'התקדמות')}</h2>
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <h2 className="text-base font-semibold text-foreground">{t('progress.progress', 'התקדמות')}</h2>
                   </div>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto">
+                <div className="flex-1 min-h-0 overflow-y-auto p-3">
                   {loadingProgress ? (
                     <div className="flex items-center justify-center h-full p-8">
                       <div className="text-center">
@@ -723,42 +720,42 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                       <p className="text-muted-foreground">{t('progress.noEntries', 'אין רישומי התקדמות')}</p>
                     </div>
                   ) : (
-                    <div className="p-4 space-y-3">
+                    <div className="space-y-2">
                       {progressEntries.map((entry) => (
                         <Card 
                           key={entry.id} 
                           className="hover:shadow-md transition-all duration-200 cursor-pointer border-border"
                           onClick={() => handleLinkEntryToChat(entry.id)}
                         >
-                          <CardContent className="p-4">
+                          <CardContent className="p-3">
                             <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1">
-                                <p className="font-semibold text-sm text-foreground mb-1">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-xs text-foreground mb-1">
                                   {new Date(entry.date).toLocaleDateString('he-IL', {
                                     day: 'numeric',
                                     month: 'short',
                                     year: 'numeric'
                                   })}
                                 </p>
-                                <div className="flex items-center gap-2 text-sm">
+                                <div className="flex items-center gap-2 text-xs">
                                   <span className="text-muted-foreground">{t('weightProgress.weight')}:</span>
                                   <span className="font-semibold text-foreground">{entry.weight} {t('weightProgress.kg')}</span>
                                 </div>
                                 {entry.notes && (
-                                  <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{entry.notes}</p>
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{entry.notes}</p>
                                 )}
                                 {entry.photo_path && (
-                                  <Badge variant="outline" className="mt-2 text-xs">
-                                    📷 {t('weightProgress.viewPhoto', 'תמונה')}
+                                  <Badge variant="outline" className="mt-1 text-xs px-1.5 py-0">
+                                    📷
                                   </Badge>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                            <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="flex-1 text-xs h-8"
+                                className="flex-1 text-xs h-7"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleLinkEntryToChat(entry.id);
@@ -766,17 +763,6 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                               >
                                 <Link2 className="h-3 w-3 ml-1" />
                                 {t('chat.linkToChat', 'קשר לצ\'אט')}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-xs h-8 px-2"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleViewFullProfile(entry.client_id);
-                                }}
-                              >
-                                <ExternalLink className="h-3 w-3" />
                               </Button>
                             </div>
                           </CardContent>

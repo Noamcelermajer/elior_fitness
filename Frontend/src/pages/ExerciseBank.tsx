@@ -70,6 +70,7 @@ const ExerciseBank = () => {
     video_url: '',
     category: ''
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
 
   const fetchExercises = async () => {
     try {
@@ -185,17 +186,54 @@ const ExerciseBank = () => {
   const handleCreateExercise = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate required fields and set errors
+    const errors: Record<string, boolean> = {};
+    let firstErrorField: string | null = null;
+    
+    if (!exerciseForm.name || !exerciseForm.name.trim()) {
+      errors.name = true;
+      if (!firstErrorField) firstErrorField = 'name';
+    }
+    
+    if (!exerciseForm.muscle_group || !exerciseForm.muscle_group.trim()) {
+      errors.muscle_group = true;
+      if (!firstErrorField) firstErrorField = 'muscle_group';
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      // Scroll to first error field
+      if (firstErrorField) {
+        setTimeout(() => {
+          const errorElement = document.getElementById(firstErrorField);
+          if (errorElement) {
+            errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            errorElement.focus();
+          }
+        }, 100);
+      }
+      return;
+    }
+    
+    // Clear errors if validation passes
+    setFieldErrors({});
+    
     try {
       const token = localStorage.getItem('access_token');
       
+      // Prepare exercise data (without created_by - backend adds it)
+      const exerciseData = {
+        name: exerciseForm.name.trim(),
+        description: exerciseForm.description?.trim() || null,
+        muscle_group: exerciseForm.muscle_group.trim(),
+        equipment_needed: exerciseForm.equipment_needed?.trim() || null,
+        instructions: exerciseForm.instructions?.trim() || null,
+        video_url: exerciseForm.video_url?.trim() || null,
+        category: exerciseForm.category?.trim() || null,
+      };
+      
       // If image is uploaded, use multipart/form-data
       if (imageFile) {
-        const exerciseData = {
-          ...exerciseForm,
-          created_by: user?.id,
-          video_url: exerciseForm.video_url || null,
-        };
-        
         const formDataToSend = new FormData();
         formDataToSend.append('exercise_json', JSON.stringify(exerciseData));
         formDataToSend.append('image', imageFile);
@@ -228,14 +266,14 @@ const ExerciseBank = () => {
           });
         }
       } else {
-        // No image, use JSON
+        // No image, use JSON body
         const response = await fetch(`${API_BASE_URL}/exercises/`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(exerciseForm)
+          body: JSON.stringify(exerciseData)
         });
 
         if (response.ok) {
@@ -269,6 +307,38 @@ const ExerciseBank = () => {
   const handleUpdateExercise = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingExercise) return;
+    
+    // Validate required fields and set errors
+    const errors: Record<string, boolean> = {};
+    let firstErrorField: string | null = null;
+    
+    if (!exerciseForm.name || !exerciseForm.name.trim()) {
+      errors.name = true;
+      if (!firstErrorField) firstErrorField = 'name';
+    }
+    
+    if (!exerciseForm.muscle_group || !exerciseForm.muscle_group.trim()) {
+      errors.muscle_group = true;
+      if (!firstErrorField) firstErrorField = 'muscle_group';
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      // Scroll to first error field
+      if (firstErrorField) {
+        setTimeout(() => {
+          const errorElement = document.getElementById(firstErrorField);
+          if (errorElement) {
+            errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            errorElement.focus();
+          }
+        }, 100);
+      }
+      return;
+    }
+    
+    // Clear errors if validation passes
+    setFieldErrors({});
     
     try {
       const token = localStorage.getItem('access_token');
@@ -421,6 +491,7 @@ const ExerciseBank = () => {
       video_url: '',
       category: ''
     });
+    setFieldErrors({});
     setImageFile(null);
     setImagePreview(null);
     setImageRemoved(false);
@@ -561,6 +632,7 @@ const ExerciseBank = () => {
 
   const startEdit = (exercise: Exercise) => {
     setEditingExercise(exercise);
+    setFieldErrors({}); // Clear any previous errors
     setExerciseForm({
       name: exercise.name,
       description: exercise.description,
@@ -881,6 +953,7 @@ const ExerciseBank = () => {
                     setCreateDialogOpen(false);
                     setEditingExercise(null);
                     resetForm();
+                    setFieldErrors({});
                   }
                 }}>
           <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
@@ -902,19 +975,37 @@ const ExerciseBank = () => {
                   <Input
                     id="name"
                     value={exerciseForm.name}
-                    onChange={(e) => setExerciseForm({...exerciseForm, name: e.target.value})}
+                    onChange={(e) => {
+                      setExerciseForm({...exerciseForm, name: e.target.value});
+                      // Clear error when user starts typing
+                      if (fieldErrors.name) {
+                        setFieldErrors({...fieldErrors, name: false});
+                      }
+                    }}
                     placeholder={t('exerciseBank.exerciseNamePlaceholder')}
-                    className="h-9 text-sm"
+                    className={`h-9 text-sm ${fieldErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
+                  {fieldErrors.name && (
+                    <p className="text-xs text-destructive mt-1">Exercise name is required</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="muscle_group" className="text-sm">{t('exerciseBank.muscleGroup')}</Label>
                   <Select 
                     value={exerciseForm.muscle_group} 
-                    onValueChange={(value) => setExerciseForm({...exerciseForm, muscle_group: value})}
+                    onValueChange={(value) => {
+                      setExerciseForm({...exerciseForm, muscle_group: value});
+                      // Clear error when user selects a value
+                      if (fieldErrors.muscle_group) {
+                        setFieldErrors({...fieldErrors, muscle_group: false});
+                      }
+                    }}
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger 
+                      id="muscle_group"
+                      className={`h-9 text-sm ${fieldErrors.muscle_group ? 'border-destructive focus:ring-destructive' : ''}`}
+                    >
                       <SelectValue placeholder={t('exerciseBank.selectMuscleGroup')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -925,6 +1016,9 @@ const ExerciseBank = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.muscle_group && (
+                    <p className="text-xs text-destructive mt-1">Muscle group is required</p>
+                  )}
                 </div>
               </div>
               
