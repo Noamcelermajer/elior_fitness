@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config/api';
+import { requestNotificationPermission } from '../lib/notifications';
 
 export type UserRole = 'ADMIN' | 'TRAINER' | 'CLIENT';
 
@@ -174,6 +175,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (userData) {
           setUser(userData);
           console.log('User set in context:', userData);
+          
+          // Request notification permission after successful login
+          setTimeout(() => {
+            requestNotificationPermission().then(permission => {
+              if (permission === 'granted') {
+                console.log('Notification permission granted');
+              } else {
+                console.log('Notification permission denied or not supported');
+              }
+            });
+          }, 1000); // Wait 1 second after login to request permission
+          
           return userData;
         }
       } else {

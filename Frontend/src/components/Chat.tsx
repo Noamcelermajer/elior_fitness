@@ -10,6 +10,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
 import { cn } from '@/lib/utils';
+import { formatChatTime, formatChatDate } from '@/lib/timezone';
+import { showChatNotification, hasNotificationPermission } from '@/lib/notifications';
 
 const API_BASE = API_BASE_URL || 'http://localhost:8000/api';
 
@@ -144,12 +146,34 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
               created_at: data.timestamp,
               read_at: null
             };
-            setMessages((prev) => [...prev, newMessage]);
-            // Mark as read if it's for the current conversation
-            if (selectedClient && (
+            
+            // Check if this message is for the current conversation
+            const isCurrentConversation = selectedClient && (
               (isTrainer && newMessage.client_id === selectedClient) ||
               (!isTrainer && newMessage.trainer_id === selectedClient)
-            )) {
+            );
+            
+            // Only show notification if:
+            // 1. User has notification permission
+            // 2. Message is not from current user
+            // 3. User is not viewing this conversation (or no conversation selected)
+            // Show notification even if page is visible, as long as user is not viewing that conversation
+            if (
+              hasNotificationPermission() &&
+              newMessage.sender_id !== user?.id &&
+              !isCurrentConversation
+            ) {
+              // Get sender name from conversations or use default
+              const senderName = isTrainer
+                ? conversations.find(c => c.client_id === newMessage.client_id)?.client_name || 'מתאמן'
+                : conversations.find(c => c.client_id === newMessage.trainer_id)?.client_name || 'מאמן';
+              
+              showChatNotification(senderName, newMessage.message);
+            }
+            
+            setMessages((prev) => [...prev, newMessage]);
+            // Mark as read if it's for the current conversation
+            if (isCurrentConversation) {
               markMessageRead(newMessage.id);
             }
             // Refresh conversations to update unread count
@@ -355,7 +379,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
     if (minutes < 60) return `${minutes} ${t('chat.minutesAgo', 'דקות')}`;
     if (hours < 24) return `${hours} ${t('chat.hoursAgo', 'שעות')}`;
     if (days < 7) return `${days} ${t('chat.daysAgo', 'ימים')}`;
-    return date.toLocaleDateString();
+    return formatChatDate(dateString);
   };
 
   // Get initials for avatar
@@ -537,12 +561,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                             <div className="flex items-center justify-center my-4">
                               <div className="px-3 py-1 bg-muted rounded-full">
                                 <p className="text-xs text-muted-foreground">
-                                  {new Date(msg.created_at).toLocaleDateString('he-IL', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
+                                  {formatChatDate(msg.created_at)}
                                 </p>
                               </div>
                             </div>
@@ -595,10 +614,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                 isOwnMessage ? "flex-row-reverse" : ""
                               )}>
                                 <p className="text-xs text-muted-foreground">
-                                  {new Date(msg.created_at).toLocaleTimeString('he-IL', {
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
+                                  {formatChatTime(msg.created_at)}
                                 </p>
                                 {isOwnMessage && (
                                   <span className="text-muted-foreground">
@@ -728,11 +744,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-xs text-foreground mb-1">
-                                  {new Date(entry.date).toLocaleDateString('he-IL', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    year: 'numeric'
-                                  })}
+                                  {formatChatDate(entry.date)}
                                 </p>
                                 <div className="flex items-center gap-2 text-xs">
                                   <span className="text-muted-foreground">{t('weightProgress.weight')}:</span>
@@ -828,12 +840,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                           <div className="flex items-center justify-center my-4">
                             <div className="px-3 py-1 bg-muted rounded-full">
                               <p className="text-xs text-muted-foreground">
-                                {new Date(msg.created_at).toLocaleDateString('he-IL', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
+                                {formatChatDate(msg.created_at)}
                               </p>
                             </div>
                           </div>
@@ -886,10 +893,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                               isOwnMessage ? "flex-row-reverse" : ""
                             )}>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(msg.created_at).toLocaleTimeString('he-IL', {
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
+                                {formatChatTime(msg.created_at)}
                               </p>
                               {isOwnMessage && (
                                 <span className="text-muted-foreground">
