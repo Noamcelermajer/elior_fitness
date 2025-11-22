@@ -338,15 +338,44 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
   };
 
   const handleLinkEntryToChat = (entryId: number) => {
-    // Find the entry in progressEntries
-    const entry = progressEntries.find(e => e.id === entryId);
+    console.log('Linking entry to chat:', entryId);
+    console.log('Available progress entries:', progressEntries);
+    console.log('Progress entries map:', progressEntriesMap);
+    
+    // Find the entry in progressEntries or progressEntriesMap
+    let entry = progressEntries.find(e => e.id === entryId);
+    if (!entry) {
+      entry = progressEntriesMap[entryId];
+    }
+    
+    console.log('Found entry:', entry);
+    
     if (entry) {
       setLinkedProgressEntry(entry);
+      console.log('Linked progress entry set:', entry);
       // Focus on message input
       setTimeout(() => {
         const input = document.querySelector('input[placeholder*="הקלד הודעה"]') as HTMLInputElement;
-        input?.focus();
+        if (input) {
+          input.focus();
+        } else {
+          console.warn('Message input not found');
+        }
       }, 100);
+    } else {
+      console.error('Progress entry not found:', entryId);
+      // If entry not found, try fetching it
+      if (selectedClient) {
+        fetchProgressEntries(selectedClient).then(() => {
+          const fetchedEntry = progressEntries.find(e => e.id === entryId) || progressEntriesMap[entryId];
+          if (fetchedEntry) {
+            setLinkedProgressEntry(fetchedEntry);
+            console.log('Linked progress entry set after fetch:', fetchedEntry);
+          } else {
+            console.error('Still could not find entry after fetch');
+          }
+        });
+      }
     }
   };
 
@@ -381,8 +410,8 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       // Use linked progress entry if available
       if (linkedProgressEntry) {
         payload.progress_entry_id = linkedProgressEntry.id;
-      } else if (progressEntryId || extractedEntryId) {
-        payload.progress_entry_id = progressEntryId || extractedEntryId;
+      } else if (progressEntryId) {
+        payload.progress_entry_id = progressEntryId;
       }
 
       const response = await fetch(`${API_BASE}/v2/chat/messages`, {
@@ -775,26 +804,55 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
 
               {/* Input area */}
               <div className="p-4 md:p-6 border-t border-border bg-card/80 backdrop-blur-sm shrink-0 z-10">
-                <div className="flex gap-2 md:gap-3 items-end max-w-4xl mx-auto">
-                  <div className="flex-1 relative">
-                    <Input
-                      value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={t('chat.typeMessage', 'הקלד הודעה...')}
-                      className="rounded-full pr-12 h-11 md:h-12 bg-muted/50 border-border focus:bg-background transition-colors"
-                      disabled={!selectedClient}
-                    />
+                <div className="flex flex-col gap-2 max-w-4xl mx-auto">
+                  {/* Linked progress entry chip */}
+                  {linkedProgressEntry && (
+                    <div className="flex items-center gap-2 p-2 bg-primary/10 border border-primary/20 rounded-lg">
+                      <div className="flex-1 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-foreground">
+                          רישום התקדמות #{linkedProgressEntry.id}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatChatDate(linkedProgressEntry.date)} • {linkedProgressEntry.weight} קג
+                        </span>
+                        {linkedProgressEntry.photo_path && (
+                          <Badge variant="outline" className="text-xs">📷</Badge>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={removeLinkedProgressEntry}
+                        aria-label="Remove linked progress entry"
+                      >
+                        <span className="text-xs">×</span>
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2 md:gap-3 items-end">
+                    <div className="flex-1 relative">
+                      <Input
+                        value={messageInput}
+                        onChange={(e) => setMessageInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={t('chat.typeMessage', 'הקלד הודעה...')}
+                        className="rounded-full pr-12 h-11 md:h-12 bg-muted/50 border-border focus:bg-background transition-colors"
+                        disabled={!selectedClient}
+                      />
+                    </div>
+                    <Button 
+                      onClick={sendMessage} 
+                      size="icon"
+                      className="h-11 w-11 md:h-12 md:w-12 rounded-full shrink-0 gradient-orange hover:gradient-orange-dark shadow-lg hover:shadow-xl transition-all"
+                      disabled={(!messageInput.trim() && !linkedProgressEntry) || !selectedClient}
+                      aria-label={t('chat.send', 'שלח הודעה')}
+                    >
+                      <Send className="h-4 w-4 md:h-5 md:w-5" />
+                    </Button>
                   </div>
-                  <Button 
-                    onClick={sendMessage} 
-                    size="icon"
-                    className="h-11 w-11 md:h-12 md:w-12 rounded-full shrink-0 gradient-orange hover:gradient-orange-dark shadow-lg hover:shadow-xl transition-all"
-                    disabled={!messageInput.trim() || !selectedClient}
-                    aria-label={t('chat.send', 'שלח הודעה')}
-                  >
-                    <Send className="h-4 w-4 md:h-5 md:w-5" />
-                  </Button>
                 </div>
               </div>
             </>
@@ -876,7 +934,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                         <Card 
                           key={entry.id} 
                           className="hover:shadow-md transition-all duration-200 cursor-pointer border-border"
-                          onClick={() => handleLinkEntryToChat(entry.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleLinkEntryToChat(entry.id);
+                          }}
                         >
                           <CardContent className="p-3">
                             <div className="flex items-start justify-between mb-2">
