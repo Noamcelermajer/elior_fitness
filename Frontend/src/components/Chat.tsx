@@ -712,7 +712,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                     <Card className={cn(
                                       "mt-2 border-2",
                                       isOwnMessage 
-                                        ? "bg-primary/5 border-primary/20"
+                                        ? "bg-background/95 border-primary-foreground/30 shadow-md"
                                         : "bg-muted/50 border-border"
                                     )}>
                                       <CardContent className="p-3">
@@ -731,20 +731,37 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                           )}
                                           <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
-                                              <TrendingUp className="h-4 w-4 text-primary" />
-                                              <span className="text-xs font-semibold text-foreground">
+                                              <TrendingUp className={cn(
+                                                "h-4 w-4",
+                                                isOwnMessage ? "text-primary" : "text-primary"
+                                              )} />
+                                              <span className={cn(
+                                                "text-xs font-semibold",
+                                                isOwnMessage ? "text-foreground" : "text-foreground"
+                                              )}>
                                                 רישום התקדמות #{entry.id}
                                               </span>
                                             </div>
-                                            <p className="text-xs text-muted-foreground mb-1">
+                                            <p className={cn(
+                                              "text-xs mb-1",
+                                              isOwnMessage ? "text-muted-foreground" : "text-muted-foreground"
+                                            )}>
                                               {formatChatDate(entry.date)}
                                             </p>
                                             <div className="flex items-center gap-2 text-sm mb-1">
-                                              <span className="text-muted-foreground">{t('weightProgress.weight')}:</span>
-                                              <span className="font-semibold text-foreground">{entry.weight} {t('weightProgress.kg')}</span>
+                                              <span className={cn(
+                                                isOwnMessage ? "text-muted-foreground" : "text-muted-foreground"
+                                              )}>{t('weightProgress.weight')}:</span>
+                                              <span className={cn(
+                                                "font-semibold",
+                                                isOwnMessage ? "text-foreground" : "text-foreground"
+                                              )}>{entry.weight} {t('weightProgress.kg')}</span>
                                             </div>
                                             {entry.notes && (
-                                              <p className="text-xs text-muted-foreground line-clamp-2">{entry.notes}</p>
+                                              <p className={cn(
+                                                "text-xs line-clamp-2",
+                                                isOwnMessage ? "text-muted-foreground" : "text-muted-foreground"
+                                              )}>{entry.notes}</p>
                                             )}
                                           </div>
                                         </div>
@@ -1077,12 +1094,12 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                 const entry = progressEntriesMap[msg.progress_entry_id] || 
                                               progressEntries.find(e => e.id === msg.progress_entry_id);
                                 return entry ? (
-                                  <Card className={cn(
-                                    "mt-2 border-2",
-                                    isOwnMessage 
-                                      ? "bg-primary/5 border-primary/20"
-                                      : "bg-muted/50 border-border"
-                                  )}>
+                                    <Card className={cn(
+                                      "mt-2 border-2",
+                                      isOwnMessage 
+                                        ? "bg-background border-primary-foreground/20 shadow-lg"
+                                        : "bg-muted/50 border-border"
+                                    )}>
                                     <CardContent className="p-3">
                                       <div className="flex items-start gap-3">
                                         {entry.photo_path && (
