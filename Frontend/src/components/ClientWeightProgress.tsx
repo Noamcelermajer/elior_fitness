@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   TrendingUp, Weight, Calendar, Edit2, Camera, 
-  LineChart, Target, Activity, Plus, Upload, Image
+  LineChart, Target, Activity, Plus, Upload, Image, Trash2
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import { useToast } from '../hooks/use-toast';
@@ -52,6 +52,8 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
   const [uploading, setUploading] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<ProgressEntry | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [deletingEntry, setDeletingEntry] = useState<ProgressEntry | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Sort entries by date
   const sortedEntries = [...progressEntries].sort(
@@ -73,6 +75,51 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
       weight: entry.weight.toString(),
       notes: entry.notes || ''
     });
+  };
+
+  const handleDeleteClick = (entry: ProgressEntry) => {
+    setDeletingEntry(entry);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingEntry) return;
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      const response = await fetch(`${API_BASE_URL}/v2/progress/weight/${deletingEntry.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok || response.status === 204) {
+        toast({
+          title: "Success",
+          description: t('weightProgress.successDelete')
+        });
+        setShowDeleteDialog(false);
+        setDeletingEntry(null);
+        onProgressUpdate();
+      } else {
+        const error = await response.json().catch(() => ({ detail: t('weightProgress.errorDelete') }));
+        toast({
+          title: "Error",
+          description: error.detail || t('weightProgress.errorDelete'),
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      toast({
+        title: "Error",
+        description: t('weightProgress.errorDelete'),
+        variant: "destructive"
+      });
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -358,13 +405,25 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
                     </Button>
                   )}
                   {isTrainer && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => startEdit(entry)}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
+                    <>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => startEdit(entry)}
+                        title={t('weightProgress.editEntry')}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDeleteClick(entry)}
+                        title={t('weightProgress.deleteEntry')}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
@@ -545,10 +604,44 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
               )}
             </div>
           )}
-        </DialogContent>
+          </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && deletingEntry && (
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('weightProgress.deleteEntry')}</DialogTitle>
+              <DialogDescription>
+                {t('weightProgress.deleteConfirm', { 
+                  date: new Date(deletingEntry.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US'),
+                  weight: deletingEntry.weight
+                })}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  setDeletingEntry(null);
+                }}
+              >
+                {t('weightProgress.cancel')}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteConfirm}
+              >
+                {t('weightProgress.delete')}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
 
-export default ClientWeightProgress; 
+export default ClientWeightProgress;

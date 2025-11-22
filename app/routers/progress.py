@@ -216,18 +216,55 @@ async def delete_weight_entry(
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a weight entry"""
+    """Delete a weight entry (trainers can delete their clients' entries)"""
+    from app.models.user import User
     
-    entry = db.query(ProgressEntry).filter(
-        ProgressEntry.id == entry_id,
-        ProgressEntry.client_id == current_user.id
-    ).first()
+    entry = db.query(ProgressEntry).filter(ProgressEntry.id == entry_id).first()
     
     if not entry:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Weight entry not found"
         )
+    
+    # Check permissions
+    if current_user.role == UserRole.TRAINER:
+        # Check if the client belongs to this trainer
+        client = db.query(User).filter(User.id == entry.client_id).first()
+        if not client or client.trainer_id != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only delete your clients' progress entries")
+    elif current_user.id != entry.client_id:
+        raise HTTPException(status_code=403, detail="You can only delete your own progress entries")
+    
+    # Delete associated photo if exists
+    if entry.photo_path:
+        try:
+            # Extract just the filename
+            filename = os.path.basename(entry.photo_path) if '/' in entry.photo_path or '\\' in entry.photo_path else entry.photo_path
+            # Use the files router endpoint to delete the file
+            from app.routers.files import delete_media_file
+            # We'll delete it directly using os.remove since we have the path
+            persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+            upload_dir = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
+            photo_path = os.path.join(upload_dir, "progress_photos", filename)
+            
+            # Try multiple possible locations
+            possible_paths = [
+                photo_path,
+                os.path.join(persistent_base, "uploads", "progress_photos", filename),
+                f"uploads/progress_photos/{filename}",
+                f"/app/uploads/progress_photos/{filename}",
+            ]
+            
+            for path in possible_paths:
+                if os.path.exists(path):
+                    os.remove(path)
+                    break
+        except Exception as e:
+            # Log error but don't fail the deletion
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to delete photo for entry {entry_id}: {e}")
     
     db.delete(entry)
     db.commit()

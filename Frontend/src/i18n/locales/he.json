@@ -808,7 +808,12 @@
     "errorAdd": "נכשל בהוספת רשומת המשקל",
     "weightRequired": "משקל נדרש",
     "viewPhoto": "צפה בתמונה",
-    "photoNotFound": "תמונה לא נמצאה"
+    "photoNotFound": "תמונה לא נמצאה",
+    "deleteEntry": "מחק רשומה",
+    "deleteConfirm": "האם אתה בטוח שברצונך למחוק את הרשומה מתאריך {{date}} ({{weight}} קג)? פעולה זו לא ניתנת לביטול.",
+    "delete": "מחק",
+    "successDelete": "הרשומה נמחקה בהצלחה",
+    "errorDelete": "נכשל במחיקת הרשומה"
   },
   "layout": {
     "brandName": "ecshape",

@@ -762,7 +762,12 @@
     "errorAdd": "Failed to add weight entry",
     "weightRequired": "Weight is required",
     "viewPhoto": "View Photo",
-    "photoNotFound": "Photo not found"
+    "photoNotFound": "Photo not found",
+    "deleteEntry": "Delete Entry",
+    "deleteConfirm": "Are you sure you want to delete the entry from {{date}} ({{weight}} kg)? This action cannot be undone.",
+    "delete": "Delete",
+    "successDelete": "Entry deleted successfully",
+    "errorDelete": "Failed to delete entry"
   },
   "layout": {
     "brandName": "ecshape",
