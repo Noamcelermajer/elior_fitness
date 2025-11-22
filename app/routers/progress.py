@@ -38,7 +38,10 @@ async def add_weight_entry(
     if photo:
         file_service = FileService()
         file_result = await file_service.save_file(photo, "progress_photo", target_client_id)
-        photo_path = file_result["original_path"]
+        # Store just the filename, not the full path, for easier retrieval
+        # The full path is: /app/uploads/progress_photos/filename.jpg
+        # We'll store just: filename.jpg
+        photo_path = file_result.get("filename") or file_result["original_path"]
     
     # Create progress entry
     progress_entry = ProgressEntry(

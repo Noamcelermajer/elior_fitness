@@ -300,24 +300,37 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       // Path could be:
       // - Absolute: "/app/uploads/progress_photos/progress_photo_11_..._compressed.jpg"
       // - Relative: "uploads/progress_photos/progress_photo_11_..._compressed.jpg"
-      // - Just filename: "progress_photo_11_..._compressed.jpg"
+      // - Just filename: "progress_photo_11_..._compressed.jpg" (new entries)
       let filename = photoPath;
       
-      // If it contains slashes, extract just the filename
+      // If it contains slashes, extract just the filename (last part after /)
       if (photoPath.includes('/')) {
         filename = photoPath.split('/').pop() || photoPath;
       }
       
-      // Remove any remaining path prefixes
+      // Remove any remaining path prefixes (in case extraction didn't work)
       filename = filename.replace(/^(uploads\/progress_photos\/|.*\/progress_photos\/)/, '');
       
+      // Final cleanup: ensure we have just the filename
+      filename = filename.trim();
+      
       // Ensure we have a valid filename
-      if (!filename || filename === photoPath && photoPath.includes('/')) {
+      if (!filename || (filename === photoPath && photoPath.includes('/'))) {
         console.error('Could not extract filename from path:', photoPath);
         return;
       }
       
-      const response = await fetch(`${API_BASE}/files/media/progress_photos/${encodeURIComponent(filename)}`, {
+      // API endpoint: /api/files/media/{file_type}/{filename}
+      // API_BASE already includes /api, so we use /files/media/...
+      const photoUrl = `${API_BASE}/files/media/progress_photos/${encodeURIComponent(filename)}`;
+      console.log('Loading photo:', { 
+        originalPath: photoPath, 
+        extractedFilename: filename, 
+        photoUrl,
+        apiBase: API_BASE
+      });
+      
+      const response = await fetch(photoUrl, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -327,8 +340,17 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         setPhotoUrls(prev => ({ ...prev, [photoPath]: url }));
+        console.log('Photo loaded successfully:', filename);
       } else {
-        console.error('Failed to load photo:', response.status, filename, 'from path:', photoPath);
+        const errorText = await response.text().catch(() => '');
+        console.error('Failed to load photo:', {
+          status: response.status,
+          statusText: response.statusText,
+          filename,
+          originalPath: photoPath,
+          photoUrl,
+          error: errorText
+        });
       }
     } catch (error) {
       console.error('Error loading photo:', error, 'path:', photoPath);

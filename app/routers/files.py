@@ -88,7 +88,14 @@ async def serve_media_file(
         file_path = filename
     
     if not file_path:
-        raise HTTPException(status_code=404, detail=f"File not found: {filename}")
+        # Log all attempted paths for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"File not found: {filename}")
+        logger.error(f"Attempted paths: {possible_paths}")
+        logger.error(f"Also tried: {filename}")
+        logger.error(f"Current working directory: {os.getcwd()}")
+        raise HTTPException(status_code=404, detail=f"File not found: {filename}. Tried: {possible_paths}")
     
     # Access control based on file type
     if file_type == "meal_photos":
