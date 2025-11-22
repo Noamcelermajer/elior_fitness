@@ -355,7 +355,10 @@
       "cardio": "קרדיו",
       "full_body": "כל הגוף",
       "other": "אחר"
-    }
+    },
+    "history": "היסטוריה",
+    "allSetsHistory": "כל הסטים והחזרות",
+    "noHistory": "אין היסטוריה זמינה"
   },
   "progress": {
     "progress": "התקדמות",

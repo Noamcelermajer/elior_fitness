@@ -337,7 +337,10 @@
       "cardio": "Cardio",
       "full_body": "Full Body",
       "other": "Other"
-    }
+    },
+    "history": "History",
+    "allSetsHistory": "All sets and reps",
+    "noHistory": "No history available"
   },
   "progress": {
     "progress": "Progress",

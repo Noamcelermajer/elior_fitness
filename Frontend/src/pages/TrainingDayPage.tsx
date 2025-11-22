@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { CheckCircle2, ArrowLeft, Dumbbell, Clock, PlusCircle, Video, PlayCircle, History } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, Dumbbell, Clock, PlusCircle, Video, PlayCircle, History, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/Layout';
@@ -83,6 +83,104 @@ const formatRestTime = (seconds: number) => {
     return `${minutes}m ${remainingSeconds}s`;
   }
   return `${seconds}s`;
+};
+
+const ExerciseHistoryDialog: React.FC<{ exerciseId: number; exerciseName: string }> = ({ exerciseId, exerciseName }) => {
+  const { user } = useAuth();
+  const { t } = useTranslation();
+  const [history, setHistory] = useState<SetCompletion[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token || !user?.id) return;
+
+        const response = await fetch(
+          `${API_BASE_URL}/v2/workouts/set-completions?client_id=${user.id}&workout_exercise_id=${exerciseId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data: SetCompletion[] = await response.json();
+          const grouped = data.sort(
+            (a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+          );
+          setHistory(grouped);
+        }
+      } catch (error) {
+        console.error('Failed to fetch exercise history:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, [exerciseId, user?.id]);
+
+  // Group by date
+  const groupedByDate = history.reduce<Record<string, SetCompletion[]>>((acc, completion) => {
+    const date = new Date(completion.completed_at).toISOString().split('T')[0];
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(completion);
+    return acc;
+  }, {});
+
+  return (
+    <DialogContent className="sm:max-w-2xl max-w-[95vw] mx-4 max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{exerciseName} - {t('training.history', 'היסטוריה')}</DialogTitle>
+        <DialogDescription>
+          {t('training.allSetsHistory', 'כל הסטים והחזרות')}
+        </DialogDescription>
+      </DialogHeader>
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : history.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <p>{t('training.noHistory', 'אין היסטוריה זמינה')}</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {Object.entries(groupedByDate)
+            .sort((a, b) => (a[0] > b[0] ? -1 : 1))
+            .map(([date, completions]) => (
+              <div key={date} className="space-y-2">
+                <div className="text-sm font-semibold text-foreground border-b border-border pb-1">
+                  {new Date(date).toLocaleDateString()}
+                </div>
+                <div className="space-y-1">
+                  {completions
+                    .sort((a, b) => a.set_number - b.set_number)
+                    .map((completion) => (
+                      <div
+                        key={completion.id}
+                        className="flex items-center justify-between text-sm py-1 px-2 rounded bg-muted/50"
+                      >
+                        <span className="text-muted-foreground">
+                          {t('training.sets')} {completion.set_number}
+                        </span>
+                        <span className="text-foreground">
+                          {completion.weight_used} {t('training.kg')} × {completion.reps_completed} {t('training.reps')}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
+    </DialogContent>
+  );
 };
 
 const getYoutubeId = (url?: string | null) => {
@@ -173,13 +271,30 @@ const TrainingDayPage: React.FC = () => {
         }
 
         // Fetch set completions for this day
+        // Fetch set completions from current week only (Monday to Sunday)
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday = 0
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - daysFromMonday);
+        weekStart.setHours(0, 0, 0, 0);
+        
         const completionsResponse = await fetch(
-          `${API_BASE_URL}/v2/workouts/set-completions?client_id=${user.id}&workout_day_id=${dayId}`,
+          `${API_BASE_URL}/v2/workouts/set-completions?client_id=${user.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (completionsResponse.ok) {
-          const completions: SetCompletion[] = await completionsResponse.json();
-          setSetCompletions(completions);
+          const allCompletions: SetCompletion[] = await completionsResponse.json();
+          // Filter to only current week and current workout day
+          const weekCompletions = allCompletions.filter((c: SetCompletion) => {
+            if (!c.completed_at) return false;
+            const completionDate = new Date(c.completed_at);
+            // Check if completion is from current week and matches current workout day exercises
+            const isCurrentWeek = completionDate >= weekStart;
+            const matchesDay = day.workout_exercises.some(ex => ex.id === c.workout_exercise_id);
+            return isCurrentWeek && matchesDay;
+          });
+          setSetCompletions(weekCompletions);
         }
 
         // Fetch previous sets for all exercises (for history/suggestions)
@@ -214,16 +329,31 @@ const TrainingDayPage: React.FC = () => {
         // Store previous sets in state (we'll use it in renderExerciseCard)
         setPreviousSessions(previousSetsMap);
 
-        // Check day completion (check for any completed session, not just today)
+        // Check day completion (only check sessions from current week - Monday to Sunday)
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday = 0
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - daysFromMonday);
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 7);
+        
         const sessionResponse = await fetch(
           `${API_BASE_URL}/v2/workouts/sessions?client_id=${user.id}&workout_day_id=${dayId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (sessionResponse.ok) {
           const sessions = await sessionResponse.json();
-          const completedSession = Array.isArray(sessions) 
-            ? sessions.find((s: any) => s.is_completed)
-            : null;
+          // Filter sessions to only current week
+          const currentWeekSessions = Array.isArray(sessions) 
+            ? sessions.filter((s: any) => {
+                if (!s.started_at) return false;
+                const sessionDate = new Date(s.started_at);
+                return sessionDate >= weekStart && sessionDate < weekEnd;
+              })
+            : [];
+          const completedSession = currentWeekSessions.find((s: any) => s.is_completed);
           setDayCompleted(!!completedSession);
         }
       } catch (err) {
@@ -437,7 +567,8 @@ const TrainingDayPage: React.FC = () => {
           });
 
           if (response.ok) {
-            setSetCompletions((prev) => prev.filter((c) => c.id !== completion.id));
+            // Reload data to refresh UI
+            await loadData();
           }
         }
       } catch (err) {
@@ -757,16 +888,31 @@ const TrainingDayPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Checkbox
-                    id={`bw-${exercise.id}`}
-                    checked={isBodyweight}
-                    onCheckedChange={() => handleBodyweightToggle(exercise.id)}
-                    className="h-4 w-4"
-                  />
-                  <label htmlFor={`bw-${exercise.id}`} className="cursor-pointer select-none text-[11px] md:text-xs text-muted-foreground">
-                    {t('training.bodyweight')}
-                  </label>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        aria-label={t('training.history', 'היסטוריה')}
+                      >
+                        <History className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                      </Button>
+                    </DialogTrigger>
+                    <ExerciseHistoryDialog exerciseId={exercise.id} exerciseName={exerciseName} />
+                  </Dialog>
+                  <div className="flex items-center gap-1.5">
+                    <Checkbox
+                      id={`bw-${exercise.id}`}
+                      checked={isBodyweight}
+                      onCheckedChange={() => handleBodyweightToggle(exercise.id)}
+                      className="h-4 w-4"
+                    />
+                    <label htmlFor={`bw-${exercise.id}`} className="cursor-pointer select-none text-[11px] md:text-xs text-muted-foreground">
+                      {t('training.bodyweight')}
+                    </label>
+                  </div>
                 </div>
               </div>
 

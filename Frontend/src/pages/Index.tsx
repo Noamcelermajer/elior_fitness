@@ -61,6 +61,7 @@ const Index = () => {
     completedDays: number;
     totalMeals: number;
     completedMeals: number;
+    averageCalories7Days: number;
   } | null>(null);
 
   // Fetch dashboard data
@@ -140,6 +141,21 @@ const Index = () => {
           console.error('Failed to fetch meal completions:', err);
         }
 
+        // Fetch average calories for last 7 days
+        let averageCalories7Days = 0;
+        try {
+          const avgCaloriesRes = await fetch(
+            `${API_BASE_URL}/v2/meals/history/average?days=7`,
+            { headers }
+          );
+          if (avgCaloriesRes.ok) {
+            const avgData = await avgCaloriesRes.json();
+            averageCalories7Days = avgData.average_calories || 0;
+          }
+        } catch (err) {
+          console.error('Failed to fetch average calories:', err);
+        }
+
         setStats({
           totalClients: 0,
           totalWorkoutPlans: workoutPlans.length,
@@ -154,7 +170,8 @@ const Index = () => {
           totalDays: totalWorkouts, // Total workouts in plan
           completedDays: completedWorkouts, // Completed workouts
           totalMeals: totalMealsPerDay, // Meals per day (resets at midnight)
-          completedMeals: completedMealsToday // Completed meals today
+          completedMeals: completedMealsToday, // Completed meals today
+          averageCalories7Days: averageCalories7Days // Average calories in 7 days
         });
 
         setLoading(false);
@@ -425,9 +442,9 @@ const Index = () => {
                   </span>
                   <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
                     {isTrainer ? `${stats.activeClients} ${t('client.clients')}` : 
-                      clientStats && clientStats.totalMeals > 0
-                        ? `${Math.round((clientStats.completedMeals / clientStats.totalMeals) * 100)}% ${t('meals.completed')}`
-                        : `0% ${t('meals.completed')}`}
+                      clientStats
+                        ? `${Math.round(clientStats.averageCalories7Days)} ${t('meals.kcal')}`
+                        : `0 ${t('meals.kcal')}`}
                   </Badge>
                 </div>
                 <Progress 
