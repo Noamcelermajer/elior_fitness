@@ -62,15 +62,33 @@ async def serve_media_file(
     if file_type not in allowed_types:
         raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {allowed_types}")
     
-    # Construct file path
-    if size != "original" and file_type == "thumbnails":
-        file_path = f"uploads/thumbnails/{filename}"
-    else:
-        file_path = f"uploads/{file_type}/{filename}"
+    # Construct file path - try multiple possible locations
+    possible_paths = []
     
-    # Check if file exists
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+    if size != "original" and file_type == "thumbnails":
+        possible_paths = [
+            f"uploads/thumbnails/{filename}",
+            f"/app/uploads/thumbnails/{filename}",
+        ]
+    else:
+        possible_paths = [
+            f"uploads/{file_type}/{filename}",
+            f"/app/uploads/{file_type}/{filename}",
+        ]
+    
+    # Try to find the file in any of the possible locations
+    file_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            file_path = path
+            break
+    
+    # If not found, also try with the filename as-is (in case it's already a full path)
+    if not file_path and os.path.exists(filename):
+        file_path = filename
+    
+    if not file_path:
+        raise HTTPException(status_code=404, detail=f"File not found: {filename}")
     
     # Access control based on file type
     if file_type == "meal_photos":

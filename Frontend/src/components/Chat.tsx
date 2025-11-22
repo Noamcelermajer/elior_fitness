@@ -296,12 +296,28 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       const token = localStorage.getItem('access_token');
       if (!token || photoUrls[photoPath]) return; // Already loaded
       
-      // Extract filename from photo_path (could be full path like "uploads/progress_photos/filename.jpg" or just "filename.jpg")
-      let filename = photoPath.split('/').pop() || photoPath;
-      // Remove "uploads/progress_photos/" prefix if present
-      filename = filename.replace(/^uploads\/progress_photos\//, '');
+      // Extract filename from photo_path
+      // Path could be:
+      // - Absolute: "/app/uploads/progress_photos/progress_photo_11_..._compressed.jpg"
+      // - Relative: "uploads/progress_photos/progress_photo_11_..._compressed.jpg"
+      // - Just filename: "progress_photo_11_..._compressed.jpg"
+      let filename = photoPath;
       
-      const response = await fetch(`${API_BASE}/files/media/progress_photos/${filename}`, {
+      // If it contains slashes, extract just the filename
+      if (photoPath.includes('/')) {
+        filename = photoPath.split('/').pop() || photoPath;
+      }
+      
+      // Remove any remaining path prefixes
+      filename = filename.replace(/^(uploads\/progress_photos\/|.*\/progress_photos\/)/, '');
+      
+      // Ensure we have a valid filename
+      if (!filename || filename === photoPath && photoPath.includes('/')) {
+        console.error('Could not extract filename from path:', photoPath);
+        return;
+      }
+      
+      const response = await fetch(`${API_BASE}/files/media/progress_photos/${encodeURIComponent(filename)}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -312,10 +328,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         const url = URL.createObjectURL(blob);
         setPhotoUrls(prev => ({ ...prev, [photoPath]: url }));
       } else {
-        console.error('Failed to load photo:', response.status, filename);
+        console.error('Failed to load photo:', response.status, filename, 'from path:', photoPath);
       }
     } catch (error) {
-      console.error('Error loading photo:', error);
+      console.error('Error loading photo:', error, 'path:', photoPath);
     }
   };
 
