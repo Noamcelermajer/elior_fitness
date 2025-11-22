@@ -10,7 +10,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Use environment variable or default for DB path
-DB_PATH = os.getenv("DATABASE_PATH", "/data/app.db")
+# For Railway: use /app/persistent/data/elior_fitness.db (persistent volume)
+# For local dev: use ./data/elior_fitness.db
+persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+# Check if we're in Railway (persistent path exists) or use local dev path
+if os.path.exists(persistent_base):
+    default_db_path = os.path.join(persistent_base, "data", "elior_fitness.db")
+else:
+    default_db_path = "./data/elior_fitness.db"
+DB_PATH = os.getenv("DATABASE_PATH", default_db_path)
 
 class SystemService:
     def __init__(self):

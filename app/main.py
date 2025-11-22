@@ -100,7 +100,8 @@ import os
 from datetime import datetime
 
 # Get persistent storage base path (for Railway single volume)
-PERSISTENT_BASE = os.getenv("PERSISTENT_BASE", "/app")
+# Default to /app/persistent for Railway, fallback to /app for local dev
+PERSISTENT_BASE = os.getenv("PERSISTENT_BASE", "/app/persistent")
 # Use persistent volume if available, otherwise use app directory
 PERSISTENT_PATH = os.getenv("PERSISTENT_PATH", PERSISTENT_BASE)
 # Logs directory

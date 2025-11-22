@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, date
+import os
 
 from app.database import get_db
 from app.auth.utils import get_current_user
@@ -59,11 +60,16 @@ async def add_weight_entry(
     # Check for goal achievements
     check_client_goals(db, current_user.id)
     
+    # Normalize photo_path to just filename
+    photo_path = progress_entry.photo_path
+    if photo_path and ('/' in photo_path or '\\' in photo_path):
+        photo_path = os.path.basename(photo_path)
+    
     return {
         "id": progress_entry.id,
         "date": progress_entry.date.isoformat(),
         "weight": progress_entry.weight,
-        "photo_path": progress_entry.photo_path,
+        "photo_path": photo_path,  # Normalized to just filename
         "notes": progress_entry.notes,
         "created_at": progress_entry.created_at.isoformat()
     }
@@ -79,17 +85,24 @@ async def get_weight_history(
         ProgressEntry.client_id == current_user.id
     ).order_by(ProgressEntry.date.desc()).all()
     
-    return [
-        {
+    # Normalize photo_path to just filename for all entries
+    normalized_entries = []
+    for entry in entries:
+        photo_path = entry.photo_path
+        # If photo_path contains a path separator, extract just the filename
+        if photo_path and ('/' in photo_path or '\\' in photo_path):
+            photo_path = os.path.basename(photo_path)
+        
+        normalized_entries.append({
             "id": entry.id,
             "date": entry.date.isoformat(),
             "weight": entry.weight,
-            "photo_path": entry.photo_path,
+            "photo_path": photo_path,  # Normalized to just filename
             "notes": entry.notes,
             "created_at": entry.created_at.isoformat()
-        }
-        for entry in entries
-    ]
+        })
+    
+    return normalized_entries
 
 @router.get("/", response_model=List[dict])
 async def get_progress_entries(
@@ -115,18 +128,26 @@ async def get_progress_entries(
         ProgressEntry.client_id == query_client_id
     ).order_by(ProgressEntry.date.desc()).all()
     
-    return [
-        {
+    # Normalize photo_path to just filename for all entries
+    # This handles both old entries (with full paths) and new entries (just filename)
+    normalized_entries = []
+    for entry in entries:
+        photo_path = entry.photo_path
+        # If photo_path contains a path separator, extract just the filename
+        if photo_path and ('/' in photo_path or '\\' in photo_path):
+            photo_path = os.path.basename(photo_path)
+        
+        normalized_entries.append({
             "id": entry.id,
             "client_id": entry.client_id,
             "date": entry.date.isoformat(),
             "weight": entry.weight,
-            "photo_path": entry.photo_path,
+            "photo_path": photo_path,  # Normalized to just filename
             "notes": entry.notes,
             "created_at": entry.created_at.isoformat()
-        }
-        for entry in entries
-    ]
+        })
+    
+    return normalized_entries
 
 @router.get("/{entry_id}", response_model=dict)
 async def get_progress_entry(
@@ -151,12 +172,17 @@ async def get_progress_entry(
     elif current_user.id != entry.client_id:
         raise HTTPException(status_code=403, detail="You can only view your own progress")
     
+    # Normalize photo_path to just filename
+    photo_path = entry.photo_path
+    if photo_path and ('/' in photo_path or '\\' in photo_path):
+        photo_path = os.path.basename(photo_path)
+    
     return {
         "id": entry.id,
         "client_id": entry.client_id,
         "date": entry.date.isoformat(),
         "weight": entry.weight,
-        "photo_path": entry.photo_path,
+        "photo_path": photo_path,  # Normalized to just filename
         "notes": entry.notes,
         "created_at": entry.created_at.isoformat()
     }
@@ -242,12 +268,17 @@ async def update_progress_entry(
     db.refresh(entry)
     
     # Return updated entry
+    # Normalize photo_path to just filename
+    photo_path = entry.photo_path
+    if photo_path and ('/' in photo_path or '\\' in photo_path):
+        photo_path = os.path.basename(photo_path)
+    
     return {
         "id": entry.id,
         "client_id": entry.client_id,
         "date": entry.date.isoformat(),
         "weight": entry.weight,
-        "photo_path": entry.photo_path,
+        "photo_path": photo_path,  # Normalized to just filename
         "notes": entry.notes,
         "created_at": entry.created_at.isoformat()
     } 

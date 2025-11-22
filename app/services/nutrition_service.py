@@ -266,18 +266,22 @@ class NutritionService:
     # Photo Upload Methods
     def save_meal_photo(self, file: UploadFile, meal_completion_id: int) -> str:
         """Save a meal photo and return the file path."""
-        upload_dir = "uploads/meal_photos"
-        os.makedirs(upload_dir, exist_ok=True)
+        # Use persistent path for Railway, fallback to local for dev
+        persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+        upload_dir = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
+        meal_photos_dir = os.path.join(upload_dir, "meal_photos")
+        os.makedirs(meal_photos_dir, exist_ok=True)
         
         file_extension = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
         unique_filename = f"meal_{meal_completion_id}_{uuid.uuid4()}{file_extension}"
-        file_path = os.path.join(upload_dir, unique_filename)
+        file_path = os.path.join(meal_photos_dir, unique_filename)
         
         with open(file_path, "wb") as buffer:
             content = file.file.read()
             buffer.write(content)
         
-        return file_path
+        # Return just the filename for storage (consistent with progress photos)
+        return unique_filename
 
     def update_meal_photo(self, meal_completion_id: int, file: UploadFile) -> Optional[str]:
         """Update the photo for a meal completion."""

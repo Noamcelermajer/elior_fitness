@@ -642,9 +642,25 @@ async def list_nutrition_photos(
     
     photo_list = []
     
-    # List meal photos
-    meal_photos_dir = "uploads/meal_photos"
-    if os.path.exists(meal_photos_dir):
+    # List meal photos - use persistent path for Railway
+    persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+    upload_dir = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
+    
+    # Try multiple possible locations
+    possible_dirs = [
+        os.path.join(upload_dir, "meal_photos"),  # Railway persistent
+        f"{persistent_base}/uploads/meal_photos",  # Alternative persistent path
+        "uploads/meal_photos",  # Local dev
+        "/app/uploads/meal_photos",  # Legacy path
+    ]
+    
+    meal_photos_dir = None
+    for path in possible_dirs:
+        if os.path.exists(path):
+            meal_photos_dir = path
+            break
+    
+    if meal_photos_dir:
         for filename in os.listdir(meal_photos_dir):
             if filename.startswith(f"meal_photo_{target_client_id}_") or (
                 meal_completion_id and filename.startswith(f"meal_photo_{meal_completion_id}_")
@@ -659,9 +675,22 @@ async def list_nutrition_photos(
                 }
                 photo_list.append(photo_info)
     
-    # List progress photos
-    progress_photos_dir = "uploads/progress_photos"
-    if os.path.exists(progress_photos_dir):
+    # List progress photos - use persistent path for Railway
+    # Try multiple possible locations
+    possible_dirs = [
+        os.path.join(upload_dir, "progress_photos"),  # Railway persistent
+        f"{persistent_base}/uploads/progress_photos",  # Alternative persistent path
+        "uploads/progress_photos",  # Local dev
+        "/app/uploads/progress_photos",  # Legacy path
+    ]
+    
+    progress_photos_dir = None
+    for path in possible_dirs:
+        if os.path.exists(path):
+            progress_photos_dir = path
+            break
+    
+    if progress_photos_dir:
         for filename in os.listdir(progress_photos_dir):
             if filename.startswith(f"progress_photo_{target_client_id}_"):
                 file_path = os.path.join(progress_photos_dir, filename)

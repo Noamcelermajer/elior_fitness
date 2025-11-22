@@ -28,10 +28,25 @@ async def serve_exercise_image(
     This allows browser img tags to load them without auth headers.
     Exercise images are meant to be shared between trainer and clients.
     """
-    file_path = f"uploads/exercise_images/{filename}"
+    # Use persistent path for Railway, fallback to local for dev
+    persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+    upload_dir = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
     
-    # Check if file exists
-    if not os.path.exists(file_path):
+    # Try multiple possible locations
+    possible_paths = [
+        os.path.join(upload_dir, "exercise_images", filename),  # Railway persistent
+        f"{persistent_base}/uploads/exercise_images/{filename}",  # Alternative persistent path
+        f"uploads/exercise_images/{filename}",  # Local dev
+        f"/app/uploads/exercise_images/{filename}",  # Legacy path
+    ]
+    
+    file_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            file_path = path
+            break
+    
+    if not file_path:
         raise HTTPException(status_code=404, detail="File not found")
     
     return FileResponse(file_path)
@@ -81,8 +96,11 @@ async def serve_media_file(
         possible_paths = [
             os.path.join(upload_dir, file_type, filename),  # Railway persistent (primary)
             f"{persistent_base}/uploads/{file_type}/{filename}",  # Alternative persistent path
-            f"uploads/{file_type}/{filename}",  # Local dev
-            f"/app/uploads/{file_type}/{filename}",  # Legacy path
+            f"/app/persistent/uploads/{file_type}/{filename}",  # Explicit Railway persistent
+            f"uploads/{file_type}/{filename}",  # Local dev (relative)
+            f"./uploads/{file_type}/{filename}",  # Local dev (explicit relative)
+            f"/app/uploads/{file_type}/{filename}",  # Legacy absolute path
+            os.path.join(os.getcwd(), "uploads", file_type, filename),  # Current working directory
         ]
     
     # Try to find the file in any of the possible locations
@@ -101,9 +119,26 @@ async def serve_media_file(
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"File not found: {filename}")
+        logger.error(f"File type: {file_type}")
         logger.error(f"Attempted paths: {possible_paths}")
         logger.error(f"Also tried: {filename}")
         logger.error(f"Current working directory: {os.getcwd()}")
+        logger.error(f"PERSISTENT_PATH env: {os.getenv('PERSISTENT_PATH', 'not set')}")
+        logger.error(f"UPLOAD_DIR env: {os.getenv('UPLOAD_DIR', 'not set')}")
+        logger.error(f"Persistent base: {persistent_base}")
+        logger.error(f"Upload dir: {upload_dir}")
+        
+        # Check if upload directory exists
+        if os.path.exists(upload_dir):
+            logger.error(f"Upload directory exists: {upload_dir}")
+            try:
+                files_in_dir = os.listdir(upload_dir)
+                logger.error(f"Files in upload dir: {files_in_dir[:10]}")  # First 10 files
+            except Exception as e:
+                logger.error(f"Error listing upload dir: {e}")
+        else:
+            logger.error(f"Upload directory does not exist: {upload_dir}")
+        
         raise HTTPException(status_code=404, detail=f"File not found: {filename}. Tried: {possible_paths}")
     
     # Access control based on file type
@@ -256,11 +291,25 @@ async def delete_media_file(
     if file_type not in allowed_types:
         raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {allowed_types}")
     
-    # Construct file path
-    file_path = f"uploads/{file_type}/{filename}"
+    # Use persistent path for Railway, fallback to local for dev
+    persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+    upload_dir = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
     
-    # Check if file exists
-    if not os.path.exists(file_path):
+    # Try multiple possible locations
+    possible_paths = [
+        os.path.join(upload_dir, file_type, filename),  # Railway persistent
+        f"{persistent_base}/uploads/{file_type}/{filename}",  # Alternative persistent path
+        f"uploads/{file_type}/{filename}",  # Local dev
+        f"/app/uploads/{file_type}/{filename}",  # Legacy path
+    ]
+    
+    file_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            file_path = path
+            break
+    
+    if not file_path:
         raise HTTPException(status_code=404, detail="File not found")
     
     # Apply the same access control logic as serve_media_file
@@ -295,9 +344,26 @@ async def get_media_stats(
         total_size = 0
         file_counts = {}
         
+        # Use persistent path for Railway, fallback to local for dev
+        persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+        upload_dir = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
+        
         for directory in ["meal_photos", "profile_photos", "progress_photos", "documents", "thumbnails"]:
-            dir_path = f"uploads/{directory}"
-            if os.path.exists(dir_path):
+            # Try multiple possible locations
+            possible_dirs = [
+                os.path.join(upload_dir, directory),  # Railway persistent
+                f"{persistent_base}/uploads/{directory}",  # Alternative persistent path
+                f"uploads/{directory}",  # Local dev
+                f"/app/uploads/{directory}",  # Legacy path
+            ]
+            
+            dir_path = None
+            for path in possible_dirs:
+                if os.path.exists(path):
+                    dir_path = path
+                    break
+            
+            if dir_path:
                 count = 0
                 size = 0
                 for filename in os.listdir(dir_path):

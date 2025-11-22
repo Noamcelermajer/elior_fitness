@@ -41,9 +41,16 @@ def detect_environment():
 
 ENVIRONMENT = detect_environment()
 
-# Get database path from environment variable, default to local data directory
-# Use ./data/elior_fitness.db for local development
-DATABASE_PATH = os.getenv("DATABASE_PATH", "./data/elior_fitness.db")
+# Get database path from environment variable
+# For Railway: use /app/persistent/data/elior_fitness.db (persistent volume)
+# For local dev: use ./data/elior_fitness.db
+persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+# Check if we're in Railway (persistent path exists) or use local dev path
+if os.path.exists(persistent_base):
+    default_db_path = os.path.join(persistent_base, "data", "elior_fitness.db")
+else:
+    default_db_path = "./data/elior_fitness.db"
+DATABASE_PATH = os.getenv("DATABASE_PATH", default_db_path)
 
 # Ensure the path is absolute for better reliability
 if not os.path.isabs(DATABASE_PATH):
