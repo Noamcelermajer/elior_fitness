@@ -330,12 +330,7 @@ const TrainingDayPage: React.FC = () => {
         setPreviousSessions(previousSetsMap);
 
         // Check day completion (only check sessions from current week - Monday to Sunday)
-        const now = new Date();
-        const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday = 0
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - daysFromMonday);
-        weekStart.setHours(0, 0, 0, 0);
+        // Reuse weekStart from above, calculate weekEnd
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 7);
         
