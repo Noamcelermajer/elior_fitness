@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 class ChatMessageBase(BaseModel):
     message: str
@@ -17,8 +17,25 @@ class ChatMessageResponse(ChatMessageBase):
     created_at: datetime
     read_at: Optional[datetime] = None
 
+    @validator('created_at', 'read_at', pre=True)
+    def normalize_datetime(cls, v):
+        """Ensure datetime is timezone-aware UTC"""
+        if v is None:
+            return None
+        if isinstance(v, datetime):
+            # If datetime is naive, assume it's UTC
+            if v.tzinfo is None:
+                return v.replace(tzinfo=timezone.utc)
+            # If datetime has timezone, convert to UTC
+            elif v.tzinfo != timezone.utc:
+                return v.astimezone(timezone.utc)
+        return v
+
     class Config:
         from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat() if v.tzinfo else v.replace(tzinfo=timezone.utc).isoformat()
+        }
 
 class ConversationResponse(BaseModel):
     client_id: int

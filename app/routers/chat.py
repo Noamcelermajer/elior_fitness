@@ -237,13 +237,14 @@ async def send_message(
                 detail="Progress entry not found or doesn't belong to this client"
             )
     
-    # Create message
+    # Create message with explicit UTC timestamp
     chat_message = ChatMessage(
         trainer_id=trainer_id,
         client_id=client_id,
         sender_id=current_user.id,
         message=message_data.message,
-        progress_entry_id=progress_entry_id
+        progress_entry_id=progress_entry_id,
+        created_at=datetime.now(timezone.utc)
     )
     
     db.add(chat_message)
@@ -262,7 +263,7 @@ async def send_message(
                 "sender_name": current_user.full_name or current_user.username,
                 "message": message_data.message,
                 "progress_entry_id": progress_entry_id,
-                "timestamp": chat_message.created_at.isoformat()
+                "timestamp": (chat_message.created_at.replace(tzinfo=timezone.utc) if chat_message.created_at.tzinfo is None else chat_message.created_at).isoformat()
             }
         )
     except Exception as e:
