@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from datetime import datetime, timezone
 from app.database import Base
 
 class ChatMessage(Base):
@@ -12,7 +13,7 @@ class ChatMessage(Base):
     sender_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
     message = Column(Text, nullable=False)
     progress_entry_id = Column(Integer, ForeignKey("progress_entries.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime, default=func.now())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     read_at = Column(DateTime, nullable=True)
 
     # Relationships

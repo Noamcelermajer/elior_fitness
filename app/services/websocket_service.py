@@ -1,7 +1,7 @@
 import json
 import asyncio
 from typing import Dict, Set, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import WebSocket, WebSocketDisconnect
 from enum import Enum
 
@@ -43,7 +43,7 @@ class WebSocketService:
             {
                 "type": "connection_established",
                 "user_id": user_id,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
         )
     
@@ -109,7 +109,7 @@ class WebSocketService:
             "file_data": file_data,
             "file_type": file_type,
             "user_id": user_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         # Send to user who uploaded
@@ -125,7 +125,7 @@ class WebSocketService:
                         "file_data": file_data,
                         "file_type": file_type,
                         "client_id": user_id,
-                        "timestamp": datetime.utcnow().isoformat()
+                        "timestamp": datetime.now(timezone.utc).isoformat()
                     }
                     await self.send_personal_message(trainer_id, trainer_message)
                     break
@@ -137,7 +137,7 @@ class WebSocketService:
             "file_path": file_path,
             "file_type": file_type,
             "user_id": user_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         await self.send_personal_message(user_id, message)
@@ -148,7 +148,7 @@ class WebSocketService:
             "type": NotificationType.MEAL_COMPLETED,
             "meal_data": meal_data,
             "client_id": client_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         # Send to client
@@ -159,7 +159,7 @@ class WebSocketService:
             "type": NotificationType.MEAL_COMPLETED,
             "meal_data": meal_data,
             "client_id": client_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
     
     async def notify_workout_completion(self, client_id: int, workout_data: dict):
@@ -168,7 +168,7 @@ class WebSocketService:
             "type": NotificationType.WORKOUT_COMPLETED,
             "workout_data": workout_data,
             "client_id": client_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         # Send to client
@@ -179,7 +179,7 @@ class WebSocketService:
             "type": NotificationType.WORKOUT_COMPLETED,
             "workout_data": workout_data,
             "client_id": client_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
     
     async def notify_progress_update(self, client_id: int, progress_data: dict):
@@ -188,7 +188,7 @@ class WebSocketService:
             "type": NotificationType.PROGRESS_UPDATED,
             "progress_data": progress_data,
             "client_id": client_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         # Send to client
@@ -199,7 +199,7 @@ class WebSocketService:
             "type": NotificationType.PROGRESS_UPDATED,
             "progress_data": progress_data,
             "client_id": client_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
     
     async def notify_plan_update(self, trainer_id: int, plan_data: dict, client_id: int):
@@ -208,7 +208,7 @@ class WebSocketService:
             "type": NotificationType.PLAN_UPDATED,
             "plan_data": plan_data,
             "trainer_id": trainer_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         # Send to trainer
@@ -219,7 +219,7 @@ class WebSocketService:
             "type": NotificationType.PLAN_UPDATED,
             "plan_data": plan_data,
             "trainer_id": trainer_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
     
     async def send_message(self, from_user_id: int, to_user_id: int, message_text: str):
@@ -228,7 +228,7 @@ class WebSocketService:
             "type": NotificationType.MESSAGE,
             "from_user_id": from_user_id,
             "message": message_text,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         # Send to recipient
@@ -239,7 +239,7 @@ class WebSocketService:
             "type": "message_sent",
             "to_user_id": to_user_id,
             "message": message_text,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
     
     async def send_system_notification(self, user_id: int, title: str, message: str, notification_type: str = "info"):
@@ -249,7 +249,7 @@ class WebSocketService:
             "title": title,
             "message": message,
             "notification_type": notification_type,  # info, warning, error, success
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         await self.send_personal_message(user_id, system_message)

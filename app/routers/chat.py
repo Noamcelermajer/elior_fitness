@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.database import get_db
 from app.auth.utils import get_current_user
@@ -309,7 +309,7 @@ async def mark_message_read(
     
     # Only mark as read if it wasn't sent by the current user
     if message.sender_id != current_user.id and not message.read_at:
-        message.read_at = datetime.utcnow()
+        message.read_at = datetime.now(timezone.utc)
         db.commit()
     
     return None
