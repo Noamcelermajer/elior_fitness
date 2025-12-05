@@ -401,9 +401,12 @@ def export_exercises_excel(
     try:
         from openpyxl import Workbook
         from openpyxl.styles import Font, PatternFill, Alignment
+        from sqlalchemy.orm import joinedload
         
-        # Get all exercises
-        exercises = db.query(Exercise).order_by(Exercise.name).all()
+        # Get all exercises with muscle group relationship loaded
+        exercises = db.query(Exercise).options(
+            joinedload(Exercise.muscle_group_rel)
+        ).order_by(Exercise.name).all()
         
         # Create workbook
         wb = Workbook()
@@ -425,11 +428,20 @@ def export_exercises_excel(
         
         # Add data rows
         for exercise in exercises:
+            # Determine muscle group: use dynamic muscle group name if available, otherwise use string field
+            muscle_group_name = ""
+            if exercise.muscle_group_rel:
+                # Exercise uses a dynamic muscle group
+                muscle_group_name = exercise.muscle_group_rel.name
+            elif exercise.muscle_group:
+                # Exercise uses the string field (legacy enum or custom string)
+                muscle_group_name = exercise.muscle_group
+            
             ws.append([
                 exercise.id,
                 exercise.name or "",
                 exercise.description or "",
-                exercise.muscle_group or "",
+                muscle_group_name,
                 exercise.equipment_needed or "",
                 exercise.instructions or "",
                 exercise.category or "",

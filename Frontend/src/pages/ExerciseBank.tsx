@@ -789,172 +789,8 @@ const ExerciseBank = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
             <p className="text-sm sm:text-base text-muted-foreground">{t('exerciseBank.subtitle')}</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button 
-              onClick={handleExportExcel}
-              variant="outline"
-              className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
-            >
-              <Download className="w-4 h-4 me-2 flex-shrink-0" />
-              <span className="truncate">Export Excel</span>
-            </Button>
-            <label className="w-full sm:w-auto cursor-pointer">
-              <input
-                type="file"
-                id="exercise-import-file"
-                accept=".xlsx,.xls"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setImportFile(file);
-                    // Import will be triggered after file is set
-                    setTimeout(() => handleImportExcel(), 100);
-                  }
-                }}
-                className="hidden"
-                disabled={isImporting}
-              />
-              <Button 
-                variant="outline"
-                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
-                disabled={isImporting}
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById('exercise-import-file')?.click();
-                }}
-              >
-                <Upload className="w-4 h-4 me-2 flex-shrink-0" />
-                <span className="truncate">{isImporting ? 'Importing...' : 'Import Excel'}</span>
-              </Button>
-            </label>
-            <Button 
-              onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
-              variant="outline"
-              className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4 me-2 flex-shrink-0" />
-              <span className="truncate">{t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}</span>
-            </Button>
-            <Dialog open={muscleGroupDialogOpen} onOpenChange={setMuscleGroupDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
-                >
-                  <Settings className="w-4 h-4 me-2 flex-shrink-0" />
-                  <span className="truncate">{t('exerciseBank.manageMuscleGroups')}</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>{t('exerciseBank.manageMuscleGroups')}</DialogTitle>
-                  <DialogDescription>
-                    Create, edit, or delete custom muscle groups
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  {/* Create/Edit Form */}
-                  <div className="space-y-2">
-                    <Label htmlFor="new_muscle_group_name">
-                      {editingMuscleGroup ? 'Edit Muscle Group' : 'Create New Muscle Group'}
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="new_muscle_group_name"
-                        value={newMuscleGroupName}
-                        onChange={(e) => {
-                          setNewMuscleGroupName(e.target.value);
-                          setMuscleGroupError('');
-                        }}
-                        placeholder="Enter muscle group name"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            if (editingMuscleGroup) {
-                              handleUpdateMuscleGroup();
-                            } else {
-                              handleCreateMuscleGroup();
-                            }
-                          }
-                        }}
-                      />
-                      {editingMuscleGroup ? (
-                        <>
-                          <Button
-                            type="button"
-                            onClick={handleUpdateMuscleGroup}
-                            disabled={!newMuscleGroupName.trim()}
-                          >
-                            <Save className="w-4 h-4 mr-1" />
-                            Save
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              setEditingMuscleGroup(null);
-                              setNewMuscleGroupName('');
-                              setMuscleGroupError('');
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          type="button"
-                          onClick={handleCreateMuscleGroup}
-                          disabled={!newMuscleGroupName.trim()}
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Create
-                        </Button>
-                      )}
-                    </div>
-                    {muscleGroupError && (
-                      <p className="text-sm text-red-500">{muscleGroupError}</p>
-                    )}
-                  </div>
-
-                  {/* List of Dynamic Muscle Groups */}
-                  {dynamicMuscleGroups.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>Your Custom Muscle Groups</Label>
-                      <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
-                        {dynamicMuscleGroups.map((group) => (
-                          <div
-                            key={group.id}
-                            className="flex items-center justify-between p-3 hover:bg-muted/50"
-                          >
-                            <span className="font-medium">{group.name}</span>
-                            <div className="flex gap-2">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditDialog(group)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteMuscleGroup(group.id)}
-                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
+          <div className="flex flex-col gap-2 w-full sm:w-auto">
+            {/* First row: Add Exercise button */}
             <Button 
               onClick={() => setCreateDialogOpen(true)} 
               className="gradient-green w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
@@ -962,6 +798,179 @@ const ExerciseBank = () => {
               <Plus className="w-4 h-4 me-2 flex-shrink-0" />
               <span className="truncate">{t('exerciseBank.addExercise')}</span>
             </Button>
+            
+            {/* Second row: Export/Import buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={handleExportExcel}
+                variant="outline"
+                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+              >
+                <Download className="w-4 h-4 me-2 flex-shrink-0" />
+                <span className="truncate">{t('common.exportExcel')}</span>
+              </Button>
+              <label className="w-full sm:w-auto cursor-pointer">
+                <input
+                  type="file"
+                  id="exercise-import-file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImportFile(file);
+                      // Import will be triggered after file is set
+                      setTimeout(() => handleImportExcel(), 100);
+                    }
+                  }}
+                  className="hidden"
+                  disabled={isImporting}
+                />
+                <Button 
+                  variant="outline"
+                  className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                  disabled={isImporting}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('exercise-import-file')?.click();
+                  }}
+                >
+                  <Upload className="w-4 h-4 me-2 flex-shrink-0" />
+                  <span className="truncate">{isImporting ? t('common.importing') : t('common.importExcel')}</span>
+                </Button>
+              </label>
+            </div>
+            
+            {/* Third row: Other action buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
+                variant="outline"
+                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4 me-2 flex-shrink-0" />
+                <span className="truncate">{t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}</span>
+              </Button>
+              <Dialog open={muscleGroupDialogOpen} onOpenChange={setMuscleGroupDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                  >
+                    <Settings className="w-4 h-4 me-2 flex-shrink-0" />
+                    <span className="truncate">{t('exerciseBank.manageMuscleGroups')}</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>{t('exerciseBank.manageMuscleGroups')}</DialogTitle>
+                    <DialogDescription>
+                      Create, edit, or delete custom muscle groups
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    {/* Create/Edit Form */}
+                    <div className="space-y-2">
+                      <Label htmlFor="new_muscle_group_name">
+                        {editingMuscleGroup ? 'Edit Muscle Group' : 'Create New Muscle Group'}
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="new_muscle_group_name"
+                          value={newMuscleGroupName}
+                          onChange={(e) => {
+                            setNewMuscleGroupName(e.target.value);
+                            setMuscleGroupError('');
+                          }}
+                          placeholder="Enter muscle group name"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              if (editingMuscleGroup) {
+                                handleUpdateMuscleGroup();
+                              } else {
+                                handleCreateMuscleGroup();
+                              }
+                            }
+                          }}
+                        />
+                        {editingMuscleGroup ? (
+                          <>
+                            <Button
+                              type="button"
+                              onClick={handleUpdateMuscleGroup}
+                              disabled={!newMuscleGroupName.trim()}
+                            >
+                              <Save className="w-4 h-4 mr-1" />
+                              Save
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingMuscleGroup(null);
+                                setNewMuscleGroupName('');
+                                setMuscleGroupError('');
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            type="button"
+                            onClick={handleCreateMuscleGroup}
+                            disabled={!newMuscleGroupName.trim()}
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Create
+                          </Button>
+                        )}
+                      </div>
+                      {muscleGroupError && (
+                        <p className="text-sm text-red-500">{muscleGroupError}</p>
+                      )}
+                    </div>
+
+                    {/* List of Dynamic Muscle Groups */}
+                    {dynamicMuscleGroups.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Your Custom Muscle Groups</Label>
+                        <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
+                          {dynamicMuscleGroups.map((group) => (
+                            <div
+                              key={group.id}
+                              className="flex items-center justify-between p-3 hover:bg-muted/50"
+                            >
+                              <span className="font-medium">{group.name}</span>
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEditDialog(group)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteMuscleGroup(group.id)}
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
 
@@ -983,9 +992,15 @@ const ExerciseBank = () => {
                   <SelectTrigger className="h-10 w-full" />
                   <SelectContent>
                     <SelectItem value="all">{t('exerciseBank.allMuscleGroups')}</SelectItem>
-                    {muscleGroups.map(group => (
-                      <SelectItem key={group} value={group}>{t(`exerciseBank.muscleGroups.${group}`)}</SelectItem>
-                    ))}
+                    {muscleGroups.map(group => {
+                      // Try to translate, but if translation key doesn't exist, use the raw name
+                      const translationKey = `exerciseBank.muscleGroups.${group}`;
+                      const translated = t(translationKey);
+                      const displayName = translated === translationKey ? group : translated;
+                      return (
+                        <SelectItem key={group} value={group}>{displayName}</SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -1014,11 +1029,19 @@ const ExerciseBank = () => {
               </CardContent>
             </Card>
           ) : (
-            Object.entries(groupedExercises).map(([muscleGroup, groupExercises]) => (
+            Object.entries(groupedExercises).map(([muscleGroup, groupExercises]) => {
+              // Check if it's a static muscle group (has translation) or custom (display as-is)
+              // Try to translate, but if translation key doesn't exist, use the raw name
+              const translationKey = `exerciseBank.muscleGroups.${muscleGroup}`;
+              const translated = t(translationKey);
+              // If translation returns the key itself (meaning no translation found), use the raw name
+              const displayName = translated === translationKey ? muscleGroup : translated;
+              
+              return (
               <div key={muscleGroup}>
                 <h2 className="text-xl font-semibold mb-3 flex items-center">
                   <Tag className="w-5 h-5 me-2" />
-                  {t(`exerciseBank.muscleGroups.${muscleGroup}`)}
+                  {displayName}
                   <Badge variant="secondary" className="ms-2">{groupExercises.length}</Badge>
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1076,7 +1099,8 @@ const ExerciseBank = () => {
                   ))}
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -1143,11 +1167,17 @@ const ExerciseBank = () => {
                       <SelectValue placeholder={t('exerciseBank.selectMuscleGroup')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {muscleGroups.map(group => (
-                        <SelectItem key={group} value={group}>
-                          {t(`exerciseBank.muscleGroups.${group}`) || group}
-                        </SelectItem>
-                      ))}
+                      {muscleGroups.map(group => {
+                        // Try to translate, but if translation key doesn't exist, use the raw name
+                        const translationKey = `exerciseBank.muscleGroups.${group}`;
+                        const translated = t(translationKey);
+                        const displayName = translated === translationKey ? group : translated;
+                        return (
+                          <SelectItem key={group} value={group}>
+                            {displayName}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   {fieldErrors.muscle_group && (

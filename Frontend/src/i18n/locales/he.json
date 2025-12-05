@@ -42,6 +42,11 @@
     "switchToLight": "עבור למצב בהיר",
     "switchToDark": "עבור למצב כהה",
     "export": "ייצא",
+    "import": "ייבא",
+    "exportExcel": "ייצא לאקסל",
+    "importExcel": "ייבא מאקסל",
+    "exporting": "מייצא...",
+    "importing": "מייבא...",
     "loadMore": "טען עוד",
     "remaining": "נותרו"
   },

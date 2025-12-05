@@ -40,6 +40,11 @@
     "nutrition": "Nutrition",
     "settings": "Settings",
     "export": "Export",
+    "import": "Import",
+    "exportExcel": "Export Excel",
+    "importExcel": "Import Excel",
+    "exporting": "Exporting...",
+    "importing": "Importing...",
     "loadMore": "Load More",
     "remaining": "remaining"
   },
