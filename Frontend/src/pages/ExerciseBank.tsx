@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import { useToast } from '../hooks/use-toast';
 import { useTranslation } from 'react-i18next';
+import { useOverflow } from '../hooks/use-overflow';
 
 interface Exercise {
   id: number;
@@ -63,6 +64,10 @@ const ExerciseBank = () => {
   const [muscleGroupError, setMuscleGroupError] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  
+  // Ref for button container to detect overflow
+  const buttonContainerRef = useRef<HTMLDivElement>(null);
+  const isOverflowing = useOverflow(buttonContainerRef);
   
   const [exerciseForm, setExerciseForm] = useState({
     name: '',
@@ -789,10 +794,13 @@ const ExerciseBank = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
             <p className="text-sm sm:text-base text-muted-foreground">{t('exerciseBank.subtitle')}</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div 
+            ref={buttonContainerRef}
+            className={`flex gap-2 ${isOverflowing ? 'flex-col' : 'flex-row'} ${isOverflowing ? 'w-full' : 'w-full md:w-auto'}`}
+          >
             <Button 
               onClick={() => setCreateDialogOpen(true)} 
-              className="gradient-green w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+              className={`gradient-green ${isOverflowing ? 'w-full' : 'w-full md:w-auto'} px-4 py-2 text-sm md:text-base whitespace-nowrap`}
             >
               <Plus className="w-4 h-4 me-2 flex-shrink-0" />
               <span className="truncate">{t('exerciseBank.addExercise')}</span>
@@ -800,12 +808,12 @@ const ExerciseBank = () => {
             <Button 
               onClick={handleExportExcel}
               variant="outline"
-              className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+              className={`${isOverflowing ? 'w-full' : 'w-full md:w-auto'} px-4 py-2 text-sm md:text-base whitespace-nowrap`}
             >
               <Download className="w-4 h-4 me-2 flex-shrink-0" />
               <span className="truncate">{t('common.exportExcel')}</span>
             </Button>
-            <label className="w-full sm:w-auto cursor-pointer">
+            <label className={`${isOverflowing ? 'w-full' : 'w-full md:w-auto'} cursor-pointer`}>
               <input
                 type="file"
                 id="exercise-import-file"
@@ -822,7 +830,7 @@ const ExerciseBank = () => {
               />
               <Button 
                 variant="outline"
-                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                className={`${isOverflowing ? 'w-full' : 'w-full md:w-auto'} px-4 py-2 text-sm md:text-base whitespace-nowrap`}
                 disabled={isImporting}
                 onClick={(e) => {
                   e.preventDefault();
@@ -836,7 +844,7 @@ const ExerciseBank = () => {
             <Button 
               onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
               variant="outline"
-              className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+              className={`${isOverflowing ? 'w-full' : 'w-full md:w-auto'} px-4 py-2 text-sm md:text-base whitespace-nowrap`}
             >
               <Plus className="w-4 h-4 me-2 flex-shrink-0" />
               <span className="truncate">{t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}</span>
@@ -846,7 +854,7 @@ const ExerciseBank = () => {
                 <Button 
                   type="button" 
                   variant="outline"
-                  className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                  className={`${isOverflowing ? 'w-full' : 'w-full md:w-auto'} px-4 py-2 text-sm md:text-base whitespace-nowrap`}
                 >
                   <Settings className="w-4 h-4 me-2 flex-shrink-0" />
                   <span className="truncate">{t('exerciseBank.manageMuscleGroups')}</span>

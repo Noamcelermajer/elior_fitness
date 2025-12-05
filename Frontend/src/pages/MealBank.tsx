@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../components/Layout';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import { useToast } from '../hooks/use-toast';
 import { useTranslation } from 'react-i18next';
+import { useOverflow } from '../hooks/use-overflow';
 
 interface MealBankItem {
   id: number;
@@ -53,6 +54,10 @@ const MealBank = () => {
   const [activeTab, setActiveTab] = useState('details');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  
+  // Ref for button container to detect overflow
+  const buttonContainerRef = useRef<HTMLDivElement>(null);
+  const isOverflowing = useOverflow(buttonContainerRef);
   
   const [itemForm, setItemForm] = useState({
     name: '',
@@ -379,16 +384,19 @@ const MealBank = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('foodBank.title')}</h1>
               <p className="text-sm sm:text-base text-muted-foreground">{t('foodBank.subtitle')}</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div 
+              ref={buttonContainerRef}
+              className={`flex gap-2 ${isOverflowing ? 'flex-col' : 'flex-row'} ${isOverflowing ? 'w-full' : 'w-full sm:w-auto'}`}
+            >
               <Button
                 onClick={handleExportExcel}
                 variant="outline"
-                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                className={`${isOverflowing ? 'w-full' : 'w-full sm:w-auto'} px-4 py-2 text-sm sm:text-base whitespace-nowrap`}
               >
                 <Download className="w-4 h-4 me-2 flex-shrink-0" />
                 <span className="truncate">Export Excel</span>
               </Button>
-              <label className="w-full sm:w-auto cursor-pointer">
+              <label className={`${isOverflowing ? 'w-full' : 'w-full sm:w-auto'} cursor-pointer`}>
                 <input
                   type="file"
                   id="meal-bank-import-file"
@@ -405,7 +413,7 @@ const MealBank = () => {
                 />
                 <Button 
                   variant="outline"
-                  className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                  className={`${isOverflowing ? 'w-full' : 'w-full sm:w-auto'} px-4 py-2 text-sm sm:text-base whitespace-nowrap`}
                   disabled={isImporting}
                   onClick={(e) => {
                     e.preventDefault();
@@ -423,7 +431,7 @@ const MealBank = () => {
                     resetForm();
                     setCreateDialogOpen(true);
                   }}
-                  className="gradient-green w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                  className={`gradient-green ${isOverflowing ? 'w-full' : 'w-full sm:w-auto'} px-4 py-2 text-sm sm:text-base whitespace-nowrap`}
                 >
                   <Plus className="w-4 h-4 me-2 flex-shrink-0" />
                   <span className="truncate">{t('foodBank.addFoodItem')}</span>
