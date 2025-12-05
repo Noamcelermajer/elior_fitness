@@ -784,44 +784,74 @@ const ExerciseBank = () => {
     <Layout currentPage="exercises">
       <div className="container mx-auto p-4 md:p-6 space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
-              <p className="text-sm sm:text-base text-muted-foreground">{t('exerciseBank.subtitle')}</p>
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('exerciseBank.title')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">{t('exerciseBank.subtitle')}</p>
           </div>
-
-          {/* Action Buttons Card - Original buttons side by side */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button 
+              onClick={() => setCreateDialogOpen(true)} 
+              className="gradient-green w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4 me-2 flex-shrink-0" />
+              <span className="truncate">{t('exerciseBank.addExercise')}</span>
+            </Button>
+            <Button 
+              onClick={handleExportExcel}
+              variant="outline"
+              className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+            >
+              <Download className="w-4 h-4 me-2 flex-shrink-0" />
+              <span className="truncate">{t('common.exportExcel')}</span>
+            </Button>
+            <label className="w-full sm:w-auto cursor-pointer">
+              <input
+                type="file"
+                id="exercise-import-file"
+                accept=".xlsx,.xls"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImportFile(file);
+                    setTimeout(() => handleImportExcel(), 100);
+                  }
+                }}
+                className="hidden"
+                disabled={isImporting}
+              />
+              <Button 
+                variant="outline"
+                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                disabled={isImporting}
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('exercise-import-file')?.click();
+                }}
+              >
+                <Upload className="w-4 h-4 me-2 flex-shrink-0" />
+                <span className="truncate">{isImporting ? t('common.importing') : t('common.importExcel')}</span>
+              </Button>
+            </label>
+            <Button 
+              onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
+              variant="outline"
+              className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4 me-2 flex-shrink-0" />
+              <span className="truncate">{t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}</span>
+            </Button>
+            <Dialog open={muscleGroupDialogOpen} onOpenChange={setMuscleGroupDialogOpen}>
+              <DialogTrigger asChild>
                 <Button 
-                  onClick={() => setCreateDialogOpen(true)} 
-                  className="gradient-green flex-1 sm:flex-initial px-4 py-2 text-sm sm:text-base whitespace-nowrap"
-                >
-                  <Plus className="w-4 h-4 me-2 flex-shrink-0" />
-                  <span className="truncate">{t('exerciseBank.addExercise')}</span>
-                </Button>
-                <Button 
-                  onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
+                  type="button" 
                   variant="outline"
-                  className="flex-1 sm:flex-initial px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                  className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
                 >
-                  <Plus className="w-4 h-4 me-2 flex-shrink-0" />
-                  <span className="truncate">{t('exerciseBank.createWorkoutSplit', 'צור פיצול אימון')}</span>
+                  <Settings className="w-4 h-4 me-2 flex-shrink-0" />
+                  <span className="truncate">{t('exerciseBank.manageMuscleGroups')}</span>
                 </Button>
-                <Dialog open={muscleGroupDialogOpen} onOpenChange={setMuscleGroupDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      className="flex-1 sm:flex-initial px-4 py-2 text-sm sm:text-base whitespace-nowrap"
-                    >
-                      <Settings className="w-4 h-4 me-2 flex-shrink-0" />
-                      <span className="truncate">{t('exerciseBank.manageMuscleGroups')}</span>
-                    </Button>
-                  </DialogTrigger>
+              </DialogTrigger>
                 <DialogContent className="sm:max-w-[500px]">
                   <DialogHeader>
                     <DialogTitle>{t('exerciseBank.manageMuscleGroups')}</DialogTitle>
@@ -931,54 +961,7 @@ const ExerciseBank = () => {
                   </div>
                 </DialogContent>
               </Dialog>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Excel Export/Import Card - Separate box that scales gracefully */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                <Button 
-                  onClick={handleExportExcel}
-                  variant="outline"
-                  className="flex-1 sm:flex-initial px-4 py-2 text-sm sm:text-base whitespace-nowrap"
-                >
-                  <Download className="w-4 h-4 me-2 flex-shrink-0" />
-                  <span className="truncate">{t('common.exportExcel')}</span>
-                </Button>
-                <label className="flex-1 sm:flex-initial cursor-pointer">
-                  <input
-                    type="file"
-                    id="exercise-import-file"
-                    accept=".xlsx,.xls"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setImportFile(file);
-                        // Import will be triggered after file is set
-                        setTimeout(() => handleImportExcel(), 100);
-                      }
-                    }}
-                    className="hidden"
-                    disabled={isImporting}
-                  />
-                  <Button 
-                    variant="outline"
-                    className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
-                    disabled={isImporting}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      document.getElementById('exercise-import-file')?.click();
-                    }}
-                  >
-                    <Upload className="w-4 h-4 me-2 flex-shrink-0" />
-                    <span className="truncate">{isImporting ? t('common.importing') : t('common.importExcel')}</span>
-                  </Button>
-                </label>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
 
         {/* Search and Filter */}
