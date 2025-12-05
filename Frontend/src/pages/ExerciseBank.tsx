@@ -685,6 +685,88 @@ const ExerciseBank = () => {
     }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/exercises/export/excel`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `exercises_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast({
+          title: t('common.success'),
+          description: 'Exercises exported successfully'
+        });
+      } else {
+        throw new Error('Export failed');
+      }
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: 'Failed to export exercises',
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleImportExcel = async () => {
+    if (!importFile) {
+      toast({
+        title: t('common.error'),
+        description: 'Please select a file to import',
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const response = await fetch(`${API_BASE_URL}/exercises/import/excel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: t('common.success'),
+          description: result.message || `Imported ${result.imported_count} exercises`
+        });
+        setImportFile(null);
+        fetchExercises();
+      } else {
+        const error = await response.json();
+        throw new Error(error.detail || 'Import failed');
+      }
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : 'Failed to import exercises',
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <Layout currentPage="exercises">

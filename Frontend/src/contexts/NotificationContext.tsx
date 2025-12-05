@@ -73,8 +73,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
         // Determine WebSocket URL
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsHost = API_BASE_URL.replace(/^https?:\/\//, '').replace('/api', '');
-        const wsUrl = `${wsProtocol}//${wsHost}/api/ws/ws/${user.id}?token=${token}`;
+        // Extract base URL from API_BASE_URL (remove /api if present)
+        const baseUrl = API_BASE_URL.replace(/^https?:\/\//, '').replace(/\/api\/?$/, '');
+        // Router is mounted at /api/ws and endpoint is /{user_id}, so full path is /api/ws/{user_id}
+        const wsUrl = `${wsProtocol}//${baseUrl}/api/ws/${user.id}?token=${token}`;
 
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
