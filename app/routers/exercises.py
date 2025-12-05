@@ -140,15 +140,17 @@ def get_exercises(
     muscle_group: Optional[MuscleGroup] = Query(None, description="Filter by muscle group"),
     search: Optional[str] = Query(None, description="Search in exercise name, description, or instructions"),
     page: int = Query(1, ge=1, description="Page number"),
-    size: int = Query(20, ge=1, le=100, description="Page size"),
+    size: int = Query(1000, ge=1, le=10000, description="Page size"),
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get exercises with filtering and pagination."""
+    """Get exercises with filtering and pagination. All trainers can see all exercises."""
     workout_service = WorkoutService(db)
     
+    # For trainers, don't filter by trainer_id unless explicitly requested
+    # This ensures all trainers have access to all exercises
     filter_params = ExerciseFilter(
-        trainer_id=trainer_id,
+        trainer_id=trainer_id,  # Only filter if explicitly provided
         muscle_group=muscle_group,
         search=search,
         page=page,

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
+from datetime import datetime
 
 from app.database import get_db
 from app.auth.utils import get_current_user
@@ -25,7 +26,7 @@ class MuscleGroupResponse(BaseModel):
     id: int
     name: str
     created_by: int
-    created_at: str
+    created_at: datetime
     
     class Config:
         from_attributes = True
