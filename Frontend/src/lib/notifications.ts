@@ -71,8 +71,8 @@ export const showNotification = (
       ...options,
       // Icon and badge might not work on all mobile browsers
       ...(mobile ? {} : {
-        icon: '/favicon/android-chrome-192x192.png',
-        badge: '/favicon/android-chrome-192x192.png',
+        icon: '/Icons/Android/Icon-192.png',
+        badge: '/Icons/Android/Icon-192.png',
       }),
       // On mobile, don't require interaction
       requireInteraction: false,
