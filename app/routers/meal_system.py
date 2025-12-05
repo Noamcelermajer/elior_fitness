@@ -1159,24 +1159,17 @@ def get_meal_bank_items(
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get meal bank items (trainers see their own + public items)"""
+    """Get meal bank items (trainers and admins see all items, clients see only public)"""
     query = db.query(MealBank)
     
-    if current_user.role == UserRole.TRAINER:
-        # Trainers see their own items and public items
-        if include_public:
-            query = query.filter(
-                (MealBank.is_public == True) | (MealBank.created_by == current_user.id)
-            )
-        else:
-            query = query.filter(MealBank.created_by == current_user.id)
-    elif current_user.role == UserRole.ADMIN:
-        # Admins see all
+    if current_user.role == UserRole.TRAINER or current_user.role == UserRole.ADMIN:
+        # Trainers and admins see all items
         pass
     else:
         # Clients only see public items
         query = query.filter(MealBank.is_public == True)
     
+    # Only apply trainer_id filter if explicitly provided
     if trainer_id:
         query = query.filter(MealBank.created_by == trainer_id)
     
