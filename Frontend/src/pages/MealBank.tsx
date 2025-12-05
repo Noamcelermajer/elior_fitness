@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Utensils, Plus, Search, Edit, Trash2
+  Utensils, Plus, Search, Edit, Trash2, Download, Upload
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
@@ -51,6 +51,8 @@ const MealBank = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MealBankItem | null>(null);
   const [activeTab, setActiveTab] = useState('details');
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   
   const [itemForm, setItemForm] = useState({
     name: '',
@@ -264,6 +266,88 @@ const MealBank = () => {
     resetForm();
   };
 
+  const handleExportExcel = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/v2/meals/meal-bank/export/excel`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `meal_bank_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast({
+          title: t('common.success'),
+          description: 'Meal bank exported successfully'
+        });
+      } else {
+        throw new Error('Export failed');
+      }
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: 'Failed to export meal bank',
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleImportExcel = async () => {
+    if (!importFile) {
+      toast({
+        title: t('common.error'),
+        description: 'Please select a file to import',
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const formData = new FormData();
+      formData.append('file', importFile);
+
+      const response = await fetch(`${API_BASE_URL}/v2/meals/meal-bank/import/excel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: t('common.success'),
+          description: result.message || `Imported ${result.imported_count} items`
+        });
+        setImportFile(null);
+        fetchItems();
+      } else {
+        const error = await response.json();
+        throw new Error(error.detail || 'Import failed');
+      }
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : 'Failed to import meal bank',
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <Layout currentPage="meal-bank">
@@ -295,19 +379,57 @@ const MealBank = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('foodBank.title')}</h1>
               <p className="text-sm sm:text-base text-muted-foreground">{t('foodBank.subtitle')}</p>
             </div>
-            <DialogTrigger asChild>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button
-                onClick={() => {
-                  setEditingItem(null);
-                  resetForm();
-                  setCreateDialogOpen(true);
-                }}
-                className="gradient-green w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                onClick={handleExportExcel}
+                variant="outline"
+                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
               >
-                <Plus className="w-4 h-4 me-2 flex-shrink-0" />
-                <span className="truncate">{t('foodBank.addFoodItem')}</span>
+                <Download className="w-4 h-4 me-2 flex-shrink-0" />
+                <span className="truncate">Export Excel</span>
               </Button>
-            </DialogTrigger>
+              <label className="w-full sm:w-auto cursor-pointer">
+                <input
+                  type="file"
+                  id="meal-bank-import-file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImportFile(file);
+                      setTimeout(() => handleImportExcel(), 100);
+                    }
+                  }}
+                  className="hidden"
+                  disabled={isImporting}
+                />
+                <Button 
+                  variant="outline"
+                  className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                  disabled={isImporting}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('meal-bank-import-file')?.click();
+                  }}
+                >
+                  <Upload className="w-4 h-4 me-2 flex-shrink-0" />
+                  <span className="truncate">{isImporting ? 'Importing...' : 'Import Excel'}</span>
+                </Button>
+              </label>
+              <DialogTrigger asChild>
+                <Button
+                  onClick={() => {
+                    setEditingItem(null);
+                    resetForm();
+                    setCreateDialogOpen(true);
+                  }}
+                  className="gradient-green w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                >
+                  <Plus className="w-4 h-4 me-2 flex-shrink-0" />
+                  <span className="truncate">{t('foodBank.addFoodItem')}</span>
+                </Button>
+              </DialogTrigger>
+            </div>
           </div>
 
           {/* Search and Filter */}

@@ -5,9 +5,14 @@ Trainers can create meal plans with 3 macros and food options
 
 from collections import defaultdict
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Dict, Any, Optional
+import io
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.database import get_db
 from app.auth.utils import get_current_user
@@ -1277,4 +1282,188 @@ def delete_meal_bank_item(
     db.commit()
     
     return None
+
+@router.get("/meal-bank/export/excel")
+def export_meal_bank_excel(
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Export all meal bank items to Excel file"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        
+        # Get all meal bank items (including public ones)
+        meal_bank_items = db.query(MealBank).order_by(MealBank.macro_type, MealBank.name).all()
+        
+        # Create workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Meal Bank"
+        
+        # Header row
+        headers = ["ID", "Name", "Name (Hebrew)", "Macro Type", "Calories (per 100g)", 
+                   "Protein (g per 100g)", "Carbs (g per 100g)", "Fat (g per 100g)", 
+                   "Created By", "Is Public", "Created At"]
+        ws.append(headers)
+        
+        # Style header row
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+        
+        # Add data rows
+        for item in meal_bank_items:
+            ws.append([
+                item.id,
+                item.name or "",
+                item.name_hebrew or "",
+                item.macro_type.value if item.macro_type else "",
+                item.calories if item.calories is not None else "",
+                item.protein if item.protein is not None else "",
+                item.carbs if item.carbs is not None else "",
+                item.fat if item.fat is not None else "",
+                item.created_by,
+                "Yes" if item.is_public else "No",
+                item.created_at.strftime("%Y-%m-%d %H:%M:%S") if item.created_at else ""
+            ])
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Save to bytes
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"meal_bank_export_{timestamp}.xlsx"
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Excel export requires openpyxl library. Please install it."
+        )
+    except Exception as e:
+        logger.error(f"Error exporting meal bank to Excel: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to export meal bank: {str(e)}"
+        )
+
+@router.post("/meal-bank/import/excel")
+async def import_meal_bank_excel(
+    file: UploadFile = File(...),
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Import meal bank items from Excel file"""
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers can import meal bank items"
+        )
+    
+    try:
+        from openpyxl import load_workbook
+        
+        # Read file content
+        contents = await file.read()
+        wb = load_workbook(io.BytesIO(contents))
+        ws = wb.active
+        
+        # Skip header row and process data
+        imported_count = 0
+        skipped_count = 0
+        errors = []
+        
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            try:
+                # Skip empty rows
+                if not row[1] and not row[2]:
+                    continue
+                
+                # Parse row data (ID, Name, Name Hebrew, Macro Type, Calories, Protein, Carbs, Fat)
+                name = str(row[1]).strip() if row[1] else None
+                name_hebrew = str(row[2]).strip() if row[2] else None
+                
+                if not name and not name_hebrew:
+                    skipped_count += 1
+                    continue
+                
+                # Parse macro type
+                macro_type_str = str(row[3]).strip().lower() if row[3] else "protein"
+                if macro_type_str not in ["protein", "carb", "fat"]:
+                    macro_type_str = "protein"  # Default
+                
+                meal_bank_data = MealBankCreate(
+                    name=name or name_hebrew,
+                    name_hebrew=name_hebrew if name_hebrew else None,
+                    macro_type=MacroType(macro_type_str),
+                    calories=int(row[4]) if row[4] and str(row[4]).strip() else None,
+                    protein=float(row[5]) if row[5] and str(row[5]).strip() else None,
+                    carbs=float(row[6]) if row[6] and str(row[6]).strip() else None,
+                    fat=float(row[7]) if row[7] and str(row[7]).strip() else None
+                )
+                
+                # Create meal bank item
+                meal_bank_item = MealBank(
+                    name=meal_bank_data.name,
+                    name_hebrew=meal_bank_data.name_hebrew,
+                    macro_type=meal_bank_data.macro_type,
+                    calories=meal_bank_data.calories,
+                    protein=meal_bank_data.protein,
+                    carbs=meal_bank_data.carbs,
+                    fat=meal_bank_data.fat,
+                    created_by=current_user.id,
+                    is_public=False
+                )
+                
+                db.add(meal_bank_item)
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Row {row_idx}: {str(e)}")
+                skipped_count += 1
+                logger.error(f"Error importing row {row_idx}: {str(e)}")
+        
+        db.commit()
+        
+        return {
+            "message": f"Import completed: {imported_count} items imported, {skipped_count} skipped",
+            "imported_count": imported_count,
+            "skipped_count": skipped_count,
+            "errors": errors[:10]  # Return first 10 errors
+        }
+        
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Excel import requires openpyxl library. Please install it."
+        )
+    except Exception as e:
+        logger.error(f"Error importing meal bank from Excel: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to import meal bank: {str(e)}"
+        )
 

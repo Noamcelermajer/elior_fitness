@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
 from fastapi import Request as FastAPIRequest
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import logging
 import json
+import io
+from datetime import datetime
 
 from app.database import get_db
 from app.services.workout_service import WorkoutService
@@ -13,7 +16,7 @@ from app.schemas.auth import UserResponse, UserRole
 from app.schemas.workout import (
     ExerciseCreate, ExerciseUpdate, ExerciseResponse, ExerciseFilter
 )
-from app.models.workout import MuscleGroup
+from app.models.workout import MuscleGroup, Exercise
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -387,4 +390,169 @@ def delete_exercise(
 
 @router.get("/test")
 async def test_exercises():
-    return {"message": "Exercises router working"} 
+    return {"message": "Exercises router working"}
+
+@router.get("/export/excel")
+def export_exercises_excel(
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Export all exercises to Excel file"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        
+        # Get all exercises
+        exercises = db.query(Exercise).order_by(Exercise.name).all()
+        
+        # Create workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Exercises"
+        
+        # Header row
+        headers = ["ID", "Name", "Description", "Muscle Group", "Equipment Needed", 
+                   "Instructions", "Category", "Video URL", "Image Path", "Created By", "Created At"]
+        ws.append(headers)
+        
+        # Style header row
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+        
+        # Add data rows
+        for exercise in exercises:
+            ws.append([
+                exercise.id,
+                exercise.name or "",
+                exercise.description or "",
+                exercise.muscle_group or "",
+                exercise.equipment_needed or "",
+                exercise.instructions or "",
+                exercise.category or "",
+                exercise.video_url or "",
+                exercise.image_path or "",
+                exercise.created_by,
+                exercise.created_at.strftime("%Y-%m-%d %H:%M:%S") if exercise.created_at else ""
+            ])
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Save to bytes
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"exercises_export_{timestamp}.xlsx"
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Excel export requires openpyxl library. Please install it."
+        )
+    except Exception as e:
+        logger.error(f"Error exporting exercises to Excel: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to export exercises: {str(e)}"
+        )
+
+@router.post("/import/excel")
+async def import_exercises_excel(
+    file: UploadFile = File(...),
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Import exercises from Excel file"""
+    if current_user.role != UserRole.TRAINER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers can import exercises"
+        )
+    
+    try:
+        from openpyxl import load_workbook
+        
+        # Read file content
+        contents = await file.read()
+        wb = load_workbook(io.BytesIO(contents))
+        ws = wb.active
+        
+        # Skip header row and process data
+        imported_count = 0
+        skipped_count = 0
+        errors = []
+        
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            try:
+                # Skip empty rows
+                if not row[0] and not row[1]:
+                    continue
+                
+                # Parse row data (ID, Name, Description, Muscle Group, Equipment, Instructions, Category, Video URL, Image Path)
+                name = str(row[1]).strip() if row[1] else None
+                if not name:
+                    skipped_count += 1
+                    continue
+                
+                exercise_data = ExerciseCreate(
+                    name=name,
+                    description=str(row[2]).strip() if row[2] else None,
+                    muscle_group=str(row[3]).strip() if row[3] else "other",
+                    equipment_needed=str(row[4]).strip() if row[4] else None,
+                    instructions=str(row[5]).strip() if row[5] else None,
+                    category=str(row[6]).strip() if row[6] else None,
+                    video_url=str(row[7]).strip() if row[7] else None,
+                    image_path=str(row[8]).strip() if row[8] else None
+                )
+                
+                workout_service = WorkoutService(db)
+                workout_service.create_exercise(exercise_data, current_user.id)
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Row {row_idx}: {str(e)}")
+                skipped_count += 1
+                logger.error(f"Error importing row {row_idx}: {str(e)}")
+        
+        db.commit()
+        
+        return {
+            "message": f"Import completed: {imported_count} exercises imported, {skipped_count} skipped",
+            "imported_count": imported_count,
+            "skipped_count": skipped_count,
+            "errors": errors[:10]  # Return first 10 errors
+        }
+        
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Excel import requires openpyxl library. Please install it."
+        )
+    except Exception as e:
+        logger.error(f"Error importing exercises from Excel: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to import exercises: {str(e)}"
+        ) 

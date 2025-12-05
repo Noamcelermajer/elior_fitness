@@ -13,6 +13,7 @@ aiofiles>=23.2.1
 # ESSENTIAL FILE PROCESSING - MINIMAL SET
 Pillow>=10.2.0  # For image processing only
 python-magic>=0.4.27  # For file type detection
+openpyxl>=3.1.2  # For Excel file export/import
 
 # REMOVED: Testing dependencies (not needed in production)
 # pytest>=7.4.3

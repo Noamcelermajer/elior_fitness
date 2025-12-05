@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { 
   Dumbbell, Plus, Search, Filter, Edit, Trash2, 
-  Video, FileText, Tag, Clock, Weight, Settings, Save, X, Image as ImageIcon
+  Video, FileText, Tag, Clock, Weight, Settings, Save, X, Image as ImageIcon,
+  Download, Upload
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
@@ -60,6 +61,8 @@ const ExerciseBank = () => {
   const [editingMuscleGroup, setEditingMuscleGroup] = useState<{id: number, name: string} | null>(null);
   const [newMuscleGroupName, setNewMuscleGroupName] = useState('');
   const [muscleGroupError, setMuscleGroupError] = useState('');
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   
   const [exerciseForm, setExerciseForm] = useState({
     name: '',
@@ -705,6 +708,43 @@ const ExerciseBank = () => {
             <p className="text-sm sm:text-base text-muted-foreground">{t('exerciseBank.subtitle')}</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button 
+              onClick={handleExportExcel}
+              variant="outline"
+              className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+            >
+              <Download className="w-4 h-4 me-2 flex-shrink-0" />
+              <span className="truncate">Export Excel</span>
+            </Button>
+            <label className="w-full sm:w-auto cursor-pointer">
+              <input
+                type="file"
+                id="exercise-import-file"
+                accept=".xlsx,.xls"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImportFile(file);
+                    // Import will be triggered after file is set
+                    setTimeout(() => handleImportExcel(), 100);
+                  }
+                }}
+                className="hidden"
+                disabled={isImporting}
+              />
+              <Button 
+                variant="outline"
+                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base whitespace-nowrap"
+                disabled={isImporting}
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('exercise-import-file')?.click();
+                }}
+              >
+                <Upload className="w-4 h-4 me-2 flex-shrink-0" />
+                <span className="truncate">{isImporting ? 'Importing...' : 'Import Excel'}</span>
+              </Button>
+            </label>
             <Button 
               onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
               variant="outline"
