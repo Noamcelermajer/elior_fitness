@@ -129,7 +129,7 @@ const CreateMealPlanV2: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const existingMealPlan: any = location.state?.mealPlan;
   const client: any = location.state?.client;
   const initialClientId = client?.id ?? existingMealPlan?.client_id ?? 0;
@@ -1317,7 +1317,7 @@ const CreateMealPlanV2: React.FC = () => {
                         <TabsContent key={macro.macro_type} value={macro.macro_type} className="space-y-4">
                           {/* Calorie Goal for this Macro */}
                           <div className="min-w-0 w-full">
-                            <Label htmlFor={`calorie-goal-${mealIndex}-${macroIndex}`}>
+                            <Label htmlFor={`calorie-goal-${mealIndex}-${macroIndex}`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                               {t('mealCreation.calorieGoal', 'Calorie Goal')} ({getMacroLabel(macro.macro_type)})
                             </Label>
                             <Input
@@ -1328,9 +1328,9 @@ const CreateMealPlanV2: React.FC = () => {
                               value={macro.calorie_goal || ''}
                               onChange={(e) => updateMacroCategory(mealIndex, macroIndex, 'calorie_goal', e.target.value === '' ? null : parseInt(e.target.value))}
                               className="w-full max-w-full"
-                              dir="auto"
+                              dir="ltr"
                             />
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                               {t('mealCreation.calorieGoalHint', 'Set the calorie goal for this macronutrient. Meal calories will be calculated from the sum of all macro calorie goals.')}
                             </p>
                           </div>
@@ -1362,7 +1362,7 @@ const CreateMealPlanV2: React.FC = () => {
                               value={macro.quantity_instruction}
                               onChange={(e) => updateMacroCategory(mealIndex, macroIndex, 'quantity_instruction', e.target.value)}
                               className="w-full max-w-full"
-                              dir="auto"
+                              dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
                             />
                           </div>
 
@@ -1409,34 +1409,36 @@ const CreateMealPlanV2: React.FC = () => {
                                       <div className="grid grid-cols-4 gap-2 text-sm">
                                         <div className="text-center p-2 bg-secondary/50 rounded">
                                           <div className="font-medium">{food.calories || 0}</div>
-                                          <div className="text-xs text-muted-foreground">kcal</div>
+                                          <div className="text-xs text-muted-foreground">{t('meals.kcal')}</div>
                                         </div>
                                         <div className="text-center p-2 bg-secondary/50 rounded">
                                           <div className="font-medium">{food.protein || 0}</div>
-                                          <div className="text-xs text-muted-foreground">protein</div>
+                                          <div className="text-xs text-muted-foreground">{t('meals.protein')}</div>
                                         </div>
                                         <div className="text-center p-2 bg-secondary/50 rounded">
                                           <div className="font-medium">{food.carbs || 0}</div>
-                                          <div className="text-xs text-muted-foreground">carbs</div>
+                                          <div className="text-xs text-muted-foreground">{t('meals.carbs')}</div>
                                         </div>
                                         <div className="text-center p-2 bg-secondary/50 rounded">
                                           <div className="font-medium">{food.fat || 0}</div>
-                                          <div className="text-xs text-muted-foreground">fat</div>
+                                          <div className="text-xs text-muted-foreground">{t('meals.fat')}</div>
                                         </div>
                                       </div>
                                     </div>
                                     <div className="space-y-3 min-w-0 w-full">
                                       <div className="min-w-0 w-full">
-                    <Label>Quantity (g) {macro.calorie_goal && `(Calculated)`}</Label>
+                                        <Label dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                                          {t('meals.quantity', 'Quantity')} ({t('mealCreation.unitGrams')}) {macro.calorie_goal && `(${t('mealCreation.calculated')})`}
+                                        </Label>
                                         <Input
-                      type="text"
-                      readOnly
-                      value={calculateRecommendedQuantity(food, macro.calorie_goal || 0, macro, foodIndex, slot)}
+                                          type="text"
+                                          readOnly
+                                          value={calculateRecommendedQuantity(food, macro.calorie_goal || 0, macro, foodIndex, slot)}
                                           className="w-full max-w-full bg-muted"
-                                          dir="auto"
+                                          dir="ltr"
                                         />
                                         {macro.calorie_goal && (
-                                          <p className="text-xs text-muted-foreground mt-1">
+                                          <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                                             {t('mealCreation.quantityBasedOnCalories', 'Quantity calculated based on calorie goal')}
                                           </p>
                                         )}
@@ -1448,7 +1450,7 @@ const CreateMealPlanV2: React.FC = () => {
                                         className="w-full"
                                       >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Remove
+                                        {t('common.delete')}
                                       </Button>
                                     </div>
                                   </div>
@@ -1600,9 +1602,9 @@ const CreateMealPlanV2: React.FC = () => {
                           {item.calories !== null && item.calories !== undefined ? `${item.calories} ${t('mealCreation.kcalPer100g')}` : t('mealCreation.notAvailable')}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {item.protein !== null && `${item.protein}g P`} /{' '}
-                          {item.carbs !== null && `${item.carbs}g C`} /{' '}
-                          {item.fat !== null && `${item.fat}g F`}
+                          {item.protein !== null && `${item.protein}ג ${t('meals.protein').substring(0, 1)}`} /{' '}
+                          {item.carbs !== null && `${item.carbs}ג ${t('meals.carbs').substring(0, 1)}`} /{' '}
+                          {item.fat !== null && `${item.fat}ג ${t('meals.fat').substring(0, 1)}`}
                         </div>
                       </div>
                     </div>
@@ -1643,7 +1645,9 @@ const CreateMealPlanV2: React.FC = () => {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-food-macro-type">Macro Type *</Label>
+              <Label htmlFor="new-food-macro-type" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                {t('foodBank.macroType', 'סוג מאקרו')} *
+              </Label>
               <select
                 id="new-food-macro-type"
                 value={newFoodItem.macro_type}
@@ -1651,26 +1655,30 @@ const CreateMealPlanV2: React.FC = () => {
                 className="w-full px-3 py-2 border rounded-md min-w-0"
                 required
               >
-                <option value="protein">🍗 Protein</option>
-                <option value="carb">🍞 Carb</option>
-                <option value="fat">🥑 Fat</option>
+                <option value="protein">🍗 {t('meals.protein')}</option>
+                <option value="carb">🍞 {t('meals.carbs')}</option>
+                <option value="fat">🥑 {t('meals.fat')}</option>
               </select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="new-food-name">Food Name</Label>
+              <Label htmlFor="new-food-name" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                {t('foodBank.foodName', 'שם המזון')}
+              </Label>
               <Input
                 id="new-food-name"
                 placeholder="e.g., Chicken Breast"
                 value={newFoodItem.name}
                 onChange={(e) => setNewFoodItem({ ...newFoodItem, name: e.target.value })}
                 className="w-full max-w-full"
-                dir="auto"
+                dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="new-food-name-hebrew">Food Name (Hebrew) *</Label>
+              <Label htmlFor="new-food-name-hebrew" dir="rtl">
+                {t('foodBank.foodNameHebrew', 'שם המזון (עברית)')} *
+              </Label>
               <Input
                 id="new-food-name-hebrew"
                 placeholder="למשל, חזה עוף"
@@ -1684,7 +1692,9 @@ const CreateMealPlanV2: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 min-w-0">
-                <Label htmlFor="new-food-calories">Calories (per 100g)</Label>
+                <Label htmlFor="new-food-calories" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                  {t('meals.calories')} ({t('foodBank.per100g', 'ל-100 גרם')})
+                </Label>
                 <Input
                   id="new-food-calories"
                   type="number"
@@ -1692,11 +1702,14 @@ const CreateMealPlanV2: React.FC = () => {
                   value={newFoodItem.calories}
                   onChange={(e) => setNewFoodItem({ ...newFoodItem, calories: e.target.value })}
                   className="w-full max-w-full"
+                  dir="ltr"
                 />
               </div>
 
               <div className="space-y-2 min-w-0">
-                <Label htmlFor="new-food-protein">Protein (g per 100g)</Label>
+                <Label htmlFor="new-food-protein" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                  {t('meals.protein')} ({t('foodBank.gPer100g', 'גרם ל-100 גרם')})
+                </Label>
                 <Input
                   id="new-food-protein"
                   type="number"
@@ -1705,11 +1718,14 @@ const CreateMealPlanV2: React.FC = () => {
                   value={newFoodItem.protein}
                   onChange={(e) => setNewFoodItem({ ...newFoodItem, protein: e.target.value })}
                   className="w-full max-w-full"
+                  dir="ltr"
                 />
               </div>
 
               <div className="space-y-2 min-w-0">
-                <Label htmlFor="new-food-carbs">Carbs (g per 100g)</Label>
+                <Label htmlFor="new-food-carbs" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                  {t('meals.carbs')} ({t('foodBank.gPer100g', 'גרם ל-100 גרם')})
+                </Label>
                 <Input
                   id="new-food-carbs"
                   type="number"
@@ -1718,11 +1734,14 @@ const CreateMealPlanV2: React.FC = () => {
                   value={newFoodItem.carbs}
                   onChange={(e) => setNewFoodItem({ ...newFoodItem, carbs: e.target.value })}
                   className="w-full max-w-full"
+                  dir="ltr"
                 />
               </div>
 
               <div className="space-y-2 min-w-0">
-                <Label htmlFor="new-food-fat">Fat (g per 100g)</Label>
+                <Label htmlFor="new-food-fat" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                  {t('meals.fat')} ({t('foodBank.gPer100g', 'גרם ל-100 גרם')})
+                </Label>
                 <Input
                   id="new-food-fat"
                   type="number"
@@ -1731,6 +1750,7 @@ const CreateMealPlanV2: React.FC = () => {
                   value={newFoodItem.fat}
                   onChange={(e) => setNewFoodItem({ ...newFoodItem, fat: e.target.value })}
                   className="w-full max-w-full"
+                  dir="ltr"
                 />
               </div>
             </div>
@@ -1756,7 +1776,7 @@ const CreateMealPlanV2: React.FC = () => {
                 }}
                 disabled={addingFood}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 onClick={handleAddFoodToBank}
