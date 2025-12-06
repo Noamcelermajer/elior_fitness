@@ -211,6 +211,7 @@ async def lifespan(app: FastAPI):
     try:
         from app.migrations.meal_system_migration import run_meal_system_migrations
         from app.migrations.workout_system_migration import run_workout_system_migrations
+        from app.migrations.user_last_login_migration import run_user_last_login_migration
 
         logger.info("Running meal system migrations...")
         run_meal_system_migrations()
@@ -219,6 +220,15 @@ async def lifespan(app: FastAPI):
         logger.info("Running workout system migrations...")
         run_workout_system_migrations()
         logger.info("✅ Workout system migrations completed")
+        
+        logger.info("Running user last_login migration...")
+        run_user_last_login_migration()
+        logger.info("✅ User last_login migration completed")
+        
+        logger.info("Running meal calorie goal migration...")
+        from app.migrations.meal_calorie_goal_migration import run_meal_calorie_goal_migration
+        run_meal_calorie_goal_migration()
+        logger.info("✅ Meal calorie goal migration completed")
         
         logger.info("✅ All database migrations completed successfully")
     except Exception as migration_error:

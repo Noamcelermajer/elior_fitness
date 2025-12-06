@@ -15,6 +15,7 @@ import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
 import { useTranslation } from 'react-i18next';
 import MealHistory from '../components/MealHistory';
+import { formatLocalTime } from '../lib/timezone';
 
 interface Client {
   id: number;
@@ -135,7 +136,7 @@ const ClientProfile = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('profile');
   
   // Data states
@@ -368,7 +369,34 @@ const ClientProfile = () => {
               </div>
               <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.lastLogin')}</p>
               <p className="text-sm font-bold text-foreground">
-                {client.last_login ? new Date(client.last_login).toLocaleDateString() : 'Never'}
+                {client.last_login ? (() => {
+                  // Convert UTC timestamp to local timezone
+                  const lastLoginDate = new Date(client.last_login);
+                  const now = new Date();
+                  const diffMs = now.getTime() - lastLoginDate.getTime();
+                  const diffMins = Math.floor(diffMs / 60000);
+                  const diffHours = Math.floor(diffMs / 3600000);
+                  const diffDays = Math.floor(diffMs / 86400000);
+                  
+                  if (diffMins < 1) {
+                    return t('clientProfile.justNow');
+                  } else if (diffMins < 60) {
+                    return t('clientProfile.minutesAgo', { count: diffMins });
+                  } else if (diffHours < 24) {
+                    return t('clientProfile.hoursAgo', { count: diffHours });
+                  } else if (diffDays < 7) {
+                    return t('clientProfile.daysAgo', { count: diffDays });
+                  } else {
+                    // Use formatLocalTime to show in user's local timezone (like chat)
+                    return formatLocalTime(client.last_login, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }, i18n.language === 'he' ? 'he-IL' : 'en-US');
+                  }
+                })() : t('clientProfile.never')}
               </p>
             </CardContent>
           </Card>

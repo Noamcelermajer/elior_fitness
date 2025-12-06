@@ -99,6 +99,7 @@ class MacroCategory(Base):
     meal_slot_id = Column(Integer, ForeignKey("meal_slots_v2.id", ondelete="CASCADE"), nullable=False)
     macro_type = Column(Enum(MacroType), nullable=False)  # PROTEIN, CARB, or FAT
     quantity_instruction = Column(String)  # e.g., "150g", "1 serving", "2 pieces"
+    calorie_goal = Column(Integer)  # Calorie goal for this macro category (e.g., 200 calories from protein)
     notes = Column(Text)  # Additional instructions for this macro
     created_at = Column(DateTime, default=func.now())
     

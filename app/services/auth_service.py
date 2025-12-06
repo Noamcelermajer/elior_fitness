@@ -41,10 +41,15 @@ def create_user(db: Session, user: UserCreate) -> User:
     return db_user
 
 def authenticate_user(db: Session, username_or_email: str, password: str) -> Optional[User]:
-    # Try to find user by username first, then by email
+    # For clients and trainers, only allow username login (not email)
+    # For admins, allow both username and email for backward compatibility
     user = get_user_by_username(db, username_or_email)
     if not user:
+        # Only try email lookup for admins
         user = get_user_by_email(db, username_or_email)
+        if user and user.role.value != "ADMIN":
+            # If found by email but not admin, don't allow email login
+            return None
     
     if not user:
         return None

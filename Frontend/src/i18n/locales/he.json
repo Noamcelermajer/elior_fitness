@@ -67,6 +67,7 @@
     "login": "התחברות",
     "logout": "התנתק",
     "email": "אימייל",
+    "username": "שם משתמש",
     "password": "סיסמה",
     "rememberMe": "זכור אותי",
     "forgotPassword": "שכחתי סיסמה",
@@ -77,6 +78,7 @@
     "welcomeBack": "ברוכים השבים",
     "loginToContinue": "היכנס כדי להמשיך",
     "enterEmail": "הזן אימייל",
+    "enterUsername": "הזן שם משתמש",
     "enterPassword": "הזן סיסמה",
     "invalidCredentials": "פרטי התחברות שגויים",
     "loginSuccess": "התחברת בהצלחה",
@@ -929,7 +931,15 @@
     "customEntries": "רשומות מותאמות אישית",
     "macroBreakdown": "חלוקת מקרו",
     "quantity": "כמות",
-    "dayCompleted": "הושלם"
+    "dayCompleted": "הושלם",
+    "never": "מעולם לא",
+    "justNow": "עכשיו",
+    "minutesAgo": "לפני {{count}} דקה",
+    "minutesAgo_plural": "לפני {{count}} דקות",
+    "hoursAgo": "לפני {{count}} שעה",
+    "hoursAgo_plural": "לפני {{count}} שעות",
+    "daysAgo": "לפני {{count}} יום",
+    "daysAgo_plural": "לפני {{count}} ימים"
   },
   "workoutCreation": {
     "title": "צור תוכנית אימון",

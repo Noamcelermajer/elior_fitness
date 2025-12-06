@@ -63,6 +63,7 @@
     "login": "Login",
     "logout": "Logout",
     "email": "Email",
+    "username": "Username",
     "password": "Password",
     "rememberMe": "Remember Me",
     "forgotPassword": "Forgot Password",
@@ -73,6 +74,7 @@
     "welcomeBack": "Welcome Back",
     "loginToContinue": "Login to continue",
     "enterEmail": "Enter email",
+    "enterUsername": "Enter username",
     "enterPassword": "Enter password",
     "invalidCredentials": "Invalid credentials",
     "loginSuccess": "Login successful",
@@ -894,7 +896,16 @@
     "customEntries": "Custom entries",
     "macroBreakdown": "Macro breakdown",
     "quantity": "Quantity",
-    "dayCompleted": "Completed"
+    "dayCompleted": "Completed",
+    "lastLogin": "Last Login",
+    "never": "Never",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minute ago",
+    "minutesAgo_plural": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hour ago",
+    "hoursAgo_plural": "{{count}} hours ago",
+    "daysAgo": "{{count}} day ago",
+    "daysAgo_plural": "{{count}} days ago"
   },
   "workoutCreation": {
     "title": "Create Workout Plan",

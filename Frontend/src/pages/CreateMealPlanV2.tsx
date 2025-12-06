@@ -41,6 +41,7 @@ interface MealBankItem {
 interface MacroCategory {
   macro_type: 'protein' | 'carb' | 'fat';
   quantity_instruction: string;
+  calorie_goal: number | null;  // Calorie goal for this macro category
   food_options: FoodOption[];
 }
 
@@ -321,6 +322,7 @@ const CreateMealPlanV2: React.FC = () => {
             typeof macro.macro_type === 'string' ? macro.macro_type : macro.macro_type?.value
           ),
           quantity_instruction: macro.quantity_instruction || '',
+          calorie_goal: macro.calorie_goal ?? null,
           food_options: (macro.food_options || []).map((food: any) => ({
             name: food.name || food.name_hebrew || '',
             name_hebrew: food.name_hebrew || '',
@@ -428,6 +430,13 @@ const CreateMealPlanV2: React.FC = () => {
     if (!selectedMealBankItem || currentMealIndex === null || currentMacroIndex === null) return;
     
     const newSlots = [...formData.meal_slots];
+    const macro = newSlots[currentMealIndex].macro_categories[currentMacroIndex];
+    
+    // Calculate recommended quantity based on calorie goal
+    const recommendedQty = macro.calorie_goal 
+      ? calculateRecommendedQuantity(selectedMealBankItem, macro.calorie_goal)
+      : sanitizeServingSize(recommendedQuantity) || '100';
+    
     newSlots[currentMealIndex].macro_categories[currentMacroIndex].food_options.push({
       name: selectedMealBankItem.name || selectedMealBankItem.name_hebrew,
       name_hebrew: selectedMealBankItem.name_hebrew,
@@ -435,8 +444,27 @@ const CreateMealPlanV2: React.FC = () => {
       protein: selectedMealBankItem.protein,
       carbs: selectedMealBankItem.carbs,
       fat: selectedMealBankItem.fat,
-      serving_size: sanitizeServingSize(recommendedQuantity) || '',
+      serving_size: recommendedQty,
     });
+    
+    // Update remaining food options based on remaining calories (excluding the newly added food)
+    const newFoodIndex = newSlots[currentMealIndex].macro_categories[currentMacroIndex].food_options.length - 1;
+    const remainingCalories = calculateRemainingCalories(
+      newSlots[currentMealIndex].macro_categories[currentMacroIndex],
+      newFoodIndex
+    );
+    
+    // Update other food options' quantities based on remaining calories
+    if (macro.calorie_goal && remainingCalories > 0) {
+      newSlots[currentMealIndex].macro_categories[currentMacroIndex].food_options.forEach((food, idx) => {
+        if (idx !== newFoodIndex) {
+          // Recalculate quantity for existing foods based on remaining calories
+          const newQty = calculateRecommendedQuantity(food, remainingCalories);
+          food.serving_size = newQty;
+        }
+      });
+    }
+    
     setFormData({ ...formData, meal_slots: newSlots });
     setShowMealBank(false);
     setSelectedMealBankItem(null);
@@ -549,9 +577,9 @@ const CreateMealPlanV2: React.FC = () => {
       target_carbs: null,
       target_fat: null,
       macro_categories: [
-        { macro_type: 'protein', quantity_instruction: '', food_options: [] },
-        { macro_type: 'carb', quantity_instruction: '', food_options: [] },
-        { macro_type: 'fat', quantity_instruction: '', food_options: [] },
+        { macro_type: 'protein', quantity_instruction: '', calorie_goal: null, food_options: [] },
+        { macro_type: 'carb', quantity_instruction: '', calorie_goal: null, food_options: [] },
+        { macro_type: 'fat', quantity_instruction: '', calorie_goal: null, food_options: [] },
       ],
     };
     setFormData(prev => ({
@@ -595,6 +623,21 @@ const CreateMealPlanV2: React.FC = () => {
       setLoading(true);
       setError('');
 
+      // Calculate total_calories from sum of all meal slot calories (which are calculated from macro goals)
+      const calculatedTotalCalories = formData.meal_slots.reduce((sum, slot) => {
+        return sum + calculateMealCalories(slot);
+      }, 0);
+
+      // Prepare form data with calculated total_calories and updated meal slot target_calories
+      const submitData = {
+        ...formData,
+        total_calories: calculatedTotalCalories > 0 ? calculatedTotalCalories : null,
+        meal_slots: formData.meal_slots.map(slot => ({
+          ...slot,
+          target_calories: calculateMealCalories(slot), // Update target_calories from macro goals
+        })),
+      };
+
       const token = localStorage.getItem('access_token');
       const fallbackError = isEditing ? t('mealCreation.errorUpdating') : t('mealCreation.errorCreating');
       const response = await fetch(`${API_BASE_URL}/v2/meals/plans/complete`, {
@@ -603,7 +646,7 @@ const CreateMealPlanV2: React.FC = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       });
 
       if (!response.ok) {
@@ -654,9 +697,56 @@ const CreateMealPlanV2: React.FC = () => {
     setFormData({ ...formData, meal_slots: newSlots });
   };
 
+  // Calculate recommended quantity based on calorie goal and food calories per 100g
+  const calculateRecommendedQuantity = (food: FoodOption, calorieGoal: number | null): string => {
+    if (!calorieGoal || !food.calories) return '100';
+    
+    // Food calories from meal bank are per 100g (standard nutrition database format)
+    // serving_size might be used for quantity, but calories are always per 100g
+    const baseServingSize = 100; // Standard: calories are per 100g
+    const caloriesPerGram = food.calories / baseServingSize;
+    
+    if (caloriesPerGram <= 0) return '100';
+    
+    // Calculate grams needed to reach calorie goal
+    const gramsNeeded = Math.round(calorieGoal / caloriesPerGram);
+    return gramsNeeded > 0 ? gramsNeeded.toString() : '100';
+  };
+
+  // Calculate remaining calories after foods are added
+  const calculateRemainingCalories = (macro: MacroCategory, excludeIndex?: number): number => {
+    if (!macro.calorie_goal) return 0;
+    
+    let usedCalories = 0;
+    macro.food_options.forEach((food, idx) => {
+      if (excludeIndex !== undefined && idx === excludeIndex) return; // Skip the excluded food
+      // Food calories are per 100g (standard nutrition database format)
+      const baseServingSize = 100;
+      const caloriesPerGram = (food.calories || 0) / baseServingSize;
+      // serving_size here is the quantity the user wants (in grams)
+      const grams = parseNumericValue(food.serving_size) || 100;
+      usedCalories += caloriesPerGram * grams;
+    });
+    
+    return Math.max(0, macro.calorie_goal - usedCalories);
+  };
+
+  // Calculate meal total calories from sum of macro calorie goals
+  const calculateMealCalories = (slot: MealSlot): number => {
+    return slot.macro_categories.reduce((sum, macro) => {
+      return sum + (macro.calorie_goal || 0);
+    }, 0);
+  };
+
   const updateMacroCategory = (mealIndex: number, macroIndex: number, field: string, value: any) => {
     const newSlots = [...formData.meal_slots];
     newSlots[mealIndex].macro_categories[macroIndex][field] = value;
+    
+    // Update meal target_calories when macro calorie goals change
+    if (field === 'calorie_goal') {
+      newSlots[mealIndex].target_calories = calculateMealCalories(newSlots[mealIndex]);
+    }
+    
     setFormData({ ...formData, meal_slots: newSlots });
   };
 
@@ -792,14 +882,18 @@ const CreateMealPlanV2: React.FC = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <Label htmlFor="total_calories">{t('mealCreation.targetCalories')}</Label>
+              <Label htmlFor="total_calories">{t('mealCreation.targetCalories')} {t('mealCreation.calculated', '(Calculated)')}</Label>
               <Input
                 id="total_calories"
                 type="number"
-                placeholder="2000"
-                value={formData.total_calories || ''}
-                onChange={(e) => setFormData({ ...formData, total_calories: parseInt(e.target.value) || null })}
+                placeholder="Calculated from meals"
+                value={formData.meal_slots.reduce((sum, slot) => sum + calculateMealCalories(slot), 0) || ''}
+                readOnly
+                className="bg-muted"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('mealCreation.calculatedFromMeals', 'Calculated from sum of all meal calories')}
+              </p>
             </div>
             <div>
               <Label htmlFor="protein_target">{t('mealCreation.proteinTarget')}</Label>
@@ -942,20 +1036,18 @@ const CreateMealPlanV2: React.FC = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
-                        <Label>{t('mealCreation.mealCaloriesTarget')}</Label>
+                        <Label>{t('mealCreation.mealCaloriesTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
                         <Input
                           type="number"
                           min={0}
-                          value={slot.target_calories ?? ''}
-                          onChange={(e) =>
-                            updateMealSlot(
-                              mealIndex,
-                              'target_calories',
-                              e.target.value === '' ? null : Number(e.target.value)
-                            )
-                          }
-                          placeholder="e.g., 500"
+                          value={calculateMealCalories(slot)}
+                          readOnly
+                          className="bg-muted"
+                          placeholder="Calculated from macro goals"
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t('mealCreation.calculatedFromMacroGoals', 'Calculated from sum of macro calorie goals')}
+                        </p>
                       </div>
                       <div>
                         <Label>{t('mealCreation.mealProteinTarget')}</Label>
@@ -1021,6 +1113,26 @@ const CreateMealPlanV2: React.FC = () => {
 
                       {slot.macro_categories.map((macro, macroIndex) => (
                         <TabsContent key={macro.macro_type} value={macro.macro_type} className="space-y-4">
+                          {/* Calorie Goal for this Macro */}
+                          <div className="min-w-0 w-full">
+                            <Label htmlFor={`calorie-goal-${mealIndex}-${macroIndex}`}>
+                              {t('mealCreation.calorieGoal', 'Calorie Goal')} ({getMacroLabel(macro.macro_type)})
+                            </Label>
+                            <Input
+                              id={`calorie-goal-${mealIndex}-${macroIndex}`}
+                              type="number"
+                              min="0"
+                              placeholder="e.g., 200"
+                              value={macro.calorie_goal || ''}
+                              onChange={(e) => updateMacroCategory(mealIndex, macroIndex, 'calorie_goal', e.target.value === '' ? null : parseInt(e.target.value))}
+                              className="w-full max-w-full"
+                              dir="auto"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {t('mealCreation.calorieGoalHint', 'Set the calorie goal for this macronutrient. Meal calories will be calculated from the sum of all macro calorie goals.')}
+                            </p>
+                          </div>
+
                           {/* Macro Instructions */}
                           <div className="min-w-0 w-full">
                             <Label htmlFor={`quantity-${mealIndex}-${macroIndex}`}>{t('forms.enterValue')}</Label>
@@ -1095,17 +1207,38 @@ const CreateMealPlanV2: React.FC = () => {
                                     </div>
                                     <div className="space-y-3 min-w-0 w-full">
                                       <div className="min-w-0 w-full">
-                    <Label>Recommended Quantity (g)</Label>
+                    <Label>Quantity (g) {macro.calorie_goal && `(Goal: ${macro.calorie_goal} kcal)`}</Label>
                                         <Input
                       type="number"
                       min="0"
                       step="1"
-                      placeholder="e.g., 150"
+                      placeholder={macro.calorie_goal ? calculateRecommendedQuantity(food, macro.calorie_goal) : "e.g., 150"}
                                           value={food.serving_size}
-                                          onChange={(e) => updateFoodOption(mealIndex, macroIndex, foodIndex, 'serving_size', e.target.value)}
+                                          onChange={(e) => {
+                                            const newSlots = [...formData.meal_slots];
+                                            newSlots[mealIndex].macro_categories[macroIndex].food_options[foodIndex].serving_size = e.target.value;
+                                            
+                                            // Update remaining food options when quantity changes
+                                            const macro = newSlots[mealIndex].macro_categories[macroIndex];
+                                            const remainingCalories = calculateRemainingCalories(macro, foodIndex);
+                                            if (macro.calorie_goal && remainingCalories > 0) {
+                                              macro.food_options.forEach((f, idx) => {
+                                                if (idx !== foodIndex) {
+                                                  const newQty = calculateRecommendedQuantity(f, remainingCalories);
+                                                  f.serving_size = newQty;
+                                                }
+                                              });
+                                            }
+                                            setFormData({ ...formData, meal_slots: newSlots });
+                                          }}
                                           className="w-full max-w-full"
                                           dir="auto"
                                         />
+                                        {macro.calorie_goal && (
+                                          <p className="text-xs text-muted-foreground mt-1">
+                                            {t('mealCreation.quantityBasedOnCalories', 'Quantity calculated based on calorie goal')}
+                                          </p>
+                                        )}
                                       </div>
                                       <Button
                                         variant="destructive"

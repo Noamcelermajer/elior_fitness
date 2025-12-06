@@ -17,6 +17,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())  # SQLite compatible
     updated_at = Column(DateTime, onupdate=func.now())  # SQLite compatible
+    last_login = Column(DateTime, nullable=True)  # Track last login time
 
     # Trainer-Client relationship
     trainer_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
