@@ -157,8 +157,7 @@ const CreateMealPlanV2: React.FC = () => {
   const [mealBankItems, setMealBankItems] = useState<MealBankItem[]>([]);
   const [mealBankSearch, setMealBankSearch] = useState('');
   const [mealBankFilter, setMealBankFilter] = useState<'protein' | 'carb' | 'fat' | 'all'>('all');
-  const [selectedMealBankItem, setSelectedMealBankItem] = useState<MealBankItem | null>(null);
-  const [recommendedQuantity, setRecommendedQuantity] = useState('100');
+  const [selectedMealBankItems, setSelectedMealBankItems] = useState<Set<number>>(new Set());
   const [showAddFoodDialog, setShowAddFoodDialog] = useState(false);
   const [newFoodItem, setNewFoodItem] = useState({
     name: '',
@@ -406,8 +405,7 @@ const CreateMealPlanV2: React.FC = () => {
     const macroType = formData.meal_slots[mealIndex].macro_categories[macroIndex].macro_type;
     setMealBankFilter(macroType);
     setMealBankSearch('');
-    setSelectedMealBankItem(null);
-    setRecommendedQuantity('100');
+    setSelectedMealBankItems(new Set());
     // Set default macro type for new food item
     setNewFoodItem({
       name: '',
@@ -422,51 +420,60 @@ const CreateMealPlanV2: React.FC = () => {
     setShowMealBank(true);
   };
 
-  const selectMealBankItem = (item: MealBankItem) => {
-    const normalizedItem = normalizeMealBankItem(item as MealBankItem & { macro_type: string });
-    setSelectedMealBankItem(normalizedItem);
-    setRecommendedQuantity(getServingOrDefault(item.serving_size, '100'));
+  const toggleMealBankItem = (item: MealBankItem) => {
+    const itemId = item.id;
+    setSelectedMealBankItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
   };
 
   const confirmMealBankSelection = () => {
-    if (!selectedMealBankItem || currentMealIndex === null || currentMacroIndex === null) return;
+    if (selectedMealBankItems.size === 0 || currentMealIndex === null || currentMacroIndex === null) return;
     
     const newSlots = [...formData.meal_slots];
-    const macro = newSlots[currentMealIndex].macro_categories[currentMacroIndex];
+    const mealSlot = newSlots[currentMealIndex];
+    const macro = mealSlot.macro_categories[currentMacroIndex];
     
-    // Calculate recommended quantity based on calorie goal
-    const recommendedQty = macro.calorie_goal 
-      ? calculateRecommendedQuantity(selectedMealBankItem, macro.calorie_goal)
-      : sanitizeServingSize(recommendedQuantity) || '100';
+    // Get all selected items
+    const itemsToAdd = filteredMealBankItems.filter(item => selectedMealBankItems.has(item.id));
     
-    newSlots[currentMealIndex].macro_categories[currentMacroIndex].food_options.push({
-      name: selectedMealBankItem.name || selectedMealBankItem.name_hebrew,
-      name_hebrew: selectedMealBankItem.name_hebrew,
-      calories: selectedMealBankItem.calories,
-      protein: selectedMealBankItem.protein,
-      carbs: selectedMealBankItem.carbs,
-      fat: selectedMealBankItem.fat,
-      serving_size: recommendedQty,
+    // Add all selected items
+    itemsToAdd.forEach((item) => {
+      const normalizedItem = normalizeMealBankItem(item as MealBankItem & { macro_type: string });
+      
+      // Calculate recommended quantity based on calorie goal
+      const recommendedQty = macro.calorie_goal 
+        ? calculateRecommendedQuantity(normalizedItem, macro.calorie_goal, macro, undefined, mealSlot)
+        : '100';
+      
+      macro.food_options.push({
+        name: normalizedItem.name || normalizedItem.name_hebrew,
+        name_hebrew: normalizedItem.name_hebrew,
+        calories: normalizedItem.calories,
+        protein: normalizedItem.protein,
+        carbs: normalizedItem.carbs,
+        fat: normalizedItem.fat,
+        serving_size: recommendedQty,
+      });
     });
     
-    // Update remaining food options based on remaining calories (excluding the newly added food)
-    const newFoodIndex = newSlots[currentMealIndex].macro_categories[currentMacroIndex].food_options.length - 1;
-    const mealSlot = newSlots[currentMealIndex];
-    const remainingCalories = calculateRemainingCalories(
-      macro,
-      mealSlot,
-      newFoodIndex
-    );
-    
-    // Update other food options' quantities based on remaining calories
-    if (macro.calorie_goal && remainingCalories > 0) {
-      macro.food_options.forEach((food, idx) => {
-        if (idx !== newFoodIndex) {
-          // Recalculate quantity for existing foods based on remaining calories
+    // Update remaining food options based on remaining calories
+    if (macro.calorie_goal) {
+      const remainingCalories = calculateRemainingCalories(macro, mealSlot);
+      
+      // Update all food options' quantities based on remaining calories
+      if (remainingCalories > 0) {
+        macro.food_options.forEach((food, idx) => {
           const newQty = calculateRecommendedQuantity(food, remainingCalories, macro, idx, mealSlot);
           food.serving_size = newQty;
-        }
-      });
+        });
+      }
     }
     
     // If cross-macro tracking is enabled, update other macro categories' food options too
@@ -484,7 +491,7 @@ const CreateMealPlanV2: React.FC = () => {
     
     setFormData({ ...formData, meal_slots: newSlots });
     setShowMealBank(false);
-    setSelectedMealBankItem(null);
+    setSelectedMealBankItems(new Set());
   };
 
   const handleAddFoodToBank = async () => {
@@ -527,7 +534,7 @@ const CreateMealPlanV2: React.FC = () => {
         // Refresh meal bank items
         await fetchMealBankItems();
         // Auto-select the newly created item
-        setSelectedMealBankItem(normalizedCreatedItem);
+        setSelectedMealBankItems(new Set([normalizedCreatedItem.id]));
         // Set macro filter to match the new item
         setMealBankFilter(normalizedCreatedItem.macro_type);
         // Reset form
@@ -1557,34 +1564,40 @@ const CreateMealPlanV2: React.FC = () => {
                 No meal bank items found. Try a different search or filter.
               </div>
             ) : (
-              filteredMealBankItems.map((item) => (
-                <Card
-                  key={item.id}
-                  className={`p-4 hover:bg-accent cursor-pointer transition-colors ${
-                    selectedMealBankItem?.id === item.id ? 'border-primary border-2' : ''
-                  }`}
-                  onClick={() => selectMealBankItem(item)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        {item.macro_type === 'protein' && '🍗'}
-                        {item.macro_type === 'carb' && '🍞'}
-                        {item.macro_type === 'fat' && '🥑'}
+              filteredMealBankItems.map((item) => {
+                const isSelected = selectedMealBankItems.has(item.id);
+                return (
+                  <Card
+                    key={item.id}
+                    className={`p-4 hover:bg-accent cursor-pointer transition-colors ${
+                      isSelected ? 'border-primary border-2' : ''
+                    }`}
+                    onClick={() => toggleMealBankItem(item)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleMealBankItem(item)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          {item.macro_type === 'protein' && '🍗'}
+                          {item.macro_type === 'carb' && '🍞'}
+                          {item.macro_type === 'fat' && '🥑'}
+                        </div>
+                        <div>
+                          <div className="font-semibold">{item.name_hebrew || item.name}</div>
+                          {item.name_hebrew && item.name && (
+                            <div className="text-sm text-muted-foreground" dir="rtl">
+                              {item.name_hebrew}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-semibold">{item.name_hebrew || item.name}</div>
-                        {item.name_hebrew && item.name && (
-                          <div className="text-sm text-muted-foreground" dir="rtl">
-                            {item.name_hebrew}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
                       <div className="text-right">
                         <div className="text-sm font-medium">
-                          {item.calories !== null && item.calories !== undefined ? `${item.calories} kcal` : 'N/A'}
+                          {item.calories !== null && item.calories !== undefined ? `${item.calories} kcal per 100g` : 'N/A'}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {item.protein !== null && `${item.protein}g P`} /{' '}
@@ -1592,57 +1605,24 @@ const CreateMealPlanV2: React.FC = () => {
                           {item.fat !== null && `${item.fat}g F`}
                         </div>
                       </div>
-                      {selectedMealBankItem?.id === item.id ? (
-                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                          <Check className="h-4 w-4 text-primary-foreground" />
-                        </div>
-                      ) : (
-                        <div className="w-6 h-6 rounded-full border-2 border-muted-foreground" />
-                      )}
                     </div>
-                  </div>
-                </Card>
-              ))
+                  </Card>
+                );
+              })
             )}
           </div>
 
-          {/* Selected Item with Quantity Input */}
-          {selectedMealBankItem && (
-            <div className="mt-4 p-4 border-2 border-primary rounded-lg bg-primary/5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <div className="font-semibold text-lg">{selectedMealBankItem.name_hebrew || selectedMealBankItem.name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {selectedMealBankItem.calories} kcal per 100g
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="min-w-0 w-full">
-                <Label htmlFor="recommended-quantity">Recommended Quantity (g)</Label>
-                  <Input
-                    id="recommended-quantity"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="e.g., 150"
-                    value={recommendedQuantity}
-                    onChange={(e) => setRecommendedQuantity(e.target.value)}
-                    className="w-full max-w-full"
-                    dir="auto"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    onClick={confirmMealBankSelection}
-                    className="w-full"
-                    disabled={!recommendedQuantity.trim()}
-                  >
-                    <Check className="mr-2 h-4 w-4" />
-                    Add to Meal Plan
-                  </Button>
-                </div>
-              </div>
+          {/* Add Selected Items Button */}
+          {selectedMealBankItems.size > 0 && (
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="default"
+                onClick={confirmMealBankSelection}
+                className="w-full md:w-auto"
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Add {selectedMealBankItems.size} {selectedMealBankItems.size === 1 ? 'Item' : 'Items'} to Meal Plan
+              </Button>
             </div>
           )}
         </DialogContent>
