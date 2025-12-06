@@ -1463,71 +1463,73 @@ const CreateMealPlanV2: React.FC = () => {
 
       {/* Meal Bank Dialog */}
       <Dialog open={showMealBank} onOpenChange={setShowMealBank}>
-        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle>{t('mealCreation.mealBankTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('mealCreation.mealBankDescription')}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0">
+          <div className="p-6 pb-4 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle>{t('mealCreation.mealBankTitle')}</DialogTitle>
+              <DialogDescription>
+                {t('mealCreation.mealBankDescription')}
+              </DialogDescription>
+            </DialogHeader>
 
-          {/* Search and Filter */}
-          <div className="space-y-4 mb-4 flex-shrink-0">
-            {/* Filter Buttons */}
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={mealBankFilter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMealBankFilter('all')}
-              >
-                {t('mealCreation.all')}
-              </Button>
-              <Button
-                variant={mealBankFilter === 'protein' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMealBankFilter('protein')}
-              >
-                🍗 {t('mealCreation.protein')}
-              </Button>
-              <Button
-                variant={mealBankFilter === 'carb' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMealBankFilter('carb')}
-              >
-                🍞 {t('mealCreation.carbs')}
-              </Button>
-              <Button
-                variant={mealBankFilter === 'fat' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMealBankFilter('fat')}
-              >
-                🥑 {t('mealCreation.fats')}
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setShowAddFoodDialog(true)}
-                className="gradient-green"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t('mealCreation.addFood')}
-              </Button>
-            </div>
-            {/* Search Input */}
-            <div className="relative">
-              <Search className={`absolute ${i18n.language === 'he' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
-              <Input
-                placeholder={t('mealCreation.searchFoodItems')}
-                value={mealBankSearch}
-                onChange={(e) => setMealBankSearch(e.target.value)}
-                className={i18n.language === 'he' ? 'pr-10' : 'pl-10'}
-                dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
-              />
+            {/* Search and Filter */}
+            <div className="space-y-4 mt-4">
+              {/* Filter Buttons */}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={mealBankFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMealBankFilter('all')}
+                >
+                  {t('mealCreation.all')}
+                </Button>
+                <Button
+                  variant={mealBankFilter === 'protein' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMealBankFilter('protein')}
+                >
+                  🍗 {t('mealCreation.protein')}
+                </Button>
+                <Button
+                  variant={mealBankFilter === 'carb' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMealBankFilter('carb')}
+                >
+                  🍞 {t('mealCreation.carbs')}
+                </Button>
+                <Button
+                  variant={mealBankFilter === 'fat' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMealBankFilter('fat')}
+                >
+                  🥑 {t('mealCreation.fats')}
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setShowAddFoodDialog(true)}
+                  className="gradient-green"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('mealCreation.addFood')}
+                </Button>
+              </div>
+              {/* Search Input */}
+              <div className="relative">
+                <Search className={`absolute ${i18n.language === 'he' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
+                <Input
+                  placeholder={t('mealCreation.searchFoodItems')}
+                  value={mealBankSearch}
+                  onChange={(e) => setMealBankSearch(e.target.value)}
+                  className={i18n.language === 'he' ? 'pr-10' : 'pl-10'}
+                  dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+                />
+              </div>
             </div>
           </div>
 
           {/* Meal Bank Items List - Only scrollable area */}
-          <div className="overflow-y-auto flex-1 min-h-0">
+          <div className="overflow-y-auto flex-1 min-h-0 px-6">
             <div className="grid grid-cols-1 gap-2">
               {filteredMealBankItems.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -1586,7 +1588,7 @@ const CreateMealPlanV2: React.FC = () => {
 
           {/* Add Selected Items Button - Fixed at bottom */}
           {selectedMealBankItems.size > 0 && (
-            <div className="flex-shrink-0 pt-4 pb-2 border-t mt-4 flex justify-end">
+            <div className="flex-shrink-0 pt-4 pb-6 px-6 border-t flex justify-end">
               <Button
                 variant="default"
                 onClick={confirmMealBankSelection}
