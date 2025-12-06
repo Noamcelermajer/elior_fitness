@@ -1064,7 +1064,6 @@ const CreateMealPlanV2: React.FC = () => {
                   readOnly
                   className="bg-muted"
                 />
-                <span className="text-sm text-muted-foreground">{t('meals.meals')}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">{t('meals.addMeal')}</p>
             </div>
@@ -1278,7 +1277,7 @@ const CreateMealPlanV2: React.FC = () => {
                       </TabsList>
 
                       {slot.macro_categories.map((macro, macroIndex) => (
-                        <TabsContent key={macro.macro_type} value={macro.macro_type} className="space-y-4 overflow-visible">
+                        <TabsContent key={macro.macro_type} value={macro.macro_type} className="space-y-4 overflow-visible mt-2">
                           {/* Calorie Goal for this Macro */}
                           <div className="min-w-0 w-full p-2 overflow-visible">
                             <Label 
@@ -1464,7 +1463,7 @@ const CreateMealPlanV2: React.FC = () => {
 
       {/* Meal Bank Dialog */}
       <Dialog open={showMealBank} onOpenChange={setShowMealBank}>
-        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>{t('mealCreation.mealBankTitle')}</DialogTitle>
             <DialogDescription>
@@ -1540,12 +1539,12 @@ const CreateMealPlanV2: React.FC = () => {
                   return (
                     <Card
                       key={item.id}
-                      className={`p-4 hover:bg-accent cursor-pointer transition-colors max-w-full ${
+                      className={`p-4 hover:bg-accent cursor-pointer transition-colors ${
                         isSelected ? 'border-primary border-2' : ''
                       }`}
                       onClick={() => toggleMealBankItem(item)}
                     >
-                      <div className="flex items-center justify-between gap-2 min-w-0 w-full overflow-hidden">
+                      <div className="flex items-center justify-between gap-2 w-full overflow-hidden">
                         <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
                           <Checkbox
                             checked={isSelected}
