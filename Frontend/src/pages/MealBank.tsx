@@ -500,18 +500,23 @@ const MealBank = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {groupedItems[macro.value] && groupedItems[macro.value].length > 0 ? (
                     groupedItems[macro.value].map((item) => (
-                      <Card key={item.id} className="hover:shadow-lg transition-shadow">
+                        <Card key={item.id} className="hover:shadow-lg transition-shadow">
                         <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1" dir="rtl">
-                            <h3 className="font-semibold text-lg" dir="rtl">{item.name_hebrew || item.name}</h3>
-                            {item.name_hebrew && item.name && (
-                              <p className="text-sm text-muted-foreground" dir="ltr">
-                                {item.name}
-                              </p>
-                            )}
+                          <div
+                            className={`flex items-start justify-between mb-3 ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`}
+                            dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-lg" dir="rtl">
+                                {item.name_hebrew || item.name}
+                              </h3>
+                              {item.name_hebrew && item.name && (
+                                <p className="text-sm text-muted-foreground" dir="ltr">
+                                  {item.name}
+                                </p>
+                              )}
                             </div>
-                            <div className="flex gap-2" dir="ltr">
+                            <div className="flex gap-2 flex-shrink-0" dir="ltr">
                               <Button
                                 variant="ghost"
                                 size="sm"

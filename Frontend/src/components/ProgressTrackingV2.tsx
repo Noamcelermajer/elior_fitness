@@ -509,7 +509,7 @@ const ProgressTrackingV2 = () => {
           }
         }
       }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{t('progress.viewPhoto', 'View Progress Photo')}</DialogTitle>
           </DialogHeader>
@@ -520,7 +520,7 @@ const ProgressTrackingV2 = () => {
                   <img 
                     src={photoUrl}
                     alt={t('progress.progressPhoto', 'Progress photo')}
-                    className="w-full h-auto rounded-lg border"
+                    className="w-full h-auto max-h-[70vh] object-contain rounded-lg border"
                   />
                 ) : (
                   <div className="w-full h-64 bg-secondary/20 rounded-lg flex items-center justify-center">
