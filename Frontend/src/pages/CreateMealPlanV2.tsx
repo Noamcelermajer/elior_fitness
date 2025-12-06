@@ -1540,13 +1540,13 @@ const CreateMealPlanV2: React.FC = () => {
                   return (
                     <Card
                       key={item.id}
-                      className={`p-4 hover:bg-accent cursor-pointer transition-colors ${
+                      className={`p-4 hover:bg-accent cursor-pointer transition-colors max-w-full ${
                         isSelected ? 'border-primary border-2' : ''
                       }`}
                       onClick={() => toggleMealBankItem(item)}
                     >
-                      <div className="flex items-center justify-between gap-2 min-w-0">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2 min-w-0 w-full overflow-hidden">
+                        <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={() => toggleMealBankItem(item)}
@@ -1558,7 +1558,7 @@ const CreateMealPlanV2: React.FC = () => {
                             {item.macro_type === 'carb' && '🍞'}
                             {item.macro_type === 'fat' && '🥑'}
                           </div>
-                          <div className="min-w-0 flex-1" dir="rtl">
+                          <div className="min-w-0 flex-1 overflow-hidden" dir="rtl">
                             <div className="font-semibold truncate" dir="rtl">{item.name_hebrew || item.name}</div>
                             {item.name_hebrew && item.name && (
                               <div className="text-sm text-muted-foreground truncate" dir="ltr">
