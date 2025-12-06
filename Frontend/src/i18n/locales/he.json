@@ -1114,7 +1114,23 @@
     "trackCrossMacrosHint": "הפחת קלוריות מקטגוריות מאקרו אחרות בהתבסס על הרכב המזון",
     "quantityBasedOnCalories": "כמות מחושבת בהתבסס על יעד הקלוריות",
     "calculated": "(מחושב)",
-    "calculatedFromMacroGoals": "מחושב מסכום יעדי הקלוריות של המאקרו"
+    "calculatedFromMacroGoals": "מחושב מסכום יעדי הקלוריות של המאקרו",
+    "calculatedFromMeals": "מחושב מסכום כל קלוריות הארוחות",
+    "mealBankTitle": "בנק אוכל - בחר אפשרויות מזון",
+    "mealBankDescription": "בחר מבנק האוכל כדי להוסיף פריטי מזון נפוצים לתוכנית התזונה שלך",
+    "searchFoodItems": "חפש פריטי מזון...",
+    "all": "הכל",
+    "addFood": "הוסף מזון",
+    "noMealBankItems": "לא נמצאו פריטים בבנק האוכל. נסה חיפוש או סינון אחר.",
+    "kcalPer100g": "קלוריות ל-100 גרם",
+    "addItemsToMealPlan": "הוסף {{count}} {{count, plural, one {פריט} other {פריטים}}} לתוכנית התזונה",
+    "addFoodToBank": "הוסף מזון לבנק האוכל",
+    "addFoodToBankDescription": "הוסף פריט מזון חדש לבנק האוכל שלך לשימוש עתידי",
+    "makeFoodPublic": "הפוך פריט מזון זה לציבורי (גלוי לכל המאמנים)",
+    "adding": "מוסיף...",
+    "addToMealBank": "הוסף לבנק האוכל",
+    "addFromMealBank": "הוסף מבנק האוכל",
+    "notAvailable": "לא זמין"
   }
 }
 

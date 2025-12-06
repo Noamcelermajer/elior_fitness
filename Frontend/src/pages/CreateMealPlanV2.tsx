@@ -1376,7 +1376,7 @@ const CreateMealPlanV2: React.FC = () => {
                                 onClick={() => openMealBank(mealIndex, macroIndex)}
                               >
                                 <Search className="h-4 w-4 mr-2" />
-                                Add from Meal Bank
+                                {t('mealCreation.addFromMealBank')}
                               </Button>
                             </div>
 
@@ -1496,9 +1496,9 @@ const CreateMealPlanV2: React.FC = () => {
       <Dialog open={showMealBank} onOpenChange={setShowMealBank}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Meal Bank - Select Food Options</DialogTitle>
+            <DialogTitle>{t('mealCreation.mealBankTitle')}</DialogTitle>
             <DialogDescription>
-              Choose from the meal bank to add common food items to your meal plan
+              {t('mealCreation.mealBankDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -1508,7 +1508,7 @@ const CreateMealPlanV2: React.FC = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search for food items..."
+                  placeholder={t('mealCreation.searchFoodItems')}
                   value={mealBankSearch}
                   onChange={(e) => setMealBankSearch(e.target.value)}
                   className="pl-10 w-full max-w-full"
@@ -1522,28 +1522,28 @@ const CreateMealPlanV2: React.FC = () => {
                 size="sm"
                 onClick={() => setMealBankFilter('all')}
               >
-                All
+                {t('mealCreation.all')}
               </Button>
               <Button
                 variant={mealBankFilter === 'protein' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setMealBankFilter('protein')}
               >
-                🍗 Protein
+                🍗 {t('mealCreation.protein')}
               </Button>
               <Button
                 variant={mealBankFilter === 'carb' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setMealBankFilter('carb')}
               >
-                🍞 Carb
+                🍞 {t('mealCreation.carbs')}
               </Button>
               <Button
                 variant={mealBankFilter === 'fat' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setMealBankFilter('fat')}
               >
-                🥑 Fat
+                🥑 {t('mealCreation.fats')}
               </Button>
               <Button
                 variant="default"
@@ -1552,7 +1552,7 @@ const CreateMealPlanV2: React.FC = () => {
                 className="gradient-green"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Food
+                {t('mealCreation.addFood')}
               </Button>
             </div>
           </div>
@@ -1561,7 +1561,7 @@ const CreateMealPlanV2: React.FC = () => {
           <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto">
             {filteredMealBankItems.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No meal bank items found. Try a different search or filter.
+                {t('mealCreation.noMealBankItems')}
               </div>
             ) : (
               filteredMealBankItems.map((item) => {
@@ -1597,7 +1597,7 @@ const CreateMealPlanV2: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium">
-                          {item.calories !== null && item.calories !== undefined ? `${item.calories} kcal per 100g` : 'N/A'}
+                          {item.calories !== null && item.calories !== undefined ? `${item.calories} ${t('mealCreation.kcalPer100g')}` : t('mealCreation.notAvailable')}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {item.protein !== null && `${item.protein}g P`} /{' '}
@@ -1621,7 +1621,7 @@ const CreateMealPlanV2: React.FC = () => {
                 className="w-full md:w-auto"
               >
                 <Check className="mr-2 h-4 w-4" />
-                Add {selectedMealBankItems.size} {selectedMealBankItems.size === 1 ? 'Item' : 'Items'} to Meal Plan
+                {t('mealCreation.addItemsToMealPlan', { count: selectedMealBankItems.size })}
               </Button>
             </div>
           )}
@@ -1635,9 +1635,9 @@ const CreateMealPlanV2: React.FC = () => {
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Food to Meal Bank</DialogTitle>
+            <DialogTitle>{t('mealCreation.addFoodToBank')}</DialogTitle>
             <DialogDescription>
-              Add a new food item to your meal bank for future use
+              {t('mealCreation.addFoodToBankDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -1743,7 +1743,7 @@ const CreateMealPlanV2: React.FC = () => {
                 onChange={(e) => setNewFoodItem({ ...newFoodItem, is_public: e.target.checked })}
                 className="w-4 h-4"
               />
-              <Label htmlFor="new-food-public">Make this food item public (visible to all trainers)</Label>
+              <Label htmlFor="new-food-public">{t('mealCreation.makeFoodPublic')}</Label>
             </div>
 
             <div className="flex gap-3 pt-4 border-t">
@@ -1763,7 +1763,7 @@ const CreateMealPlanV2: React.FC = () => {
                 className="flex-1 gradient-green"
                 disabled={!(newFoodItem.name.trim() || newFoodItem.name_hebrew.trim()) || addingFood}
               >
-                {addingFood ? 'Adding...' : 'Add to Meal Bank'}
+                {addingFood ? t('mealCreation.adding') : t('mealCreation.addToMealBank')}
               </Button>
             </div>
           </div>
