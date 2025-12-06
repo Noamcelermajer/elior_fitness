@@ -452,7 +452,6 @@ const CreateMealPlanV2: React.FC = () => {
     // Update remaining food options based on remaining calories (excluding the newly added food)
     const newFoodIndex = newSlots[currentMealIndex].macro_categories[currentMacroIndex].food_options.length - 1;
     const mealSlot = newSlots[currentMealIndex];
-    const macro = mealSlot.macro_categories[currentMacroIndex];
     const remainingCalories = calculateRemainingCalories(
       macro,
       mealSlot,
