@@ -1115,6 +1115,7 @@
     "trackCrossMacros": "עקוב אחר מאקרו בכל מזון",
     "trackCrossMacrosHint": "הפחת קלוריות מקטגוריות מאקרו אחרות בהתבסס על הרכב המזון",
     "quantityBasedOnCalories": "כמות מחושבת בהתבסס על יעד הקלוריות",
+    "setCalorieGoalFirst": "הגדר יעד קלוריות תחילה",
     "calculated": "(מחושב)",
     "calculatedFromMacroGoals": "מחושב מסכום יעדי הקלוריות של המאקרו",
     "calculatedFromMeals": "מחושב מסכום כל קלוריות הארוחות",

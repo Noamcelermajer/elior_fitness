@@ -964,6 +964,15 @@ const CreateMealPlanV2: React.FC = () => {
     }
   };
 
+  const getMacroLabelHebrew = (type: string) => {
+    switch (type) {
+      case 'protein': return 'חלבון';
+      case 'carb': return 'פחמימה';
+      case 'fat': return 'שומן';
+      default: return type;
+    }
+  };
+
   const isFormValid = () => {
     return (
       formData.client_id > 0 &&
@@ -1082,10 +1091,10 @@ const CreateMealPlanV2: React.FC = () => {
               <Input
                 id="total_calories"
                 type="number"
-                placeholder="Calculated from meals"
+                placeholder={t('mealCreation.calculatedFromMeals', 'Calculated from sum of all meal calories')}
                 value={formData.meal_slots.reduce((sum, slot) => sum + calculateMealCalories(slot), 0) || ''}
                 readOnly
-                className="bg-muted"
+                className="bg-muted select-none"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 {t('mealCreation.calculatedFromMeals', 'Calculated from sum of all meal calories')}
@@ -1134,41 +1143,6 @@ const CreateMealPlanV2: React.FC = () => {
               </p>
             </div>
           </div>
-
-          {Object.values(mealPlanNutritionTotals).some((value) => value > 0) && (
-            <div className="mt-4 space-y-1 rounded-md bg-muted/30 p-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                {t('mealCreation.calculatedMacrosHeader')}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t('mealCreation.calculatedMacrosDescription')}
-              </p>
-              {renderCalculatedRow(
-                t('mealCreation.targetCalories'),
-                mealPlanNutritionTotals.calories,
-                formData.total_calories,
-                t('mealCreation.unitKcal')
-              )}
-              {renderCalculatedRow(
-                t('mealCreation.proteinTarget'),
-                mealPlanNutritionTotals.protein,
-                calculateTotalProteinTarget(),
-                t('mealCreation.unitGrams')
-              )}
-              {renderCalculatedRow(
-                t('mealCreation.carbTarget'),
-                mealPlanNutritionTotals.carbs,
-                calculateTotalCarbTarget(),
-                t('mealCreation.unitGrams')
-              )}
-              {renderCalculatedRow(
-                t('mealCreation.fatTarget'),
-                mealPlanNutritionTotals.fat,
-                calculateTotalFatTarget(),
-                t('mealCreation.unitGrams')
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -1240,7 +1214,7 @@ const CreateMealPlanV2: React.FC = () => {
                           min={0}
                           value={calculateMealCalories(slot)}
                           readOnly
-                          className="bg-muted"
+                          className="bg-muted select-none"
                           placeholder="Calculated from macro goals"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
@@ -1254,7 +1228,7 @@ const CreateMealPlanV2: React.FC = () => {
                           min={0}
                           value={calculateProteinTarget(slot)}
                           readOnly
-                          className="bg-muted"
+                          className="bg-muted select-none"
                           placeholder="Calculated from protein calorie goal"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
@@ -1268,7 +1242,7 @@ const CreateMealPlanV2: React.FC = () => {
                           min={0}
                           value={calculateCarbTarget(slot)}
                           readOnly
-                          className="bg-muted"
+                          className="bg-muted select-none"
                           placeholder="Calculated from carb calorie goal"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
@@ -1282,7 +1256,7 @@ const CreateMealPlanV2: React.FC = () => {
                           min={0}
                           value={calculateFatTarget(slot)}
                           readOnly
-                          className="bg-muted"
+                          className="bg-muted select-none"
                           placeholder="Calculated from fat calorie goal"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
@@ -1310,9 +1284,7 @@ const CreateMealPlanV2: React.FC = () => {
                             <Label htmlFor={`calorie-goal-${mealIndex}-${macroIndex}`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                               {i18n.language === 'he' ? (
                                 <>
-                                  <span dir="rtl">{t('mealCreation.calorieGoal', 'Calorie Goal')} (</span>
-                                  <span dir="ltr" className="text-muted-foreground">{getMacroLabel(macro.macro_type)}</span>
-                                  <span dir="rtl">)</span>
+                                  {t('mealCreation.calorieGoal', 'Calorie Goal')} - {getMacroLabelHebrew(macro.macro_type)}
                                 </>
                               ) : (
                                 <>
@@ -1336,12 +1308,7 @@ const CreateMealPlanV2: React.FC = () => {
                           </div>
 
                           {/* Track Cross Macros Option */}
-                          <div className={`flex items-center ${i18n.language === 'he' ? 'flex-row-reverse space-x-reverse' : ''} space-x-2`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-                            <Checkbox
-                              id={`track-cross-macros-${mealIndex}-${macroIndex}`}
-                              checked={macro.track_cross_macros}
-                              onCheckedChange={(checked) => updateMacroCategory(mealIndex, macroIndex, 'track_cross_macros', checked)}
-                            />
+                          <div className={`flex items-start ${i18n.language === 'he' ? 'flex-row-reverse' : 'flex-row'} gap-2`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                             <div className="flex-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                               <Label 
                                 htmlFor={`track-cross-macros-${mealIndex}-${macroIndex}`}
@@ -1353,6 +1320,12 @@ const CreateMealPlanV2: React.FC = () => {
                                 {t('mealCreation.trackCrossMacrosHint', 'Subtract calories from other macro categories based on food composition')}
                               </p>
                             </div>
+                            <Checkbox
+                              id={`track-cross-macros-${mealIndex}-${macroIndex}`}
+                              checked={macro.track_cross_macros}
+                              onCheckedChange={(checked) => updateMacroCategory(mealIndex, macroIndex, 'track_cross_macros', checked)}
+                              className="mt-0.5"
+                            />
                           </div>
 
                           {/* Food Options */}
@@ -1422,9 +1395,10 @@ const CreateMealPlanV2: React.FC = () => {
                                         <Input
                                           type="text"
                                           readOnly
-                                          value={calculateRecommendedQuantity(food, macro.calorie_goal || 0, macro, foodIndex, slot)}
-                                          className="w-full max-w-full bg-muted"
+                                          value={macro.calorie_goal ? calculateRecommendedQuantity(food, macro.calorie_goal, macro, foodIndex, slot) : ''}
+                                          className="w-full max-w-full bg-muted select-none"
                                           dir="ltr"
+                                          placeholder={macro.calorie_goal ? '' : t('mealCreation.setCalorieGoalFirst', 'Set calorie goal first')}
                                         />
                                         {macro.calorie_goal && (
                                           <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
@@ -1485,8 +1459,8 @@ const CreateMealPlanV2: React.FC = () => {
 
       {/* Meal Bank Dialog */}
       <Dialog open={showMealBank} onOpenChange={setShowMealBank}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>{t('mealCreation.mealBankTitle')}</DialogTitle>
             <DialogDescription>
               {t('mealCreation.mealBankDescription')}
@@ -1494,7 +1468,7 @@ const CreateMealPlanV2: React.FC = () => {
           </DialogHeader>
 
           {/* Search and Filter */}
-          <div className="space-y-4 mb-4">
+          <div className="space-y-4 mb-4 flex-shrink-0">
             {/* Filter Buttons */}
             <div className="flex gap-2 flex-wrap">
               <Button
@@ -1548,8 +1522,8 @@ const CreateMealPlanV2: React.FC = () => {
             </div>
           </div>
 
-          {/* Meal Bank Items List */}
-          <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pb-20">
+          {/* Meal Bank Items List - Only scrollable area */}
+          <div className="grid grid-cols-1 gap-2 overflow-y-auto flex-1 min-h-0">
             {filteredMealBankItems.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 {t('mealCreation.noMealBankItems')}
@@ -1603,9 +1577,9 @@ const CreateMealPlanV2: React.FC = () => {
             )}
           </div>
 
-          {/* Add Selected Items Button - Sticky at bottom */}
+          {/* Add Selected Items Button - Fixed at bottom */}
           {selectedMealBankItems.size > 0 && (
-            <div className="sticky bottom-0 bg-background pt-4 pb-2 border-t mt-4 flex justify-end z-10">
+            <div className="flex-shrink-0 pt-4 pb-2 border-t mt-4 flex justify-end">
               <Button
                 variant="default"
                 onClick={confirmMealBankSelection}
