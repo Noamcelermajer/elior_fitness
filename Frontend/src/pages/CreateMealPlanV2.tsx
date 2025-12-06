@@ -1463,7 +1463,10 @@ const CreateMealPlanV2: React.FC = () => {
 
       {/* Meal Bank Dialog */}
       <Dialog open={showMealBank} onOpenChange={setShowMealBank}>
-        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0">
+        <DialogContent
+          className="max-w-4xl max-h-[85vh] p-0"
+          style={{ display: 'flex', flexDirection: 'column' }}
+        >
           <div className="p-6 pb-4 flex-shrink-0">
             <DialogHeader>
               <DialogTitle>{t('mealCreation.mealBankTitle')}</DialogTitle>
@@ -1529,7 +1532,7 @@ const CreateMealPlanV2: React.FC = () => {
           </div>
 
           {/* Meal Bank Items List - Only scrollable area */}
-          <div className="overflow-y-auto flex-1 min-h-0 px-6">
+          <div className="overflow-y-auto flex-1 min-h-0 px-6 pb-4">
             <div className="grid grid-cols-1 gap-2">
               {filteredMealBankItems.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
