@@ -235,7 +235,8 @@
     "confirmAddCustomFood": "שמור מזון מותאם",
     "customFoodAdded": "המזון המותאם נשמר בהצלחה.",
     "customFoodError": "שמירת המזון המותאם נכשלה. נסה שוב.",
-    "totalCaloriesWeek": "סה\"כ קלוריות בשבוע"
+    "totalCaloriesWeek": "סה\"כ קלוריות בשבוע",
+    "quantity": "כמות"
   },
   "training": {
     "training": "אימון",

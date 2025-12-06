@@ -217,7 +217,8 @@
     "confirmAddCustomFood": "Save Custom Food",
     "customFoodAdded": "Custom food logged successfully.",
     "customFoodError": "Failed to log custom food. Please try again.",
-    "totalCaloriesWeek": "Total Calories (Week)"
+    "totalCaloriesWeek": "Total Calories (Week)",
+    "quantity": "Quantity"
   },
   "training": {
     "training": "Training",

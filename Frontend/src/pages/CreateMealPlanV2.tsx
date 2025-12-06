@@ -1281,7 +1281,11 @@ const CreateMealPlanV2: React.FC = () => {
                         <TabsContent key={macro.macro_type} value={macro.macro_type} className="space-y-4 overflow-visible">
                           {/* Calorie Goal for this Macro */}
                           <div className="min-w-0 w-full p-2 overflow-visible">
-                            <Label htmlFor={`calorie-goal-${mealIndex}-${macroIndex}`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                            <Label 
+                              htmlFor={`calorie-goal-${mealIndex}-${macroIndex}`} 
+                              dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+                              className={i18n.language === 'he' ? 'text-right block' : ''}
+                            >
                               {i18n.language === 'he' ? (
                                 <>
                                   {t('mealCreation.calorieGoal', 'Calorie Goal')} - {getMacroLabelHebrew(macro.macro_type)}
@@ -1299,8 +1303,8 @@ const CreateMealPlanV2: React.FC = () => {
                               placeholder={i18n.language === 'he' ? t('mealCreation.calorieGoalPlaceholder', 'למשל: 200') : 'e.g., 200'}
                               value={macro.calorie_goal || ''}
                               onChange={(e) => updateMacroCategory(mealIndex, macroIndex, 'calorie_goal', e.target.value === '' ? null : parseInt(e.target.value))}
-                              className="w-full max-w-full"
-                              dir="ltr"
+                              className={`w-full max-w-full ${i18n.language === 'he' ? 'text-right' : ''}`}
+                              dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
                             />
                             <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                               {t('mealCreation.calorieGoalHint', 'Set the calorie goal for this macronutrient. Meal calories will be calculated from the sum of all macro calorie goals.')}
