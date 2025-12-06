@@ -1218,7 +1218,7 @@ const CreateMealPlanV2: React.FC = () => {
                 <AccordionContent>
                   <div className="space-y-4 pt-4">
                     {/* Meal Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div className="min-w-0 w-full">
                         <Label htmlFor={`meal-name-${mealIndex}`}>{t('mealCreation.mealName')}</Label>
                         <Input
@@ -1227,17 +1227,7 @@ const CreateMealPlanV2: React.FC = () => {
                           value={slot.name}
                           onChange={(e) => updateMealSlot(mealIndex, 'name', e.target.value)}
                           className="w-full max-w-full"
-                          dir="auto"
-                        />
-                      </div>
-                      <div className="min-w-0 w-full">
-                        <Label htmlFor={`meal-time-${mealIndex}`}>{t('dates.time')}</Label>
-                        <Input
-                          id={`meal-time-${mealIndex}`}
-                          type="time"
-                          value={slot.time_suggestion}
-                          onChange={(e) => updateMealSlot(mealIndex, 'time_suggestion', e.target.value)}
-                          className="w-full max-w-full"
+                          dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
                         />
                       </div>
                     </div>
@@ -1318,7 +1308,17 @@ const CreateMealPlanV2: React.FC = () => {
                           {/* Calorie Goal for this Macro */}
                           <div className="min-w-0 w-full">
                             <Label htmlFor={`calorie-goal-${mealIndex}-${macroIndex}`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-                              {t('mealCreation.calorieGoal', 'Calorie Goal')} ({getMacroLabel(macro.macro_type)})
+                              {i18n.language === 'he' ? (
+                                <>
+                                  <span dir="rtl">{t('mealCreation.calorieGoal', 'Calorie Goal')} (</span>
+                                  <span dir="ltr" className="text-muted-foreground">{getMacroLabel(macro.macro_type)}</span>
+                                  <span dir="rtl">)</span>
+                                </>
+                              ) : (
+                                <>
+                                  {t('mealCreation.calorieGoal', 'Calorie Goal')} ({getMacroLabel(macro.macro_type)})
+                                </>
+                              )}
                             </Label>
                             <Input
                               id={`calorie-goal-${mealIndex}-${macroIndex}`}
@@ -1336,34 +1336,23 @@ const CreateMealPlanV2: React.FC = () => {
                           </div>
 
                           {/* Track Cross Macros Option */}
-                          <div className="flex items-center space-x-2">
+                          <div className={`flex items-center ${i18n.language === 'he' ? 'flex-row-reverse space-x-reverse' : ''} space-x-2`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                             <Checkbox
                               id={`track-cross-macros-${mealIndex}-${macroIndex}`}
                               checked={macro.track_cross_macros}
                               onCheckedChange={(checked) => updateMacroCategory(mealIndex, macroIndex, 'track_cross_macros', checked)}
                             />
-                            <Label 
-                              htmlFor={`track-cross-macros-${mealIndex}-${macroIndex}`}
-                              className="text-sm font-normal cursor-pointer"
-                            >
-                              {t('mealCreation.trackCrossMacros', 'Track macros on each food')}
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              {t('mealCreation.trackCrossMacrosHint', 'Subtract calories from other macro categories based on food composition')}
-                            </p>
-                          </div>
-
-                          {/* Macro Instructions */}
-                          <div className="min-w-0 w-full">
-                            <Label htmlFor={`quantity-${mealIndex}-${macroIndex}`}>{t('forms.enterValue')}</Label>
-                            <Input
-                              id={`quantity-${mealIndex}-${macroIndex}`}
-                              placeholder="e.g., 150g, 2 pieces, 1 serving"
-                              value={macro.quantity_instruction}
-                              onChange={(e) => updateMacroCategory(mealIndex, macroIndex, 'quantity_instruction', e.target.value)}
-                              className="w-full max-w-full"
-                              dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
-                            />
+                            <div className="flex-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                              <Label 
+                                htmlFor={`track-cross-macros-${mealIndex}-${macroIndex}`}
+                                className="text-sm font-normal cursor-pointer block"
+                              >
+                                {t('mealCreation.trackCrossMacros', 'Track macros on each food')}
+                              </Label>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {t('mealCreation.trackCrossMacrosHint', 'Subtract calories from other macro categories based on food composition')}
+                              </p>
+                            </div>
                           </div>
 
                           {/* Food Options */}
@@ -1505,19 +1494,8 @@ const CreateMealPlanV2: React.FC = () => {
           </DialogHeader>
 
           {/* Search and Filter */}
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
-            <div className="flex-1 min-w-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={t('mealCreation.searchFoodItems')}
-                  value={mealBankSearch}
-                  onChange={(e) => setMealBankSearch(e.target.value)}
-                  className="pl-10 w-full max-w-full"
-                  dir="auto"
-                />
-              </div>
-            </div>
+          <div className="space-y-4 mb-4">
+            {/* Filter Buttons */}
             <div className="flex gap-2 flex-wrap">
               <Button
                 variant={mealBankFilter === 'all' ? 'default' : 'outline'}
@@ -1557,10 +1535,21 @@ const CreateMealPlanV2: React.FC = () => {
                 {t('mealCreation.addFood')}
               </Button>
             </div>
+            {/* Search Input */}
+            <div className="relative">
+              <Search className={`absolute ${i18n.language === 'he' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
+              <Input
+                placeholder={t('mealCreation.searchFoodItems')}
+                value={mealBankSearch}
+                onChange={(e) => setMealBankSearch(e.target.value)}
+                className={i18n.language === 'he' ? 'pr-10' : 'pl-10'}
+                dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+              />
+            </div>
           </div>
 
           {/* Meal Bank Items List */}
-          <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto">
+          <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pb-20">
             {filteredMealBankItems.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 {t('mealCreation.noMealBankItems')}
@@ -1614,16 +1603,19 @@ const CreateMealPlanV2: React.FC = () => {
             )}
           </div>
 
-          {/* Add Selected Items Button */}
+          {/* Add Selected Items Button - Sticky at bottom */}
           {selectedMealBankItems.size > 0 && (
-            <div className="mt-4 flex justify-end">
+            <div className="sticky bottom-0 bg-background pt-4 pb-2 border-t mt-4 flex justify-end z-10">
               <Button
                 variant="default"
                 onClick={confirmMealBankSelection}
                 className="w-full md:w-auto"
               >
                 <Check className="mr-2 h-4 w-4" />
-                {t('mealCreation.addItemsToMealPlan', { count: selectedMealBankItems.size })}
+                {selectedMealBankItems.size === 1 
+                  ? `הוסף ${selectedMealBankItems.size} פריט לתוכנית התזונה`
+                  : `הוסף ${selectedMealBankItems.size} פריטים לתוכנית התזונה`
+                }
               </Button>
             </div>
           )}
