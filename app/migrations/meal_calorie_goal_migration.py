@@ -31,25 +31,41 @@ def _column_exists(table_name: str, column_name: str) -> bool:
 
 
 def run_meal_calorie_goal_migration():
-    """Add calorie_goal column to macro_categories_v2 table if it doesn't exist."""
+    """Add calorie_goal and track_cross_macros columns to macro_categories_v2 table if they don't exist."""
     try:
         logger.info("Running meal calorie goal migration...")
         
-        if not _column_exists("macro_categories_v2", "calorie_goal"):
-            logger.info("Adding calorie_goal column to macro_categories_v2 table...")
-            with engine.begin() as connection:
-                if IS_POSTGRESQL:
-                    connection.execute(
-                        text("ALTER TABLE macro_categories_v2 ADD COLUMN calorie_goal INTEGER")
-                    )
+        columns_to_add = {
+            "calorie_goal": "INTEGER",
+            "track_cross_macros": "BOOLEAN"
+        }
+        
+        with engine.begin() as connection:
+            for column_name, column_type in columns_to_add.items():
+                if not _column_exists("macro_categories_v2", column_name):
+                    logger.info(f"Adding {column_name} column to macro_categories_v2 table...")
+                    if IS_POSTGRESQL:
+                        if column_type == "BOOLEAN":
+                            connection.execute(
+                                text(f"ALTER TABLE macro_categories_v2 ADD COLUMN {column_name} BOOLEAN DEFAULT FALSE")
+                            )
+                        else:
+                            connection.execute(
+                                text(f"ALTER TABLE macro_categories_v2 ADD COLUMN {column_name} {column_type}")
+                            )
+                    else:
+                        # SQLite uses INTEGER for boolean (0/1)
+                        if column_type == "BOOLEAN":
+                            connection.execute(
+                                text(f"ALTER TABLE macro_categories_v2 ADD COLUMN {column_name} INTEGER DEFAULT 0")
+                            )
+                        else:
+                            connection.execute(
+                                text(f"ALTER TABLE macro_categories_v2 ADD COLUMN {column_name} {column_type}")
+                            )
+                    logger.info(f"✅ Successfully added {column_name} column to macro_categories_v2 table")
                 else:
-                    # SQLite
-                    connection.execute(
-                        text("ALTER TABLE macro_categories_v2 ADD COLUMN calorie_goal INTEGER")
-                    )
-            logger.info("✅ Successfully added calorie_goal column to macro_categories_v2 table")
-        else:
-            logger.info("✅ calorie_goal column already exists in macro_categories_v2 table")
+                    logger.info(f"✅ {column_name} column already exists in macro_categories_v2 table")
             
     except Exception as e:
         logger.error(f"❌ Failed to run meal calorie goal migration: {e}")

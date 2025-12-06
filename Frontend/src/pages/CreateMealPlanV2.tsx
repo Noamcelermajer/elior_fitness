@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -42,6 +43,7 @@ interface MacroCategory {
   macro_type: 'protein' | 'carb' | 'fat';
   quantity_instruction: string;
   calorie_goal: number | null;  // Calorie goal for this macro category
+  track_cross_macros: boolean;  // Track and subtract calories from other macros
   food_options: FoodOption[];
 }
 
@@ -449,18 +451,34 @@ const CreateMealPlanV2: React.FC = () => {
     
     // Update remaining food options based on remaining calories (excluding the newly added food)
     const newFoodIndex = newSlots[currentMealIndex].macro_categories[currentMacroIndex].food_options.length - 1;
+    const mealSlot = newSlots[currentMealIndex];
+    const macro = mealSlot.macro_categories[currentMacroIndex];
     const remainingCalories = calculateRemainingCalories(
-      newSlots[currentMealIndex].macro_categories[currentMacroIndex],
+      macro,
+      mealSlot,
       newFoodIndex
     );
     
     // Update other food options' quantities based on remaining calories
     if (macro.calorie_goal && remainingCalories > 0) {
-      newSlots[currentMealIndex].macro_categories[currentMacroIndex].food_options.forEach((food, idx) => {
+      macro.food_options.forEach((food, idx) => {
         if (idx !== newFoodIndex) {
           // Recalculate quantity for existing foods based on remaining calories
-          const newQty = calculateRecommendedQuantity(food, remainingCalories);
+          const newQty = calculateRecommendedQuantity(food, remainingCalories, macro, idx, mealSlot);
           food.serving_size = newQty;
+        }
+      });
+    }
+    
+    // If cross-macro tracking is enabled, update other macro categories' food options too
+    if (macro.track_cross_macros) {
+      mealSlot.macro_categories.forEach((otherMacro) => {
+        if (otherMacro.macro_type !== macro.macro_type && otherMacro.calorie_goal) {
+          const otherRemaining = calculateRemainingCaloriesWithCrossMacro(otherMacro, mealSlot);
+          otherMacro.food_options.forEach((food, idx) => {
+            const newQty = calculateRecommendedQuantity(food, otherRemaining, otherMacro, idx, mealSlot);
+            food.serving_size = newQty;
+          });
         }
       });
     }
@@ -577,9 +595,9 @@ const CreateMealPlanV2: React.FC = () => {
       target_carbs: null,
       target_fat: null,
       macro_categories: [
-        { macro_type: 'protein', quantity_instruction: '', calorie_goal: null, food_options: [] },
-        { macro_type: 'carb', quantity_instruction: '', calorie_goal: null, food_options: [] },
-        { macro_type: 'fat', quantity_instruction: '', calorie_goal: null, food_options: [] },
+        { macro_type: 'protein', quantity_instruction: '', calorie_goal: null, track_cross_macros: false, food_options: [] },
+        { macro_type: 'carb', quantity_instruction: '', calorie_goal: null, track_cross_macros: false, food_options: [] },
+        { macro_type: 'fat', quantity_instruction: '', calorie_goal: null, track_cross_macros: false, food_options: [] },
       ],
     };
     setFormData(prev => ({
@@ -698,37 +716,135 @@ const CreateMealPlanV2: React.FC = () => {
   };
 
   // Calculate recommended quantity based on calorie goal and food calories per 100g
-  const calculateRecommendedQuantity = (food: FoodOption, calorieGoal: number | null): string => {
+  // Calculate calories from other macros when cross-macro tracking is enabled
+  const calculateCrossMacroCalories = (
+    food: FoodOption,
+    grams: number,
+    currentMacroType: 'protein' | 'carb' | 'fat',
+    mealSlot: MealSlot
+  ): { protein: number; carb: number; fat: number } => {
+    const result = { protein: 0, carb: 0, fat: 0 };
+    
+    // Get grams per 100g for each macro
+    const proteinPer100g = food.protein || 0;
+    const carbPer100g = food.carbs || 0;
+    const fatPer100g = food.fat || 0;
+    
+    // Calculate actual grams consumed
+    const proteinGrams = (proteinPer100g / 100) * grams;
+    const carbGrams = (carbPer100g / 100) * grams;
+    const fatGrams = (fatPer100g / 100) * grams;
+    
+    // Convert to calories (protein/carb: 4 cal/g, fat: 9 cal/g)
+    // Only count calories for macros OTHER than the current one
+    if (currentMacroType !== 'protein') {
+      result.protein = proteinGrams * 4;
+    }
+    if (currentMacroType !== 'carb') {
+      result.carb = carbGrams * 4;
+    }
+    if (currentMacroType !== 'fat') {
+      result.fat = fatGrams * 9;
+    }
+    
+    return result;
+  };
+
+  // Calculate remaining calories after foods are added (accounting for cross-macro tracking)
+  const calculateRemainingCalories = (
+    macro: MacroCategory,
+    mealSlot: MealSlot,
+    excludeIndex?: number
+  ): number => {
+    if (!macro.calorie_goal) return 0;
+    
+    let usedCalories = 0;
+    
+    macro.food_options.forEach((food, idx) => {
+      if (excludeIndex !== undefined && idx === excludeIndex) return; // Skip the excluded food
+      
+      // Food calories are per 100g (standard nutrition database format)
+      const baseServingSize = 100;
+      const caloriesPerGram = (food.calories || 0) / baseServingSize;
+      const grams = parseNumericValue(food.serving_size) || 0;
+      
+      // Calculate calories from this food's primary macro
+      const primaryCalories = caloriesPerGram * grams;
+      usedCalories += primaryCalories;
+      
+      // Note: Cross-macro tracking subtracts from OTHER macros, not this one
+      // So we don't add cross-macro calories to usedCalories here
+      // The cross-macro effect is handled when calculating remaining calories for OTHER macros
+    });
+    
+    return Math.max(0, macro.calorie_goal - usedCalories);
+  };
+
+  // Calculate remaining calories for a macro category, accounting for cross-macro deductions from other categories
+  const calculateRemainingCaloriesWithCrossMacro = (
+    macro: MacroCategory,
+    mealSlot: MealSlot,
+    excludeIndex?: number
+  ): number => {
+    let remaining = calculateRemainingCalories(macro, mealSlot, excludeIndex);
+    
+    // If cross-macro tracking is enabled in OTHER categories, subtract their cross-macro calories
+    mealSlot.macro_categories.forEach((otherMacro) => {
+      if (otherMacro.macro_type !== macro.macro_type && otherMacro.track_cross_macros) {
+        otherMacro.food_options.forEach((food, foodIdx) => {
+          if (excludeIndex !== undefined && 
+              mealSlot.macro_categories.findIndex(m => m === macro) === excludeIndex) {
+            // Skip if this is the excluded food's macro category
+            return;
+          }
+          
+          const grams = parseNumericValue(food.serving_size) || 0;
+          const crossMacroCalories = calculateCrossMacroCalories(
+            food,
+            grams,
+            otherMacro.macro_type,
+            mealSlot
+          );
+          
+          // Subtract calories that affect this macro
+          if (macro.macro_type === 'protein') {
+            remaining = Math.max(0, remaining - crossMacroCalories.protein);
+          } else if (macro.macro_type === 'carb') {
+            remaining = Math.max(0, remaining - crossMacroCalories.carb);
+          } else if (macro.macro_type === 'fat') {
+            remaining = Math.max(0, remaining - crossMacroCalories.fat);
+          }
+        });
+      }
+    });
+    
+    return remaining;
+  };
+
+  const calculateRecommendedQuantity = (
+    food: FoodOption,
+    calorieGoal: number | null,
+    macro?: MacroCategory,
+    foodIndex?: number,
+    mealSlot?: MealSlot
+  ): string => {
     if (!calorieGoal || !food.calories) return '100';
     
+    // Calculate remaining calories if this is for an existing food option
+    let remainingCalories = calorieGoal;
+    if (macro && mealSlot && foodIndex !== undefined) {
+      remainingCalories = calculateRemainingCaloriesWithCrossMacro(macro, mealSlot, foodIndex);
+    }
+    
     // Food calories from meal bank are per 100g (standard nutrition database format)
-    // serving_size might be used for quantity, but calories are always per 100g
-    const baseServingSize = 100; // Standard: calories are per 100g
+    const baseServingSize = 100;
     const caloriesPerGram = food.calories / baseServingSize;
     
     if (caloriesPerGram <= 0) return '100';
     
-    // Calculate grams needed to reach calorie goal
-    const gramsNeeded = Math.round(calorieGoal / caloriesPerGram);
+    // Calculate grams needed to reach remaining calorie goal
+    const gramsNeeded = Math.round(remainingCalories / caloriesPerGram);
     return gramsNeeded > 0 ? gramsNeeded.toString() : '100';
-  };
-
-  // Calculate remaining calories after foods are added
-  const calculateRemainingCalories = (macro: MacroCategory, excludeIndex?: number): number => {
-    if (!macro.calorie_goal) return 0;
-    
-    let usedCalories = 0;
-    macro.food_options.forEach((food, idx) => {
-      if (excludeIndex !== undefined && idx === excludeIndex) return; // Skip the excluded food
-      // Food calories are per 100g (standard nutrition database format)
-      const baseServingSize = 100;
-      const caloriesPerGram = (food.calories || 0) / baseServingSize;
-      // serving_size here is the quantity the user wants (in grams)
-      const grams = parseNumericValue(food.serving_size) || 100;
-      usedCalories += caloriesPerGram * grams;
-    });
-    
-    return Math.max(0, macro.calorie_goal - usedCalories);
   };
 
   // Calculate meal total calories from sum of macro calorie goals
@@ -740,11 +856,34 @@ const CreateMealPlanV2: React.FC = () => {
 
   const updateMacroCategory = (mealIndex: number, macroIndex: number, field: string, value: any) => {
     const newSlots = [...formData.meal_slots];
-    newSlots[mealIndex].macro_categories[macroIndex][field] = value;
+    const mealSlot = newSlots[mealIndex];
+    const macro = mealSlot.macro_categories[macroIndex];
+    
+    macro[field] = value;
     
     // Update meal target_calories when macro calorie goals change
     if (field === 'calorie_goal') {
-      newSlots[mealIndex].target_calories = calculateMealCalories(newSlots[mealIndex]);
+      mealSlot.target_calories = calculateMealCalories(mealSlot);
+      
+      // Recalculate all food option quantities based on new calorie goal
+      if (macro.calorie_goal) {
+        const remainingCalories = calculateRemainingCalories(macro, mealSlot);
+        macro.food_options.forEach((food, idx) => {
+          const newQty = calculateRecommendedQuantity(food, remainingCalories, macro, idx, mealSlot);
+          food.serving_size = newQty;
+        });
+      }
+    }
+    
+    // When track_cross_macros changes, recalculate all food quantities
+    if (field === 'track_cross_macros') {
+      if (macro.calorie_goal) {
+        const remainingCalories = calculateRemainingCalories(macro, mealSlot);
+        macro.food_options.forEach((food, idx) => {
+          const newQty = calculateRecommendedQuantity(food, remainingCalories, macro, idx, mealSlot);
+          food.serving_size = newQty;
+        });
+      }
     }
     
     setFormData({ ...formData, meal_slots: newSlots });
@@ -1133,6 +1272,24 @@ const CreateMealPlanV2: React.FC = () => {
                             </p>
                           </div>
 
+                          {/* Track Cross Macros Option */}
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`track-cross-macros-${mealIndex}-${macroIndex}`}
+                              checked={macro.track_cross_macros}
+                              onCheckedChange={(checked) => updateMacroCategory(mealIndex, macroIndex, 'track_cross_macros', checked)}
+                            />
+                            <Label 
+                              htmlFor={`track-cross-macros-${mealIndex}-${macroIndex}`}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {t('mealCreation.trackCrossMacros', 'Track macros on each food')}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              {t('mealCreation.trackCrossMacrosHint', 'Subtract calories from other macro categories based on food composition')}
+                            </p>
+                          </div>
+
                           {/* Macro Instructions */}
                           <div className="min-w-0 w-full">
                             <Label htmlFor={`quantity-${mealIndex}-${macroIndex}`}>{t('forms.enterValue')}</Label>
@@ -1207,31 +1364,12 @@ const CreateMealPlanV2: React.FC = () => {
                                     </div>
                                     <div className="space-y-3 min-w-0 w-full">
                                       <div className="min-w-0 w-full">
-                    <Label>Quantity (g) {macro.calorie_goal && `(Goal: ${macro.calorie_goal} kcal)`}</Label>
+                    <Label>Quantity (g) {macro.calorie_goal && `(Calculated)`}</Label>
                                         <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder={macro.calorie_goal ? calculateRecommendedQuantity(food, macro.calorie_goal) : "e.g., 150"}
-                                          value={food.serving_size}
-                                          onChange={(e) => {
-                                            const newSlots = [...formData.meal_slots];
-                                            newSlots[mealIndex].macro_categories[macroIndex].food_options[foodIndex].serving_size = e.target.value;
-                                            
-                                            // Update remaining food options when quantity changes
-                                            const macro = newSlots[mealIndex].macro_categories[macroIndex];
-                                            const remainingCalories = calculateRemainingCalories(macro, foodIndex);
-                                            if (macro.calorie_goal && remainingCalories > 0) {
-                                              macro.food_options.forEach((f, idx) => {
-                                                if (idx !== foodIndex) {
-                                                  const newQty = calculateRecommendedQuantity(f, remainingCalories);
-                                                  f.serving_size = newQty;
-                                                }
-                                              });
-                                            }
-                                            setFormData({ ...formData, meal_slots: newSlots });
-                                          }}
-                                          className="w-full max-w-full"
+                      type="text"
+                      readOnly
+                      value={calculateRecommendedQuantity(food, macro.calorie_goal || 0, macro, foodIndex, slot)}
+                                          className="w-full max-w-full bg-muted"
                                           dir="auto"
                                         />
                                         {macro.calorie_goal && (

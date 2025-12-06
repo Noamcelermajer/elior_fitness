@@ -1068,7 +1068,14 @@
     "errorAddMeals": "Please add at least one meal",
     "errorCreating": "Error creating meal plan",
     "errorUpdating": "Error updating meal plan",
-    "successCreated": "Meal plan created successfully!"
+    "successCreated": "Meal plan created successfully!",
+    "calorieGoal": "Calorie Goal",
+    "calorieGoalHint": "Set the calorie goal for this macronutrient. Meal calories will be calculated from the sum of all macro calorie goals.",
+    "trackCrossMacros": "Track macros on each food",
+    "trackCrossMacrosHint": "Subtract calories from other macro categories based on food composition",
+    "quantityBasedOnCalories": "Quantity calculated based on calorie goal",
+    "calculated": "(Calculated)",
+    "calculatedFromMacroGoals": "Calculated from sum of macro calorie goals"
   },
   "chat": {
     "conversations": "Conversations",

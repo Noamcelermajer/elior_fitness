@@ -206,7 +206,8 @@ def create_complete_meal_plan(
                 meal_slot_id=meal_slot.id,
                 macro_type=macro_data.macro_type,
                 quantity_instruction=macro_data.quantity_instruction,
-                calorie_goal=macro_data.calorie_goal
+                calorie_goal=macro_data.calorie_goal,
+                track_cross_macros=macro_data.track_cross_macros if hasattr(macro_data, 'track_cross_macros') else False
             )
             db.add(macro_category)
             db.flush()

@@ -100,6 +100,7 @@ class MacroCategory(Base):
     macro_type = Column(Enum(MacroType), nullable=False)  # PROTEIN, CARB, or FAT
     quantity_instruction = Column(String)  # e.g., "150g", "1 serving", "2 pieces"
     calorie_goal = Column(Integer)  # Calorie goal for this macro category (e.g., 200 calories from protein)
+    track_cross_macros = Column(Boolean, default=False)  # If True, subtract calories from other macros when food is eaten
     notes = Column(Text)  # Additional instructions for this macro
     created_at = Column(DateTime, default=func.now())
     
