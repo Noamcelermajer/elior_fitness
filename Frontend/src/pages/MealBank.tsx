@@ -44,7 +44,7 @@ const macroTypes = [
 const MealBank = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [items, setItems] = useState<MealBankItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -503,15 +503,15 @@ const MealBank = () => {
                       <Card key={item.id} className="hover:shadow-lg transition-shadow">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1">
-                            <h3 className="font-semibold text-lg">{item.name || item.name_hebrew}</h3>
-                            {(item.name_hebrew || (!item.name && item.name_hebrew)) && (
-                              <p className="text-sm text-muted-foreground" dir="rtl">
-                                {item.name_hebrew}
+                            <div className="flex-1" dir="rtl">
+                            <h3 className="font-semibold text-lg" dir="rtl">{item.name_hebrew || item.name}</h3>
+                            {item.name_hebrew && item.name && (
+                              <p className="text-sm text-muted-foreground" dir="ltr">
+                                {item.name}
                               </p>
                             )}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2" dir="ltr">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -532,22 +532,22 @@ const MealBank = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="grid grid-cols-2 gap-2 text-sm" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                             <div>
                               <span className="text-muted-foreground">{t('foodBank.calories')}:</span>
                               <span className="font-medium ml-1">{item.calories || t('weightProgress.na')}</span>
                             </div>
                             <div>
                               <span className="text-muted-foreground">{t('foodBank.protein')}:</span>
-                              <span className="font-medium ml-1">{item.protein || t('weightProgress.na')}{t('foodBank.g')}</span>
+                              <span className="font-medium ml-1">{item.protein || t('weightProgress.na')}</span>
                             </div>
                             <div>
                               <span className="text-muted-foreground">{t('foodBank.carbs')}:</span>
-                              <span className="font-medium ml-1">{item.carbs || t('weightProgress.na')}{t('foodBank.g')}</span>
+                              <span className="font-medium ml-1">{item.carbs || t('weightProgress.na')}</span>
                             </div>
                             <div>
                               <span className="text-muted-foreground">{t('foodBank.fat')}:</span>
-                              <span className="font-medium ml-1">{item.fat || t('weightProgress.na')}{t('foodBank.g')}</span>
+                              <span className="font-medium ml-1">{item.fat || t('weightProgress.na')}</span>
                             </div>
                           </div>
                         </CardContent>

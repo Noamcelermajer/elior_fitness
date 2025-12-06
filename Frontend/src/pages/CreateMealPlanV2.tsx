@@ -1296,7 +1296,7 @@ const CreateMealPlanV2: React.FC = () => {
                               id={`calorie-goal-${mealIndex}-${macroIndex}`}
                               type="number"
                               min="0"
-                              placeholder="e.g., 200"
+                              placeholder={i18n.language === 'he' ? t('mealCreation.calorieGoalPlaceholder', 'למשל: 200') : 'e.g., 200'}
                               value={macro.calorie_goal || ''}
                               onChange={(e) => updateMacroCategory(mealIndex, macroIndex, 'calorie_goal', e.target.value === '' ? null : parseInt(e.target.value))}
                               className="w-full max-w-full"
@@ -1330,14 +1330,15 @@ const CreateMealPlanV2: React.FC = () => {
 
                           {/* Food Options */}
                           <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <Label>{t('mealCreation.foodOptions')} ({macro.food_options.length})</Label>
+                            <div className={`flex items-center justify-between mb-3 ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                              <Label dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>{t('mealCreation.foodOptions')} ({macro.food_options.length})</Label>
                               <Button
                                 size="sm"
                                 variant="default"
                                 onClick={() => openMealBank(mealIndex, macroIndex)}
+                                className={i18n.language === 'he' ? 'flex-row-reverse' : ''}
                               >
-                                <Search className="h-4 w-4 mr-2" />
+                                <Search className={`h-4 w-4 ${i18n.language === 'he' ? 'ml-2' : 'mr-2'}`} />
                                 {t('mealCreation.addFromMealBank')}
                               </Button>
                             </div>
@@ -1390,7 +1391,7 @@ const CreateMealPlanV2: React.FC = () => {
                                     <div className="space-y-3 min-w-0 w-full">
                                       <div className="min-w-0 w-full">
                                         <Label dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-                                          {t('meals.quantity', 'Quantity')} ({t('mealCreation.unitGrams')}) {macro.calorie_goal && `(${t('mealCreation.calculated')})`}
+                                          {t('meals.quantity')} ({t('mealCreation.unitGrams')}) {macro.calorie_goal && `(${t('mealCreation.calculated')})`}
                                         </Label>
                                         <Input
                                           type="text"
@@ -1523,58 +1524,61 @@ const CreateMealPlanV2: React.FC = () => {
           </div>
 
           {/* Meal Bank Items List - Only scrollable area */}
-          <div className="grid grid-cols-1 gap-2 overflow-y-auto flex-1 min-h-0">
-            {filteredMealBankItems.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {t('mealCreation.noMealBankItems')}
-              </div>
-            ) : (
-              filteredMealBankItems.map((item) => {
-                const isSelected = selectedMealBankItems.has(item.id);
-                return (
-                  <Card
-                    key={item.id}
-                    className={`p-4 hover:bg-accent cursor-pointer transition-colors ${
-                      isSelected ? 'border-primary border-2' : ''
-                    }`}
-                    onClick={() => toggleMealBankItem(item)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleMealBankItem(item)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          {item.macro_type === 'protein' && '🍗'}
-                          {item.macro_type === 'carb' && '🍞'}
-                          {item.macro_type === 'fat' && '🥑'}
+          <div className="overflow-y-auto flex-1 min-h-0">
+            <div className="grid grid-cols-1 gap-2">
+              {filteredMealBankItems.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {t('mealCreation.noMealBankItems')}
+                </div>
+              ) : (
+                filteredMealBankItems.map((item) => {
+                  const isSelected = selectedMealBankItems.has(item.id);
+                  return (
+                    <Card
+                      key={item.id}
+                      className={`p-4 hover:bg-accent cursor-pointer transition-colors ${
+                        isSelected ? 'border-primary border-2' : ''
+                      }`}
+                      onClick={() => toggleMealBankItem(item)}
+                    >
+                      <div className="flex items-center justify-between gap-2 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleMealBankItem(item)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-shrink-0"
+                          />
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            {item.macro_type === 'protein' && '🍗'}
+                            {item.macro_type === 'carb' && '🍞'}
+                            {item.macro_type === 'fat' && '🥑'}
+                          </div>
+                          <div className="min-w-0 flex-1" dir="rtl">
+                            <div className="font-semibold truncate" dir="rtl">{item.name_hebrew || item.name}</div>
+                            {item.name_hebrew && item.name && (
+                              <div className="text-sm text-muted-foreground truncate" dir="ltr">
+                                {item.name}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-semibold">{item.name_hebrew || item.name}</div>
-                          {item.name_hebrew && item.name && (
-                            <div className="text-sm text-muted-foreground" dir="rtl">
-                              {item.name_hebrew}
-                            </div>
-                          )}
+                        <div className="text-right flex-shrink-0" dir="ltr">
+                          <div className="text-sm font-medium whitespace-nowrap">
+                            {item.calories !== null && item.calories !== undefined ? `${item.calories} ${t('mealCreation.kcalPer100g')}` : t('mealCreation.notAvailable')}
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">
+                            {item.protein !== null && `${item.protein}ג ${t('meals.protein').substring(0, 1)}`} /{' '}
+                            {item.carbs !== null && `${item.carbs}ג ${t('meals.carbs').substring(0, 1)}`} /{' '}
+                            {item.fat !== null && `${item.fat}ג ${t('meals.fat').substring(0, 1)}`}
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium">
-                          {item.calories !== null && item.calories !== undefined ? `${item.calories} ${t('mealCreation.kcalPer100g')}` : t('mealCreation.notAvailable')}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {item.protein !== null && `${item.protein}ג ${t('meals.protein').substring(0, 1)}`} /{' '}
-                          {item.carbs !== null && `${item.carbs}ג ${t('meals.carbs').substring(0, 1)}`} /{' '}
-                          {item.fat !== null && `${item.fat}ג ${t('meals.fat').substring(0, 1)}`}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })
-            )}
+                    </Card>
+                  );
+                })
+              )}
+            </div>
           </div>
 
           {/* Add Selected Items Button - Fixed at bottom */}

@@ -39,12 +39,12 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const isTrainer = user?.role === 'TRAINER';
   const isAdmin = user?.role === 'ADMIN';
 
-  const navigationItems = isAdmin ? [
+  const baseNavigationItems = isAdmin ? [
     { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/' },
     { id: 'users', label: t('navigation.users'), icon: User, href: '/users' },
     { id: 'system', label: t('navigation.system'), icon: Settings, href: '/system' }
@@ -60,6 +60,9 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
     { id: 'progress', label: t('navigation.progress'), icon: TrendingUp, href: '/progress' },
     { id: 'chat', label: t('navigation.chat'), icon: MessageSquare, href: '/chat' }
   ];
+
+  // Reverse order for RTL (Hebrew) to display right-to-left
+  const navigationItems = i18n.language === 'he' ? [...baseNavigationItems].reverse() : baseNavigationItems;
 
   const handleNavigation = (href: string) => {
     navigate(href);
@@ -104,7 +107,10 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
 
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="absolute top-full left-0 right-0 bg-card/95 backdrop-blur-lg border-b border-border/50 animate-slide-up">
+          <div 
+            className="absolute top-full left-0 right-0 bg-card/95 backdrop-blur-lg border-b border-border/50 animate-slide-up"
+            dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+          >
             <div className="px-4 py-3 space-y-1">
               {navigationItems.map((item) => (
                 <Button
@@ -175,7 +181,10 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
 
             {/* Center: 4 Navigation Tabs */}
             <div className="flex-1 min-w-0 flex items-center justify-center h-full">
-              <nav className="flex items-center gap-1 lg:gap-2 xl:gap-3 overflow-x-auto scrollbar-hide px-2 h-full">
+              <nav 
+                className={`flex items-center gap-1 lg:gap-2 xl:gap-3 overflow-x-auto scrollbar-hide px-2 h-full ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`}
+                dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+              >
                 {navigationItems.map((item) => (
                   <Button
                     key={item.id}
@@ -230,8 +239,11 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       </main>
 
       {/* Mobile Bottom Navigation - Alternative approach */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border/50 lg:hidden shadow-2xl z-50 overflow-hidden">
-        <div className="flex items-center justify-around px-1 sm:px-2 pt-2 overflow-x-auto scrollbar-hide" style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
+      <div 
+        className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border/50 lg:hidden shadow-2xl z-50 overflow-hidden"
+        dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+      >
+        <div className={`flex items-center justify-around px-1 sm:px-2 pt-2 overflow-x-auto scrollbar-hide ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`} style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
           {navigationItems.map((item) => (
             <Button
               key={item.id}

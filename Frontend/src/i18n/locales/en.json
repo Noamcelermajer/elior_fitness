@@ -1071,6 +1071,7 @@
     "successCreated": "Meal plan created successfully!",
     "calorieGoal": "Calorie Goal",
     "calorieGoalHint": "Set the calorie goal for this macronutrient. Meal calories will be calculated from the sum of all macro calorie goals.",
+    "calorieGoalPlaceholder": "e.g., 200",
     "trackCrossMacros": "Track macros on each food",
     "trackCrossMacrosHint": "Subtract calories from other macro categories based on food composition",
     "quantityBasedOnCalories": "Quantity calculated based on calorie goal",
