@@ -1278,9 +1278,9 @@ const CreateMealPlanV2: React.FC = () => {
                       </TabsList>
 
                       {slot.macro_categories.map((macro, macroIndex) => (
-                        <TabsContent key={macro.macro_type} value={macro.macro_type} className="space-y-4">
+                        <TabsContent key={macro.macro_type} value={macro.macro_type} className="space-y-4 overflow-visible">
                           {/* Calorie Goal for this Macro */}
-                          <div className="min-w-0 w-full">
+                          <div className="min-w-0 w-full p-2 overflow-visible">
                             <Label htmlFor={`calorie-goal-${mealIndex}-${macroIndex}`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                               {i18n.language === 'he' ? (
                                 <>
@@ -1616,7 +1616,7 @@ const CreateMealPlanV2: React.FC = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="new-food-macro-type" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-                {t('foodBank.macroType', 'סוג מאקרו')} *
+                {t('foodBank.macroType', 'סוג אב מזון')} *
               </Label>
               <select
                 id="new-food-macro-type"
