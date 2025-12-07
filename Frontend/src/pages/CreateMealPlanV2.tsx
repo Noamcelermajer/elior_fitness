@@ -1381,7 +1381,7 @@ const CreateMealPlanV2: React.FC = () => {
                                         </Label>
                                         <Input
                                           type="text"
-                                          value={food.recommended_quantity || (macro.calorie_goal ? calculateRecommendedQuantity(food, macro.calorie_goal, macro, foodIndex, slot) : '')}
+                                          value={food.recommended_quantity || ''}
                                           onChange={(e) => updateFoodOption(mealIndex, macroIndex, foodIndex, 'recommended_quantity', e.target.value)}
                                           className="w-full max-w-full"
                                           dir="ltr"
@@ -1391,6 +1391,23 @@ const CreateMealPlanV2: React.FC = () => {
                                           {t('mealCreation.recommendedQuantityHint', 'Suggested amount for client (calorie counting remains accurate)')}
                                         </p>
                                       </div>
+                                      {macro.calorie_goal && (
+                                        <div className="min-w-0 w-full">
+                                          <Label dir={i18n.language === 'he' ? 'rtl' : 'ltr'} className="text-muted-foreground">
+                                            {t('mealCreation.totalAmountAllowed', 'Total Amount Allowed (grams)')}
+                                          </Label>
+                                          <Input
+                                            type="text"
+                                            readOnly
+                                            value={calculateRecommendedQuantity(food, macro.calorie_goal, macro, foodIndex, slot)}
+                                            className="w-full max-w-full bg-muted select-none"
+                                            dir="ltr"
+                                          />
+                                          <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                                            {t('mealCreation.calculatedFromCalorieGoal', 'Calculated from calorie goal')}
+                                          </p>
+                                        </div>
+                                      )}
                                       <Button
                                         variant="destructive"
                                         size="sm"

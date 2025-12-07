@@ -1123,6 +1123,8 @@
     "recommendedQuantity": "כמות מומלצת (גרם)",
     "recommendedQuantityHint": "כמות מומלצת ללקוח (ספירת קלוריות נשארת מדויקת)",
     "enterRecommendedAmount": "הזן כמות מומלצת בגרם",
+    "totalAmountAllowed": "כמות כוללת מותרת (גרם)",
+    "calculatedFromCalorieGoal": "מחושב מיעד הקלוריות",
     "calorieGoalPlaceholder": "למשל: 200",
     "quantityBasedOnCalories": "כמות מחושבת בהתבסס על יעד הקלוריות",
     "setCalorieGoalFirst": "הגדר יעד קלוריות תחילה",

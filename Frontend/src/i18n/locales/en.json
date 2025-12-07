@@ -1083,6 +1083,8 @@
     "recommendedQuantity": "Recommended Amount (grams)",
     "recommendedQuantityHint": "Suggested amount for client (calorie counting remains accurate)",
     "enterRecommendedAmount": "Enter recommended amount in grams",
+    "totalAmountAllowed": "Total Amount Allowed (grams)",
+    "calculatedFromCalorieGoal": "Calculated from calorie goal",
     "quantityBasedOnCalories": "Quantity calculated based on calorie goal",
     "calculated": "(Calculated)",
     "calculatedFromMacroGoals": "Calculated from sum of macro calorie goals",
