@@ -1192,7 +1192,7 @@ const MealMenuV2 = () => {
                                           </div>
                                           
                                           {/* Recommended Amount and Remaining */}
-                                          <div className="flex items-center justify-between text-xs">
+                                          <div className="flex items-center justify-between text-xs gap-4">
                                             {recommendedGrams > 0 && (
                                               <span className="text-muted-foreground">
                                                 {option.recommended_quantity 
@@ -1201,7 +1201,7 @@ const MealMenuV2 = () => {
                                               </span>
                                             )}
                                             <span className="text-muted-foreground">
-                                              {t('meals.remaining')}: <span className="font-medium text-foreground">{Math.max(0, Math.round(remainingGrams))}ג</span>
+                                              {t('meals.remainingAmount', 'Remaining Amount')}: <span className="font-medium text-foreground">{Math.max(0, Math.round(remainingGrams))}ג</span>
                                             </span>
                                           </div>
                                         </div>
