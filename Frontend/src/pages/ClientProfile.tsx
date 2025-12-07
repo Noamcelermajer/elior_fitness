@@ -419,8 +419,12 @@ const ClientProfile = () => {
               <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.lastLogin')}</p>
               <p className="text-sm font-bold text-foreground">
                 {client.last_login ? (() => {
-                  // Convert UTC timestamp to local timezone
-                  const lastLoginDate = new Date(client.last_login);
+                  const toDate = (value: string) => {
+                    const hasTimezone = /[zZ]|[+-]\d\d:?\d\d$/.test(value);
+                    return new Date(hasTimezone ? value : `${value}Z`);
+                  };
+
+                  const lastLoginDate = toDate(client.last_login);
                   const now = new Date();
                   const diffMs = now.getTime() - lastLoginDate.getTime();
                   const diffMins = Math.floor(diffMs / 60000);
@@ -437,7 +441,7 @@ const ClientProfile = () => {
                     return t('clientProfile.daysAgo', { count: diffDays });
                   } else {
                     // Use formatLocalTime to show in user's local timezone (like chat)
-                    return formatLocalTime(client.last_login, {
+                    return formatLocalTime(lastLoginDate.toISOString(), {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',
