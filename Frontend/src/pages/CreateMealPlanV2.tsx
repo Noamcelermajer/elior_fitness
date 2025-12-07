@@ -324,6 +324,7 @@ const CreateMealPlanV2: React.FC = () => {
           ),
           quantity_instruction: macro.quantity_instruction || '',
           calorie_goal: macro.calorie_goal ?? null,
+          track_cross_macros: macro.track_cross_macros ?? true,
           food_options: (macro.food_options || []).map((food: any) => ({
             name: food.name || food.name_hebrew || '',
             name_hebrew: food.name_hebrew || '',
@@ -601,9 +602,9 @@ const CreateMealPlanV2: React.FC = () => {
       target_carbs: null,
       target_fat: null,
       macro_categories: [
-        { macro_type: 'protein', quantity_instruction: '', calorie_goal: null, track_cross_macros: false, food_options: [] },
-        { macro_type: 'carb', quantity_instruction: '', calorie_goal: null, track_cross_macros: false, food_options: [] },
-        { macro_type: 'fat', quantity_instruction: '', calorie_goal: null, track_cross_macros: false, food_options: [] },
+        { macro_type: 'protein', quantity_instruction: '', calorie_goal: null, track_cross_macros: true, food_options: [] },
+        { macro_type: 'carb', quantity_instruction: '', calorie_goal: null, track_cross_macros: true, food_options: [] },
+        { macro_type: 'fat', quantity_instruction: '', calorie_goal: null, track_cross_macros: true, food_options: [] },
       ],
     };
     setFormData(prev => ({
@@ -1283,7 +1284,7 @@ const CreateMealPlanV2: React.FC = () => {
                             <Label 
                               htmlFor={`calorie-goal-${mealIndex}-${macroIndex}`} 
                               dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
-                              className={i18n.language === 'he' ? 'text-right block' : ''}
+                              className={`block text-sm font-medium leading-tight mb-1 ${i18n.language === 'he' ? 'text-right' : ''}`}
                             >
                               {i18n.language === 'he' ? (
                                 <>
@@ -1302,7 +1303,7 @@ const CreateMealPlanV2: React.FC = () => {
                               placeholder={i18n.language === 'he' ? t('mealCreation.calorieGoalPlaceholder', 'למשל: 200') : 'e.g., 200'}
                               value={macro.calorie_goal || ''}
                               onChange={(e) => updateMacroCategory(mealIndex, macroIndex, 'calorie_goal', e.target.value === '' ? null : parseInt(e.target.value))}
-                              className={`w-full max-w-full ${i18n.language === 'he' ? 'text-right' : ''}`}
+                              className={`w-full max-w-full ${i18n.language === 'he' ? 'text-right' : ''} focus-visible:ring-primary focus-visible:ring-offset-background`}
                               dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
                             />
                             <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
