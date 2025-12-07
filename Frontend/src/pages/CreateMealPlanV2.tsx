@@ -25,6 +25,7 @@ interface FoodOption {
   carbs: number | null;
   fat: number | null;
   serving_size: string;
+  recommended_quantity?: string | null; // Trainer's recommended amount in grams
 }
 
 interface MealBankItem {
@@ -333,6 +334,7 @@ const CreateMealPlanV2: React.FC = () => {
             carbs: food.carbs ?? null,
             fat: food.fat ?? null,
             serving_size: sanitizeServingSize(food.serving_size),
+            recommended_quantity: food.recommended_quantity || null,
           })),
         })),
       }));
@@ -706,6 +708,7 @@ const CreateMealPlanV2: React.FC = () => {
       carbs: null,
       fat: null,
       serving_size: '',
+      recommended_quantity: null,
     });
     setFormData({ ...formData, meal_slots: newSlots });
   };
@@ -1311,27 +1314,6 @@ const CreateMealPlanV2: React.FC = () => {
                             </p>
                           </div>
 
-                          {/* Track Cross Macros Option */}
-                          <div className={`flex items-start ${i18n.language === 'he' ? 'flex-row-reverse' : 'flex-row'} gap-2`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-                            <div className="flex-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-                              <Label 
-                                htmlFor={`track-cross-macros-${mealIndex}-${macroIndex}`}
-                                className="text-sm font-normal cursor-pointer block"
-                              >
-                                {t('mealCreation.trackCrossMacros', 'Track macros on each food')}
-                              </Label>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {t('mealCreation.trackCrossMacrosHint', 'Subtract calories from other macro categories based on food composition')}
-                              </p>
-                            </div>
-                            <Checkbox
-                              id={`track-cross-macros-${mealIndex}-${macroIndex}`}
-                              checked={macro.track_cross_macros}
-                              onCheckedChange={(checked) => updateMacroCategory(mealIndex, macroIndex, 'track_cross_macros', checked)}
-                              className="mt-0.5"
-                            />
-                          </div>
-
                           {/* Food Options */}
                           <div>
                             <div className={`flex items-center justify-between mb-3 ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
@@ -1395,21 +1377,19 @@ const CreateMealPlanV2: React.FC = () => {
                                     <div className="space-y-3 min-w-0 w-full">
                                       <div className="min-w-0 w-full">
                                         <Label dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-                                          {t('meals.quantity')} ({t('mealCreation.unitGrams')}) {macro.calorie_goal && `(${t('mealCreation.calculated')})`}
+                                          {t('mealCreation.recommendedQuantity', 'Recommended Amount (grams)')}
                                         </Label>
                                         <Input
                                           type="text"
-                                          readOnly
-                                          value={macro.calorie_goal ? calculateRecommendedQuantity(food, macro.calorie_goal, macro, foodIndex, slot) : ''}
-                                          className="w-full max-w-full bg-muted select-none"
+                                          value={food.recommended_quantity || (macro.calorie_goal ? calculateRecommendedQuantity(food, macro.calorie_goal, macro, foodIndex, slot) : '')}
+                                          onChange={(e) => updateFoodOption(mealIndex, macroIndex, foodIndex, 'recommended_quantity', e.target.value)}
+                                          className="w-full max-w-full"
                                           dir="ltr"
-                                          placeholder={macro.calorie_goal ? '' : t('mealCreation.setCalorieGoalFirst', 'Set calorie goal first')}
+                                          placeholder={t('mealCreation.enterRecommendedAmount', 'Enter recommended amount in grams')}
                                         />
-                                        {macro.calorie_goal && (
-                                          <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-                                            {t('mealCreation.quantityBasedOnCalories', 'Quantity calculated based on calorie goal')}
-                                          </p>
-                                        )}
+                                        <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                                          {t('mealCreation.recommendedQuantityHint', 'Suggested amount for client (calorie counting remains accurate)')}
+                                        </p>
                                       </div>
                                       <Button
                                         variant="destructive"

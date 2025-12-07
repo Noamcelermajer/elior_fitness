@@ -26,6 +26,7 @@ interface FoodOption {
   carbs: number;
   fat: number;
   serving_size: string;
+  recommended_quantity?: string | null; // Trainer's recommended amount
   notes: string;
 }
 
@@ -1129,7 +1130,10 @@ const MealMenuV2 = () => {
                                   const selectedChoice = choices.find(
                                     c => c.meal_slot_id === slot.id && c.food_option_id === option.id
                                   );
-                                  const recommendedGrams = parseGrams(option.serving_size);
+                                  // Use recommended_quantity if available, otherwise fall back to serving_size
+                                  const recommendedGrams = option.recommended_quantity 
+                                    ? parseGrams(option.recommended_quantity) 
+                                    : parseGrams(option.serving_size);
                                   const remainingGrams = getOptionRemainingGrams(slot.id, category.macro_type, option);
                                   const consumedGrams = getOptionConsumedGrams(slot.id, option.id);
                                   return (
@@ -1187,11 +1191,13 @@ const MealMenuV2 = () => {
                                             </div>
                                           </div>
                                           
-                                          {/* Serving Size and Remaining */}
+                                          {/* Recommended Amount and Remaining */}
                                           <div className="flex items-center justify-between text-xs">
                                             {recommendedGrams > 0 && (
                                               <span className="text-muted-foreground">
-                                                {t('meals.servingSize')}: <span className="font-medium text-foreground">{formatGrams(recommendedGrams)}</span>
+                                                {option.recommended_quantity 
+                                                  ? t('meals.recommendedAmount', 'Recommended') 
+                                                  : t('meals.servingSize')}: <span className="font-medium text-foreground">{formatGrams(recommendedGrams)}</span>
                                               </span>
                                             )}
                                             <span className="text-muted-foreground">
