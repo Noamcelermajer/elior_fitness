@@ -5,6 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   ArrowLeft, User, Target, Weight, Calendar, Clock, 
   Dumbbell, Utensils, TrendingUp, Plus, Edit, Camera,
@@ -145,6 +155,8 @@ const ClientProfile = () => {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [mealPlanToDelete, setMealPlanToDelete] = useState<MealPlan | null>(null);
 
   // Get client from location state or fetch by ID
   const fetchClientData = async () => {
@@ -329,6 +341,43 @@ const ClientProfile = () => {
         mealPlan: planForEdit,
       },
     });
+  };
+
+  const handleDeleteMealPlan = async () => {
+    if (!mealPlanToDelete) return;
+
+    try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/v2/meals/plans/${mealPlanToDelete.id}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete meal plan');
+      }
+
+      // Refresh meal plans
+      await fetchClientData();
+      setShowDeleteDialog(false);
+      setMealPlanToDelete(null);
+    } catch (error) {
+      console.error('Error deleting meal plan:', error);
+      alert(t('meals.deleteMealPlanError', 'Failed to delete meal plan. Please try again.'));
+    }
+  };
+
+  const handleDeleteClick = (plan: MealPlan) => {
+    setMealPlanToDelete(plan);
+    setShowDeleteDialog(true);
   };
 
   return (
@@ -769,6 +818,16 @@ const ClientProfile = () => {
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">{t('clientProfile.updateMealPlan')}</span>
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteClick(activeMealPlan)}
+                          aria-label={t('meals.deleteMealPlan')}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">{t('meals.deleteMealPlan')}</span>
+                        </Button>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -946,6 +1005,37 @@ const ClientProfile = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Delete Meal Plan Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('meals.deleteMealPlan', 'Delete Meal Plan')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('meals.deleteMealPlanConfirm', 'Are you sure you want to delete this meal plan? This action cannot be undone.')}
+              {mealPlanToDelete && (
+                <span className="block mt-2 font-semibold">
+                  {mealPlanToDelete.name || mealPlanToDelete.title}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowDeleteDialog(false);
+              setMealPlanToDelete(null);
+            }}>
+              {t('meals.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteMealPlan}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('meals.delete', 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
