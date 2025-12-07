@@ -509,7 +509,7 @@ const ProgressTrackingV2 = () => {
           }
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh]">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('progress.viewPhoto', 'View Progress Photo')}</DialogTitle>
           </DialogHeader>
