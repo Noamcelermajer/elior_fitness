@@ -179,7 +179,33 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
               {/* Macro Segments - Pie Chart */}
               {macroSegments ? (
                 <>
-                  {/* Protein Segment - shows consumed portion */}
+                  {/* Background: Full target segments (light) */}
+                  <path
+                    d={createArc(0, macroSegments.protein.targetPercent)}
+                    fill={macroSegments.protein.color}
+                    opacity="0.2"
+                    className="transition-all duration-500"
+                  />
+                  <path
+                    d={createArc(
+                      macroSegments.protein.targetPercent,
+                      macroSegments.protein.targetPercent + macroSegments.carbs.targetPercent
+                    )}
+                    fill={macroSegments.carbs.color}
+                    opacity="0.2"
+                    className="transition-all duration-500"
+                  />
+                  <path
+                    d={createArc(
+                      macroSegments.protein.targetPercent + macroSegments.carbs.targetPercent,
+                      100
+                    )}
+                    fill={macroSegments.fat.color}
+                    opacity="0.2"
+                    className="transition-all duration-500"
+                  />
+                  
+                  {/* Foreground: Consumed portions (bright) */}
                   {macroSegments.protein.consumedPercent > 0 && (
                     <path
                       d={createArc(
@@ -187,11 +213,10 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
                         macroSegments.protein.startPercent + macroSegments.protein.consumedPercent
                       )}
                       fill={macroSegments.protein.color}
-                      opacity="0.85"
+                      opacity="0.9"
                       className="transition-all duration-500"
                     />
                   )}
-                  {/* Carbs Segment - shows consumed portion */}
                   {macroSegments.carbs.consumedPercent > 0 && (
                     <path
                       d={createArc(
@@ -199,11 +224,10 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
                         macroSegments.carbs.startPercent + macroSegments.carbs.consumedPercent
                       )}
                       fill={macroSegments.carbs.color}
-                      opacity="0.85"
+                      opacity="0.9"
                       className="transition-all duration-500"
                     />
                   )}
-                  {/* Fat Segment - shows consumed portion */}
                   {macroSegments.fat.consumedPercent > 0 && (
                     <path
                       d={createArc(
@@ -211,7 +235,7 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
                         macroSegments.fat.startPercent + macroSegments.fat.consumedPercent
                       )}
                       fill={macroSegments.fat.color}
-                      opacity="0.85"
+                      opacity="0.9"
                       className="transition-all duration-500"
                     />
                   )}
