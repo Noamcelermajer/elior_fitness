@@ -68,6 +68,11 @@ const Index = () => {
     completedMeals: number;
     averageCalories7Days: number; // Actually total calories for 7 days
   } | null>(null);
+  
+  // New state for dashboard cards
+  const [weightData, setWeightData] = useState<Array<{ date: string; weight: number }>>([]);
+  const [caloriesData, setCaloriesData] = useState<{ consumed: number; target: number }>({ consumed: 0, target: 0 });
+  const [stepsData, setStepsData] = useState<{ steps: number | null; target: number }>({ steps: null, target: 10000 });
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
