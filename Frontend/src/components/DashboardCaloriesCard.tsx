@@ -121,11 +121,34 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
     return `M 64 64 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
   };
 
+  // Get border color based on dominant macro
+  const getBorderColor = () => {
+    if (!macroSegments) {
+      return 'border-orange-500/30';
+    }
+    
+    const maxConsumed = Math.max(
+      macroSegments.protein.consumedPercent,
+      macroSegments.carbs.consumedPercent,
+      macroSegments.fat.consumedPercent
+    );
+    
+    if (maxConsumed === macroSegments.protein.consumedPercent && maxConsumed > 0) {
+      return 'border-blue-500/30';
+    } else if (maxConsumed === macroSegments.carbs.consumedPercent && maxConsumed > 0) {
+      return 'border-green-500/30';
+    } else if (maxConsumed === macroSegments.fat.consumedPercent && maxConsumed > 0) {
+      return 'border-yellow-500/30';
+    } else {
+      return 'border-orange-500/30';
+    }
+  };
+
   return (
     <Card 
       className={cn(
         "bg-gradient-to-br from-card to-secondary border-2 shadow-xl hover:shadow-2xl transition-all",
-        gradientColors.border
+        getBorderColor()
       )}
     >
       <CardHeader>
