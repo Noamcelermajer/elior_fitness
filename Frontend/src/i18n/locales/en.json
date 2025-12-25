@@ -427,7 +427,9 @@
     "photo": "Photo",
     "photoNotAvailable": "Photo not available",
     "noPhotosTitle": "No Progress Photos Yet",
-    "noPhotosSubtitle": "Add photos to your weigh-ins to track your visual progress!"
+    "noPhotosSubtitle": "Add photos to your weigh-ins to track your visual progress!",
+    "cm": "cm",
+    "measurements": "Body Measurements (cm)"
   },
   "admin": {
     "admin": "Admin",

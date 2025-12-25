@@ -308,7 +308,7 @@ const ProgressTrackingV2 = () => {
                   
                   {/* Body Measurements */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">{t('progress.measurements', 'Body Measurements (cm)')}</Label>
+                    <Label className="text-sm font-medium">{t('progress.measurements')}</Label>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="chest" className="text-xs text-muted-foreground">{t('progress.chest', 'Chest')}</Label>
@@ -316,7 +316,7 @@ const ProgressTrackingV2 = () => {
                           id="chest"
                           type="number"
                           step="0.1"
-                          placeholder="cm"
+                          placeholder={t('progress.cm')}
                           value={newChest}
                           onChange={(e) => setNewChest(e.target.value)}
                         />
@@ -327,7 +327,7 @@ const ProgressTrackingV2 = () => {
                           id="waist"
                           type="number"
                           step="0.1"
-                          placeholder="cm"
+                          placeholder={t('progress.cm')}
                           value={newWaist}
                           onChange={(e) => setNewWaist(e.target.value)}
                         />
@@ -338,7 +338,7 @@ const ProgressTrackingV2 = () => {
                           id="hips"
                           type="number"
                           step="0.1"
-                          placeholder="cm"
+                          placeholder={t('progress.cm')}
                           value={newHips}
                           onChange={(e) => setNewHips(e.target.value)}
                         />
@@ -349,7 +349,7 @@ const ProgressTrackingV2 = () => {
                           id="thighs"
                           type="number"
                           step="0.1"
-                          placeholder="cm"
+                          placeholder={t('progress.cm')}
                           value={newThighs}
                           onChange={(e) => setNewThighs(e.target.value)}
                         />
@@ -360,7 +360,7 @@ const ProgressTrackingV2 = () => {
                           id="arms"
                           type="number"
                           step="0.1"
-                          placeholder="cm"
+                          placeholder={t('progress.cm')}
                           value={newArms}
                           onChange={(e) => setNewArms(e.target.value)}
                         />
