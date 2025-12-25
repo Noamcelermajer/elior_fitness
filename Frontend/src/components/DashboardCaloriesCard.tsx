@@ -28,66 +28,45 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
   const roundedConsumed = Math.round(consumed);
   const roundedTarget = Math.round(target);
 
-  // Calculate macro distribution from TARGET and show consumed portions
+  // Calculate macro distribution from CONSUMED calories (like in the screenshot)
   const calculateMacroSegments = () => {
-    if (!macros || target === 0) {
+    if (!macros || consumed === 0) {
       return null;
     }
 
-    // Calculate calories from target macros
+    // Calculate consumed calories from each macro
     // Each gram: protein/carbs = 4 cal, fat = 9 cal
-    const proteinTargetCalories = macros.protein.target * 4;
-    const carbsTargetCalories = macros.carbs.target * 4;
-    const fatTargetCalories = macros.fat.target * 9;
-    const totalTargetMacroCalories = proteinTargetCalories + carbsTargetCalories + fatTargetCalories;
-
-    if (totalTargetMacroCalories === 0) {
-      return null;
-    }
-
-    // Percentage of each macro in the TARGET (this defines the wheel segments)
-    const proteinTargetPercent = (proteinTargetCalories / totalTargetMacroCalories) * 100;
-    const carbsTargetPercent = (carbsTargetCalories / totalTargetMacroCalories) * 100;
-    const fatTargetPercent = (fatTargetCalories / totalTargetMacroCalories) * 100;
-
-    // Calculate consumed calories
     const proteinConsumedCalories = macros.protein.consumed * 4;
     const carbsConsumedCalories = macros.carbs.consumed * 4;
     const fatConsumedCalories = macros.fat.consumed * 9;
+    const totalConsumedMacroCalories = proteinConsumedCalories + carbsConsumedCalories + fatConsumedCalories;
 
-    // Calculate what percentage of each macro target was consumed
-    const proteinConsumedRatio = proteinTargetCalories > 0 
-      ? Math.min(proteinConsumedCalories / proteinTargetCalories, 1)
-      : 0;
-    const carbsConsumedRatio = carbsTargetCalories > 0
-      ? Math.min(carbsConsumedCalories / carbsTargetCalories, 1)
-      : 0;
-    const fatConsumedRatio = fatTargetCalories > 0
-      ? Math.min(fatConsumedCalories / fatTargetCalories, 1)
-      : 0;
+    if (totalConsumedMacroCalories === 0) {
+      return null;
+    }
 
-    // Calculate consumed percentage of the wheel (based on target segment size)
-    const proteinConsumedPercent = proteinTargetPercent * proteinConsumedRatio;
-    const carbsConsumedPercent = carbsTargetPercent * carbsConsumedRatio;
-    const fatConsumedPercent = fatTargetPercent * fatConsumedRatio;
+    // Percentage of each macro in the CONSUMED calories (this defines the wheel segments)
+    const proteinPercent = (proteinConsumedCalories / totalConsumedMacroCalories) * 100;
+    const carbsPercent = (carbsConsumedCalories / totalConsumedMacroCalories) * 100;
+    const fatPercent = (fatConsumedCalories / totalConsumedMacroCalories) * 100;
 
     return {
       protein: {
-        targetPercent: proteinTargetPercent,
-        consumedPercent: proteinConsumedPercent,
+        percent: proteinPercent,
+        calories: proteinConsumedCalories,
         startPercent: 0,
         color: 'rgb(59, 130, 246)' // Blue
       },
       carbs: {
-        targetPercent: carbsTargetPercent,
-        consumedPercent: carbsConsumedPercent,
-        startPercent: proteinTargetPercent,
+        percent: carbsPercent,
+        calories: carbsConsumedCalories,
+        startPercent: proteinPercent,
         color: 'rgb(34, 197, 94)' // Green
       },
       fat: {
-        targetPercent: fatTargetPercent,
-        consumedPercent: fatConsumedPercent,
-        startPercent: proteinTargetPercent + carbsTargetPercent,
+        percent: fatPercent,
+        calories: fatConsumedCalories,
+        startPercent: proteinPercent + carbsPercent,
         color: 'rgb(234, 179, 8)' // Yellow
       }
     };
@@ -176,63 +155,39 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
                 className="text-muted/30"
               />
               
-              {/* Macro Segments - Pie Chart */}
+              {/* Macro Segments - Pie Chart based on consumed calories */}
               {macroSegments ? (
                 <>
-                  {/* Background: Full target segments (light) */}
-                  <path
-                    d={createArc(0, macroSegments.protein.targetPercent)}
-                    fill={macroSegments.protein.color}
-                    opacity="0.2"
-                    className="transition-all duration-500"
-                  />
-                  <path
-                    d={createArc(
-                      macroSegments.protein.targetPercent,
-                      macroSegments.protein.targetPercent + macroSegments.carbs.targetPercent
-                    )}
-                    fill={macroSegments.carbs.color}
-                    opacity="0.2"
-                    className="transition-all duration-500"
-                  />
-                  <path
-                    d={createArc(
-                      macroSegments.protein.targetPercent + macroSegments.carbs.targetPercent,
-                      100
-                    )}
-                    fill={macroSegments.fat.color}
-                    opacity="0.2"
-                    className="transition-all duration-500"
-                  />
-                  
-                  {/* Foreground: Consumed portions (bright) */}
-                  {macroSegments.protein.consumedPercent > 0 && (
+                  {/* Protein Segment */}
+                  {macroSegments.protein.percent > 0 && (
                     <path
                       d={createArc(
                         macroSegments.protein.startPercent,
-                        macroSegments.protein.startPercent + macroSegments.protein.consumedPercent
+                        macroSegments.protein.startPercent + macroSegments.protein.percent
                       )}
                       fill={macroSegments.protein.color}
                       opacity="0.9"
                       className="transition-all duration-500"
                     />
                   )}
-                  {macroSegments.carbs.consumedPercent > 0 && (
+                  {/* Carbs Segment */}
+                  {macroSegments.carbs.percent > 0 && (
                     <path
                       d={createArc(
                         macroSegments.carbs.startPercent,
-                        macroSegments.carbs.startPercent + macroSegments.carbs.consumedPercent
+                        macroSegments.carbs.startPercent + macroSegments.carbs.percent
                       )}
                       fill={macroSegments.carbs.color}
                       opacity="0.9"
                       className="transition-all duration-500"
                     />
                   )}
-                  {macroSegments.fat.consumedPercent > 0 && (
+                  {/* Fat Segment */}
+                  {macroSegments.fat.percent > 0 && (
                     <path
                       d={createArc(
                         macroSegments.fat.startPercent,
-                        macroSegments.fat.startPercent + macroSegments.fat.consumedPercent
+                        macroSegments.fat.startPercent + macroSegments.fat.percent
                       )}
                       fill={macroSegments.fat.color}
                       opacity="0.9"
@@ -266,20 +221,23 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
           </div>
         </div>
 
-        {/* Macro Legend */}
+        {/* Macro Legend with Calories */}
         {macroSegments && (
-          <div className="flex items-center justify-center gap-4 text-xs">
-            <div className="flex items-center gap-1">
+          <div className="flex flex-col items-center justify-center gap-2 text-xs">
+            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: macroSegments.protein.color }} />
-              <span className="text-muted-foreground">חלבון</span>
+              <span className="text-muted-foreground">{t('meals.protein')}:</span>
+              <span className="text-foreground font-semibold">{Math.round(macroSegments.protein.calories)} {t('meals.kcal', 'kcal')}</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: macroSegments.carbs.color }} />
-              <span className="text-muted-foreground">פחמימות</span>
+              <span className="text-muted-foreground">{t('meals.carbs')}:</span>
+              <span className="text-foreground font-semibold">{Math.round(macroSegments.carbs.calories)} {t('meals.kcal', 'kcal')}</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: macroSegments.fat.color }} />
-              <span className="text-muted-foreground">שומן</span>
+              <span className="text-muted-foreground">{t('meals.fat')}:</span>
+              <span className="text-foreground font-semibold">{Math.round(macroSegments.fat.calories)} {t('meals.kcal', 'kcal')}</span>
             </div>
           </div>
         )}
