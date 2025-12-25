@@ -133,10 +133,11 @@
    - `text-xs underline text-muted-foreground`
    - מיקום: ימין עליון מעל הבאנר
 
-**API Integration**:
-- `GET /api/check-ins/today` - סטטוס היום
-- `GET /api/check-ins?start_date={week_start}&end_date={week_end}` - בדיקות השבוע
-- `GET /api/check-ins/summary` - streak וסטטיסטיקות
+**API Integration** (Real Data Only):
+- `GET /api/check-ins/today` - סטטוס היום (לא mock!)
+- `GET /api/check-ins?start_date={week_start}&end_date={week_end}` - בדיקות השבוע (לא mock!)
+- `GET /api/check-ins/summary` - streak וסטטיסטיקות (לא mock!)
+- **Error Handling**: אם אין נתונים, הצג "No check-ins this week"
 
 **אנימציות**:
 - Daily cards: Fade-in עם delay לכל כרטיס
@@ -187,10 +188,12 @@
    - **ספרייה**: recharts (קיים)
    - **Responsive**: `ResponsiveContainer`
 
-**API Integration**:
-- `GET /api/progress/?client_id={id}` - היסטוריית משקל
-- מיון לפי תאריך
-- לקיחת 4-7 רשומות אחרונות
+**API Integration** (Real Data Only):
+- `GET /api/progress/?client_id={id}` - היסטוריית משקל (לא mock!)
+- מיון לפי תאריך (מהחדש לישן)
+- לקיחת 4-7 רשומות אחרונות (או פחות אם אין)
+- **Error Handling**: אם אין נתונים, הצג "No weight data" או hide card
+- **Data Format**: `{ date: string, weight: number }[]`
 
 **אנימציות**:
 - Fade-in על כניסה
@@ -242,9 +245,12 @@
    - אחוזים: 100%, 50%, 0%
    - `bg-primary` (מתמלא מלמטה למעלה)
 
-**API Integration**:
-- `GET /api/v2/meals/daily-macros?date={today}` - קלוריות היום
-- `consumed.calories` ו-`targets.calories`
+**API Integration** (Real Data Only):
+- `GET /api/v2/meals/daily-macros?client_id={id}&date={today}` - קלוריות היום (לא mock!)
+- `consumed.calories` - קלוריות שנצרכו (0 אם אין)
+- `targets.calories` - יעד קלוריות (0 אם אין meal plan)
+- **Error Handling**: אם אין meal plan, הצג "0 KCAL | 0 KCAL" או "No meal plan"
+- **Calculation**: אחוז = `(consumed / target) * 100` (0 אם target = 0)
 
 **אנימציות**:
 - Circular progress: Fill animation
@@ -281,9 +287,12 @@
      - Progress bar אופקי
      - אחוז השלמה
 
-**API Integration**:
-- נתונים מ-Daily Check-In: `steps` field
-- או API נפרד אם קיים
+**API Integration** (Real Data Only):
+- `GET /api/check-ins/today` - בדיקת היום (לא mock!)
+- `steps` field - מספר צעדים (null אם לא הוזן)
+- יעד: 10,000 צעדים (קבוע או מ-config)
+- **Error Handling**: אם `steps` הוא `null` או אין check-in, הצג "No data to show"
+- **Calculation**: אחוז = `(steps / 10000) * 100`
 
 **אנימציות**:
 - Fade-in
@@ -549,43 +558,291 @@ interface DashboardStepsCardProps {
 
 ---
 
-## חלק 9: API Integration
+## חלק 9: API Integration - **NO MOCK DATA**
 
-### 9.1 Endpoints נדרשים
+### ⚠️ חשוב: כל הנתונים חייבים להגיע מה-API בלבד!
+
+### 9.1 Endpoints נדרשים - Real Data Only
 
 1. **Weight Data**:
-   - `GET /api/progress/?client_id={id}`
-   - מיון לפי תאריך
-   - לקיחת 7 רשומות אחרונות
+   - **Endpoint**: `GET /api/progress/?client_id={id}`
+   - **Response Format**:
+     ```json
+     [
+       {
+         "id": 1,
+         "client_id": 1,
+         "date": "2024-12-25",
+         "weight": 71.5,
+         "body_fat": null,
+         "photo_path": null,
+         "notes": null,
+         "recorded_at": "2024-12-25T10:00:00"
+       },
+       ...
+     ]
+     ```
+   - **Processing**:
+     - מיון לפי `date` (מהחדש לישן)
+     - לקיחת 7 רשומות אחרונות (או פחות אם אין)
+     - מיפוי ל-`{ date: string, weight: number }` עבור הגרף
+   - **Error Handling**: אם אין נתונים, הצג "No data to show"
 
 2. **Calories Data**:
-   - `GET /api/v2/meals/daily-macros?date={today}`
-   - `consumed.calories` ו-`targets.calories`
+   - **Endpoint**: `GET /api/v2/meals/daily-macros?client_id={id}&date={today}`
+   - **Response Format**:
+     ```json
+     {
+       "date": "2024-12-25",
+       "consumed": {
+         "calories": 1500,
+         "protein": 120,
+         "carbs": 180,
+         "fat": 50
+       },
+       "targets": {
+         "calories": 2000,
+         "protein": 150,
+         "carbs": 200,
+         "fat": 65
+       }
+     }
+     ```
+   - **Usage**:
+     - `consumed.calories` - קלוריות שנצרכו
+     - `targets.calories` - יעד קלוריות
+     - חישוב אחוז: `(consumed.calories / targets.calories) * 100`
+   - **Error Handling**: אם אין meal plan, הצג "0 KCAL | 0 KCAL" או "No meal plan"
 
 3. **Steps Data**:
-   - `GET /api/check-ins/today`
-   - `steps` field
+   - **Endpoint**: `GET /api/check-ins/today`
+   - **Response Format**:
+     ```json
+     {
+       "id": 1,
+       "client_id": 1,
+       "date": "2024-12-25T00:00:00",
+       "steps": 8500,
+       "weight": null,
+       "walked_10000_steps": false,
+       "sun_exposure_10min": null,
+       "hunger_level": null,
+       "sleep_hours": null,
+       "created_at": "2024-12-25T08:00:00"
+     }
+     ```
+   - **Usage**:
+     - `steps` field - מספר צעדים
+     - יעד: 10,000 צעדים (קבוע או מ-config)
+     - אם `steps` הוא `null`, הצג "No data to show"
+   - **Error Handling**: אם אין check-in היום או `steps` הוא `null`, הצג "No data to show"
 
 4. **Check-In Week Data**:
-   - `GET /api/check-ins?start_date={week_start}&end_date={week_end}`
-   - חישוב start/end של השבוע הנוכחי
+   - **Endpoint**: `GET /api/check-ins?start_date={week_start}&end_date={week_end}`
+   - **Query Parameters**:
+     - `start_date`: YYYY-MM-DD (יום ראשון של השבוע)
+     - `end_date`: YYYY-MM-DD (יום שבת של השבוע)
+   - **Response Format**:
+     ```json
+     [
+       {
+         "id": 1,
+         "client_id": 1,
+         "date": "2024-12-22T00:00:00",
+         "steps": null,
+         "weight": null,
+         ...
+       },
+       ...
+     ]
+     ```
+   - **Processing**:
+     - יצירת map לפי תאריך: `Map<date, checkIn>`
+     - יצירת array של 7 ימים (ראשון-שבת)
+     - לכל יום: בדוק אם יש check-in, אם כן - סמן כהושלם
 
-### 9.2 Data Fetching
+5. **Check-In Summary** (לסטריק):
+   - **Endpoint**: `GET /api/check-ins/summary`
+   - **Response Format**:
+     ```json
+     {
+       "today_status": "completed",
+       "current_streak": 11,
+       "last_7_days_completion": 7,
+       "completion_rate": 85.5,
+       ...
+     }
+     ```
+   - **Usage**: `current_streak` להצגת "11 DAY STREAK"
+
+### 9.2 Data Fetching - Implementation
 
 **קובץ**: `Frontend/src/pages/Index.tsx`
 
-**Functions**:
+**Complete Function**:
 ```typescript
 const fetchDashboardData = async () => {
-  // Parallel fetching
-  const [weightRes, macrosRes, checkInRes, weekCheckInsRes] = await Promise.all([
-    fetch(`${API_BASE_URL}/progress/?client_id=${user.id}`),
-    fetch(`${API_BASE_URL}/v2/meals/daily-macros?date=${today}`),
-    fetch(`${API_BASE_URL}/check-ins/today`),
-    fetch(`${API_BASE_URL}/check-ins?start_date=${weekStart}&end_date=${weekEnd}`)
-  ]);
+  if (!user?.id) return;
   
-  // Process responses...
+  setLoading(true);
+  try {
+    const token = localStorage.getItem('access_token');
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+    
+    const today = new Date().toISOString().split('T')[0];
+    const weekRange = getWeekRange(new Date());
+    const weekStart = weekRange.start.toISOString().split('T')[0];
+    const weekEnd = weekRange.end.toISOString().split('T')[0];
+    
+    // Parallel fetching - ALL FROM API
+    const [
+      weightRes,
+      macrosRes,
+      checkInTodayRes,
+      checkInWeekRes,
+      checkInSummaryRes
+    ] = await Promise.all([
+      fetch(`${API_BASE_URL}/progress/?client_id=${user.id}`, { headers }),
+      fetch(`${API_BASE_URL}/v2/meals/daily-macros?client_id=${user.id}&date=${today}`, { headers }),
+      fetch(`${API_BASE_URL}/check-ins/today`, { headers }),
+      fetch(`${API_BASE_URL}/check-ins?start_date=${weekStart}&end_date=${weekEnd}`, { headers }),
+      fetch(`${API_BASE_URL}/check-ins/summary`, { headers })
+    ]);
+    
+    // Process Weight Data
+    let weightEntries: Array<{ date: string; weight: number }> = [];
+    if (weightRes.ok) {
+      const weightData = await weightRes.json();
+      weightEntries = weightData
+        .filter((entry: any) => entry.weight !== null && entry.weight !== undefined)
+        .sort((a: any, b: any) => new Date(a.date || a.recorded_at).getTime() - new Date(b.date || b.recorded_at).getTime())
+        .slice(-7) // Last 7 entries
+        .map((entry: any) => ({
+          date: entry.date || entry.recorded_at,
+          weight: entry.weight
+        }));
+    }
+    
+    // Process Calories Data
+    let caloriesData = { consumed: 0, target: 0 };
+    if (macrosRes.ok) {
+      const macros = await macrosRes.json();
+      caloriesData = {
+        consumed: macros.consumed?.calories || 0,
+        target: macros.targets?.calories || 0
+      };
+    }
+    
+    // Process Steps Data
+    let stepsData = { steps: null as number | null, target: 10000 };
+    if (checkInTodayRes.ok) {
+      const checkIn = await checkInTodayRes.json();
+      stepsData.steps = checkIn.steps || null;
+    }
+    
+    // Process Week Check-Ins
+    let weekCheckIns: Map<string, boolean> = new Map();
+    if (checkInWeekRes.ok) {
+      const weekData = await checkInWeekRes.json();
+      weekData.forEach((checkIn: any) => {
+        const date = new Date(checkIn.date).toISOString().split('T')[0];
+        weekCheckIns.set(date, true);
+      });
+    }
+    
+    // Process Check-In Summary
+    let streak = 0;
+    if (checkInSummaryRes.ok) {
+      const summary = await checkInSummaryRes.json();
+      streak = summary.current_streak || 0;
+    }
+    
+    // Set state with REAL data
+    setWeightData(weightEntries);
+    setCaloriesData(caloriesData);
+    setStepsData(stepsData);
+    setWeekCheckIns(weekCheckIns);
+    setStreak(streak);
+    
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error);
+    // Show error state, but NO mock data
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+### 9.3 State Management
+
+**קובץ**: `Frontend/src/pages/Index.tsx`
+
+**State Variables**:
+```typescript
+const [weightData, setWeightData] = useState<Array<{ date: string; weight: number }>>([]);
+const [caloriesData, setCaloriesData] = useState<{ consumed: number; target: number }>({ consumed: 0, target: 0 });
+const [stepsData, setStepsData] = useState<{ steps: number | null; target: number }>({ steps: null, target: 10000 });
+const [weekCheckIns, setWeekCheckIns] = useState<Map<string, boolean>>(new Map());
+const [streak, setStreak] = useState<number>(0);
+const [loading, setLoading] = useState<boolean>(true);
+```
+
+### 9.4 Error Handling & Loading States
+
+**כל רכיב חייב לטפל ב**:
+1. **Loading State**: הצג spinner או skeleton
+2. **No Data State**: הצג "No data to show" / "אין נתונים להצגה"
+3. **Error State**: הצג הודעת שגיאה (לא mock data!)
+4. **Empty State**: אם API מחזיר array ריק, הצג empty state
+
+**דוגמה**:
+```typescript
+if (loading) {
+  return <Skeleton />;
+}
+
+if (error) {
+  return <ErrorMessage message="Failed to load data" />;
+}
+
+if (data.length === 0) {
+  return <EmptyState message="No data to show" />;
+}
+
+// Only show real data
+return <DataDisplay data={data} />;
+```
+
+### 9.5 Helper Functions
+
+**קובץ**: `Frontend/src/utils/dashboard.ts` (חדש)
+
+```typescript
+// Calculate week range (Monday to Sunday)
+export const getWeekRange = (date: Date = new Date()) => {
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  const monday = new Date(date.setDate(diff));
+  monday.setHours(0, 0, 0, 0);
+  
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  
+  return { start: monday, end: sunday };
+};
+
+// Format date for API (YYYY-MM-DD)
+export const formatDateForAPI = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+// Get day name (MON, TUE, etc.)
+export const getDayName = (date: Date, locale: string = 'en'): string => {
+  return date.toLocaleDateString(locale, { weekday: 'short' }).toUpperCase();
 };
 ```
 
