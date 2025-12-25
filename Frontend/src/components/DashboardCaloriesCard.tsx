@@ -167,7 +167,7 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
         {/* Circular Progress with Macro Segments */}
         <div className="flex justify-center">
           <div className="relative w-32 h-32">
-            <svg width="128" height="128" className="transform -rotate-90">
+            <svg width="128" height="128" viewBox="0 0 128 128" className="transform -rotate-90">
               {/* Background Circle */}
               <circle
                 cx="64"
@@ -179,59 +179,74 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
                 className="text-muted/30"
               />
               
-              {/* Macro Segments - Pie Chart */}
+              {/* Macro Segments - Pie Chart using strokeDasharray */}
               {macroSegments ? (
                 <>
-                  {/* Protein Segment - shows consumed portion */}
+                  {/* Protein Segment */}
                   {macroSegments.protein.consumedPercent > 0 && (
-                    <path
-                      d={createArc(
-                        macroSegments.protein.startPercent,
-                        macroSegments.protein.startPercent + macroSegments.protein.consumedPercent
-                      )}
-                      fill={macroSegments.protein.color}
-                      opacity="0.9"
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r={radius}
+                      fill="none"
+                      stroke={macroSegments.protein.color}
+                      strokeWidth="8"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={
+                        circumference - 
+                        (macroSegments.protein.consumedPercent / 100) * circumference
+                      }
+                      strokeLinecap="round"
                       className="transition-all duration-500"
-                    />
-                  )}
-                  {/* Carbs Segment - shows consumed portion */}
-                  {macroSegments.carbs.consumedPercent > 0 && (
-                    <path
-                      d={createArc(
-                        macroSegments.carbs.startPercent,
-                        macroSegments.carbs.startPercent + macroSegments.carbs.consumedPercent
-                      )}
-                      fill={macroSegments.carbs.color}
-                      opacity="0.9"
-                      className="transition-all duration-500"
-                    />
-                  )}
-                  {/* Fat Segment - shows consumed portion */}
-                  {macroSegments.fat.consumedPercent > 0 && (
-                    <path
-                      d={createArc(
-                        macroSegments.fat.startPercent,
-                        macroSegments.fat.startPercent + macroSegments.fat.consumedPercent
-                      )}
-                      fill={macroSegments.fat.color}
-                      opacity="0.9"
-                      className="transition-all duration-500"
+                      style={{
+                        strokeDashoffset: circumference - (macroSegments.protein.consumedPercent / 100) * circumference
+                      }}
                     />
                   )}
                   
-                  {/* Outer ring - shows total progress */}
-                  <circle
-                    cx="64"
-                    cy="64"
-                    r={radius}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={circumference - (percentage / 100) * circumference}
-                    strokeLinecap="round"
-                    className="text-muted/30 transition-all duration-500"
-                  />
+                  {/* Carbs Segment */}
+                  {macroSegments.carbs.consumedPercent > 0 && (
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r={radius}
+                      fill="none"
+                      stroke={macroSegments.carbs.color}
+                      strokeWidth="8"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={
+                        circumference - 
+                        ((macroSegments.protein.consumedPercent + macroSegments.carbs.consumedPercent) / 100) * circumference
+                      }
+                      strokeLinecap="round"
+                      className="transition-all duration-500"
+                      style={{
+                        strokeDashoffset: circumference - ((macroSegments.protein.consumedPercent + macroSegments.carbs.consumedPercent) / 100) * circumference
+                      }}
+                    />
+                  )}
+                  
+                  {/* Fat Segment */}
+                  {macroSegments.fat.consumedPercent > 0 && (
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r={radius}
+                      fill="none"
+                      stroke={macroSegments.fat.color}
+                      strokeWidth="8"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={
+                        circumference - 
+                        ((macroSegments.protein.consumedPercent + macroSegments.carbs.consumedPercent + macroSegments.fat.consumedPercent) / 100) * circumference
+                      }
+                      strokeLinecap="round"
+                      className="transition-all duration-500"
+                      style={{
+                        strokeDashoffset: circumference - ((macroSegments.protein.consumedPercent + macroSegments.carbs.consumedPercent + macroSegments.fat.consumedPercent) / 100) * circumference
+                      }}
+                    />
+                  )}
                 </>
               ) : (
                 // Fallback: Simple progress circle
@@ -251,7 +266,7 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
             </svg>
             
             {/* Center Text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <div className="text-2xl font-bold text-foreground">
                 {Math.round(percentage)}%
               </div>
