@@ -28,62 +28,66 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
   const roundedConsumed = Math.round(consumed);
   const roundedTarget = Math.round(target);
 
-  // Calculate macro distribution from TARGET (not consumed)
+  // Calculate macro distribution from TARGET and show consumed portions
   const calculateMacroSegments = () => {
     if (!macros || target === 0) {
       return null;
     }
 
-    const totalTargetMacros = macros.protein.target + macros.carbs.target + macros.fat.target;
-    if (totalTargetMacros === 0) {
-      return null;
-    }
-
-    // Calculate percentage of each macro from total target calories
+    // Calculate calories from target macros
     // Each gram: protein/carbs = 4 cal, fat = 9 cal
-    const proteinCalories = macros.protein.target * 4;
-    const carbsCalories = macros.carbs.target * 4;
-    const fatCalories = macros.fat.target * 9;
-    const totalMacroCalories = proteinCalories + carbsCalories + fatCalories;
+    const proteinTargetCalories = macros.protein.target * 4;
+    const carbsTargetCalories = macros.carbs.target * 4;
+    const fatTargetCalories = macros.fat.target * 9;
+    const totalTargetMacroCalories = proteinTargetCalories + carbsTargetCalories + fatTargetCalories;
 
-    if (totalMacroCalories === 0) {
+    if (totalTargetMacroCalories === 0) {
       return null;
     }
 
-    // Percentage of each macro in the target
-    const proteinPercent = (proteinCalories / totalMacroCalories) * 100;
-    const carbsPercent = (carbsCalories / totalMacroCalories) * 100;
-    const fatPercent = (fatCalories / totalMacroCalories) * 100;
+    // Percentage of each macro in the TARGET (this defines the wheel segments)
+    const proteinTargetPercent = (proteinTargetCalories / totalTargetMacroCalories) * 100;
+    const carbsTargetPercent = (carbsTargetCalories / totalTargetMacroCalories) * 100;
+    const fatTargetPercent = (fatTargetCalories / totalTargetMacroCalories) * 100;
 
-    // Calculate consumed percentages
+    // Calculate consumed calories
     const proteinConsumedCalories = macros.protein.consumed * 4;
     const carbsConsumedCalories = macros.carbs.consumed * 4;
     const fatConsumedCalories = macros.fat.consumed * 9;
 
-    const proteinConsumedPercent = totalMacroCalories > 0 
-      ? Math.min((proteinConsumedCalories / totalMacroCalories) * 100, proteinPercent)
+    // Calculate what percentage of each macro target was consumed
+    const proteinConsumedRatio = proteinTargetCalories > 0 
+      ? Math.min(proteinConsumedCalories / proteinTargetCalories, 1)
       : 0;
-    const carbsConsumedPercent = totalMacroCalories > 0
-      ? Math.min((carbsConsumedCalories / totalMacroCalories) * 100, carbsPercent)
+    const carbsConsumedRatio = carbsTargetCalories > 0
+      ? Math.min(carbsConsumedCalories / carbsTargetCalories, 1)
       : 0;
-    const fatConsumedPercent = totalMacroCalories > 0
-      ? Math.min((fatConsumedCalories / totalMacroCalories) * 100, fatPercent)
+    const fatConsumedRatio = fatTargetCalories > 0
+      ? Math.min(fatConsumedCalories / fatTargetCalories, 1)
       : 0;
+
+    // Calculate consumed percentage of the wheel (based on target segment size)
+    const proteinConsumedPercent = proteinTargetPercent * proteinConsumedRatio;
+    const carbsConsumedPercent = carbsTargetPercent * carbsConsumedRatio;
+    const fatConsumedPercent = fatTargetPercent * fatConsumedRatio;
 
     return {
       protein: {
-        targetPercent: proteinPercent,
+        targetPercent: proteinTargetPercent,
         consumedPercent: proteinConsumedPercent,
+        startPercent: 0,
         color: 'rgb(59, 130, 246)' // Blue
       },
       carbs: {
-        targetPercent: carbsPercent,
+        targetPercent: carbsTargetPercent,
         consumedPercent: carbsConsumedPercent,
+        startPercent: proteinTargetPercent,
         color: 'rgb(34, 197, 94)' // Green
       },
       fat: {
-        targetPercent: fatPercent,
+        targetPercent: fatTargetPercent,
         consumedPercent: fatConsumedPercent,
+        startPercent: proteinTargetPercent + carbsTargetPercent,
         color: 'rgb(234, 179, 8)' // Yellow
       }
     };
@@ -95,8 +99,12 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
   const radius = 50;
   const circumference = 2 * Math.PI * radius;
   
-  // Helper function to create arc path
+  // Helper function to create arc path for pie slice
   const createArc = (startPercent: number, endPercent: number) => {
+    if (endPercent <= startPercent) {
+      return '';
+    }
+    
     const startAngle = (startPercent / 100) * 360 - 90; // Start from top
     const endAngle = (endPercent / 100) * 360 - 90;
     
@@ -148,49 +156,58 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
                 className="text-muted/30"
               />
               
-              {/* Macro Segments */}
+              {/* Macro Segments - Pie Chart */}
               {macroSegments ? (
                 <>
-                  {/* Protein Segment */}
-                  <path
-                    d={createArc(0, macroSegments.protein.consumedPercent)}
-                    fill={macroSegments.protein.color}
-                    opacity="0.8"
-                    className="transition-all duration-500"
-                  />
-                  {/* Carbs Segment */}
-                  <path
-                    d={createArc(
-                      macroSegments.protein.targetPercent,
-                      macroSegments.protein.targetPercent + macroSegments.carbs.consumedPercent
-                    )}
-                    fill={macroSegments.carbs.color}
-                    opacity="0.8"
-                    className="transition-all duration-500"
-                  />
-                  {/* Fat Segment */}
-                  <path
-                    d={createArc(
-                      macroSegments.protein.targetPercent + macroSegments.carbs.targetPercent,
-                      macroSegments.protein.targetPercent + macroSegments.carbs.targetPercent + macroSegments.fat.consumedPercent
-                    )}
-                    fill={macroSegments.fat.color}
-                    opacity="0.8"
-                    className="transition-all duration-500"
-                  />
+                  {/* Protein Segment - shows consumed portion */}
+                  {macroSegments.protein.consumedPercent > 0 && (
+                    <path
+                      d={createArc(
+                        macroSegments.protein.startPercent,
+                        macroSegments.protein.startPercent + macroSegments.protein.consumedPercent
+                      )}
+                      fill={macroSegments.protein.color}
+                      opacity="0.9"
+                      className="transition-all duration-500"
+                    />
+                  )}
+                  {/* Carbs Segment - shows consumed portion */}
+                  {macroSegments.carbs.consumedPercent > 0 && (
+                    <path
+                      d={createArc(
+                        macroSegments.carbs.startPercent,
+                        macroSegments.carbs.startPercent + macroSegments.carbs.consumedPercent
+                      )}
+                      fill={macroSegments.carbs.color}
+                      opacity="0.9"
+                      className="transition-all duration-500"
+                    />
+                  )}
+                  {/* Fat Segment - shows consumed portion */}
+                  {macroSegments.fat.consumedPercent > 0 && (
+                    <path
+                      d={createArc(
+                        macroSegments.fat.startPercent,
+                        macroSegments.fat.startPercent + macroSegments.fat.consumedPercent
+                      )}
+                      fill={macroSegments.fat.color}
+                      opacity="0.9"
+                      className="transition-all duration-500"
+                    />
+                  )}
                   
-                  {/* Progress Ring - shows consumed amount */}
+                  {/* Outer ring - shows total progress */}
                   <circle
                     cx="64"
                     cy="64"
                     r={radius}
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="8"
+                    strokeWidth="2"
                     strokeDasharray={circumference}
                     strokeDashoffset={circumference - (percentage / 100) * circumference}
                     strokeLinecap="round"
-                    className="text-muted/20 transition-all duration-500"
+                    className="text-muted/30 transition-all duration-500"
                   />
                 </>
               ) : (
