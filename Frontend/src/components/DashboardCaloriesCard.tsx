@@ -2,8 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Flame, Utensils, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Utensils, ChevronRight } from 'lucide-react';
 
 interface DashboardCaloriesCardProps {
   consumed: number;
@@ -19,7 +18,6 @@ interface DashboardCaloriesCardProps {
 export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
   consumed,
   target,
-  macros,
   onViewDetailsClick
 }) => {
   const { t } = useTranslation();
@@ -27,98 +25,11 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
   const percentage = target > 0 ? Math.min((consumed / target) * 100, 100) : 0;
   const roundedConsumed = Math.round(consumed);
   const roundedTarget = Math.round(target);
-
-  // Calculate macro distribution from CONSUMED calories (like in the screenshot)
-  const calculateMacroSegments = () => {
-    if (!macros || consumed === 0) {
-      return null;
-    }
-
-    // Calculate consumed calories from each macro
-    // Each gram: protein/carbs = 4 cal, fat = 9 cal
-    const proteinConsumedCalories = macros.protein.consumed * 4;
-    const carbsConsumedCalories = macros.carbs.consumed * 4;
-    const fatConsumedCalories = macros.fat.consumed * 9;
-    const totalConsumedMacroCalories = proteinConsumedCalories + carbsConsumedCalories + fatConsumedCalories;
-
-    if (totalConsumedMacroCalories === 0) {
-      return null;
-    }
-
-    // Percentage of each macro in the CONSUMED calories (this defines the wheel segments)
-    const proteinPercent = (proteinConsumedCalories / totalConsumedMacroCalories) * 100;
-    const carbsPercent = (carbsConsumedCalories / totalConsumedMacroCalories) * 100;
-    const fatPercent = (fatConsumedCalories / totalConsumedMacroCalories) * 100;
-
-    return {
-      protein: {
-        percent: proteinPercent,
-        calories: proteinConsumedCalories,
-        startPercent: 0,
-        color: 'rgb(59, 130, 246)' // Blue
-      },
-      carbs: {
-        percent: carbsPercent,
-        calories: carbsConsumedCalories,
-        startPercent: proteinPercent,
-        color: 'rgb(34, 197, 94)' // Green
-      },
-      fat: {
-        percent: fatPercent,
-        calories: fatConsumedCalories,
-        startPercent: proteinPercent + carbsPercent,
-        color: 'rgb(234, 179, 8)' // Yellow
-      }
-    };
-  };
-
-  const macroSegments = calculateMacroSegments();
-
-  // SVG circle parameters
+  
+  // SVG circle parameters (same as MacroCircle component)
   const radius = 50;
   const circumference = 2 * Math.PI * radius;
-  
-  // Helper function to create arc path for pie slice
-  const createArc = (startPercent: number, endPercent: number) => {
-    if (endPercent <= startPercent || endPercent - startPercent < 0.1) {
-      return '';
-    }
-    
-    const startAngle = (startPercent / 100) * 2 * Math.PI - Math.PI / 2; // Start from top
-    const endAngle = (endPercent / 100) * 2 * Math.PI - Math.PI / 2;
-    
-    const x1 = 64 + radius * Math.cos(startAngle);
-    const y1 = 64 + radius * Math.sin(startAngle);
-    const x2 = 64 + radius * Math.cos(endAngle);
-    const y2 = 64 + radius * Math.sin(endAngle);
-    
-    const largeArcFlag = (endAngle - startAngle) > Math.PI ? 1 : 0;
-    
-    return `M 64 64 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
-  };
-
-  // Get border color based on dominant macro
-  const getBorderColor = () => {
-    if (!macroSegments) {
-      return 'border-orange-500/30';
-    }
-    
-    const maxConsumed = Math.max(
-      macroSegments.protein.consumedPercent,
-      macroSegments.carbs.consumedPercent,
-      macroSegments.fat.consumedPercent
-    );
-    
-    if (maxConsumed === macroSegments.protein.consumedPercent && maxConsumed > 0) {
-      return 'border-blue-500/30';
-    } else if (maxConsumed === macroSegments.carbs.consumedPercent && maxConsumed > 0) {
-      return 'border-green-500/30';
-    } else if (maxConsumed === macroSegments.fat.consumedPercent && maxConsumed > 0) {
-      return 'border-yellow-500/30';
-    } else {
-      return 'border-orange-500/30';
-    }
-  };
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
     <Card className="bg-gradient-to-br from-card to-secondary border-2 border-primary/30 shadow-xl hover:shadow-2xl transition-all">
@@ -183,4 +94,3 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
     </Card>
   );
 };
-
