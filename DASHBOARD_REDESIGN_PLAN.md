@@ -4,6 +4,28 @@
 
 עיצוב מחדש מלא של דשבורד הלקוח בהתאם לתמונת ההשראה, עם אופטימיזציה מלאה למובייל. הדשבורד צריך להיראות מודרני, עם אנימציות חלקות וכרטיסים אינטראקטיביים.
 
+## ⚠️ כלל חשוב: NO MOCK DATA
+
+**כל הנתונים חייבים להגיע מה-API בלבד!**
+
+### כללים:
+- ❌ **אין mock data** - כל הנתונים מ-API
+- ❌ **אין hardcoded values** - כל הערכים דינמיים
+- ❌ **אין placeholder data** (חוץ מ-loading states)
+- ✅ **כל הנתונים מ-API calls** - Real data only
+- ✅ **Error handling** עם empty states
+- ✅ **Loading states** עם skeletons
+
+### מה מותר:
+- Loading skeletons (רק בזמן טעינה)
+- Empty states ("No data to show")
+- Error messages (אם API נכשל)
+
+### מה אסור:
+- Mock arrays עם נתונים דמה
+- Hardcoded numbers (חוץ מ-constants כמו 10000 steps)
+- Placeholder data אחרי טעינה
+
 ---
 
 ## חלק 1: Header Section - עיצוב מחדש
