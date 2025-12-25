@@ -70,7 +70,15 @@ const Index = () => {
   
   // New state for dashboard cards
   const [weightData, setWeightData] = useState<Array<{ date: string; weight: number }>>([]);
-  const [caloriesData, setCaloriesData] = useState<{ consumed: number; target: number }>({ consumed: 0, target: 0 });
+  const [caloriesData, setCaloriesData] = useState<{ 
+    consumed: number; 
+    target: number;
+    macros?: {
+      protein: { consumed: number; target: number };
+      carbs: { consumed: number; target: number };
+      fat: { consumed: number; target: number };
+    };
+  }>({ consumed: 0, target: 0 });
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
@@ -188,7 +196,7 @@ const Index = () => {
           console.error('Failed to fetch weight data:', err);
         }
 
-        // Fetch today's calories
+        // Fetch today's calories and macros
         try {
           const today = new Date().toISOString().split('T')[0];
           const macrosRes = await fetch(
@@ -199,7 +207,21 @@ const Index = () => {
             const macros = await macrosRes.json();
             setCaloriesData({
               consumed: macros.consumed?.calories || 0,
-              target: macros.targets?.calories || 0
+              target: macros.targets?.calories || 0,
+              macros: {
+                protein: {
+                  consumed: macros.consumed?.protein || 0,
+                  target: macros.targets?.protein || 0
+                },
+                carbs: {
+                  consumed: macros.consumed?.carbs || 0,
+                  target: macros.targets?.carbs || 0
+                },
+                fat: {
+                  consumed: macros.consumed?.fat || 0,
+                  target: macros.targets?.fat || 0
+                }
+              }
             });
           }
         } catch (err) {
@@ -438,6 +460,7 @@ const Index = () => {
               <DashboardCaloriesCard 
                 consumed={caloriesData.consumed}
                 target={caloriesData.target}
+                macros={caloriesData.macros}
                 onViewDetailsClick={() => navigate('/meals')}
               />
             </div>
@@ -527,41 +550,6 @@ const Index = () => {
             </Card>
           </div>
 
-          {/* Recent Activity */}
-          <Card className="bg-gradient-to-br from-card to-secondary border-border/50 shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-foreground">
-                <Activity className="w-5 h-5 text-blue-500" />
-                <span>{isTrainer ? t('dashboard.recentActivity') : t('dashboard.recentActivity')}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentActivity.length === 0 ? (
-                <div className="text-center py-8">
-                  <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">{t('dashboard.noData')}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{t('dashboard.welcome')}</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-center space-x-4 p-4 bg-secondary/30 rounded-xl border border-border/30 hover:bg-secondary/50 transition-colors">
-                      <div className={`w-10 h-10 rounded-full ${activity.color} flex items-center justify-center shadow-lg`}>
-                        <activity.icon className="w-5 h-5 text-background" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-foreground">{activity.title}</p>
-                        <p className="text-sm text-muted-foreground">{activity.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </Layout>

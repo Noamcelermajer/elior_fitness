@@ -8,12 +8,18 @@ import { cn } from '@/lib/utils';
 interface DashboardCaloriesCardProps {
   consumed: number;
   target: number;
+  macros?: {
+    protein: { consumed: number; target: number };
+    carbs: { consumed: number; target: number };
+    fat: { consumed: number; target: number };
+  };
   onViewDetailsClick?: () => void;
 }
 
 export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
   consumed,
   target,
+  macros,
   onViewDetailsClick
 }) => {
   const { t } = useTranslation();
@@ -22,6 +28,61 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
   const roundedConsumed = Math.round(consumed);
   const roundedTarget = Math.round(target);
 
+  // Calculate macro distribution percentages
+  const getMacroColor = () => {
+    if (!macros || target === 0) {
+      return 'hsl(var(--primary))'; // Default orange
+    }
+
+    const totalMacros = macros.protein.consumed + macros.carbs.consumed + macros.fat.consumed;
+    if (totalMacros === 0) {
+      return 'hsl(var(--primary))'; // Default orange
+    }
+
+    const proteinPercent = (macros.protein.consumed / totalMacros) * 100;
+    const carbsPercent = (macros.carbs.consumed / totalMacros) * 100;
+    const fatPercent = (macros.fat.consumed / totalMacros) * 100;
+
+    // Determine dominant macro and return color
+    if (proteinPercent >= carbsPercent && proteinPercent >= fatPercent) {
+      // Protein dominant - blue/red gradient
+      return 'rgb(59, 130, 246)'; // Blue
+    } else if (carbsPercent >= fatPercent) {
+      // Carbs dominant - green/orange gradient
+      return 'rgb(34, 197, 94)'; // Green
+    } else {
+      // Fat dominant - yellow/orange gradient
+      return 'rgb(234, 179, 8)'; // Yellow
+    }
+  };
+
+  const getGradientColor = () => {
+    if (!macros || target === 0) {
+      return 'from-orange-500 to-orange-600';
+    }
+
+    const totalMacros = macros.protein.consumed + macros.carbs.consumed + macros.fat.consumed;
+    if (totalMacros === 0) {
+      return 'from-orange-500 to-orange-600';
+    }
+
+    const proteinPercent = (macros.protein.consumed / totalMacros) * 100;
+    const carbsPercent = (macros.carbs.consumed / totalMacros) * 100;
+    const fatPercent = (macros.fat.consumed / totalMacros) * 100;
+
+    // Determine dominant macro and return gradient
+    if (proteinPercent >= carbsPercent && proteinPercent >= fatPercent) {
+      return 'from-blue-500 to-blue-600';
+    } else if (carbsPercent >= fatPercent) {
+      return 'from-green-500 to-green-600';
+    } else {
+      return 'from-yellow-500 to-yellow-600';
+    }
+  };
+
+  const circleColor = getMacroColor();
+  const gradientClass = getGradientColor();
+
   // SVG circle parameters
   const radius = 50;
   const circumference = 2 * Math.PI * radius;
@@ -29,8 +90,10 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
 
   return (
     <Card 
-      className="bg-gradient-to-br from-card to-secondary border-border/50 shadow-xl hover:shadow-2xl transition-all cursor-pointer"
-      onClick={onViewDetailsClick}
+      className={cn(
+        "bg-gradient-to-br from-card to-secondary border-border/50 shadow-xl hover:shadow-2xl transition-all",
+        `border-2 border-${gradientClass.split('-')[1]}-500/30`
+      )}
     >
       <CardHeader>
         <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -66,7 +129,7 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
                 cy="64"
                 r={radius}
                 fill="none"
-                stroke="hsl(var(--primary))"
+                stroke={circleColor}
                 strokeWidth="8"
                 strokeDasharray={circumference}
                 strokeDashoffset={strokeDashoffset}
@@ -90,7 +153,7 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
             <span className="text-xs text-muted-foreground">100%</span>
             <div className="w-3 h-full bg-secondary rounded-full relative overflow-hidden">
               <div 
-                className="absolute bottom-0 w-full bg-primary transition-all duration-500"
+                className={cn("absolute bottom-0 w-full transition-all duration-500", `bg-gradient-to-t ${gradientClass}`)}
                 style={{ height: `${percentage}%` }}
               />
             </div>
@@ -99,7 +162,7 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
             <span className="text-xs text-muted-foreground">50%</span>
             <div className="w-3 h-full bg-secondary rounded-full relative overflow-hidden">
               <div 
-                className="absolute bottom-0 w-full bg-primary/50 transition-all duration-500"
+                className={cn("absolute bottom-0 w-full transition-all duration-500", `bg-gradient-to-t ${gradientClass} opacity-50`)}
                 style={{ height: percentage >= 50 ? '100%' : '0%' }}
               />
             </div>
@@ -113,7 +176,7 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
         {/* Meals Access Button */}
         <Button
           onClick={onViewDetailsClick}
-          className="w-full bg-primary hover:bg-primary/90 text-background font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2"
+          className={cn("w-full text-background font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all", `bg-gradient-to-r ${gradientClass} hover:opacity-90`)}
         >
           <Utensils className="w-4 h-4" />
           <span>{t('meals.meals', 'ארוחות')}</span>
