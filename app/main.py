@@ -158,7 +158,7 @@ except Exception as e:
 
 try:
     logger.info("Importing router modules...")
-    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications, meal_system, workout_system, muscle_groups, workout_splits, chat
+    from app.routers import auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications, meal_system, workout_system, muscle_groups, workout_splits, chat, check_in
     logger.info("✅ Router modules imported successfully")
     logger.info("📋 Available routers: auth, users, exercises, workouts, nutrition, progress, files, websocket, meal_plans, system, notifications")
 except Exception as e:
@@ -727,6 +727,10 @@ try:
     logger.info("Including chat router...")
     app.include_router(chat.router, prefix="/api", tags=["Chat"])
     logger.info("✅ Chat router included")
+    
+    logger.info("Including check_in router...")
+    app.include_router(check_in.router, prefix="/api/check-ins", tags=["Check-Ins"])
+    logger.info("✅ Check-Ins router included")
     
     logger.info("=" * 40)
     logger.info("✅ ALL ROUTERS INCLUDED SUCCESSFULLY")

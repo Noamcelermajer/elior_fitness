@@ -15,6 +15,9 @@ import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
 import { useTranslation } from 'react-i18next';
 import MealHistory from '../components/MealHistory';
+import { ClientCheckInSummary } from '../components/ClientCheckInSummary';
+import { ClientCheckInHistory } from '../components/ClientCheckInHistory';
+import { ClientCheckInDetail } from '../components/ClientCheckInDetail';
 
 interface Client {
   id: number;
@@ -144,6 +147,8 @@ const ClientProfile = () => {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCheckIn, setSelectedCheckIn] = useState<any>(null);
+  const [checkInSummary, setCheckInSummary] = useState<any>(null);
 
   // Get client from location state or fetch by ID
   const fetchClientData = async () => {
@@ -179,6 +184,11 @@ const ClientProfile = () => {
         const workoutData = workoutRes.ok ? await workoutRes.json() : [];
         const mealData = mealRes.ok ? await mealRes.json() : [];
         const progressData = progressRes.ok ? await progressRes.json() : [];
+        const checkInSummaryData = checkInSummaryRes.ok ? await checkInSummaryRes.json() : null;
+        
+        if (checkInSummaryData) {
+          setCheckInSummary(checkInSummaryData);
+        }
 
         // Ensure data is array to avoid undefined errors
         // Transform v2 workout data to match old format for compatibility
@@ -411,12 +421,13 @@ const ClientProfile = () => {
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="pt-4">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 gap-1 h-auto min-h-[3rem] p-2">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 gap-1 h-auto min-h-[3rem] p-2">
               <TabsTrigger value="profile" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.profile', 'Profile')}</TabsTrigger>
               <TabsTrigger value="progress" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.weightProgress')}</TabsTrigger>
               <TabsTrigger value="workouts" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.workoutPlans')}</TabsTrigger>
               <TabsTrigger value="meals" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.mealPlans')}</TabsTrigger>
               <TabsTrigger value="nutrition" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.nutritionHistory')}</TabsTrigger>
+              <TabsTrigger value="checkins" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('checkIn.trainer.tabTitle')}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -805,6 +816,21 @@ const ClientProfile = () => {
               </Button>
             </div>
             <MealHistory clientId={client.id} />
+          </TabsContent>
+
+          {/* Check-Ins Tab */}
+          <TabsContent value="checkins" className="space-y-6">
+            <ClientCheckInSummary 
+              summary={checkInSummary} 
+              loading={false}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ClientCheckInHistory 
+                clientId={client.id}
+                onSelectCheckIn={setSelectedCheckIn}
+              />
+              <ClientCheckInDetail checkIn={selectedCheckIn} />
+            </div>
           </TabsContent>
 
           {/* Progress Tab */}

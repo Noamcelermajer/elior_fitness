@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
+import { DailyCheckInCard } from '../components/DailyCheckInCard';
 
 interface DashboardStats {
   totalClients: number;
@@ -395,6 +396,11 @@ const Index = () => {
         </div>
 
         <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6 space-y-8">
+          {/* Daily Check-In Card (Client only) */}
+          {!isTrainer && (
+            <DailyCheckInCard />
+          )}
+
           {/* Stats Overview */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {statsCards.map((stat, index) => (

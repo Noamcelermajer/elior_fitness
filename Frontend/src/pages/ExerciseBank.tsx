@@ -864,7 +864,7 @@ const ExerciseBank = () => {
                   <DialogHeader>
                     <DialogTitle>{t('exerciseBank.manageMuscleGroups')}</DialogTitle>
                     <DialogDescription>
-                      Create, edit, or delete custom muscle groups
+                      Create, edit, or delete muscle groups
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
@@ -930,10 +930,10 @@ const ExerciseBank = () => {
                       )}
                     </div>
 
-                    {/* List of Dynamic Muscle Groups */}
+                    {/* List of All Muscle Groups */}
                     {dynamicMuscleGroups.length > 0 && (
                       <div className="space-y-2">
-                        <Label>Your Custom Muscle Groups</Label>
+                        <Label>All Muscle Groups</Label>
                         <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
                           {dynamicMuscleGroups.map((group) => (
                             <div

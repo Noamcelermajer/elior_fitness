@@ -9,6 +9,7 @@ from app.models.nutrition import (
 from app.models.progress import ProgressEntry
 from app.models.notification import Notification
 from app.models.chat import ChatMessage
+from app.models.check_in import DailyCheckIn
 
 # New meal and workout system models
 from app.models.meal_system import (
@@ -55,6 +56,7 @@ __all__ = [
     "ProgressEntry",
     "Notification",
     "ChatMessage",
+    "DailyCheckIn",
     # New system models
     "NewMealPlan",
     "MealSlot",

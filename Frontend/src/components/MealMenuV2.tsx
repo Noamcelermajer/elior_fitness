@@ -522,7 +522,8 @@ const MealMenuV2 = () => {
         }
       }
 
-      // Refresh macro calculations
+      // Refresh choices and macro calculations to ensure consistency
+      await fetchChoices();
       await fetchDailyMacros(today);
       
       // Close dialog
@@ -564,6 +565,8 @@ const MealMenuV2 = () => {
         setChoices([...choices, newChoice]);
         setCustomFood({ name: '', calories: '', protein: '', carbs: '', fat: '' });
         setShowCustomFoodDialog(false);
+        // Refresh choices and macros to ensure consistency
+        await fetchChoices();
         await fetchDailyMacros(today);
         toast({
           title: t('common.success'),
@@ -598,6 +601,8 @@ const MealMenuV2 = () => {
       });
       setChoices(choices.filter(c => c.id !== choiceId));
       const today = new Date().toISOString().split('T')[0];
+      // Refresh choices and macros to ensure consistency
+      await fetchChoices();
       await fetchDailyMacros(today);
     } catch (error) {
       console.error('Failed to delete choice:', error);

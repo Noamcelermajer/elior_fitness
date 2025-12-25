@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
 import { useTranslation } from 'react-i18next';
+import { CheckInStatusBadge } from '../components/CheckInStatusBadge';
 
 interface Client {
   id: number;
@@ -88,8 +89,10 @@ const TrainerDashboard = () => {
     totalExercises: 0,
     totalWorkoutPlans: 0,
     totalMealPlans: 0,
-    completionRate: 0
+    completionRate: 0,
+    checkInCompletionRate: 0
   });
+  const [clientCheckInStatuses, setClientCheckInStatuses] = useState<Record<number, 'completed' | 'pending' | 'none'>>({});
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [clientSearch, setClientSearch] = useState('');
@@ -112,16 +115,32 @@ const TrainerDashboard = () => {
         'Content-Type': 'application/json',
       };
       // Fetch stats only
-      const [clientsRes, exercisesRes, workoutPlansRes, mealPlansRes] = await Promise.all([
+      const [clientsRes, exercisesRes, workoutPlansRes, mealPlansRes, checkInDashboardRes] = await Promise.all([
         fetch(`${API_BASE_URL}/users/clients`, { headers }),
         fetch(`${API_BASE_URL}/exercises/`, { headers }),
         fetch(`${API_BASE_URL}/workouts/plans`, { headers }),
-        fetch(`${API_BASE_URL}/meal-plans/`, { headers })
+        fetch(`${API_BASE_URL}/meal-plans/`, { headers }),
+        fetch(`${API_BASE_URL}/check-ins/trainer/dashboard`, { headers })
       ]);
       const clientsData = clientsRes.ok ? await clientsRes.json() : [];
       const exercisesData = exercisesRes.ok ? await exercisesRes.json() : [];
       const workoutPlansData = workoutPlansRes.ok ? await workoutPlansRes.json() : [];
       const mealPlansData = mealPlansRes.ok ? await mealPlansRes.json() : [];
+      
+      // Process check-in statuses
+      const checkInStatusMap: Record<number, 'completed' | 'pending' | 'none'> = {};
+      let completedCheckIns = 0;
+      if (checkInDashboardRes.ok) {
+        const checkInData = await checkInDashboardRes.json();
+        checkInData.forEach((item: any) => {
+          checkInStatusMap[item.client_id] = item.check_in_status;
+          if (item.check_in_status === 'completed') {
+            completedCheckIns++;
+          }
+        });
+      }
+      setClientCheckInStatuses(checkInStatusMap);
+      
       const activeClients = clientsData.filter((c: any) => c.is_active).length;
       const totalCompletions = workoutPlansData.reduce((sum: number, plan: any) => sum + plan.completed_sessions, 0);
       const totalSessions = workoutPlansData.reduce((sum: number, plan: any) => sum + plan.sessions_count, 0);
@@ -132,7 +151,10 @@ const TrainerDashboard = () => {
         totalExercises: exercisesData.length,
         totalWorkoutPlans: workoutPlansData.length,
         totalMealPlans: mealPlansData.length,
-        completionRate: Math.min(completionRate, 100)
+        completionRate: Math.min(completionRate, 100),
+        checkInCompletionRate: clientsData.length > 0 
+          ? (completedCheckIns / clientsData.length) * 100 
+          : 0
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -190,7 +212,7 @@ const TrainerDashboard = () => {
       <div className="max-w-5xl mx-auto py-6 md:py-10 px-4">
         <h1 className="text-4xl font-bold mb-10 text-center">{t('trainerDashboard.title')}</h1>
         {/* Stats Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
             <CardContent className="px-6 pt-8 pb-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
@@ -216,6 +238,15 @@ const TrainerDashboard = () => {
               </div>
               <div className="text-3xl font-bold mb-1">{stats.completionRate.toFixed(1)}%</div>
               <div className="text-muted-foreground text-sm">{t('trainerDashboard.workoutCompletion')}</div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-xl shadow-xl border border-border bg-muted/90 transition-transform duration-300 animate-fade-in-up hover:-translate-y-1 hover:shadow-2xl">
+            <CardContent className="px-6 pt-8 pb-6 flex flex-col items-center justify-center text-center space-y-4 h-48">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-3xl font-bold mb-1">{stats.checkInCompletionRate.toFixed(1)}%</div>
+              <div className="text-muted-foreground text-sm">{t('trainerDashboard.checkInCompletion')}</div>
             </CardContent>
           </Card>
         </div>
@@ -254,8 +285,11 @@ const TrainerDashboard = () => {
                 client.email.toLowerCase().includes(clientSearch.toLowerCase()) ||
                 client.username.toLowerCase().includes(clientSearch.toLowerCase())
               ).map(client => (
-                <Card key={client.id} className="rounded-xl shadow-lg border border-border bg-muted/90 hover:-translate-y-1 hover:shadow-2xl transition-transform duration-300 animate-fade-in-up flex flex-col justify-between h-full">
+                <Card key={client.id} className="rounded-xl shadow-lg border border-border bg-muted/90 hover:-translate-y-1 hover:shadow-2xl transition-transform duration-300 animate-fade-in-up flex flex-col justify-between h-full relative">
                   <CardContent className="p-4 sm:p-6 flex flex-col h-full">
+                    <div className="absolute top-2 right-2">
+                      <CheckInStatusBadge status={clientCheckInStatuses[client.id] || 'none'} />
+                    </div>
                     <div className="flex items-center mt-2 mb-4">
                       <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center me-4">
                         <span className="text-white font-bold text-2xl">
