@@ -88,8 +88,8 @@ export const ClientCheckInHistory: React.FC<ClientCheckInHistoryProps> = ({
   };
 
   const calendarModifiersClassNames = {
-    hasCheckIn: 'bg-primary/20 border border-primary/30',
-    today: 'ring-2 ring-primary'
+    hasCheckIn: 'bg-primary/20 border border-primary/30 rounded-md',
+    today: 'ring-2 ring-primary rounded-md'
   };
 
   if (loading) {

@@ -303,22 +303,44 @@ def get_check_in_summary(
         except (ValueError, TypeError, OverflowError):
             return None
     
-    # Build response data
+    # Build response data with explicit type validation
     summary_data = {
-        "today_status": today_status,
-        "current_streak": current_streak,
-        "last_7_days_completion": last_7_days_check_ins,
-        "completion_rate": completion_rate,
+        "today_status": str(today_status),  # Ensure it's a string
+        "current_streak": int(current_streak),  # Ensure it's an int
+        "last_7_days_completion": int(last_7_days_check_ins),  # Ensure it's an int
+        "completion_rate": float(completion_rate),  # Ensure it's a float
         "avg_weight": safe_round(avg_weight),
         "avg_steps": safe_round(avg_steps),
         "avg_sleep_hours": safe_round(avg_sleep_hours),
         "avg_hunger_level": safe_round(avg_hunger_level),
-        "total_check_ins": total_check_ins,
-        "first_check_in": first_check_in,
-        "last_check_in": last_check_in
+        "total_check_ins": int(total_check_ins),  # Ensure it's an int
+        "first_check_in": first_check_in,  # datetime or None
+        "last_check_in": last_check_in  # datetime or None
     }
     
-    return CheckInSummary(**summary_data)
+    try:
+        # Validate and create response
+        summary = CheckInSummary(**summary_data)
+        return summary
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error creating CheckInSummary: {e}")
+        logger.error(f"Summary data: {summary_data}")
+        # Return a valid default response instead of failing
+        return CheckInSummary(
+            today_status="none",
+            current_streak=0,
+            last_7_days_completion=0,
+            completion_rate=0.0,
+            avg_weight=None,
+            avg_steps=None,
+            avg_sleep_hours=None,
+            avg_hunger_level=None,
+            total_check_ins=0,
+            first_check_in=None,
+            last_check_in=None
+        )
 
 @router.get("/trainer/dashboard", response_model=List[dict])
 def get_trainer_dashboard(
