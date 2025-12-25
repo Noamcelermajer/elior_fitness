@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Flame } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Flame, Utensils, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DashboardCaloriesCardProps {
@@ -108,6 +109,16 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
             <div className="w-3 h-full bg-secondary rounded-full" />
           </div>
         </div>
+
+        {/* Meals Access Button */}
+        <Button
+          onClick={onViewDetailsClick}
+          className="w-full bg-primary hover:bg-primary/90 text-background font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2"
+        >
+          <Utensils className="w-4 h-4" />
+          <span>{t('meals.meals', 'ארוחות')}</span>
+          <ChevronRight className="w-4 h-4" />
+        </Button>
       </CardContent>
     </Card>
   );
