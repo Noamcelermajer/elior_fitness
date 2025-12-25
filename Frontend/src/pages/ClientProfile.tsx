@@ -25,13 +25,10 @@ import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
 import { useTranslation } from 'react-i18next';
 import MealHistory from '../components/MealHistory';
-<<<<<<< HEAD
+import { formatLocalTime } from '../lib/timezone';
 import { ClientCheckInSummary } from '../components/ClientCheckInSummary';
 import { ClientCheckInHistory } from '../components/ClientCheckInHistory';
 import { ClientCheckInDetail } from '../components/ClientCheckInDetail';
-=======
-import { formatLocalTime } from '../lib/timezone';
->>>>>>> 1bd2471cb2d5da04e561d14198ec28fe29fdf032
 
 interface Client {
   id: number;
@@ -161,13 +158,10 @@ const ClientProfile = () => {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
   const [loading, setLoading] = useState(true);
-<<<<<<< HEAD
-  const [selectedCheckIn, setSelectedCheckIn] = useState<any>(null);
-  const [checkInSummary, setCheckInSummary] = useState<any>(null);
-=======
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [mealPlanToDelete, setMealPlanToDelete] = useState<MealPlan | null>(null);
->>>>>>> 1bd2471cb2d5da04e561d14198ec28fe29fdf032
+  const [selectedCheckIn, setSelectedCheckIn] = useState<any>(null);
+  const [checkInSummary, setCheckInSummary] = useState<any>(null);
 
   // Get client from location state or fetch by ID
   const fetchClientData = async () => {
