@@ -174,6 +174,10 @@ export const ClientCheckInHistory: React.FC<ClientCheckInHistoryProps> = ({
                 modifiers={calendarModifiers}
                 modifiersClassNames={calendarModifiersClassNames}
                 className="rounded-md border"
+                classNames={{
+                  day_selected: "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground focus:!bg-primary focus:!text-primary-foreground !rounded-md",
+                  day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-md"
+                }}
               />
             </div>
             {selectedDate && getCheckInForDate(selectedDate) && (
