@@ -211,11 +211,11 @@ async def get_progress_entry(
         "weight": entry.weight,
         "photo_path": photo_path,  # Normalized to just filename
         "notes": entry.notes,
-        "chest": entry.chest,
-        "waist": entry.waist,
-        "hips": entry.hips,
-        "thighs": entry.thighs,
-        "arms": entry.arms,
+        "chest": getattr(entry, 'chest', None),
+        "waist": getattr(entry, 'waist', None),
+        "hips": getattr(entry, 'hips', None),
+        "thighs": getattr(entry, 'thighs', None),
+        "arms": getattr(entry, 'arms', None),
         "created_at": entry.created_at.isoformat()
     }
 
@@ -421,10 +421,10 @@ async def update_progress_entry(
         "weight": entry.weight,
         "photo_path": photo_path,  # Normalized to just filename
         "notes": entry.notes,
-        "chest": entry.chest,
-        "waist": entry.waist,
-        "hips": entry.hips,
-        "thighs": entry.thighs,
-        "arms": entry.arms,
+        "chest": getattr(entry, 'chest', None),
+        "waist": getattr(entry, 'waist', None),
+        "hips": getattr(entry, 'hips', None),
+        "thighs": getattr(entry, 'thighs', None),
+        "arms": getattr(entry, 'arms', None),
         "created_at": entry.created_at.isoformat()
     } 
