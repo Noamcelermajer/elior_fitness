@@ -452,21 +452,23 @@ const Index = () => {
 
           {/* Progress Cards Grid (Client only) */}
           {!isTrainer && !isAdmin && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <DashboardWeightCard 
                 weightEntries={weightData}
                 onViewDetailsClick={() => navigate('/progress')}
               />
-              <DashboardCaloriesCard 
-                consumed={caloriesData.consumed}
-                target={caloriesData.target}
-                onViewDetailsClick={() => navigate('/meals')}
-              />
-              <DashboardStepsCard 
-                steps={stepsData.steps}
-                target={stepsData.target}
-                onViewDetailsClick={() => navigate('/progress')}
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <DashboardCaloriesCard 
+                  consumed={caloriesData.consumed}
+                  target={caloriesData.target}
+                  onViewDetailsClick={() => navigate('/meals')}
+                />
+                <DashboardStepsCard 
+                  steps={stepsData.steps}
+                  target={stepsData.target}
+                  onViewDetailsClick={() => navigate('/progress')}
+                />
+              </div>
             </div>
           )}
 
