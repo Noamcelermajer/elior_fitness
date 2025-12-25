@@ -101,22 +101,19 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
   
   // Helper function to create arc path for pie slice
   const createArc = (startPercent: number, endPercent: number) => {
-    if (endPercent <= startPercent) {
+    if (endPercent <= startPercent || endPercent - startPercent < 0.1) {
       return '';
     }
     
-    const startAngle = (startPercent / 100) * 360 - 90; // Start from top
-    const endAngle = (endPercent / 100) * 360 - 90;
+    const startAngle = (startPercent / 100) * 2 * Math.PI - Math.PI / 2; // Start from top
+    const endAngle = (endPercent / 100) * 2 * Math.PI - Math.PI / 2;
     
-    const startRad = (startAngle * Math.PI) / 180;
-    const endRad = (endAngle * Math.PI) / 180;
+    const x1 = 64 + radius * Math.cos(startAngle);
+    const y1 = 64 + radius * Math.sin(startAngle);
+    const x2 = 64 + radius * Math.cos(endAngle);
+    const y2 = 64 + radius * Math.sin(endAngle);
     
-    const x1 = 64 + radius * Math.cos(startRad);
-    const y1 = 64 + radius * Math.sin(startRad);
-    const x2 = 64 + radius * Math.cos(endRad);
-    const y2 = 64 + radius * Math.sin(endRad);
-    
-    const largeArcFlag = endPercent - startPercent > 50 ? 1 : 0;
+    const largeArcFlag = (endAngle - startAngle) > Math.PI ? 1 : 0;
     
     return `M 64 64 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
   };
@@ -179,72 +176,43 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
                 className="text-muted/30"
               />
               
-              {/* Macro Segments - Pie Chart using strokeDasharray */}
+              {/* Macro Segments - Pie Chart */}
               {macroSegments ? (
                 <>
-                  {/* Protein Segment */}
+                  {/* Protein Segment - shows consumed portion */}
                   {macroSegments.protein.consumedPercent > 0 && (
-                    <circle
-                      cx="64"
-                      cy="64"
-                      r={radius}
-                      fill="none"
-                      stroke={macroSegments.protein.color}
-                      strokeWidth="8"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={
-                        circumference - 
-                        (macroSegments.protein.consumedPercent / 100) * circumference
-                      }
-                      strokeLinecap="round"
+                    <path
+                      d={createArc(
+                        macroSegments.protein.startPercent,
+                        macroSegments.protein.startPercent + macroSegments.protein.consumedPercent
+                      )}
+                      fill={macroSegments.protein.color}
+                      opacity="0.85"
                       className="transition-all duration-500"
-                      style={{
-                        strokeDashoffset: circumference - (macroSegments.protein.consumedPercent / 100) * circumference
-                      }}
                     />
                   )}
-                  
-                  {/* Carbs Segment */}
+                  {/* Carbs Segment - shows consumed portion */}
                   {macroSegments.carbs.consumedPercent > 0 && (
-                    <circle
-                      cx="64"
-                      cy="64"
-                      r={radius}
-                      fill="none"
-                      stroke={macroSegments.carbs.color}
-                      strokeWidth="8"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={
-                        circumference - 
-                        ((macroSegments.protein.consumedPercent + macroSegments.carbs.consumedPercent) / 100) * circumference
-                      }
-                      strokeLinecap="round"
+                    <path
+                      d={createArc(
+                        macroSegments.carbs.startPercent,
+                        macroSegments.carbs.startPercent + macroSegments.carbs.consumedPercent
+                      )}
+                      fill={macroSegments.carbs.color}
+                      opacity="0.85"
                       className="transition-all duration-500"
-                      style={{
-                        strokeDashoffset: circumference - ((macroSegments.protein.consumedPercent + macroSegments.carbs.consumedPercent) / 100) * circumference
-                      }}
                     />
                   )}
-                  
-                  {/* Fat Segment */}
+                  {/* Fat Segment - shows consumed portion */}
                   {macroSegments.fat.consumedPercent > 0 && (
-                    <circle
-                      cx="64"
-                      cy="64"
-                      r={radius}
-                      fill="none"
-                      stroke={macroSegments.fat.color}
-                      strokeWidth="8"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={
-                        circumference - 
-                        ((macroSegments.protein.consumedPercent + macroSegments.carbs.consumedPercent + macroSegments.fat.consumedPercent) / 100) * circumference
-                      }
-                      strokeLinecap="round"
+                    <path
+                      d={createArc(
+                        macroSegments.fat.startPercent,
+                        macroSegments.fat.startPercent + macroSegments.fat.consumedPercent
+                      )}
+                      fill={macroSegments.fat.color}
+                      opacity="0.85"
                       className="transition-all duration-500"
-                      style={{
-                        strokeDashoffset: circumference - ((macroSegments.protein.consumedPercent + macroSegments.carbs.consumedPercent + macroSegments.fat.consumedPercent) / 100) * circumference
-                      }}
                     />
                   )}
                 </>
