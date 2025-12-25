@@ -213,15 +213,20 @@ const Index = () => {
           const checkInRes = await fetch(`${API_BASE_URL}/check-ins/today`, { headers });
           if (checkInRes.ok) {
             const checkIn = await checkInRes.json();
-            setStepsData({
-              steps: checkIn.steps || null,
-              target: 10000
-            });
+            if (checkIn && checkIn !== null) {
+              setStepsData({
+                steps: checkIn.steps || null,
+                target: 10000
+              });
+            } else {
+              setStepsData({ steps: null, target: 10000 });
+            }
           } else if (checkInRes.status === 404) {
             setStepsData({ steps: null, target: 10000 });
           }
         } catch (err) {
           console.error('Failed to fetch steps:', err);
+          setStepsData({ steps: null, target: 10000 });
         }
 
         setStats({
