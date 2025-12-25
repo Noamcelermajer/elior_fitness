@@ -291,19 +291,34 @@ def get_check_in_summary(
     else:
         completion_rate = 0.0
     
-    return CheckInSummary(
-        today_status=today_status,
-        current_streak=current_streak,
-        last_7_days_completion=last_7_days_check_ins,
-        completion_rate=float(round(completion_rate, 2)),
-        avg_weight=float(round(avg_weight, 2)) if avg_weight is not None else None,
-        avg_steps=float(round(avg_steps, 2)) if avg_steps is not None else None,
-        avg_sleep_hours=float(round(avg_sleep_hours, 2)) if avg_sleep_hours is not None else None,
-        avg_hunger_level=float(round(avg_hunger_level, 2)) if avg_hunger_level is not None else None,
-        total_check_ins=total_check_ins,
-        first_check_in=first_check_in,
-        last_check_in=last_check_in
-    )
+    # Ensure completion_rate is a valid float between 0 and 100
+    completion_rate = max(0.0, min(100.0, float(round(completion_rate, 2))))
+    
+    # Helper function to safely round optional floats
+    def safe_round(value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return None
+        try:
+            return float(round(value, 2))
+        except (ValueError, TypeError, OverflowError):
+            return None
+    
+    # Build response data
+    summary_data = {
+        "today_status": today_status,
+        "current_streak": current_streak,
+        "last_7_days_completion": last_7_days_check_ins,
+        "completion_rate": completion_rate,
+        "avg_weight": safe_round(avg_weight),
+        "avg_steps": safe_round(avg_steps),
+        "avg_sleep_hours": safe_round(avg_sleep_hours),
+        "avg_hunger_level": safe_round(avg_hunger_level),
+        "total_check_ins": total_check_ins,
+        "first_check_in": first_check_in,
+        "last_check_in": last_check_in
+    }
+    
+    return CheckInSummary(**summary_data)
 
 @router.get("/trainer/dashboard", response_model=List[dict])
 def get_trainer_dashboard(
