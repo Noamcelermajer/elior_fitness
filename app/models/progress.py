@@ -12,6 +12,12 @@ class ProgressEntry(Base):
     weight = Column(Float, nullable=False)  # in kg
     photo_path = Column(String)  # optional progress photo
     notes = Column(String)  # optional notes
+    # Body measurements (all optional)
+    chest = Column(Float, nullable=True)  # in cm
+    waist = Column(Float, nullable=True)  # in cm
+    hips = Column(Float, nullable=True)  # in cm
+    thighs = Column(Float, nullable=True)  # in cm
+    arms = Column(Float, nullable=True)  # in cm
     created_at = Column(DateTime, default=func.now())
 
     # Relationships

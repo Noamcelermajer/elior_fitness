@@ -202,11 +202,14 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
           title: "Success",
           description: t('weightProgress.successAdd')
         });
-        setShowAddDialog(false);
+        // Reset form first
         setAddForm({ weight: '', notes: '', photo: null });
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+        // Close dialog after reset
+        setShowAddDialog(false);
+        // Update progress data
         onProgressUpdate();
       } else {
         const error = await response.json();

@@ -14,7 +14,7 @@ i18n
       he: { translation: he },
       en: { translation: en },
     },
-    lng: 'he', // Default language is Hebrew
+    // Remove hardcoded default - let detector handle it
     fallbackLng: 'en',
     debug: false,
     interpolation: {
@@ -24,6 +24,8 @@ i18n
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
       lookupLocalStorage: 'i18nextLng',
+      // Ensure localStorage is checked first
+      checkWhitelist: true,
     },
   });
 

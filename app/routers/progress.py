@@ -19,6 +19,11 @@ async def add_weight_entry(
     notes: Optional[str] = Form(None, description="Optional notes"),
     photo: Optional[UploadFile] = File(None, description="Optional progress photo"),
     client_id: Optional[int] = Form(None, description="Client ID (for trainers)"),
+    chest: Optional[float] = Form(None, description="Chest measurement in cm"),
+    waist: Optional[float] = Form(None, description="Waist measurement in cm"),
+    hips: Optional[float] = Form(None, description="Hips measurement in cm"),
+    thighs: Optional[float] = Form(None, description="Thighs measurement in cm"),
+    arms: Optional[float] = Form(None, description="Arms measurement in cm"),
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -50,7 +55,12 @@ async def add_weight_entry(
         date=date.today(),
         weight=weight,
         photo_path=photo_path,
-        notes=notes
+        notes=notes,
+        chest=chest,
+        waist=waist,
+        hips=hips,
+        thighs=thighs,
+        arms=arms
     )
     
     db.add(progress_entry)
@@ -71,6 +81,11 @@ async def add_weight_entry(
         "weight": progress_entry.weight,
         "photo_path": photo_path,  # Normalized to just filename
         "notes": progress_entry.notes,
+        "chest": progress_entry.chest,
+        "waist": progress_entry.waist,
+        "hips": progress_entry.hips,
+        "thighs": progress_entry.thighs,
+        "arms": progress_entry.arms,
         "created_at": progress_entry.created_at.isoformat()
     }
 
@@ -99,6 +114,11 @@ async def get_weight_history(
             "weight": entry.weight,
             "photo_path": photo_path,  # Normalized to just filename
             "notes": entry.notes,
+            "chest": entry.chest,
+            "waist": entry.waist,
+            "hips": entry.hips,
+            "thighs": entry.thighs,
+            "arms": entry.arms,
             "created_at": entry.created_at.isoformat()
         })
     
@@ -144,6 +164,11 @@ async def get_progress_entries(
             "weight": entry.weight,
             "photo_path": photo_path,  # Normalized to just filename
             "notes": entry.notes,
+            "chest": entry.chest,
+            "waist": entry.waist,
+            "hips": entry.hips,
+            "thighs": entry.thighs,
+            "arms": entry.arms,
             "created_at": entry.created_at.isoformat()
         })
     
@@ -184,6 +209,11 @@ async def get_progress_entry(
         "weight": entry.weight,
         "photo_path": photo_path,  # Normalized to just filename
         "notes": entry.notes,
+        "chest": entry.chest,
+        "waist": entry.waist,
+        "hips": entry.hips,
+        "thighs": entry.thighs,
+        "arms": entry.arms,
         "created_at": entry.created_at.isoformat()
     }
 
@@ -269,11 +299,73 @@ async def delete_weight_entry(
     db.delete(entry)
     db.commit()
 
+@router.delete("/entries/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_progress_entry(
+    entry_id: int,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a progress entry (clients can delete their own, trainers can delete their clients')"""
+    from app.models.user import User
+    
+    entry = db.query(ProgressEntry).filter(ProgressEntry.id == entry_id).first()
+    
+    if not entry:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Progress entry not found"
+        )
+    
+    # Check permissions
+    if current_user.role == UserRole.TRAINER:
+        # Check if the client belongs to this trainer
+        client = db.query(User).filter(User.id == entry.client_id).first()
+        if not client or client.trainer_id != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only delete your clients' progress entries")
+    elif current_user.id != entry.client_id:
+        raise HTTPException(status_code=403, detail="You can only delete your own progress entries")
+    
+    # Delete associated photo if exists
+    if entry.photo_path:
+        try:
+            # Extract just the filename
+            filename = os.path.basename(entry.photo_path) if '/' in entry.photo_path or '\\' in entry.photo_path else entry.photo_path
+            # Use the files router endpoint to delete the file
+            persistent_base = os.getenv("PERSISTENT_PATH", "/app/persistent")
+            upload_dir = os.getenv("UPLOAD_DIR", os.path.join(persistent_base, "uploads"))
+            photo_path = os.path.join(upload_dir, "progress_photos", filename)
+            
+            # Try multiple possible locations
+            possible_paths = [
+                photo_path,
+                os.path.join(persistent_base, "uploads", "progress_photos", filename),
+                f"uploads/progress_photos/{filename}",
+                f"/app/uploads/progress_photos/{filename}",
+            ]
+            
+            for path in possible_paths:
+                if os.path.exists(path):
+                    os.remove(path)
+                    break
+        except Exception as e:
+            # Log error but don't fail the deletion
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to delete photo for entry {entry_id}: {e}")
+    
+    db.delete(entry)
+    db.commit()
+
 @router.put("/entries/{entry_id}")
 async def update_progress_entry(
     entry_id: int,
     weight: Optional[float] = Form(None),
     notes: Optional[str] = Form(None),
+    chest: Optional[float] = Form(None, description="Chest measurement in cm"),
+    waist: Optional[float] = Form(None, description="Waist measurement in cm"),
+    hips: Optional[float] = Form(None, description="Hips measurement in cm"),
+    thighs: Optional[float] = Form(None, description="Thighs measurement in cm"),
+    arms: Optional[float] = Form(None, description="Arms measurement in cm"),
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -300,6 +392,16 @@ async def update_progress_entry(
         entry.weight = weight
     if notes is not None:
         entry.notes = notes
+    if chest is not None:
+        entry.chest = chest
+    if waist is not None:
+        entry.waist = waist
+    if hips is not None:
+        entry.hips = hips
+    if thighs is not None:
+        entry.thighs = thighs
+    if arms is not None:
+        entry.arms = arms
     
     db.commit()
     db.refresh(entry)
@@ -317,5 +419,10 @@ async def update_progress_entry(
         "weight": entry.weight,
         "photo_path": photo_path,  # Normalized to just filename
         "notes": entry.notes,
+        "chest": entry.chest,
+        "waist": entry.waist,
+        "hips": entry.hips,
+        "thighs": entry.thighs,
+        "arms": entry.arms,
         "created_at": entry.created_at.isoformat()
     } 

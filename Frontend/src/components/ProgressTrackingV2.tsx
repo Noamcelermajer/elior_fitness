@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Scale, Camera, TrendingDown, TrendingUp, Plus, Calendar, Upload, X } from 'lucide-react';
+import { Scale, Camera, TrendingDown, TrendingUp, Plus, Calendar, Upload, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -23,6 +23,11 @@ interface ProgressEntry {
   muscle_mass?: number;
   notes: string;
   photo_path: string;
+  chest?: number;
+  waist?: number;
+  hips?: number;
+  thighs?: number;
+  arms?: number;
   created_at: string;
 }
 
@@ -37,16 +42,32 @@ const ProgressTrackingV2 = () => {
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   const [newWeight, setNewWeight] = useState('');
   const [newNotes, setNewNotes] = useState('');
+  const [newChest, setNewChest] = useState('');
+  const [newWaist, setNewWaist] = useState('');
+  const [newHips, setNewHips] = useState('');
+  const [newThighs, setNewThighs] = useState('');
+  const [newArms, setNewArms] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [viewingPhoto, setViewingPhoto] = useState<ProgressEntry | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  // State for photo URLs in grid view
+  const [photoUrls, setPhotoUrls] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (user?.id) {
       fetchProgressData();
     }
   }, [user]);
+
+  // Load photos for grid when progress data changes
+  useEffect(() => {
+    photosWithData.forEach(entry => {
+      if (entry.photo_path && !photoUrls[entry.id]) {
+        loadPhotoForGrid(entry);
+      }
+    });
+  }, [progressData]);
 
   const fetchProgressData = async () => {
     try {
@@ -113,6 +134,27 @@ const ProgressTrackingV2 = () => {
     }
   };
 
+  // Load photo for grid display
+  const loadPhotoForGrid = async (entry: ProgressEntry) => {
+    if (!entry.photo_path || photoUrls[entry.id]) return;
+    
+    try {
+      const token = localStorage.getItem('access_token');
+      const filename = entry.photo_path.split('/').pop();
+      const response = await fetch(`${API_BASE_URL}/files/media/progress_photos/${filename}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setPhotoUrls(prev => ({ ...prev, [entry.id]: url }));
+      }
+    } catch (error) {
+      console.error('Failed to load photo for grid:', error);
+    }
+  };
+
   const handleViewPhoto = (entry: ProgressEntry) => {
     setViewingPhoto(entry);
     if (entry.photo_path) {
@@ -134,6 +176,21 @@ const ProgressTrackingV2 = () => {
       if (newNotes) {
         formData.append('notes', newNotes);
       }
+      if (newChest) {
+        formData.append('chest', newChest);
+      }
+      if (newWaist) {
+        formData.append('waist', newWaist);
+      }
+      if (newHips) {
+        formData.append('hips', newHips);
+      }
+      if (newThighs) {
+        formData.append('thighs', newThighs);
+      }
+      if (newArms) {
+        formData.append('arms', newArms);
+      }
       if (photoFile) {
         formData.append('photo', photoFile);
       }
@@ -152,14 +209,23 @@ const ProgressTrackingV2 = () => {
           new Date(a.date).getTime() - new Date(b.date).getTime()
         ));
         
-        // Reset form
+        // Reset form first
         setNewWeight('');
         setNewNotes('');
+        setNewChest('');
+        setNewWaist('');
+        setNewHips('');
+        setNewThighs('');
+        setNewArms('');
         setPhotoFile(null);
         setPhotoPreview(null);
+        // Close dialog after reset
         setIsAddingEntry(false);
+        // Clear any errors
+        setError('');
       } else {
-        setError('Failed to add entry');
+        const errorData = await response.json().catch(() => ({ detail: 'Failed to add entry' }));
+        setError(errorData.detail || 'Failed to add entry');
       }
     } catch (error) {
       console.error('Failed to add entry:', error);
@@ -239,6 +305,69 @@ const ProgressTrackingV2 = () => {
                       rows={3}
                     />
                   </div>
+                  
+                  {/* Body Measurements */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">{t('progress.measurements', 'Body Measurements (cm)')}</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="chest" className="text-xs text-muted-foreground">{t('progress.chest', 'Chest')}</Label>
+                        <Input
+                          id="chest"
+                          type="number"
+                          step="0.1"
+                          placeholder="cm"
+                          value={newChest}
+                          onChange={(e) => setNewChest(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="waist" className="text-xs text-muted-foreground">{t('progress.waist', 'Waist')}</Label>
+                        <Input
+                          id="waist"
+                          type="number"
+                          step="0.1"
+                          placeholder="cm"
+                          value={newWaist}
+                          onChange={(e) => setNewWaist(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="hips" className="text-xs text-muted-foreground">{t('progress.hips', 'Hips')}</Label>
+                        <Input
+                          id="hips"
+                          type="number"
+                          step="0.1"
+                          placeholder="cm"
+                          value={newHips}
+                          onChange={(e) => setNewHips(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="thighs" className="text-xs text-muted-foreground">{t('progress.thighs', 'Thighs')}</Label>
+                        <Input
+                          id="thighs"
+                          type="number"
+                          step="0.1"
+                          placeholder="cm"
+                          value={newThighs}
+                          onChange={(e) => setNewThighs(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label htmlFor="arms" className="text-xs text-muted-foreground">{t('progress.arms', 'Arms')}</Label>
+                        <Input
+                          id="arms"
+                          type="number"
+                          step="0.1"
+                          placeholder="cm"
+                          value={newArms}
+                          onChange={(e) => setNewArms(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div>
                     <Label>{t('progress.progressPhotoOptional')}</Label>
                     {photoPreview ? (
@@ -366,8 +495,13 @@ const ProgressTrackingV2 = () => {
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
+                      <XAxis 
+                        dataKey="date" 
+                        label={{ value: t('progress.date'), position: 'insideBottom', offset: -5 }}
+                      />
+                      <YAxis 
+                        label={{ value: `${t('progress.weight')} (${t('progress.kg')})`, angle: -90, position: 'insideLeft' }}
+                      />
                       <Tooltip />
                       <Line 
                         type="monotone" 
@@ -410,15 +544,24 @@ const ProgressTrackingV2 = () => {
                             )}
                           </div>
                         </div>
-                        {entry.photo_path && (
+                        <div className="flex items-center gap-2">
+                          {entry.photo_path && (
+                            <button
+                              onClick={() => handleViewPhoto(entry)}
+                              className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-border bg-transparent hover:bg-primary/10 cursor-pointer"
+                            >
+                              <Camera className="w-3 h-3 mr-1" />
+                              {t('progress.photo')}
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleViewPhoto(entry)}
-                            className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-border bg-transparent hover:bg-primary/10 cursor-pointer"
+                            onClick={() => handleDeleteEntry(entry)}
+                            className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-destructive/50 bg-transparent hover:bg-destructive/10 text-destructive cursor-pointer"
+                            title={t('common.delete', 'Delete')}
                           >
-                            <Camera className="w-3 h-3 mr-1" />
-                            {t('progress.photo')}
+                            <Trash2 className="w-3 h-3" />
                           </button>
-                        )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -448,22 +591,25 @@ const ProgressTrackingV2 = () => {
                         className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
                         onClick={() => handleViewPhoto(entry)}
                       >
-                        <img 
-                          src={entry.photo_path?.startsWith('http') ? entry.photo_path : `${API_BASE_URL.replace('/api', '')}${entry.photo_path}`}
-                          alt={`Progress ${entry.date}`}
-                          className="w-full h-48 object-cover"
-                          onError={(e) => {
-                            console.error('Failed to load image:', entry.photo_path);
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                        <div className="w-full h-48 bg-muted flex items-center justify-center hidden">
-                          <div className="text-center text-muted-foreground">
-                            <Camera className="w-8 h-8 mx-auto mb-2" />
-                            <p className="text-sm">{t('progress.photoNotAvailable')}</p>
+                        {photoUrls[entry.id] ? (
+                          <img 
+                            src={photoUrls[entry.id]}
+                            alt={`Progress ${entry.date}`}
+                            className="w-full h-48 object-cover"
+                            onError={(e) => {
+                              console.error('Failed to load image:', entry.photo_path);
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-48 bg-muted flex items-center justify-center">
+                            <div className="text-center text-muted-foreground">
+                              <Camera className="w-8 h-8 mx-auto mb-2" />
+                              <p className="text-sm">{t('progress.photoNotAvailable')}</p>
+                            </div>
                           </div>
-                        </div>
+                        )}
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">
                             <p className="font-bold text-lg">{entry.weight} {t('progress.kg')}</p>

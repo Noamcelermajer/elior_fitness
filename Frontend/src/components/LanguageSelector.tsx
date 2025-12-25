@@ -18,13 +18,14 @@ const LanguageSelector: React.FC = () => {
   const { i18n, t } = useTranslation();
 
   const changeLanguage = (languageCode: string) => {
-    i18n.changeLanguage(languageCode);
+    // Store preference first
+    localStorage.setItem('i18nextLng', languageCode);
+    // Change language with explicit lng option to ensure it's saved
+    i18n.changeLanguage(languageCode, { lng: languageCode });
     // Update HTML dir attribute for RTL support
     document.documentElement.dir = languageCode === 'he' ? 'rtl' : 'ltr';
     // Update HTML lang attribute
     document.documentElement.lang = languageCode;
-    // Store preference
-    localStorage.setItem('i18nextLng', languageCode);
   };
 
   const currentLanguage = languages.find((lang) => lang.code === i18n.language) || languages[0];

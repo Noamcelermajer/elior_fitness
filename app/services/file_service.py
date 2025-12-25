@@ -211,11 +211,14 @@ class FileService:
         Uses JPEG with optimized quality settings and resizes if needed.
         """
         from io import BytesIO
-        from PIL import Image  # Lazy load PIL only when processing images
+        from PIL import Image, ImageOps  # Add ImageOps for EXIF orientation
         
         try:
             # Open image from bytes
             img = Image.open(BytesIO(content))
+            
+            # Fix EXIF orientation - this rotates the image based on EXIF data
+            img = ImageOps.exif_transpose(img)
             
             # Convert to RGB if necessary (removes alpha channel)
             if img.mode in ('RGBA', 'LA', 'P'):
@@ -264,7 +267,7 @@ class FileService:
     
     async def _process_image(self, original_path: str, category: str, entity_id: int, unique_id: str) -> dict:
         """Process image to create thumbnails and resized versions - OPTIMIZED for minimal memory."""
-        from PIL import Image  # Lazy load PIL only when processing images
+        from PIL import Image, ImageOps  # Add ImageOps for EXIF orientation
         
         try:
             # Process images one at a time to minimize memory usage
@@ -275,6 +278,9 @@ class FileService:
             
             # Open and process thumbnail (smallest first, then close)
             with Image.open(original_path) as img:
+                # Fix EXIF orientation first
+                img = ImageOps.exif_transpose(img)
+                
                 if img.mode in ('RGBA', 'LA', 'P'):
                     img = img.convert('RGB')
                 elif img.mode != 'RGB':
@@ -289,6 +295,9 @@ class FileService:
             
             # Process medium size (reopen to avoid keeping multiple images in memory)
             with Image.open(original_path) as img:
+                # Fix EXIF orientation first
+                img = ImageOps.exif_transpose(img)
+                
                 if img.mode in ('RGBA', 'LA', 'P'):
                     img = img.convert('RGB')
                 elif img.mode != 'RGB':
