@@ -117,8 +117,8 @@ export const DailyCheckInCardV2: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Daily Cards Row */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+          {/* Daily Cards Row - Week Calendar */}
+          <div className="grid grid-cols-7 gap-2">
             {weekDays.map((day, index) => {
               const dateStr = formatDateForAPI(day);
               const hasCheckIn = weekCheckIns.get(dateStr) || false;
@@ -128,17 +128,17 @@ export const DailyCheckInCardV2: React.FC = () => {
                 <div
                   key={index}
                   className={cn(
-                    "flex flex-col items-center justify-center w-14 h-16 rounded-lg border-2 transition-all flex-shrink-0",
+                    "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all",
                     hasCheckIn
                       ? "bg-primary/20 border-primary text-foreground"
                       : "bg-secondary/50 border-border text-muted-foreground",
                     isToday && "ring-2 ring-primary/50"
                   )}
                 >
-                  <span className="text-xs font-medium">{getDayName(day, i18n.language)}</span>
-                  <span className="text-lg font-bold">{getDayNumber(day)}</span>
+                  <span className="text-xs font-medium mb-1">{getDayName(day, i18n.language)}</span>
+                  <span className="text-base font-bold">{getDayNumber(day)}</span>
                   {hasCheckIn && (
-                    <CheckCircle2 className="w-4 h-4 text-primary mt-1" />
+                    <CheckCircle2 className="w-3 h-3 text-primary mt-1" />
                   )}
                 </div>
               );

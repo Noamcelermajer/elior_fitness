@@ -29,7 +29,10 @@ export const formatDateForAPI = (date: Date): string => {
 export const getDayName = (date: Date, locale: string = 'en'): string => {
   if (locale === 'he') {
     const days = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
-    return days[date.getDay() === 0 ? 6 : date.getDay() - 1];
+    const dayIndex = date.getDay();
+    // Sunday = 0, Monday = 1, ..., Saturday = 6
+    // Hebrew: א' = Sunday, ב' = Monday, ..., ש' = Saturday
+    return days[dayIndex === 0 ? 6 : dayIndex - 1];
   }
   return date.toLocaleDateString(locale, { weekday: 'short' }).toUpperCase();
 };

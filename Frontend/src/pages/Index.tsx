@@ -470,22 +470,6 @@ const Index = () => {
             </div>
           )}
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {statsCards.map((stat, index) => (
-              <Card key={index} className={`${stat.gradient} border-0 shadow-xl transform hover:scale-105 transition-all duration-300`}>
-                <CardContent className="p-4 lg:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-2xl lg:text-3xl font-bold text-background">{stat.value}</p>
-                      <p className="text-background/80 text-xs lg:text-sm font-medium">{stat.label}</p>
-                    </div>
-                    <stat.icon className="w-8 h-8 lg:w-10 lg:h-10 text-background/90" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
