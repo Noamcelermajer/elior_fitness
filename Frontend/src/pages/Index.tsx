@@ -13,7 +13,6 @@ import { DailyCheckInCardV2 } from '../components/DailyCheckInCardV2';
 import { DashboardHeader } from '../components/DashboardHeader';
 import { DashboardWeightCard } from '../components/DashboardWeightCard';
 import { DashboardCaloriesCard } from '../components/DashboardCaloriesCard';
-import { DashboardStepsCard } from '../components/DashboardStepsCard';
 
 interface DashboardStats {
   totalClients: number;
@@ -72,7 +71,6 @@ const Index = () => {
   // New state for dashboard cards
   const [weightData, setWeightData] = useState<Array<{ date: string; weight: number }>>([]);
   const [caloriesData, setCaloriesData] = useState<{ consumed: number; target: number }>({ consumed: 0, target: 0 });
-  const [stepsData, setStepsData] = useState<{ steps: number | null; target: number }>({ steps: null, target: 10000 });
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
@@ -208,26 +206,6 @@ const Index = () => {
           console.error('Failed to fetch today calories:', err);
         }
 
-        // Fetch today's steps from check-in
-        try {
-          const checkInRes = await fetch(`${API_BASE_URL}/check-ins/today`, { headers });
-          if (checkInRes.ok) {
-            const checkIn = await checkInRes.json();
-            if (checkIn && checkIn !== null) {
-              setStepsData({
-                steps: checkIn.steps || null,
-                target: 10000
-              });
-            } else {
-              setStepsData({ steps: null, target: 10000 });
-            }
-          } else if (checkInRes.status === 404) {
-            setStepsData({ steps: null, target: 10000 });
-          }
-        } catch (err) {
-          console.error('Failed to fetch steps:', err);
-          setStepsData({ steps: null, target: 10000 });
-        }
 
         setStats({
           totalClients: 0,
@@ -457,18 +435,11 @@ const Index = () => {
                 weightEntries={weightData}
                 onViewDetailsClick={() => navigate('/progress')}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <DashboardCaloriesCard 
-                  consumed={caloriesData.consumed}
-                  target={caloriesData.target}
-                  onViewDetailsClick={() => navigate('/meals')}
-                />
-                <DashboardStepsCard 
-                  steps={stepsData.steps}
-                  target={stepsData.target}
-                  onViewDetailsClick={() => navigate('/progress')}
-                />
-              </div>
+              <DashboardCaloriesCard 
+                consumed={caloriesData.consumed}
+                target={caloriesData.target}
+                onViewDetailsClick={() => navigate('/meals')}
+              />
             </div>
           )}
 
