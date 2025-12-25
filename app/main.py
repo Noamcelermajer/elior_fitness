@@ -230,6 +230,11 @@ async def lifespan(app: FastAPI):
         run_meal_calorie_goal_migration()
         logger.info("✅ Meal calorie goal migration completed")
         
+        logger.info("Running progress measurements migration...")
+        from app.migrations.progress_measurements_migration import run_progress_measurements_migration
+        run_progress_measurements_migration()
+        logger.info("✅ Progress measurements migration completed")
+        
         logger.info("✅ All database migrations completed successfully")
     except Exception as migration_error:
         logger.error("❌ Database migrations encountered errors: %s", migration_error)
