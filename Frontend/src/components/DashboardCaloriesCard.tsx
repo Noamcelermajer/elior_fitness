@@ -121,29 +121,17 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
   };
 
   return (
-    <Card 
-      className={cn(
-        "bg-gradient-to-br from-card to-secondary border-2 shadow-xl hover:shadow-2xl transition-all",
-        getBorderColor()
-      )}
-    >
+    <Card className="bg-gradient-to-br from-card to-secondary border-2 border-primary/30 shadow-xl hover:shadow-2xl transition-all">
       <CardHeader>
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {t('dashboard.caloriesTracker', 'CALORIES TRACKER')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Text Display */}
-        <div className="text-center">
-          <p className="text-lg font-semibold text-foreground">
-            {roundedConsumed} {t('meals.kcal', 'KCAL')} | {roundedTarget} {t('meals.kcal', 'KCAL')}
-          </p>
-        </div>
-
-        {/* Circular Progress with Macro Segments */}
+        {/* Circular Progress - Simple design like nutrition page */}
         <div className="flex justify-center">
-          <div className="relative w-32 h-32">
-            <svg width="128" height="128" viewBox="0 0 128 128" className="transform -rotate-90">
+          <div className="relative">
+            <svg width="128" height="128" className="transform -rotate-90">
               {/* Background Circle */}
               <circle
                 cx="64"
@@ -155,92 +143,32 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
                 className="text-muted/30"
               />
               
-              {/* Macro Segments - Pie Chart based on consumed calories */}
-              {macroSegments ? (
-                <>
-                  {/* Protein Segment */}
-                  {macroSegments.protein.percent > 0 && (
-                    <path
-                      d={createArc(
-                        macroSegments.protein.startPercent,
-                        macroSegments.protein.startPercent + macroSegments.protein.percent
-                      )}
-                      fill={macroSegments.protein.color}
-                      opacity="0.9"
-                      className="transition-all duration-500"
-                    />
-                  )}
-                  {/* Carbs Segment */}
-                  {macroSegments.carbs.percent > 0 && (
-                    <path
-                      d={createArc(
-                        macroSegments.carbs.startPercent,
-                        macroSegments.carbs.startPercent + macroSegments.carbs.percent
-                      )}
-                      fill={macroSegments.carbs.color}
-                      opacity="0.9"
-                      className="transition-all duration-500"
-                    />
-                  )}
-                  {/* Fat Segment */}
-                  {macroSegments.fat.percent > 0 && (
-                    <path
-                      d={createArc(
-                        macroSegments.fat.startPercent,
-                        macroSegments.fat.startPercent + macroSegments.fat.percent
-                      )}
-                      fill={macroSegments.fat.color}
-                      opacity="0.9"
-                      className="transition-all duration-500"
-                    />
-                  )}
-                </>
-              ) : (
-                // Fallback: Simple progress circle
-                <circle
-                  cx="64"
-                  cy="64"
-                  r={radius}
-                  fill="none"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="8"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={circumference - (percentage / 100) * circumference}
-                  strokeLinecap="round"
-                  className="transition-all duration-500 ease-out"
-                />
-              )}
+              {/* Progress Circle */}
+              <circle
+                cx="64"
+                cy="64"
+                r={radius}
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="8"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                className="transition-all duration-500 ease-out"
+              />
             </svg>
             
             {/* Center Text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div className="text-2xl font-bold text-foreground">
-                {Math.round(percentage)}%
+                {roundedConsumed}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                /{roundedTarget} {t('meals.kcal', 'kcal')}
               </div>
             </div>
           </div>
         </div>
-
-        {/* Macro Legend with Calories */}
-        {macroSegments && (
-          <div className="flex flex-col items-center justify-center gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: macroSegments.protein.color }} />
-              <span className="text-muted-foreground">{t('meals.protein')}:</span>
-              <span className="text-foreground font-semibold">{Math.round(macroSegments.protein.calories)} {t('meals.kcal', 'kcal')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: macroSegments.carbs.color }} />
-              <span className="text-muted-foreground">{t('meals.carbs')}:</span>
-              <span className="text-foreground font-semibold">{Math.round(macroSegments.carbs.calories)} {t('meals.kcal', 'kcal')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: macroSegments.fat.color }} />
-              <span className="text-muted-foreground">{t('meals.fat')}:</span>
-              <span className="text-foreground font-semibold">{Math.round(macroSegments.fat.calories)} {t('meals.kcal', 'kcal')}</span>
-            </div>
-          </div>
-        )}
 
         {/* Meals Access Button */}
         <Button
