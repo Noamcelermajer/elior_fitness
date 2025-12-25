@@ -127,7 +127,7 @@ const Login = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-foreground font-medium">{t('auth.email')}</Label>
+                  <Label htmlFor="username" className="text-foreground font-medium">{t('auth.username', 'Username')}</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -140,7 +140,7 @@ const Login = () => {
                           ? 'bg-muted/80 text-foreground' 
                           : 'bg-secondary text-foreground'
                       }`}
-                      placeholder={t('auth.enterEmail')}
+                      placeholder={t('auth.enterUsername', 'Enter username')}
                       required
                     />
                   </div>

@@ -52,6 +52,8 @@ class FoodOptionResponse(FoodOptionBase):
 class MacroCategoryBase(BaseModel):
     macro_type: MacroType
     quantity_instruction: Optional[str] = None
+    calorie_goal: Optional[int] = None  # Calorie goal for this macro category
+    track_cross_macros: Optional[bool] = False  # Track and subtract calories from other macros
     notes: Optional[str] = None
 
 class MacroCategoryCreate(MacroCategoryBase):
@@ -60,6 +62,8 @@ class MacroCategoryCreate(MacroCategoryBase):
 
 class MacroCategoryUpdate(BaseModel):
     quantity_instruction: Optional[str] = None
+    calorie_goal: Optional[int] = None
+    track_cross_macros: Optional[bool] = None
     notes: Optional[str] = None
 
 class MacroCategoryResponse(MacroCategoryBase):
@@ -161,6 +165,8 @@ class CompleteFoodOption(BaseModel):
 class CompleteMacroCategory(BaseModel):
     macro_type: MacroType
     quantity_instruction: Optional[str] = None
+    calorie_goal: Optional[int] = None  # Calorie goal for this macro category
+    track_cross_macros: Optional[bool] = False  # Track and subtract calories from other macros
     food_options: List[CompleteFoodOption]
 
 class CompleteMealSlot(BaseModel):

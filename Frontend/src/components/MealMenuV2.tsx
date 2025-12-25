@@ -26,6 +26,7 @@ interface FoodOption {
   carbs: number;
   fat: number;
   serving_size: string;
+  recommended_quantity?: string | null; // Trainer's recommended amount
   notes: string;
 }
 
@@ -158,6 +159,9 @@ const MealMenuV2 = () => {
     fat: ''
   });
   const [mealCompletions, setMealCompletions] = useState<Record<number, CompletionRecord>>({});
+  const [completionAdjustments, setCompletionAdjustments] = useState<
+    Record<number, { calories: number; protein: number; carbs: number; fat: number }>
+  >({});
 
   const foodOptionMeta = useMemo(() => {
     const map = new Map<
@@ -215,16 +219,13 @@ const MealMenuV2 = () => {
   );
 
   const getOptionRemainingGrams = useCallback(
-    (slotId: number, macroType: MacroCategory['macro_type'], option: FoodOption) => {
+    (slotId: number, _macroType: MacroCategory['macro_type'], option: FoodOption) => {
       const recommended = parseGrams(option.serving_size);
-      if (recommended <= 0) {
-        return 0;
-      }
-      const consumed = getCategoryTotalConsumed(slotId, macroType);
-      const remaining = Math.max(0, recommended - consumed);
-      return remaining;
+      if (recommended <= 0) return 0;
+      const consumed = getOptionConsumedGrams(slotId, option.id);
+      return Math.max(0, recommended - consumed);
     },
-    [getCategoryTotalConsumed]
+    [getOptionConsumedGrams]
   );
 
   useEffect(() => {
@@ -535,6 +536,37 @@ const MealMenuV2 = () => {
   };
 
   const handleToggleCompletion = (slotId: number, checked: boolean) => {
+    const slot = mealPlan?.meal_slots.find((s) => s.id === slotId);
+    const totals = getMealTotals(slotId);
+
+    if (checked && slot) {
+      const caloriesTarget = slot.target_calories ?? 0;
+      const proteinTarget = slot.target_protein ?? 0;
+      const carbTarget = slot.target_carbs ?? 0;
+      const fatTarget = slot.target_fat ?? 0;
+
+      const caloriesRemaining = Math.max(0, caloriesTarget - totals.calories);
+      const proteinRemaining = Math.max(0, proteinTarget - totals.protein);
+      const carbRemaining = Math.max(0, carbTarget - totals.carbs);
+      const fatRemaining = Math.max(0, fatTarget - totals.fat);
+
+      setCompletionAdjustments((prev) => ({
+        ...prev,
+        [slotId]: {
+          calories: caloriesRemaining,
+          protein: proteinRemaining,
+          carbs: carbRemaining,
+          fat: fatRemaining,
+        },
+      }));
+    } else {
+      setCompletionAdjustments((prev) => {
+        const next = { ...prev };
+        delete next[slotId];
+        return next;
+      });
+    }
+
     upsertMealCompletion(slotId, checked, 'manual');
   };
 
@@ -673,6 +705,47 @@ const MealMenuV2 = () => {
     }
   };
 
+  const displayDailyMacros = useMemo(() => {
+    if (!dailyMacros) return null;
+    const totals = Object.values(completionAdjustments).reduce(
+      (acc, cur) => ({
+        calories: acc.calories + cur.calories,
+        protein: acc.protein + cur.protein,
+        carbs: acc.carbs + cur.carbs,
+        fat: acc.fat + cur.fat,
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+
+    const consumed = {
+      calories: dailyMacros.consumed.calories + totals.calories,
+      protein: dailyMacros.consumed.protein + totals.protein,
+      carbs: dailyMacros.consumed.carbs + totals.carbs,
+      fat: dailyMacros.consumed.fat + totals.fat,
+    };
+
+    const remaining = {
+      calories: Math.max(0, dailyMacros.targets.calories - consumed.calories),
+      protein: Math.max(0, dailyMacros.targets.protein - consumed.protein),
+      carbs: Math.max(0, dailyMacros.targets.carbs - consumed.carbs),
+      fat: Math.max(0, dailyMacros.targets.fat - consumed.fat),
+    };
+
+    const percentages = {
+      calories: dailyMacros.targets.calories ? (consumed.calories / dailyMacros.targets.calories) * 100 : 0,
+      protein: dailyMacros.targets.protein ? (consumed.protein / dailyMacros.targets.protein) * 100 : 0,
+      carbs: dailyMacros.targets.carbs ? (consumed.carbs / dailyMacros.targets.carbs) * 100 : 0,
+      fat: dailyMacros.targets.fat ? (consumed.fat / dailyMacros.targets.fat) * 100 : 0,
+    };
+
+    return {
+      ...dailyMacros,
+      consumed,
+      remaining,
+      percentages,
+    };
+  }, [dailyMacros, completionAdjustments]);
+
   if (loading) {
     return (
       <div className="pb-20 lg:pb-8">
@@ -761,7 +834,7 @@ const MealMenuV2 = () => {
 
       <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 space-y-6">
         {/* Daily Macro Progress */}
-        {dailyMacros && (
+        {displayDailyMacros && (
           <Card className="bg-gradient-to-br from-card to-secondary border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-foreground">
@@ -773,22 +846,22 @@ const MealMenuV2 = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <MacroCircle
                   label={t('meals.carbohydrates')}
-                  consumed={dailyMacros.consumed.carbs}
-                  target={dailyMacros.targets.carbs}
+                  consumed={displayDailyMacros.consumed.carbs}
+                  target={displayDailyMacros.targets.carbs}
                   unit="ג"
                   color="rgb(34, 197, 194)"
                 />
                 <MacroCircle
                   label={t('meals.fat')}
-                  consumed={dailyMacros.consumed.fat}
-                  target={dailyMacros.targets.fat}
+                  consumed={displayDailyMacros.consumed.fat}
+                  target={displayDailyMacros.targets.fat}
                   unit="ג"
                   color="rgb(168, 85, 247)"
                 />
                 <MacroCircle
                   label={t('meals.protein')}
-                  consumed={dailyMacros.consumed.protein}
-                  target={dailyMacros.targets.protein}
+                  consumed={displayDailyMacros.consumed.protein}
+                  target={displayDailyMacros.targets.protein}
                   unit="ג"
                   color="rgb(251, 146, 60)"
                 />
@@ -798,21 +871,21 @@ const MealMenuV2 = () => {
               <div className="mt-8 pt-6 border-t border-border">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-2">{t('meals.dailyCalories')}</p>
-                  <p className={`text-3xl font-bold ${dailyMacros.consumed.calories > dailyMacros.targets.calories ? 'text-destructive' : 'text-foreground'}`}>
-                    {dailyMacros.consumed.calories.toFixed(0)} <span className="text-lg text-muted-foreground">/ {dailyMacros.targets.calories}</span>
+                  <p className={`text-3xl font-bold ${displayDailyMacros.consumed.calories > displayDailyMacros.targets.calories ? 'text-destructive' : 'text-foreground'}`}>
+                    {displayDailyMacros.consumed.calories.toFixed(0)} <span className="text-lg text-muted-foreground">/ {displayDailyMacros.targets.calories}</span>
                   </p>
-                  {dailyMacros.consumed.calories > dailyMacros.targets.calories && (
+                  {displayDailyMacros.consumed.calories > displayDailyMacros.targets.calories && (
                     <div className="mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                       <p className="text-sm text-destructive font-medium">
-                        ⚠️ Over by {(dailyMacros.consumed.calories - dailyMacros.targets.calories).toFixed(0)} calories
+                        ⚠️ Over by {(displayDailyMacros.consumed.calories - displayDailyMacros.targets.calories).toFixed(0)} calories
                       </p>
                     </div>
                   )}
                   <Progress 
-                    value={Math.min(dailyMacros.percentages.calories, 100)} 
-                    className={`mt-3 h-2 ${dailyMacros.consumed.calories > dailyMacros.targets.calories ? 'bg-destructive/20' : ''}`} 
+                    value={Math.min(displayDailyMacros.percentages.calories, 100)} 
+                    className={`mt-3 h-2 ${displayDailyMacros.consumed.calories > displayDailyMacros.targets.calories ? 'bg-destructive/20' : ''}`} 
                   />
-                  {dailyMacros.percentages.calories > 100 && (
+                  {displayDailyMacros.percentages.calories > 100 && (
                     <Progress 
                       value={100} 
                       className="mt-1 h-2 bg-destructive/50" 
@@ -821,28 +894,28 @@ const MealMenuV2 = () => {
                 </div>
                 
                 {/* Macro Over Alerts */}
-                {(dailyMacros.consumed.protein > dailyMacros.targets.protein ||
-                  dailyMacros.consumed.carbs > dailyMacros.targets.carbs ||
-                  dailyMacros.consumed.fat > dailyMacros.targets.fat) && (
+                {(displayDailyMacros.consumed.protein > displayDailyMacros.targets.protein ||
+                  displayDailyMacros.consumed.carbs > displayDailyMacros.targets.carbs ||
+                  displayDailyMacros.consumed.fat > displayDailyMacros.targets.fat) && (
                   <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                     <p className="text-sm font-medium text-destructive mb-2">⚠️ {t('meals.macroLimitsExceeded', 'חרגת ממגבלות המאקרו:')}</p>
                     <div className="space-y-1 text-xs">
-                      {dailyMacros.consumed.protein > dailyMacros.targets.protein && (
+                      {displayDailyMacros.consumed.protein > displayDailyMacros.targets.protein && (
                         <p className="text-destructive">
-                          {t('meals.protein')}: {dailyMacros.consumed.protein.toFixed(0)}ג / {dailyMacros.targets.protein}ג 
-                          (+{(dailyMacros.consumed.protein - dailyMacros.targets.protein).toFixed(0)}ג {t('meals.over')})
+                          {t('meals.protein')}: {displayDailyMacros.consumed.protein.toFixed(0)}ג / {displayDailyMacros.targets.protein}ג 
+                          (+{(displayDailyMacros.consumed.protein - displayDailyMacros.targets.protein).toFixed(0)}ג {t('meals.over')})
                         </p>
                       )}
-                      {dailyMacros.consumed.carbs > dailyMacros.targets.carbs && (
+                      {displayDailyMacros.consumed.carbs > displayDailyMacros.targets.carbs && (
                         <p className="text-destructive">
-                          {t('meals.carbs')}: {dailyMacros.consumed.carbs.toFixed(0)}ג / {dailyMacros.targets.carbs}ג 
-                          (+{(dailyMacros.consumed.carbs - dailyMacros.targets.carbs).toFixed(0)}ג {t('meals.over')})
+                          {t('meals.carbs')}: {displayDailyMacros.consumed.carbs.toFixed(0)}ג / {displayDailyMacros.targets.carbs}ג 
+                          (+{(displayDailyMacros.consumed.carbs - displayDailyMacros.targets.carbs).toFixed(0)}ג {t('meals.over')})
                         </p>
                       )}
-                      {dailyMacros.consumed.fat > dailyMacros.targets.fat && (
+                      {displayDailyMacros.consumed.fat > displayDailyMacros.targets.fat && (
                         <p className="text-destructive">
-                          {t('meals.fat')}: {dailyMacros.consumed.fat.toFixed(0)}ג / {dailyMacros.targets.fat}ג 
-                          (+{(dailyMacros.consumed.fat - dailyMacros.targets.fat).toFixed(0)}ג {t('meals.over')})
+                          {t('meals.fat')}: {displayDailyMacros.consumed.fat.toFixed(0)}ג / {displayDailyMacros.targets.fat}ג 
+                          (+{(displayDailyMacros.consumed.fat - displayDailyMacros.targets.fat).toFixed(0)}ג {t('meals.over')})
                         </p>
                       )}
                     </div>
@@ -911,15 +984,22 @@ const MealMenuV2 = () => {
               const completion = mealCompletions[slot.id];
               const isCompleted = completion?.isCompleted ?? false;
               const mealTotals = getMealTotals(slot.id);
+              const completionAdjustment = completionAdjustments[slot.id] ?? { calories: 0, protein: 0, carbs: 0, fat: 0 };
+              const effectiveTotals = {
+                calories: mealTotals.calories + completionAdjustment.calories,
+                protein: mealTotals.protein + completionAdjustment.protein,
+                carbs: mealTotals.carbs + completionAdjustment.carbs,
+                fat: mealTotals.fat + completionAdjustment.fat,
+              };
               const caloriesTarget = slot.target_calories ?? null;
               const proteinTarget = slot.target_protein ?? null;
               const carbTarget = slot.target_carbs ?? null;
               const fatTarget = slot.target_fat ?? null;
 
-              const caloriesDelta = caloriesTarget !== null ? caloriesTarget - mealTotals.calories : null;
-              const proteinDelta = proteinTarget !== null ? proteinTarget - mealTotals.protein : null;
-              const carbDelta = carbTarget !== null ? carbTarget - mealTotals.carbs : null;
-              const fatDelta = fatTarget !== null ? fatTarget - mealTotals.fat : null;
+              const caloriesDelta = caloriesTarget !== null ? caloriesTarget - effectiveTotals.calories : null;
+              const proteinDelta = proteinTarget !== null ? proteinTarget - effectiveTotals.protein : null;
+              const carbDelta = carbTarget !== null ? carbTarget - effectiveTotals.carbs : null;
+              const fatDelta = fatTarget !== null ? fatTarget - effectiveTotals.fat : null;
 
               return (
                 <AccordionItem key={slot.id} value={`meal-${slot.id}`} className="border rounded-lg">
@@ -960,7 +1040,7 @@ const MealMenuV2 = () => {
                         <div>
                           <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.calories')}</p>
                           <p className="text-sm font-semibold">
-                            {formatNumber(mealTotals.calories)} {t('mealCreation.unitKcal')}
+                            {formatNumber(effectiveTotals.calories)} {t('mealCreation.unitKcal')}
                             {caloriesTarget ? ` / ${Math.round(caloriesTarget)} ${t('mealCreation.unitKcal')}` : ''}
                           </p>
                           {caloriesDelta !== null && (
@@ -977,7 +1057,7 @@ const MealMenuV2 = () => {
                         <div>
                           <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.protein')}</p>
                           <p className="text-sm font-semibold">
-                            {formatNumber(mealTotals.protein)} {t('mealCreation.unitGrams')}
+                            {formatNumber(effectiveTotals.protein)} {t('mealCreation.unitGrams')}
                             {proteinTarget ? ` / ${Math.round(proteinTarget)} ${t('mealCreation.unitGrams')}` : ''}
                           </p>
                           {proteinDelta !== null && (
@@ -994,7 +1074,7 @@ const MealMenuV2 = () => {
                         <div>
                           <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.carbs')}</p>
                           <p className="text-sm font-semibold">
-                            {formatNumber(mealTotals.carbs)} {t('mealCreation.unitGrams')}
+                            {formatNumber(effectiveTotals.carbs)} {t('mealCreation.unitGrams')}
                             {carbTarget ? ` / ${Math.round(carbTarget)} ${t('mealCreation.unitGrams')}` : ''}
                           </p>
                           {carbDelta !== null && (
@@ -1011,7 +1091,7 @@ const MealMenuV2 = () => {
                         <div>
                           <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.fat')}</p>
                           <p className="text-sm font-semibold">
-                            {formatNumber(mealTotals.fat)} {t('mealCreation.unitGrams')}
+                            {formatNumber(effectiveTotals.fat)} {t('mealCreation.unitGrams')}
                             {fatTarget ? ` / ${Math.round(fatTarget)} ${t('mealCreation.unitGrams')}` : ''}
                           </p>
                           {fatDelta !== null && (
@@ -1055,7 +1135,10 @@ const MealMenuV2 = () => {
                                   const selectedChoice = choices.find(
                                     c => c.meal_slot_id === slot.id && c.food_option_id === option.id
                                   );
-                                  const recommendedGrams = parseGrams(option.serving_size);
+                                  // Use recommended_quantity if available, otherwise fall back to serving_size
+                                  const recommendedGrams = option.recommended_quantity 
+                                    ? parseGrams(option.recommended_quantity) 
+                                    : parseGrams(option.serving_size);
                                   const remainingGrams = getOptionRemainingGrams(slot.id, category.macro_type, option);
                                   const consumedGrams = getOptionConsumedGrams(slot.id, option.id);
                                   return (
@@ -1113,15 +1196,17 @@ const MealMenuV2 = () => {
                                             </div>
                                           </div>
                                           
-                                          {/* Serving Size and Remaining */}
-                                          <div className="flex items-center justify-between text-xs">
+                                          {/* Recommended Amount and Remaining */}
+                                          <div className="flex items-center justify-between text-xs gap-4">
                                             {recommendedGrams > 0 && (
                                               <span className="text-muted-foreground">
-                                                {t('meals.servingSize')}: <span className="font-medium text-foreground">{formatGrams(recommendedGrams)}</span>
+                                                {option.recommended_quantity 
+                                                  ? t('meals.recommendedAmount', 'Recommended') 
+                                                  : t('meals.servingSize')}: <span className="font-medium text-foreground">{formatGrams(recommendedGrams)}</span>
                                               </span>
                                             )}
                                             <span className="text-muted-foreground">
-                                              {t('meals.remaining')}: <span className="font-medium text-foreground">{Math.max(0, Math.round(remainingGrams))}ג</span>
+                                              {t('meals.remainingAmount', 'Remaining Amount')}: <span className="font-medium text-foreground">{Math.max(0, Math.round(remainingGrams))}ג</span>
                                             </span>
                                           </div>
                                         </div>

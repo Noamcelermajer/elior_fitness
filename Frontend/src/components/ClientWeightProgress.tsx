@@ -573,7 +573,7 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
           }
         }
       }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('weightProgress.viewPhoto')}</DialogTitle>
             <DialogDescription>
@@ -587,7 +587,7 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
                   <img 
                     src={photoUrl}
                     alt={t('weightProgress.progressPhoto')}
-                    className="w-full h-auto rounded-lg border"
+                    className="w-full h-auto max-h-[70vh] object-contain rounded-lg border"
                   />
                 ) : (
                   <div className="w-full h-64 bg-secondary/20 rounded-lg flex items-center justify-center">

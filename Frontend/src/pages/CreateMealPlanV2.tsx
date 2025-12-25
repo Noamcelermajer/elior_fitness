@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -24,6 +25,7 @@ interface FoodOption {
   carbs: number | null;
   fat: number | null;
   serving_size: string;
+  recommended_quantity?: string | null; // Trainer's recommended amount in grams
 }
 
 interface MealBankItem {
@@ -41,6 +43,8 @@ interface MealBankItem {
 interface MacroCategory {
   macro_type: 'protein' | 'carb' | 'fat';
   quantity_instruction: string;
+  calorie_goal: number | null;  // Calorie goal for this macro category
+  track_cross_macros: boolean;  // Track and subtract calories from other macros
   food_options: FoodOption[];
 }
 
@@ -126,7 +130,7 @@ const CreateMealPlanV2: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const existingMealPlan: any = location.state?.mealPlan;
   const client: any = location.state?.client;
   const initialClientId = client?.id ?? existingMealPlan?.client_id ?? 0;
@@ -154,8 +158,7 @@ const CreateMealPlanV2: React.FC = () => {
   const [mealBankItems, setMealBankItems] = useState<MealBankItem[]>([]);
   const [mealBankSearch, setMealBankSearch] = useState('');
   const [mealBankFilter, setMealBankFilter] = useState<'protein' | 'carb' | 'fat' | 'all'>('all');
-  const [selectedMealBankItem, setSelectedMealBankItem] = useState<MealBankItem | null>(null);
-  const [recommendedQuantity, setRecommendedQuantity] = useState('100');
+  const [selectedMealBankItems, setSelectedMealBankItems] = useState<Set<number>>(new Set());
   const [showAddFoodDialog, setShowAddFoodDialog] = useState(false);
   const [newFoodItem, setNewFoodItem] = useState({
     name: '',
@@ -321,6 +324,8 @@ const CreateMealPlanV2: React.FC = () => {
             typeof macro.macro_type === 'string' ? macro.macro_type : macro.macro_type?.value
           ),
           quantity_instruction: macro.quantity_instruction || '',
+          calorie_goal: macro.calorie_goal ?? null,
+          track_cross_macros: macro.track_cross_macros ?? true,
           food_options: (macro.food_options || []).map((food: any) => ({
             name: food.name || food.name_hebrew || '',
             name_hebrew: food.name_hebrew || '',
@@ -329,6 +334,7 @@ const CreateMealPlanV2: React.FC = () => {
             carbs: food.carbs ?? null,
             fat: food.fat ?? null,
             serving_size: sanitizeServingSize(food.serving_size),
+            recommended_quantity: food.recommended_quantity || null,
           })),
         })),
       }));
@@ -402,8 +408,7 @@ const CreateMealPlanV2: React.FC = () => {
     const macroType = formData.meal_slots[mealIndex].macro_categories[macroIndex].macro_type;
     setMealBankFilter(macroType);
     setMealBankSearch('');
-    setSelectedMealBankItem(null);
-    setRecommendedQuantity('100');
+    setSelectedMealBankItems(new Set());
     // Set default macro type for new food item
     setNewFoodItem({
       name: '',
@@ -418,28 +423,78 @@ const CreateMealPlanV2: React.FC = () => {
     setShowMealBank(true);
   };
 
-  const selectMealBankItem = (item: MealBankItem) => {
-    const normalizedItem = normalizeMealBankItem(item as MealBankItem & { macro_type: string });
-    setSelectedMealBankItem(normalizedItem);
-    setRecommendedQuantity(getServingOrDefault(item.serving_size, '100'));
+  const toggleMealBankItem = (item: MealBankItem) => {
+    const itemId = item.id;
+    setSelectedMealBankItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
   };
 
   const confirmMealBankSelection = () => {
-    if (!selectedMealBankItem || currentMealIndex === null || currentMacroIndex === null) return;
+    if (selectedMealBankItems.size === 0 || currentMealIndex === null || currentMacroIndex === null) return;
     
     const newSlots = [...formData.meal_slots];
-    newSlots[currentMealIndex].macro_categories[currentMacroIndex].food_options.push({
-      name: selectedMealBankItem.name || selectedMealBankItem.name_hebrew,
-      name_hebrew: selectedMealBankItem.name_hebrew,
-      calories: selectedMealBankItem.calories,
-      protein: selectedMealBankItem.protein,
-      carbs: selectedMealBankItem.carbs,
-      fat: selectedMealBankItem.fat,
-      serving_size: sanitizeServingSize(recommendedQuantity) || '',
+    const mealSlot = newSlots[currentMealIndex];
+    const macro = mealSlot.macro_categories[currentMacroIndex];
+    
+    // Get all selected items
+    const itemsToAdd = filteredMealBankItems.filter(item => selectedMealBankItems.has(item.id));
+    
+    // Add all selected items
+    itemsToAdd.forEach((item) => {
+      const normalizedItem = normalizeMealBankItem(item as MealBankItem & { macro_type: string });
+      
+      // Calculate recommended quantity based on calorie goal
+      const recommendedQty = macro.calorie_goal 
+        ? calculateRecommendedQuantity(normalizedItem, macro.calorie_goal, macro, undefined, mealSlot)
+        : '100';
+      
+      macro.food_options.push({
+        name: normalizedItem.name || normalizedItem.name_hebrew,
+        name_hebrew: normalizedItem.name_hebrew,
+        calories: normalizedItem.calories,
+        protein: normalizedItem.protein,
+        carbs: normalizedItem.carbs,
+        fat: normalizedItem.fat,
+        serving_size: recommendedQty,
+      });
     });
+    
+    // Update remaining food options based on remaining calories
+    if (macro.calorie_goal) {
+      const remainingCalories = calculateRemainingCalories(macro, mealSlot);
+      
+      // Update all food options' quantities based on remaining calories
+      if (remainingCalories > 0) {
+        macro.food_options.forEach((food, idx) => {
+          const newQty = calculateRecommendedQuantity(food, remainingCalories, macro, idx, mealSlot);
+          food.serving_size = newQty;
+        });
+      }
+    }
+    
+    // If cross-macro tracking is enabled, update other macro categories' food options too
+    if (macro.track_cross_macros) {
+      mealSlot.macro_categories.forEach((otherMacro) => {
+        if (otherMacro.macro_type !== macro.macro_type && otherMacro.calorie_goal) {
+          const otherRemaining = calculateRemainingCaloriesWithCrossMacro(otherMacro, mealSlot);
+          otherMacro.food_options.forEach((food, idx) => {
+            const newQty = calculateRecommendedQuantity(food, otherRemaining, otherMacro, idx, mealSlot);
+            food.serving_size = newQty;
+          });
+        }
+      });
+    }
+    
     setFormData({ ...formData, meal_slots: newSlots });
     setShowMealBank(false);
-    setSelectedMealBankItem(null);
+    setSelectedMealBankItems(new Set());
   };
 
   const handleAddFoodToBank = async () => {
@@ -482,7 +537,7 @@ const CreateMealPlanV2: React.FC = () => {
         // Refresh meal bank items
         await fetchMealBankItems();
         // Auto-select the newly created item
-        setSelectedMealBankItem(normalizedCreatedItem);
+        setSelectedMealBankItems(new Set([normalizedCreatedItem.id]));
         // Set macro filter to match the new item
         setMealBankFilter(normalizedCreatedItem.macro_type);
         // Reset form
@@ -549,9 +604,9 @@ const CreateMealPlanV2: React.FC = () => {
       target_carbs: null,
       target_fat: null,
       macro_categories: [
-        { macro_type: 'protein', quantity_instruction: '', food_options: [] },
-        { macro_type: 'carb', quantity_instruction: '', food_options: [] },
-        { macro_type: 'fat', quantity_instruction: '', food_options: [] },
+        { macro_type: 'protein', quantity_instruction: '', calorie_goal: null, track_cross_macros: true, food_options: [] },
+        { macro_type: 'carb', quantity_instruction: '', calorie_goal: null, track_cross_macros: true, food_options: [] },
+        { macro_type: 'fat', quantity_instruction: '', calorie_goal: null, track_cross_macros: true, food_options: [] },
       ],
     };
     setFormData(prev => ({
@@ -595,6 +650,27 @@ const CreateMealPlanV2: React.FC = () => {
       setLoading(true);
       setError('');
 
+      // Calculate total_calories from sum of all meal slot calories (which are calculated from macro goals)
+      const calculatedTotalCalories = formData.meal_slots.reduce((sum, slot) => {
+        return sum + calculateMealCalories(slot);
+      }, 0);
+
+      // Prepare form data with calculated total_calories and updated meal slot target_calories and macro targets
+      const submitData = {
+        ...formData,
+        total_calories: calculatedTotalCalories > 0 ? calculatedTotalCalories : null,
+        protein_target: calculateTotalProteinTarget() || null,
+        carb_target: calculateTotalCarbTarget() || null,
+        fat_target: calculateTotalFatTarget() || null,
+        meal_slots: formData.meal_slots.map(slot => ({
+          ...slot,
+          target_calories: calculateMealCalories(slot), // Update target_calories from macro goals
+          target_protein: calculateProteinTarget(slot) || null,
+          target_carbs: calculateCarbTarget(slot) || null,
+          target_fat: calculateFatTarget(slot) || null,
+        })),
+      };
+
       const token = localStorage.getItem('access_token');
       const fallbackError = isEditing ? t('mealCreation.errorUpdating') : t('mealCreation.errorCreating');
       const response = await fetch(`${API_BASE_URL}/v2/meals/plans/complete`, {
@@ -603,7 +679,7 @@ const CreateMealPlanV2: React.FC = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       });
 
       if (!response.ok) {
@@ -632,6 +708,7 @@ const CreateMealPlanV2: React.FC = () => {
       carbs: null,
       fat: null,
       serving_size: '',
+      recommended_quantity: null,
     });
     setFormData({ ...formData, meal_slots: newSlots });
   };
@@ -654,9 +731,222 @@ const CreateMealPlanV2: React.FC = () => {
     setFormData({ ...formData, meal_slots: newSlots });
   };
 
+  // Calculate recommended quantity based on calorie goal and food calories per 100g
+  // Calculate calories from other macros when cross-macro tracking is enabled
+  const calculateCrossMacroCalories = (
+    food: FoodOption,
+    grams: number,
+    currentMacroType: 'protein' | 'carb' | 'fat',
+    mealSlot: MealSlot
+  ): { protein: number; carb: number; fat: number } => {
+    const result = { protein: 0, carb: 0, fat: 0 };
+    
+    // Get grams per 100g for each macro
+    const proteinPer100g = food.protein || 0;
+    const carbPer100g = food.carbs || 0;
+    const fatPer100g = food.fat || 0;
+    
+    // Calculate actual grams consumed
+    const proteinGrams = (proteinPer100g / 100) * grams;
+    const carbGrams = (carbPer100g / 100) * grams;
+    const fatGrams = (fatPer100g / 100) * grams;
+    
+    // Convert to calories (protein/carb: 4 cal/g, fat: 9 cal/g)
+    // Only count calories for macros OTHER than the current one
+    if (currentMacroType !== 'protein') {
+      result.protein = proteinGrams * 4;
+    }
+    if (currentMacroType !== 'carb') {
+      result.carb = carbGrams * 4;
+    }
+    if (currentMacroType !== 'fat') {
+      result.fat = fatGrams * 9;
+    }
+    
+    return result;
+  };
+
+  // Calculate remaining calories after foods are added (accounting for cross-macro tracking)
+  const calculateRemainingCalories = (
+    macro: MacroCategory,
+    mealSlot: MealSlot,
+    excludeIndex?: number
+  ): number => {
+    if (!macro.calorie_goal) return 0;
+    
+    let usedCalories = 0;
+    
+    macro.food_options.forEach((food, idx) => {
+      if (excludeIndex !== undefined && idx === excludeIndex) return; // Skip the excluded food
+      
+      // Food calories are per 100g (standard nutrition database format)
+      const baseServingSize = 100;
+      const caloriesPerGram = (food.calories || 0) / baseServingSize;
+      const grams = parseNumericValue(food.serving_size) || 0;
+      
+      // Calculate calories from this food's primary macro
+      const primaryCalories = caloriesPerGram * grams;
+      usedCalories += primaryCalories;
+      
+      // Note: Cross-macro tracking subtracts from OTHER macros, not this one
+      // So we don't add cross-macro calories to usedCalories here
+      // The cross-macro effect is handled when calculating remaining calories for OTHER macros
+    });
+    
+    return Math.max(0, macro.calorie_goal - usedCalories);
+  };
+
+  // Calculate remaining calories for a macro category, accounting for cross-macro deductions from other categories
+  const calculateRemainingCaloriesWithCrossMacro = (
+    macro: MacroCategory,
+    mealSlot: MealSlot,
+    excludeIndex?: number
+  ): number => {
+    let remaining = calculateRemainingCalories(macro, mealSlot, excludeIndex);
+    
+    // If cross-macro tracking is enabled in OTHER categories, subtract their cross-macro calories
+    mealSlot.macro_categories.forEach((otherMacro) => {
+      if (otherMacro.macro_type !== macro.macro_type && otherMacro.track_cross_macros) {
+        otherMacro.food_options.forEach((food, foodIdx) => {
+          if (excludeIndex !== undefined && 
+              mealSlot.macro_categories.findIndex(m => m === macro) === excludeIndex) {
+            // Skip if this is the excluded food's macro category
+            return;
+          }
+          
+          const grams = parseNumericValue(food.serving_size) || 0;
+          const crossMacroCalories = calculateCrossMacroCalories(
+            food,
+            grams,
+            otherMacro.macro_type,
+            mealSlot
+          );
+          
+          // Subtract calories that affect this macro
+          if (macro.macro_type === 'protein') {
+            remaining = Math.max(0, remaining - crossMacroCalories.protein);
+          } else if (macro.macro_type === 'carb') {
+            remaining = Math.max(0, remaining - crossMacroCalories.carb);
+          } else if (macro.macro_type === 'fat') {
+            remaining = Math.max(0, remaining - crossMacroCalories.fat);
+          }
+        });
+      }
+    });
+    
+    return remaining;
+  };
+
+  const calculateRecommendedQuantity = (
+    food: FoodOption,
+    calorieGoal: number | null,
+    macro?: MacroCategory,
+    foodIndex?: number,
+    mealSlot?: MealSlot
+  ): string => {
+    if (!calorieGoal || !food.calories) return '100';
+    
+    // Calculate remaining calories if this is for an existing food option
+    let remainingCalories = calorieGoal;
+    if (macro && mealSlot && foodIndex !== undefined) {
+      remainingCalories = calculateRemainingCaloriesWithCrossMacro(macro, mealSlot, foodIndex);
+    }
+    
+    // Food calories from meal bank are per 100g (standard nutrition database format)
+    const baseServingSize = 100;
+    const caloriesPerGram = food.calories / baseServingSize;
+    
+    if (caloriesPerGram <= 0) return '100';
+    
+    // Calculate grams needed to reach remaining calorie goal
+    const gramsNeeded = Math.round(remainingCalories / caloriesPerGram);
+    return gramsNeeded > 0 ? gramsNeeded.toString() : '100';
+  };
+
+  // Calculate meal total calories from sum of macro calorie goals
+  const calculateMealCalories = (slot: MealSlot): number => {
+    return slot.macro_categories.reduce((sum, macro) => {
+      return sum + (macro.calorie_goal || 0);
+    }, 0);
+  };
+
+  // Calculate protein target from protein macro calorie goals (protein: 4 cal/g)
+  const calculateProteinTarget = (slot: MealSlot): number => {
+    const proteinMacro = slot.macro_categories.find(m => m.macro_type === 'protein');
+    if (!proteinMacro || !proteinMacro.calorie_goal) return 0;
+    return Math.round(proteinMacro.calorie_goal / 4);
+  };
+
+  // Calculate carb target from carb macro calorie goals (carbs: 4 cal/g)
+  const calculateCarbTarget = (slot: MealSlot): number => {
+    const carbMacro = slot.macro_categories.find(m => m.macro_type === 'carb');
+    if (!carbMacro || !carbMacro.calorie_goal) return 0;
+    return Math.round(carbMacro.calorie_goal / 4);
+  };
+
+  // Calculate fat target from fat macro calorie goals (fat: 9 cal/g)
+  const calculateFatTarget = (slot: MealSlot): number => {
+    const fatMacro = slot.macro_categories.find(m => m.macro_type === 'fat');
+    if (!fatMacro || !fatMacro.calorie_goal) return 0;
+    return Math.round(fatMacro.calorie_goal / 9);
+  };
+
+  // Calculate total plan protein target from all meal slots
+  const calculateTotalProteinTarget = (): number => {
+    return formData.meal_slots.reduce((sum, slot) => {
+      return sum + calculateProteinTarget(slot);
+    }, 0);
+  };
+
+  // Calculate total plan carb target from all meal slots
+  const calculateTotalCarbTarget = (): number => {
+    return formData.meal_slots.reduce((sum, slot) => {
+      return sum + calculateCarbTarget(slot);
+    }, 0);
+  };
+
+  // Calculate total plan fat target from all meal slots
+  const calculateTotalFatTarget = (): number => {
+    return formData.meal_slots.reduce((sum, slot) => {
+      return sum + calculateFatTarget(slot);
+    }, 0);
+  };
+
   const updateMacroCategory = (mealIndex: number, macroIndex: number, field: string, value: any) => {
     const newSlots = [...formData.meal_slots];
-    newSlots[mealIndex].macro_categories[macroIndex][field] = value;
+    const mealSlot = newSlots[mealIndex];
+    const macro = mealSlot.macro_categories[macroIndex];
+    
+    macro[field] = value;
+    
+    // Update meal target_calories and macro targets when macro calorie goals change
+    if (field === 'calorie_goal') {
+      mealSlot.target_calories = calculateMealCalories(mealSlot);
+      mealSlot.target_protein = calculateProteinTarget(mealSlot);
+      mealSlot.target_carbs = calculateCarbTarget(mealSlot);
+      mealSlot.target_fat = calculateFatTarget(mealSlot);
+      
+      // Recalculate all food option quantities based on new calorie goal
+      if (macro.calorie_goal) {
+        const remainingCalories = calculateRemainingCalories(macro, mealSlot);
+        macro.food_options.forEach((food, idx) => {
+          const newQty = calculateRecommendedQuantity(food, remainingCalories, macro, idx, mealSlot);
+          food.serving_size = newQty;
+        });
+      }
+    }
+    
+    // When track_cross_macros changes, recalculate all food quantities
+    if (field === 'track_cross_macros') {
+      if (macro.calorie_goal) {
+        const remainingCalories = calculateRemainingCalories(macro, mealSlot);
+        macro.food_options.forEach((food, idx) => {
+          const newQty = calculateRecommendedQuantity(food, remainingCalories, macro, idx, mealSlot);
+          food.serving_size = newQty;
+        });
+      }
+    }
+    
     setFormData({ ...formData, meal_slots: newSlots });
   };
 
@@ -674,6 +964,15 @@ const CreateMealPlanV2: React.FC = () => {
       case 'protein': return 'חלבון (Protein)';
       case 'carb': return 'פחמימה (Carb)';
       case 'fat': return 'שומן (Fat)';
+      default: return type;
+    }
+  };
+
+  const getMacroLabelHebrew = (type: string) => {
+    switch (type) {
+      case 'protein': return 'חלבון';
+      case 'carb': return 'פחמימה';
+      case 'fat': return 'שומן';
       default: return type;
     }
   };
@@ -769,7 +1068,6 @@ const CreateMealPlanV2: React.FC = () => {
                   readOnly
                   className="bg-muted"
                 />
-                <span className="text-sm text-muted-foreground">{t('meals.meals')}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">{t('meals.addMeal')}</p>
             </div>
@@ -792,81 +1090,62 @@ const CreateMealPlanV2: React.FC = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <Label htmlFor="total_calories">{t('mealCreation.targetCalories')}</Label>
+              <Label htmlFor="total_calories">{t('mealCreation.targetCalories')} {t('mealCreation.calculated', '(Calculated)')}</Label>
               <Input
                 id="total_calories"
                 type="number"
-                placeholder="2000"
-                value={formData.total_calories || ''}
-                onChange={(e) => setFormData({ ...formData, total_calories: parseInt(e.target.value) || null })}
+                placeholder={t('mealCreation.calculatedFromMeals', 'Calculated from sum of all meal calories')}
+                value={formData.meal_slots.reduce((sum, slot) => sum + calculateMealCalories(slot), 0) || ''}
+                readOnly
+                className="bg-muted select-none"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('mealCreation.calculatedFromMeals', 'Calculated from sum of all meal calories')}
+              </p>
             </div>
             <div>
-              <Label htmlFor="protein_target">{t('mealCreation.proteinTarget')}</Label>
+              <Label htmlFor="protein_target">{t('mealCreation.proteinTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
               <Input
                 id="protein_target"
                 type="number"
-                placeholder="180"
-                value={formData.protein_target || ''}
-                onChange={(e) => setFormData({ ...formData, protein_target: parseInt(e.target.value) || null })}
+                value={calculateTotalProteinTarget()}
+                readOnly
+                className="bg-muted"
+                placeholder="Calculated from protein calorie goals"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('mealCreation.calculatedFromMacroGoals', 'Calculated from sum of protein macro calorie goals (÷ 4)')}
+              </p>
             </div>
             <div>
-              <Label htmlFor="carb_target">{t('mealCreation.carbTarget')}</Label>
+              <Label htmlFor="carb_target">{t('mealCreation.carbTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
               <Input
                 id="carb_target"
                 type="number"
-                placeholder="150"
-                value={formData.carb_target || ''}
-                onChange={(e) => setFormData({ ...formData, carb_target: parseInt(e.target.value) || null })}
+                value={calculateTotalCarbTarget()}
+                readOnly
+                className="bg-muted"
+                placeholder="Calculated from carb calorie goals"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('mealCreation.calculatedFromMacroGoals', 'Calculated from sum of carb macro calorie goals (÷ 4)')}
+              </p>
             </div>
             <div>
-              <Label htmlFor="fat_target">{t('mealCreation.fatTarget')}</Label>
+              <Label htmlFor="fat_target">{t('mealCreation.fatTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
               <Input
                 id="fat_target"
                 type="number"
-                placeholder="50"
-                value={formData.fat_target || ''}
-                onChange={(e) => setFormData({ ...formData, fat_target: parseInt(e.target.value) || null })}
+                value={calculateTotalFatTarget()}
+                readOnly
+                className="bg-muted"
+                placeholder="Calculated from fat calorie goals"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('mealCreation.calculatedFromMacroGoals', 'Calculated from sum of fat macro calorie goals (÷ 9)')}
+              </p>
             </div>
           </div>
-
-          {Object.values(mealPlanNutritionTotals).some((value) => value > 0) && (
-            <div className="mt-4 space-y-1 rounded-md bg-muted/30 p-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                {t('mealCreation.calculatedMacrosHeader')}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t('mealCreation.calculatedMacrosDescription')}
-              </p>
-              {renderCalculatedRow(
-                t('mealCreation.targetCalories'),
-                mealPlanNutritionTotals.calories,
-                formData.total_calories,
-                t('mealCreation.unitKcal')
-              )}
-              {renderCalculatedRow(
-                t('mealCreation.proteinTarget'),
-                mealPlanNutritionTotals.protein,
-                formData.protein_target,
-                t('mealCreation.unitGrams')
-              )}
-              {renderCalculatedRow(
-                t('mealCreation.carbTarget'),
-                mealPlanNutritionTotals.carbs,
-                formData.carb_target,
-                t('mealCreation.unitGrams')
-              )}
-              {renderCalculatedRow(
-                t('mealCreation.fatTarget'),
-                mealPlanNutritionTotals.fat,
-                formData.fat_target,
-                t('mealCreation.unitGrams')
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -916,7 +1195,7 @@ const CreateMealPlanV2: React.FC = () => {
                 <AccordionContent>
                   <div className="space-y-4 pt-4">
                     {/* Meal Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div className="min-w-0 w-full">
                         <Label htmlFor={`meal-name-${mealIndex}`}>{t('mealCreation.mealName')}</Label>
                         <Input
@@ -925,85 +1204,67 @@ const CreateMealPlanV2: React.FC = () => {
                           value={slot.name}
                           onChange={(e) => updateMealSlot(mealIndex, 'name', e.target.value)}
                           className="w-full max-w-full"
-                          dir="auto"
-                        />
-                      </div>
-                      <div className="min-w-0 w-full">
-                        <Label htmlFor={`meal-time-${mealIndex}`}>{t('dates.time')}</Label>
-                        <Input
-                          id={`meal-time-${mealIndex}`}
-                          type="time"
-                          value={slot.time_suggestion}
-                          onChange={(e) => updateMealSlot(mealIndex, 'time_suggestion', e.target.value)}
-                          className="w-full max-w-full"
+                          dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
-                        <Label>{t('mealCreation.mealCaloriesTarget')}</Label>
+                        <Label>{t('mealCreation.mealCaloriesTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
                         <Input
                           type="number"
                           min={0}
-                          value={slot.target_calories ?? ''}
-                          onChange={(e) =>
-                            updateMealSlot(
-                              mealIndex,
-                              'target_calories',
-                              e.target.value === '' ? null : Number(e.target.value)
-                            )
-                          }
-                          placeholder="e.g., 500"
+                          value={calculateMealCalories(slot)}
+                          readOnly
+                          className="bg-muted select-none"
+                          placeholder="Calculated from macro goals"
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t('mealCreation.calculatedFromMacroGoals', 'Calculated from sum of macro calorie goals')}
+                        </p>
                       </div>
                       <div>
-                        <Label>{t('mealCreation.mealProteinTarget')}</Label>
+                        <Label>{t('mealCreation.mealProteinTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
                         <Input
                           type="number"
                           min={0}
-                          value={slot.target_protein ?? ''}
-                          onChange={(e) =>
-                            updateMealSlot(
-                              mealIndex,
-                              'target_protein',
-                              e.target.value === '' ? null : Number(e.target.value)
-                            )
-                          }
-                          placeholder="e.g., 40"
+                          value={calculateProteinTarget(slot)}
+                          readOnly
+                          className="bg-muted select-none"
+                          placeholder="Calculated from protein calorie goal"
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t('mealCreation.calculatedFromMacroGoals', 'Calculated from protein calorie goal (÷ 4)')}
+                        </p>
                       </div>
                       <div>
-                        <Label>{t('mealCreation.mealCarbTarget')}</Label>
+                        <Label>{t('mealCreation.mealCarbTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
                         <Input
                           type="number"
                           min={0}
-                          value={slot.target_carbs ?? ''}
-                          onChange={(e) =>
-                            updateMealSlot(
-                              mealIndex,
-                              'target_carbs',
-                              e.target.value === '' ? null : Number(e.target.value)
-                            )
-                          }
-                          placeholder="e.g., 50"
+                          value={calculateCarbTarget(slot)}
+                          readOnly
+                          className="bg-muted select-none"
+                          placeholder="Calculated from carb calorie goal"
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t('mealCreation.calculatedFromMacroGoals', 'Calculated from carb calorie goal (÷ 4)')}
+                        </p>
                       </div>
                       <div>
-                        <Label>{t('mealCreation.mealFatTarget')}</Label>
+                        <Label>{t('mealCreation.mealFatTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
                         <Input
                           type="number"
                           min={0}
-                          value={slot.target_fat ?? ''}
-                          onChange={(e) =>
-                            updateMealSlot(
-                              mealIndex,
-                              'target_fat',
-                              e.target.value === '' ? null : Number(e.target.value)
-                            )
-                          }
-                          placeholder="e.g., 15"
+                          value={calculateFatTarget(slot)}
+                          readOnly
+                          className="bg-muted select-none"
+                          placeholder="Calculated from fat calorie goal"
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t('mealCreation.calculatedFromMacroGoals', 'Calculated from fat calorie goal (÷ 9)')}
+                        </p>
                       </div>
                     </div>
 
@@ -1020,31 +1281,51 @@ const CreateMealPlanV2: React.FC = () => {
                       </TabsList>
 
                       {slot.macro_categories.map((macro, macroIndex) => (
-                        <TabsContent key={macro.macro_type} value={macro.macro_type} className="space-y-4">
-                          {/* Macro Instructions */}
-                          <div className="min-w-0 w-full">
-                            <Label htmlFor={`quantity-${mealIndex}-${macroIndex}`}>{t('forms.enterValue')}</Label>
+                        <TabsContent key={macro.macro_type} value={macro.macro_type} className="space-y-4 overflow-visible mt-2">
+                          {/* Calorie Goal for this Macro */}
+                          <div className="min-w-0 w-full p-2 overflow-visible">
+                            <Label 
+                              htmlFor={`calorie-goal-${mealIndex}-${macroIndex}`} 
+                              dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+                              className={`block text-sm font-medium leading-tight mb-1 ${i18n.language === 'he' ? 'text-right' : ''}`}
+                            >
+                              {i18n.language === 'he' ? (
+                                <>
+                                  {t('mealCreation.calorieGoal', 'Calorie Goal')} - {getMacroLabelHebrew(macro.macro_type)}
+                                </>
+                              ) : (
+                                <>
+                                  {t('mealCreation.calorieGoal', 'Calorie Goal')} ({getMacroLabel(macro.macro_type)})
+                                </>
+                              )}
+                            </Label>
                             <Input
-                              id={`quantity-${mealIndex}-${macroIndex}`}
-                              placeholder="e.g., 150g, 2 pieces, 1 serving"
-                              value={macro.quantity_instruction}
-                              onChange={(e) => updateMacroCategory(mealIndex, macroIndex, 'quantity_instruction', e.target.value)}
-                              className="w-full max-w-full"
-                              dir="auto"
+                              id={`calorie-goal-${mealIndex}-${macroIndex}`}
+                              type="number"
+                              min="0"
+                              placeholder={i18n.language === 'he' ? t('mealCreation.calorieGoalPlaceholder', 'למשל: 200') : 'e.g., 200'}
+                              value={macro.calorie_goal || ''}
+                              onChange={(e) => updateMacroCategory(mealIndex, macroIndex, 'calorie_goal', e.target.value === '' ? null : parseInt(e.target.value))}
+                              className={`w-full max-w-full ${i18n.language === 'he' ? 'text-right' : ''} focus-visible:ring-primary focus-visible:ring-offset-background`}
+                              dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
                             />
+                            <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                              {t('mealCreation.calorieGoalHint', 'Set the calorie goal for this macronutrient. Meal calories will be calculated from the sum of all macro calorie goals.')}
+                            </p>
                           </div>
 
                           {/* Food Options */}
                           <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <Label>{t('mealCreation.foodOptions')} ({macro.food_options.length})</Label>
+                            <div className={`flex items-center justify-between mb-3 ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`} dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                              <Label dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>{t('mealCreation.foodOptions')} ({macro.food_options.length})</Label>
                               <Button
                                 size="sm"
                                 variant="default"
                                 onClick={() => openMealBank(mealIndex, macroIndex)}
+                                className={i18n.language === 'he' ? 'flex-row-reverse' : ''}
                               >
-                                <Search className="h-4 w-4 mr-2" />
-                                Add from Meal Bank
+                                <Search className={`h-4 w-4 ${i18n.language === 'he' ? 'ml-2' : 'mr-2'}`} />
+                                {t('mealCreation.addFromMealBank')}
                               </Button>
                             </div>
 
@@ -1077,36 +1358,56 @@ const CreateMealPlanV2: React.FC = () => {
                                       <div className="grid grid-cols-4 gap-2 text-sm">
                                         <div className="text-center p-2 bg-secondary/50 rounded">
                                           <div className="font-medium">{food.calories || 0}</div>
-                                          <div className="text-xs text-muted-foreground">kcal</div>
+                                          <div className="text-xs text-muted-foreground">{t('meals.kcal')}</div>
                                         </div>
                                         <div className="text-center p-2 bg-secondary/50 rounded">
                                           <div className="font-medium">{food.protein || 0}</div>
-                                          <div className="text-xs text-muted-foreground">protein</div>
+                                          <div className="text-xs text-muted-foreground">{t('meals.protein')}</div>
                                         </div>
                                         <div className="text-center p-2 bg-secondary/50 rounded">
                                           <div className="font-medium">{food.carbs || 0}</div>
-                                          <div className="text-xs text-muted-foreground">carbs</div>
+                                          <div className="text-xs text-muted-foreground">{t('meals.carbs')}</div>
                                         </div>
                                         <div className="text-center p-2 bg-secondary/50 rounded">
                                           <div className="font-medium">{food.fat || 0}</div>
-                                          <div className="text-xs text-muted-foreground">fat</div>
+                                          <div className="text-xs text-muted-foreground">{t('meals.fat')}</div>
                                         </div>
                                       </div>
                                     </div>
                                     <div className="space-y-3 min-w-0 w-full">
                                       <div className="min-w-0 w-full">
-                    <Label>Recommended Quantity (g)</Label>
+                                        <Label dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                                          {t('mealCreation.recommendedQuantity', 'Recommended Amount (grams)')}
+                                        </Label>
                                         <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="e.g., 150"
-                                          value={food.serving_size}
-                                          onChange={(e) => updateFoodOption(mealIndex, macroIndex, foodIndex, 'serving_size', e.target.value)}
+                                          type="text"
+                                          value={food.recommended_quantity || ''}
+                                          onChange={(e) => updateFoodOption(mealIndex, macroIndex, foodIndex, 'recommended_quantity', e.target.value)}
                                           className="w-full max-w-full"
-                                          dir="auto"
+                                          dir="ltr"
+                                          placeholder={t('mealCreation.enterRecommendedAmount', 'Enter recommended amount in grams')}
                                         />
+                                        <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                                          {t('mealCreation.recommendedQuantityHint', 'Suggested amount for client (calorie counting remains accurate)')}
+                                        </p>
                                       </div>
+                                      {macro.calorie_goal && (
+                                        <div className="min-w-0 w-full">
+                                          <Label dir={i18n.language === 'he' ? 'rtl' : 'ltr'} className="text-muted-foreground">
+                                            {t('mealCreation.totalAmountAllowed', 'Total Amount Allowed (grams)')}
+                                          </Label>
+                                          <Input
+                                            type="text"
+                                            readOnly
+                                            value={calculateRecommendedQuantity(food, macro.calorie_goal, macro, foodIndex, slot)}
+                                            className="w-full max-w-full bg-muted select-none"
+                                            dir="ltr"
+                                          />
+                                          <p className="text-xs text-muted-foreground mt-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                                            {t('mealCreation.calculatedFromCalorieGoal', 'Calculated from calorie goal')}
+                                          </p>
+                                        </div>
+                                      )}
                                       <Button
                                         variant="destructive"
                                         size="sm"
@@ -1114,7 +1415,7 @@ const CreateMealPlanV2: React.FC = () => {
                                         className="w-full"
                                       >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Remove
+                                        {t('common.delete')}
                                       </Button>
                                     </div>
                                   </div>
@@ -1160,162 +1461,146 @@ const CreateMealPlanV2: React.FC = () => {
 
       {/* Meal Bank Dialog */}
       <Dialog open={showMealBank} onOpenChange={setShowMealBank}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Meal Bank - Select Food Options</DialogTitle>
-            <DialogDescription>
-              Choose from the meal bank to add common food items to your meal plan
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent
+          className="max-w-4xl max-h-[85vh] p-0"
+          style={{ display: 'flex', flexDirection: 'column' }}
+        >
+          <div className="p-6 pb-4 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle>{t('mealCreation.mealBankTitle')}</DialogTitle>
+              <DialogDescription>
+                {t('mealCreation.mealBankDescription')}
+              </DialogDescription>
+            </DialogHeader>
 
-          {/* Search and Filter */}
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
-            <div className="flex-1 min-w-0">
+            {/* Search and Filter */}
+            <div className="space-y-4 mt-4">
+              {/* Filter Buttons */}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={mealBankFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMealBankFilter('all')}
+                >
+                  {t('mealCreation.all')}
+                </Button>
+                <Button
+                  variant={mealBankFilter === 'protein' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMealBankFilter('protein')}
+                >
+                  🍗 {t('mealCreation.protein')}
+                </Button>
+                <Button
+                  variant={mealBankFilter === 'carb' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMealBankFilter('carb')}
+                >
+                  🍞 {t('mealCreation.carbs')}
+                </Button>
+                <Button
+                  variant={mealBankFilter === 'fat' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMealBankFilter('fat')}
+                >
+                  🥑 {t('mealCreation.fats')}
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setShowAddFoodDialog(true)}
+                  className="gradient-green"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('mealCreation.addFood')}
+                </Button>
+              </div>
+              {/* Search Input */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className={`absolute ${i18n.language === 'he' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
                 <Input
-                  placeholder="Search for food items..."
+                  placeholder={t('mealCreation.searchFoodItems')}
                   value={mealBankSearch}
                   onChange={(e) => setMealBankSearch(e.target.value)}
-                  className="pl-10 w-full max-w-full"
-                  dir="auto"
+                  className={i18n.language === 'he' ? 'pr-10' : 'pl-10'}
+                  dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
                 />
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={mealBankFilter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMealBankFilter('all')}
-              >
-                All
-              </Button>
-              <Button
-                variant={mealBankFilter === 'protein' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMealBankFilter('protein')}
-              >
-                🍗 Protein
-              </Button>
-              <Button
-                variant={mealBankFilter === 'carb' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMealBankFilter('carb')}
-              >
-                🍞 Carb
-              </Button>
-              <Button
-                variant={mealBankFilter === 'fat' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMealBankFilter('fat')}
-              >
-                🥑 Fat
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setShowAddFoodDialog(true)}
-                className="gradient-green"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Food
-              </Button>
+          </div>
+
+          {/* Meal Bank Items List - Only scrollable area */}
+          <div className="overflow-y-auto flex-1 min-h-0 px-6 pb-4">
+            <div className="grid grid-cols-1 gap-2">
+              {filteredMealBankItems.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {t('mealCreation.noMealBankItems')}
+                </div>
+              ) : (
+                filteredMealBankItems.map((item) => {
+                  const isSelected = selectedMealBankItems.has(item.id);
+                  return (
+                    <Card
+                      key={item.id}
+                      className={`p-4 hover:bg-accent cursor-pointer transition-colors ${
+                        isSelected ? 'border-primary border-2' : ''
+                      }`}
+                      onClick={() => toggleMealBankItem(item)}
+                    >
+                      <div className="flex items-center justify-between gap-2 w-full overflow-hidden">
+                        <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleMealBankItem(item)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-shrink-0"
+                          />
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            {item.macro_type === 'protein' && '🍗'}
+                            {item.macro_type === 'carb' && '🍞'}
+                            {item.macro_type === 'fat' && '🥑'}
+                          </div>
+                          <div className="min-w-0 flex-1 overflow-hidden" dir="rtl">
+                            <div className="font-semibold truncate" dir="rtl">{item.name_hebrew || item.name}</div>
+                            {item.name_hebrew && item.name && (
+                              <div className="text-sm text-muted-foreground truncate" dir="ltr">
+                                {item.name}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0" dir="ltr">
+                          <div className="text-sm font-medium whitespace-nowrap">
+                            {item.calories !== null && item.calories !== undefined ? `${item.calories} ${t('mealCreation.kcalPer100g')}` : t('mealCreation.notAvailable')}
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">
+                            {item.protein !== null && `${item.protein}ג ${t('meals.protein').substring(0, 1)}`} /{' '}
+                            {item.carbs !== null && `${item.carbs}ג ${t('meals.carbs').substring(0, 1)}`} /{' '}
+                            {item.fat !== null && `${item.fat}ג ${t('meals.fat').substring(0, 1)}`}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
             </div>
           </div>
 
-          {/* Meal Bank Items List */}
-          <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto">
-            {filteredMealBankItems.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No meal bank items found. Try a different search or filter.
-              </div>
-            ) : (
-              filteredMealBankItems.map((item) => (
-                <Card
-                  key={item.id}
-                  className={`p-4 hover:bg-accent cursor-pointer transition-colors ${
-                    selectedMealBankItem?.id === item.id ? 'border-primary border-2' : ''
-                  }`}
-                  onClick={() => selectMealBankItem(item)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        {item.macro_type === 'protein' && '🍗'}
-                        {item.macro_type === 'carb' && '🍞'}
-                        {item.macro_type === 'fat' && '🥑'}
-                      </div>
-                      <div>
-                        <div className="font-semibold">{item.name_hebrew || item.name}</div>
-                        {item.name_hebrew && item.name && (
-                          <div className="text-sm text-muted-foreground" dir="rtl">
-                            {item.name_hebrew}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="text-sm font-medium">
-                          {item.calories !== null && item.calories !== undefined ? `${item.calories} kcal` : 'N/A'}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {item.protein !== null && `${item.protein}g P`} /{' '}
-                          {item.carbs !== null && `${item.carbs}g C`} /{' '}
-                          {item.fat !== null && `${item.fat}g F`}
-                        </div>
-                      </div>
-                      {selectedMealBankItem?.id === item.id ? (
-                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                          <Check className="h-4 w-4 text-primary-foreground" />
-                        </div>
-                      ) : (
-                        <div className="w-6 h-6 rounded-full border-2 border-muted-foreground" />
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              ))
-            )}
-          </div>
-
-          {/* Selected Item with Quantity Input */}
-          {selectedMealBankItem && (
-            <div className="mt-4 p-4 border-2 border-primary rounded-lg bg-primary/5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <div className="font-semibold text-lg">{selectedMealBankItem.name_hebrew || selectedMealBankItem.name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {selectedMealBankItem.calories} kcal per 100g
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="min-w-0 w-full">
-                <Label htmlFor="recommended-quantity">Recommended Quantity (g)</Label>
-                  <Input
-                    id="recommended-quantity"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="e.g., 150"
-                    value={recommendedQuantity}
-                    onChange={(e) => setRecommendedQuantity(e.target.value)}
-                    className="w-full max-w-full"
-                    dir="auto"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    onClick={confirmMealBankSelection}
-                    className="w-full"
-                    disabled={!recommendedQuantity.trim()}
-                  >
-                    <Check className="mr-2 h-4 w-4" />
-                    Add to Meal Plan
-                  </Button>
-                </div>
-              </div>
+          {/* Add Selected Items Button - Fixed at bottom */}
+          {selectedMealBankItems.size > 0 && (
+            <div className="flex-shrink-0 pt-4 pb-6 px-6 border-t flex justify-end">
+              <Button
+                variant="default"
+                onClick={confirmMealBankSelection}
+                className="w-full md:w-auto"
+              >
+                <Check className="mr-2 h-4 w-4" />
+                {selectedMealBankItems.size === 1 
+                  ? `הוסף ${selectedMealBankItems.size} פריט לתוכנית התזונה`
+                  : `הוסף ${selectedMealBankItems.size} פריטים לתוכנית התזונה`
+                }
+              </Button>
             </div>
           )}
         </DialogContent>
@@ -1328,15 +1613,17 @@ const CreateMealPlanV2: React.FC = () => {
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Food to Meal Bank</DialogTitle>
+            <DialogTitle>{t('mealCreation.addFoodToBank')}</DialogTitle>
             <DialogDescription>
-              Add a new food item to your meal bank for future use
+              {t('mealCreation.addFoodToBankDescription')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-food-macro-type">Macro Type *</Label>
+              <Label htmlFor="new-food-macro-type" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                {t('foodBank.macroType', 'סוג אב מזון')} *
+              </Label>
               <select
                 id="new-food-macro-type"
                 value={newFoodItem.macro_type}
@@ -1344,26 +1631,30 @@ const CreateMealPlanV2: React.FC = () => {
                 className="w-full px-3 py-2 border rounded-md min-w-0"
                 required
               >
-                <option value="protein">🍗 Protein</option>
-                <option value="carb">🍞 Carb</option>
-                <option value="fat">🥑 Fat</option>
+                <option value="protein">🍗 {t('meals.protein')}</option>
+                <option value="carb">🍞 {t('meals.carbs')}</option>
+                <option value="fat">🥑 {t('meals.fat')}</option>
               </select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="new-food-name">Food Name</Label>
+              <Label htmlFor="new-food-name" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                {t('foodBank.foodName', 'שם המזון')}
+              </Label>
               <Input
                 id="new-food-name"
                 placeholder="e.g., Chicken Breast"
                 value={newFoodItem.name}
                 onChange={(e) => setNewFoodItem({ ...newFoodItem, name: e.target.value })}
                 className="w-full max-w-full"
-                dir="auto"
+                dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="new-food-name-hebrew">Food Name (Hebrew) *</Label>
+              <Label htmlFor="new-food-name-hebrew" dir="rtl">
+                {t('foodBank.foodNameHebrew', 'שם המזון (עברית)')} *
+              </Label>
               <Input
                 id="new-food-name-hebrew"
                 placeholder="למשל, חזה עוף"
@@ -1377,7 +1668,9 @@ const CreateMealPlanV2: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 min-w-0">
-                <Label htmlFor="new-food-calories">Calories (per 100g)</Label>
+                <Label htmlFor="new-food-calories" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                  {t('meals.calories')} ({t('foodBank.per100g', 'ל-100 גרם')})
+                </Label>
                 <Input
                   id="new-food-calories"
                   type="number"
@@ -1385,11 +1678,14 @@ const CreateMealPlanV2: React.FC = () => {
                   value={newFoodItem.calories}
                   onChange={(e) => setNewFoodItem({ ...newFoodItem, calories: e.target.value })}
                   className="w-full max-w-full"
+                  dir="ltr"
                 />
               </div>
 
               <div className="space-y-2 min-w-0">
-                <Label htmlFor="new-food-protein">Protein (g per 100g)</Label>
+                <Label htmlFor="new-food-protein" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                  {t('meals.protein')} ({t('foodBank.gPer100g', 'גרם ל-100 גרם')})
+                </Label>
                 <Input
                   id="new-food-protein"
                   type="number"
@@ -1398,11 +1694,14 @@ const CreateMealPlanV2: React.FC = () => {
                   value={newFoodItem.protein}
                   onChange={(e) => setNewFoodItem({ ...newFoodItem, protein: e.target.value })}
                   className="w-full max-w-full"
+                  dir="ltr"
                 />
               </div>
 
               <div className="space-y-2 min-w-0">
-                <Label htmlFor="new-food-carbs">Carbs (g per 100g)</Label>
+                <Label htmlFor="new-food-carbs" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                  {t('meals.carbs')} ({t('foodBank.gPer100g', 'גרם ל-100 גרם')})
+                </Label>
                 <Input
                   id="new-food-carbs"
                   type="number"
@@ -1411,11 +1710,14 @@ const CreateMealPlanV2: React.FC = () => {
                   value={newFoodItem.carbs}
                   onChange={(e) => setNewFoodItem({ ...newFoodItem, carbs: e.target.value })}
                   className="w-full max-w-full"
+                  dir="ltr"
                 />
               </div>
 
               <div className="space-y-2 min-w-0">
-                <Label htmlFor="new-food-fat">Fat (g per 100g)</Label>
+                <Label htmlFor="new-food-fat" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                  {t('meals.fat')} ({t('foodBank.gPer100g', 'גרם ל-100 גרם')})
+                </Label>
                 <Input
                   id="new-food-fat"
                   type="number"
@@ -1424,6 +1726,7 @@ const CreateMealPlanV2: React.FC = () => {
                   value={newFoodItem.fat}
                   onChange={(e) => setNewFoodItem({ ...newFoodItem, fat: e.target.value })}
                   className="w-full max-w-full"
+                  dir="ltr"
                 />
               </div>
             </div>
@@ -1436,7 +1739,7 @@ const CreateMealPlanV2: React.FC = () => {
                 onChange={(e) => setNewFoodItem({ ...newFoodItem, is_public: e.target.checked })}
                 className="w-4 h-4"
               />
-              <Label htmlFor="new-food-public">Make this food item public (visible to all trainers)</Label>
+              <Label htmlFor="new-food-public">{t('mealCreation.makeFoodPublic')}</Label>
             </div>
 
             <div className="flex gap-3 pt-4 border-t">
@@ -1449,14 +1752,14 @@ const CreateMealPlanV2: React.FC = () => {
                 }}
                 disabled={addingFood}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 onClick={handleAddFoodToBank}
                 className="flex-1 gradient-green"
                 disabled={!(newFoodItem.name.trim() || newFoodItem.name_hebrew.trim()) || addingFood}
               >
-                {addingFood ? 'Adding...' : 'Add to Meal Bank'}
+                {addingFood ? t('mealCreation.adding') : t('mealCreation.addToMealBank')}
               </Button>
             </div>
           </div>

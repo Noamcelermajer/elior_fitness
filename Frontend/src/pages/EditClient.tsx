@@ -307,7 +307,7 @@ const EditClient: React.FC = () => {
                 {t('clientProfile.changePassword', 'Change Password')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+          <CardContent className="space-y-4 overflow-hidden">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="change_password"

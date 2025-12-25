@@ -5,6 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   ArrowLeft, User, Target, Weight, Calendar, Clock, 
   Dumbbell, Utensils, TrendingUp, Plus, Edit, Camera,
@@ -15,9 +25,13 @@ import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
 import { useTranslation } from 'react-i18next';
 import MealHistory from '../components/MealHistory';
+<<<<<<< HEAD
 import { ClientCheckInSummary } from '../components/ClientCheckInSummary';
 import { ClientCheckInHistory } from '../components/ClientCheckInHistory';
 import { ClientCheckInDetail } from '../components/ClientCheckInDetail';
+=======
+import { formatLocalTime } from '../lib/timezone';
+>>>>>>> 1bd2471cb2d5da04e561d14198ec28fe29fdf032
 
 interface Client {
   id: number;
@@ -138,7 +152,7 @@ const ClientProfile = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('profile');
   
   // Data states
@@ -147,8 +161,13 @@ const ClientProfile = () => {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
   const [loading, setLoading] = useState(true);
+<<<<<<< HEAD
   const [selectedCheckIn, setSelectedCheckIn] = useState<any>(null);
   const [checkInSummary, setCheckInSummary] = useState<any>(null);
+=======
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [mealPlanToDelete, setMealPlanToDelete] = useState<MealPlan | null>(null);
+>>>>>>> 1bd2471cb2d5da04e561d14198ec28fe29fdf032
 
   // Get client from location state or fetch by ID
   const fetchClientData = async () => {
@@ -340,6 +359,43 @@ const ClientProfile = () => {
     });
   };
 
+  const handleDeleteMealPlan = async () => {
+    if (!mealPlanToDelete) return;
+
+    try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/v2/meals/plans/${mealPlanToDelete.id}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete meal plan');
+      }
+
+      // Refresh meal plans
+      await fetchClientData();
+      setShowDeleteDialog(false);
+      setMealPlanToDelete(null);
+    } catch (error) {
+      console.error('Error deleting meal plan:', error);
+      alert(t('meals.deleteMealPlanError', 'Failed to delete meal plan. Please try again.'));
+    }
+  };
+
+  const handleDeleteClick = (plan: MealPlan) => {
+    setMealPlanToDelete(plan);
+    setShowDeleteDialog(true);
+  };
+
   return (
     <Layout currentPage="dashboard">
       <div className="container mx-auto p-6 space-y-6 min-h-screen">
@@ -378,7 +434,38 @@ const ClientProfile = () => {
               </div>
               <p className="text-sm font-medium text-muted-foreground">{t('clientProfile.lastLogin')}</p>
               <p className="text-sm font-bold text-foreground">
-                {client.last_login ? new Date(client.last_login).toLocaleDateString() : 'Never'}
+                {client.last_login ? (() => {
+                  const toDate = (value: string) => {
+                    const hasTimezone = /[zZ]|[+-]\d\d:?\d\d$/.test(value);
+                    return new Date(hasTimezone ? value : `${value}Z`);
+                  };
+
+                  const lastLoginDate = toDate(client.last_login);
+                  const now = new Date();
+                  const diffMs = now.getTime() - lastLoginDate.getTime();
+                  const diffMins = Math.floor(diffMs / 60000);
+                  const diffHours = Math.floor(diffMs / 3600000);
+                  const diffDays = Math.floor(diffMs / 86400000);
+                  
+                  if (diffMins < 1) {
+                    return t('clientProfile.justNow');
+                  } else if (diffMins < 60) {
+                    return t('clientProfile.minutesAgo', { count: diffMins });
+                  } else if (diffHours < 24) {
+                    return t('clientProfile.hoursAgo', { count: diffHours });
+                  } else if (diffDays < 7) {
+                    return t('clientProfile.daysAgo', { count: diffDays });
+                  } else {
+                    // Use formatLocalTime to show in user's local timezone (like chat)
+                    return formatLocalTime(lastLoginDate.toISOString(), {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }, i18n.language === 'he' ? 'he-IL' : 'en-US');
+                  }
+                })() : t('clientProfile.never')}
               </p>
             </CardContent>
           </Card>
@@ -752,6 +839,16 @@ const ClientProfile = () => {
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">{t('clientProfile.updateMealPlan')}</span>
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteClick(activeMealPlan)}
+                          aria-label={t('meals.deleteMealPlan')}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">{t('meals.deleteMealPlan')}</span>
+                        </Button>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -944,6 +1041,37 @@ const ClientProfile = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Delete Meal Plan Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('meals.deleteMealPlan', 'Delete Meal Plan')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('meals.deleteMealPlanConfirm', 'Are you sure you want to delete this meal plan? This action cannot be undone.')}
+              {mealPlanToDelete && (
+                <span className="block mt-2 font-semibold">
+                  {mealPlanToDelete.name || mealPlanToDelete.title}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowDeleteDialog(false);
+              setMealPlanToDelete(null);
+            }}>
+              {t('meals.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteMealPlan}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('meals.delete', 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };

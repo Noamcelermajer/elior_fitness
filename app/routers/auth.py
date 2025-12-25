@@ -253,6 +253,10 @@ async def login(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # Update last login timestamp
+    from datetime import datetime
+    user.last_login = datetime.utcnow()
+    db.commit()
     # Normalize role before adding to token
     from app.auth.utils import normalize_role
     normalized_role = normalize_role(user.role)
@@ -273,6 +277,10 @@ async def login_json(user_data: UserLogin, db: Session = Depends(get_db)):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # Update last login timestamp
+    from datetime import datetime
+    user.last_login = datetime.utcnow()
+    db.commit()
     # Normalize role before adding to token
     from app.auth.utils import normalize_role
     normalized_role = normalize_role(user.role)
