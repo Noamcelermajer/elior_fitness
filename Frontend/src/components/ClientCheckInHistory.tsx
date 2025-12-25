@@ -175,7 +175,11 @@ export const ClientCheckInHistory: React.FC<ClientCheckInHistoryProps> = ({
                 modifiersClassNames={calendarModifiersClassNames}
                 className="rounded-md border"
                 classNames={{
+                  // Force the container (table cell) to be transparent so the square doesn't show
+                  cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-transparent focus-within:relative z-20",
+                  // Ensure the selected button itself is rounded
                   day_selected: "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground focus:!bg-primary focus:!text-primary-foreground !rounded-md",
+                  // Ensure base days are rounded
                   day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-md"
                 }}
               />
