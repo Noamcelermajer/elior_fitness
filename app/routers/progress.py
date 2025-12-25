@@ -81,11 +81,11 @@ async def add_weight_entry(
         "weight": progress_entry.weight,
         "photo_path": photo_path,  # Normalized to just filename
         "notes": progress_entry.notes,
-        "chest": progress_entry.chest,
-        "waist": progress_entry.waist,
-        "hips": progress_entry.hips,
-        "thighs": progress_entry.thighs,
-        "arms": progress_entry.arms,
+        "chest": getattr(progress_entry, 'chest', None),
+        "waist": getattr(progress_entry, 'waist', None),
+        "hips": getattr(progress_entry, 'hips', None),
+        "thighs": getattr(progress_entry, 'thighs', None),
+        "arms": getattr(progress_entry, 'arms', None),
         "created_at": progress_entry.created_at.isoformat()
     }
 
@@ -108,17 +108,18 @@ async def get_weight_history(
         if photo_path and ('/' in photo_path or '\\' in photo_path):
             photo_path = os.path.basename(photo_path)
         
+        # Safely get body measurements (may not exist in old database entries)
         normalized_entries.append({
             "id": entry.id,
             "date": entry.date.isoformat(),
             "weight": entry.weight,
             "photo_path": photo_path,  # Normalized to just filename
             "notes": entry.notes,
-            "chest": entry.chest,
-            "waist": entry.waist,
-            "hips": entry.hips,
-            "thighs": entry.thighs,
-            "arms": entry.arms,
+            "chest": getattr(entry, 'chest', None),
+            "waist": getattr(entry, 'waist', None),
+            "hips": getattr(entry, 'hips', None),
+            "thighs": getattr(entry, 'thighs', None),
+            "arms": getattr(entry, 'arms', None),
             "created_at": entry.created_at.isoformat()
         })
     
@@ -157,6 +158,7 @@ async def get_progress_entries(
         if photo_path and ('/' in photo_path or '\\' in photo_path):
             photo_path = os.path.basename(photo_path)
         
+        # Safely get body measurements (may not exist in old database entries)
         normalized_entries.append({
             "id": entry.id,
             "client_id": entry.client_id,
@@ -164,11 +166,11 @@ async def get_progress_entries(
             "weight": entry.weight,
             "photo_path": photo_path,  # Normalized to just filename
             "notes": entry.notes,
-            "chest": entry.chest,
-            "waist": entry.waist,
-            "hips": entry.hips,
-            "thighs": entry.thighs,
-            "arms": entry.arms,
+            "chest": getattr(entry, 'chest', None),
+            "waist": getattr(entry, 'waist', None),
+            "hips": getattr(entry, 'hips', None),
+            "thighs": getattr(entry, 'thighs', None),
+            "arms": getattr(entry, 'arms', None),
             "created_at": entry.created_at.isoformat()
         })
     

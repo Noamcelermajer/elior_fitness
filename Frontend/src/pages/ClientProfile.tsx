@@ -188,10 +188,11 @@ const ClientProfile = () => {
 
       // Fetch client-specific data
       if (clientId) {
-        const [workoutRes, mealRes, progressRes] = await Promise.all([
+        const [workoutRes, mealRes, progressRes, checkInSummaryRes] = await Promise.all([
           fetch(`${API_BASE_URL}/v2/workouts/plans?client_id=${clientId}`, { headers }),
           fetch(`${API_BASE_URL}/v2/meals/plans?client_id=${clientId}`, { headers }),
-          fetch(`${API_BASE_URL}/progress/?client_id=${clientId}`, { headers })
+          fetch(`${API_BASE_URL}/progress/?client_id=${clientId}`, { headers }),
+          fetch(`${API_BASE_URL}/check-ins/summary?client_id=${clientId}`, { headers })
         ]);
 
         const workoutData = workoutRes.ok ? await workoutRes.json() : [];
