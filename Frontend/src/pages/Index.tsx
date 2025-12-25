@@ -9,7 +9,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config/api';
-import { DailyCheckInCard } from '../components/DailyCheckInCard';
+import { DailyCheckInCardV2 } from '../components/DailyCheckInCardV2';
+import { DashboardHeader } from '../components/DashboardHeader';
+import { DashboardWeightCard } from '../components/DashboardWeightCard';
+import { DashboardCaloriesCard } from '../components/DashboardCaloriesCard';
+import { DashboardStepsCard } from '../components/DashboardStepsCard';
 
 interface DashboardStats {
   totalClients: number;
@@ -160,6 +164,59 @@ const Index = () => {
           }
         } catch (err) {
           console.error('Failed to fetch calories:', err);
+        }
+
+        // Fetch weight data for dashboard
+        try {
+          const progressRes = await fetch(`${API_BASE_URL}/progress/?client_id=${user.id}`, { headers });
+          if (progressRes.ok) {
+            const progressData = await progressRes.json();
+            const weightEntries = progressData
+              .filter((entry: any) => entry.weight !== null && entry.weight !== undefined)
+              .sort((a: any, b: any) => new Date(a.date || a.recorded_at).getTime() - new Date(b.date || b.recorded_at).getTime())
+              .slice(-7)
+              .map((entry: any) => ({
+                date: entry.date || entry.recorded_at,
+                weight: entry.weight
+              }));
+            setWeightData(weightEntries);
+          }
+        } catch (err) {
+          console.error('Failed to fetch weight data:', err);
+        }
+
+        // Fetch today's calories
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          const macrosRes = await fetch(
+            `${API_BASE_URL}/v2/meals/daily-macros?client_id=${user.id}&date=${today}`,
+            { headers }
+          );
+          if (macrosRes.ok) {
+            const macros = await macrosRes.json();
+            setCaloriesData({
+              consumed: macros.consumed?.calories || 0,
+              target: macros.targets?.calories || 0
+            });
+          }
+        } catch (err) {
+          console.error('Failed to fetch today calories:', err);
+        }
+
+        // Fetch today's steps from check-in
+        try {
+          const checkInRes = await fetch(`${API_BASE_URL}/check-ins/today`, { headers });
+          if (checkInRes.ok) {
+            const checkIn = await checkInRes.json();
+            setStepsData({
+              steps: checkIn.steps || null,
+              target: 10000
+            });
+          } else if (checkInRes.status === 404) {
+            setStepsData({ steps: null, target: 10000 });
+          }
+        } catch (err) {
+          console.error('Failed to fetch steps:', err);
         }
 
         setStats({
@@ -366,39 +423,41 @@ const Index = () => {
 
   return (
     <Layout currentPage="dashboard">
-      <div className="pb-20 lg:pb-8">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-card to-secondary px-4 lg:px-6 py-6 lg:py-8">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-gradient">
-                  {isTrainer ? t('dashboard.welcome') : `${t('auth.welcomeBack')}, ${user?.full_name}`}
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  {isTrainer ? t('dashboard.overview') : t('dashboard.welcome')}
-                </p>
-              </div>
-              {isTrainer && (
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-                  <Button 
-                    onClick={() => navigate('/create-workout-plan-v2')}
-                    variant="outline" 
-                    className="font-semibold transform hover:scale-105 transition-all duration-200 w-full sm:w-auto"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    {t('training.createWorkout')}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      <div className="pb-20 lg:pb-8 min-h-screen bg-background">
+        {/* Dashboard Header (Client only) */}
+        {!isTrainer && !isAdmin && user && (
+          <DashboardHeader 
+            user={user}
+            unreadMessages={0}
+            unreadNotifications={0}
+          />
+        )}
 
-        <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6 space-y-8">
+        {/* Main Content */}
+        <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
           {/* Daily Check-In Card (Client only) */}
-          {!isTrainer && (
-            <DailyCheckInCard />
+          {!isTrainer && !isAdmin && (
+            <DailyCheckInCardV2 />
+          )}
+
+          {/* Progress Cards Grid (Client only) */}
+          {!isTrainer && !isAdmin && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <DashboardWeightCard 
+                weightEntries={weightData}
+                onViewDetailsClick={() => navigate('/progress')}
+              />
+              <DashboardCaloriesCard 
+                consumed={caloriesData.consumed}
+                target={caloriesData.target}
+                onViewDetailsClick={() => navigate('/meals')}
+              />
+              <DashboardStepsCard 
+                steps={stepsData.steps}
+                target={stepsData.target}
+                onViewDetailsClick={() => navigate('/progress')}
+              />
+            </div>
           )}
 
           {/* Stats Overview */}

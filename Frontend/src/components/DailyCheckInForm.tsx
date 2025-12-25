@@ -129,12 +129,12 @@ export const DailyCheckInForm: React.FC<DailyCheckInFormProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-background">
+      <DialogContent className="max-w-md bg-background max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('checkIn.title')}</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Date */}
           <div className="space-y-2">
             <Label htmlFor="date">{t('common.date')}</Label>
