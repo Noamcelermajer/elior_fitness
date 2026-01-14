@@ -629,7 +629,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder={t('trainer.searchClients', 'חפש מתאמנים...')}
+                placeholder={t('trainer.searchClients', 'Search clients...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10 rounded-full bg-muted/50 border-border"
