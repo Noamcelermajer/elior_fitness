@@ -87,7 +87,7 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
           className="w-full bg-primary hover:bg-primary/90 text-background font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all"
         >
           <Utensils className="w-4 h-4" />
-          <span>{t('meals.meals', 'ארוחות')}</span>
+          <span>{t('meals.meals', 'Meals')}</span>
           <ChevronRight className="w-4 h-4" />
         </Button>
       </CardContent>

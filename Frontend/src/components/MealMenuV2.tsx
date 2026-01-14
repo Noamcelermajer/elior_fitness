@@ -898,7 +898,7 @@ const MealMenuV2 = () => {
                   displayDailyMacros.consumed.carbs > displayDailyMacros.targets.carbs ||
                   displayDailyMacros.consumed.fat > displayDailyMacros.targets.fat) && (
                   <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                    <p className="text-sm font-medium text-destructive mb-2">⚠️ {t('meals.macroLimitsExceeded', 'חרגת ממגבלות המאקרו:')}</p>
+                    <p className="text-sm font-medium text-destructive mb-2">⚠️ {t('meals.macroLimitsExceeded', 'Exceeded macro limits:')}</p>
                     <div className="space-y-1 text-xs">
                       {displayDailyMacros.consumed.protein > displayDailyMacros.targets.protein && (
                         <p className="text-destructive">
@@ -1273,7 +1273,7 @@ const MealMenuV2 = () => {
             return (
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-2">{t('meals.nutritionalInfo', 'מידע תזונתי')} ({t('meals.per', 'ל')} {selectedFood.food.serving_size || '100ג'})</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('meals.nutritionalInfo', 'Nutritional Info')} ({t('meals.per', 'per')} {selectedFood.food.serving_size || '100g'})</p>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>{t('meals.calories')}: <span className="font-medium">{selectedFood.food.calories} {t('meals.kcal')}</span></div>
                     <div>{t('meals.protein')}: <span className="font-medium">{selectedFood.food.protein}ג</span></div>
@@ -1346,7 +1346,7 @@ const MealMenuV2 = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('meals.customFoodName')} *</label>
               <Input
-                placeholder={t('meals.customFoodNamePlaceholder', 'לדוגמה: נשנוש, פרוסת פיצה וכו\'')}
+                placeholder={t('meals.customFoodNamePlaceholder', 'e.g., snack, pizza slice, etc.')}
                 value={customFood.name}
                 onChange={(e) => setCustomFood({ ...customFood, name: e.target.value })}
                 className="w-full"

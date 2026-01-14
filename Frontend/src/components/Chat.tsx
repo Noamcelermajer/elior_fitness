@@ -591,10 +591,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return t('chat.justNow', 'עכשיו');
-    if (minutes < 60) return `${minutes} ${t('chat.minutesAgo', 'דקות')}`;
-    if (hours < 24) return `${hours} ${t('chat.hoursAgo', 'שעות')}`;
-    if (days < 7) return `${days} ${t('chat.daysAgo', 'ימים')}`;
+    if (minutes < 1) return t('chat.justNow', 'Just now');
+    if (minutes < 60) return `${minutes} ${t('chat.minutesAgo', 'minutes')}`;
+    if (hours < 24) return `${hours} ${t('chat.hoursAgo', 'hours')}`;
+    if (days < 7) return `${days} ${t('chat.daysAgo', 'days')}`;
     return formatChatDate(dateString);
   };
 
@@ -623,7 +623,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
           selectedClient ? "hidden md:flex" : "flex"
         )}>
           <div className="p-4 md:p-6 border-b border-border bg-card shrink-0">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">{t('chat.conversations', 'שיחות')}</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">{t('chat.conversations', 'Conversations')}</h2>
             {/* Search bar */}
             <div className="relative">
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -640,7 +640,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
             {conversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                 <MessageSquare className="h-16 w-16 mb-4 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">{t('chat.noConversations', 'אין שיחות')}</p>
+                <p className="text-muted-foreground">{t('chat.noConversations', 'No conversations')}</p>
               </div>
             ) : (
               <div className="divide-y divide-border">
@@ -743,7 +743,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                     <h3 className="font-semibold text-base md:text-lg text-foreground truncate">
                       {conversations.find((c) => c.client_id === selectedClient)?.client_name || 'Client'}
                     </h3>
-                    <p className="text-xs text-muted-foreground">{t('chat.online', 'מקוון')}</p>
+                    <p className="text-xs text-muted-foreground">{t('chat.online', 'Online')}</p>
                   </div>
                 </div>
                 
@@ -752,10 +752,10 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                   <div className="mt-3 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between gap-2">
                     <div className="flex-1">
                       <p className="text-xs font-medium text-foreground mb-1">
-                        {t('chat.enableNotifications', 'הפעל התראות')}
+                        {t('chat.enableNotifications', 'Enable Notifications')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {t('chat.enableNotificationsDesc', 'קבל התראות על הודעות חדשות')}
+                        {t('chat.enableNotificationsDesc', 'Get notified about new messages')}
                       </p>
                     </div>
                     <Button
@@ -769,7 +769,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                       }}
                       className="text-xs h-8"
                     >
-                      {t('chat.enable', 'הפעל')}
+                      {t('chat.enable', 'Enable')}
                     </Button>
                     <Button
                       size="sm"
@@ -789,13 +789,13 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                      <p className="text-sm text-muted-foreground">{t('chat.loading', 'טוען...')}</p>
+                      <p className="text-sm text-muted-foreground">{t('chat.loading', 'Loading...')}</p>
                     </div>
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <MessageSquare className="h-16 w-16 mb-4 text-muted-foreground opacity-50" />
-                    <p className="text-muted-foreground">{t('chat.noMessages', 'אין הודעות עדיין. התחל את השיחה!')}</p>
+                    <p className="text-muted-foreground">{t('chat.noMessages', 'No messages yet. Start the conversation!')}</p>
                   </div>
                 ) : (
                   <div className="space-y-3 max-w-4xl mx-auto">
@@ -896,7 +896,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                           : ""
                                       )}
                                     >
-                                      {t('chat.linkedToEntry', 'קשור לרישום התקדמות')}
+                                      {t('chat.linkedToEntry', 'Linked to progress entry')}
                                     </Badge>
                                   );
                                 })()}
@@ -974,7 +974,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder={t('chat.typeMessage', 'הקלד הודעה...')}
+                        placeholder={t('chat.typeMessage', 'Type a message...')}
                         className="rounded-full pr-12 h-11 md:h-12 bg-muted/50 border-border focus:bg-background transition-colors"
                         disabled={!selectedClient}
                       />
@@ -984,7 +984,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                       size="icon"
                       className="h-11 w-11 md:h-12 md:w-12 rounded-full shrink-0 gradient-orange hover:gradient-orange-dark shadow-lg hover:shadow-xl transition-all"
                       disabled={(!messageInput.trim() && !linkedProgressEntry) || !selectedClient}
-                      aria-label={t('chat.send', 'שלח הודעה')}
+                      aria-label={t('chat.send', 'Send message')}
                     >
                       <Send className="h-4 w-4 md:h-5 md:w-5" />
                     </Button>
@@ -996,7 +996,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <div className="text-center p-8">
                 <MessageSquare className="h-16 w-16 md:h-20 md:w-20 mx-auto mb-4 opacity-50" />
-                <p className="text-base md:text-lg">{t('chat.selectClient', 'בחר לקוח כדי להתחיל לשוחח')}</p>
+                <p className="text-base md:text-lg">{t('chat.selectClient', 'Select a client to start chatting')}</p>
               </div>
             </div>
           )}
@@ -1048,7 +1048,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                 <div className="p-3 border-b border-border bg-card shrink-0">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-primary" />
-                    <h2 className="text-base font-semibold text-foreground">{t('progress.progress', 'התקדמות')}</h2>
+                    <h2 className="text-base font-semibold text-foreground">{t('progress.progress', 'Progress')}</h2>
                   </div>
                 </div>
                 <div className="flex-1 min-h-0 overflow-y-auto p-3">
@@ -1056,13 +1056,13 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                     <div className="flex items-center justify-center h-full p-8">
                       <div className="text-center">
                         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                        <p className="text-sm text-muted-foreground">{t('chat.loading', 'טוען...')}</p>
+                        <p className="text-sm text-muted-foreground">{t('chat.loading', 'Loading...')}</p>
                       </div>
                     </div>
                   ) : progressEntries.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                       <TrendingUp className="h-16 w-16 mb-4 text-muted-foreground opacity-50" />
-                      <p className="text-muted-foreground">{t('progress.noEntries', 'אין רישומי התקדמות')}</p>
+                      <p className="text-muted-foreground">{t('progress.noEntries', 'No progress entries')}</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -1106,7 +1106,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                                 }}
                               >
                                 <Link2 className="h-3 w-3 ml-1" />
-                                {t('chat.linkToChat', 'קשר לצ\'אט')}
+                                {t('chat.linkToChat', 'Link to Chat')}
                               </Button>
                             </div>
                           </CardContent>
@@ -1225,7 +1225,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
                               showAvatar ? "opacity-100" : "opacity-0"
                             )}>
                               <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                                {getInitials(t('chat.trainer', 'מאמן'))}
+                                {getInitials(t('chat.trainer', 'Trainer'))}
                               </AvatarFallback>
                             </Avatar>
                           )}
@@ -1363,7 +1363,7 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             <div className="text-center p-8">
               <MessageSquare className="h-16 w-16 md:h-20 md:w-20 mx-auto mb-4 opacity-50" />
-              <p className="text-base md:text-lg">{t('chat.noTrainer', 'לא הוקצה מאמן')}</p>
+              <p className="text-base md:text-lg">{t('chat.noTrainer', 'No trainer assigned')}</p>
             </div>
           </div>
         )}
