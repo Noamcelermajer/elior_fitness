@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends, status
+from app.auth.utils import get_current_user
+from app.schemas.auth import UserResponse, UserRole
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
@@ -611,10 +613,18 @@ async def api_test_endpoint():
         "api_status": "working"
     }
 
-# Environment debug endpoint
+# Environment debug endpoint - ADMIN ONLY in production
 @app.get("/api/debug/env")
-async def debug_environment():
-    """Debug endpoint to check environment variables."""
+async def debug_environment(
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Debug endpoint to check environment variables - Admin only."""
+    # Only allow in development or for admins
+    if ENVIRONMENT == "production" and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Admin only."
+        )
     return {
         "raw_environment": os.getenv("ENVIRONMENT"),
         "raw_domain": os.getenv("DOMAIN"),

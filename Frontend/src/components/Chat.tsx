@@ -181,8 +181,8 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
             ) {
               // Get sender name from conversations or use default
               const senderName = isTrainer
-                ? conversations.find(c => c.client_id === newMessage.client_id)?.client_name || 'מתאמן'
-                : conversations.find(c => c.client_id === newMessage.trainer_id)?.client_name || 'מאמן';
+                ? conversations.find(c => c.client_id === newMessage.client_id)?.client_name || t('client.client', 'Client')
+                : conversations.find(c => c.client_id === newMessage.trainer_id)?.client_name || t('admin.trainer', 'Trainer');
               
               // Determine if message is from trainer (for client view) or from client (for trainer view)
               const isFromTrainer = !isTrainer; // If current user is client, then sender is trainer

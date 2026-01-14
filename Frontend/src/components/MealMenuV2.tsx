@@ -809,7 +809,7 @@ const MealMenuV2 = () => {
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">{t('meals.addCustomFood')}</span>
-                <span className="sm:hidden">{t('meals.addFood', 'הוסף אוכל')}</span>
+                <span className="sm:hidden">{t('meals.addFood', 'Add Food')}</span>
               </Button>
               <Button 
                 variant="outline" 
@@ -818,7 +818,7 @@ const MealMenuV2 = () => {
               >
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">{showHistory ? t('meals.hideHistory') : t('meals.showHistory')}</span>
-                <span className="sm:hidden">{showHistory ? t('meals.hide', 'הסתר') : t('meals.show', 'הצג')}</span>
+                <span className="sm:hidden">{showHistory ? t('meals.hide', 'Hide') : t('meals.show', 'Show')}</span>
               </Button>
               <Button 
                 onClick={finishDay}

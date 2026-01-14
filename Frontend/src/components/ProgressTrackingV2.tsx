@@ -460,7 +460,7 @@ const ProgressTrackingV2 = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                       {/* Front Photo */}
                       <div>
-                        <Label htmlFor="photo-front" className="text-xs mb-1 block">{t('progress.frontPhoto', 'קדימה')}</Label>
+                        <Label htmlFor="photo-front" className="text-xs mb-1 block">{t('progress.frontPhoto', 'Front')}</Label>
                         {photoPreviews.front ? (
                           <div className="relative">
                             <img 
@@ -481,7 +481,7 @@ const ProgressTrackingV2 = () => {
                           <label htmlFor="photo-front" className="cursor-pointer">
                             <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:bg-accent transition-colors h-32 flex flex-col items-center justify-center">
                               <Upload className="w-6 h-6 text-muted-foreground mb-1" />
-                              <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'הוסף')}</p>
+                              <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'Add')}</p>
                             </div>
                           </label>
                         )}
@@ -496,7 +496,7 @@ const ProgressTrackingV2 = () => {
 
                       {/* Side Photo */}
                       <div>
-                        <Label htmlFor="photo-side" className="text-xs mb-1 block">{t('progress.sidePhoto', 'צד')}</Label>
+                        <Label htmlFor="photo-side" className="text-xs mb-1 block">{t('progress.sidePhoto', 'Side')}</Label>
                         {photoPreviews.side ? (
                           <div className="relative">
                             <img 
@@ -517,7 +517,7 @@ const ProgressTrackingV2 = () => {
                           <label htmlFor="photo-side" className="cursor-pointer">
                             <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:bg-accent transition-colors h-32 flex flex-col items-center justify-center">
                               <Upload className="w-6 h-6 text-muted-foreground mb-1" />
-                              <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'הוסף')}</p>
+                              <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'Add')}</p>
                             </div>
                           </label>
                         )}
@@ -532,7 +532,7 @@ const ProgressTrackingV2 = () => {
 
                       {/* Back Photo */}
                       <div>
-                        <Label htmlFor="photo-back" className="text-xs mb-1 block">{t('progress.backPhoto', 'אחורה')}</Label>
+                        <Label htmlFor="photo-back" className="text-xs mb-1 block">{t('progress.backPhoto', 'Back')}</Label>
                         {photoPreviews.back ? (
                           <div className="relative">
                             <img 
@@ -553,7 +553,7 @@ const ProgressTrackingV2 = () => {
                           <label htmlFor="photo-back" className="cursor-pointer">
                             <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:bg-accent transition-colors h-32 flex flex-col items-center justify-center">
                               <Upload className="w-6 h-6 text-muted-foreground mb-1" />
-                              <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'הוסף')}</p>
+                              <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'Add')}</p>
                             </div>
                           </label>
                         )}

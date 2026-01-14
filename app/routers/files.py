@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -386,7 +386,14 @@ async def debug_file_paths(
     current_user: UserResponse = Depends(get_current_user),
     file_service: FileService = Depends(get_file_service)
 ):
-    """Debug endpoint to check file paths and locations"""
+    """Debug endpoint to check file paths and locations - Admin only in production"""
+    # Only allow in development or for admins
+    environment = os.getenv("ENVIRONMENT", "development")
+    if environment == "production" and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Admin only."
+        )
     import logging
     logger = logging.getLogger(__name__)
     
