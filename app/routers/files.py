@@ -203,18 +203,21 @@ async def serve_media_file(
             if len(parts) >= 3:
                 entity_id = int(parts[2])  # meal_photo_{entity_id}_{uuid}
                 
-                # Check if user has access to this meal completion
-                # Note: This would need to be implemented in the nutrition service
-                # For now, allowing access based on basic user relationship
-                meal_completion = None  # TODO: Get meal completion from nutrition service
+                # Get meal completion from nutrition service to verify access
+                from app.services.nutrition_service import NutritionService
+                nutrition_service = NutritionService(db)
+                meal_completion = nutrition_service.get_meal_completion(entity_id)
                 
-                # For now, implement basic access control
-                # Allow trainers to access all meal photos, clients only their own
+                if not meal_completion:
+                    raise HTTPException(status_code=404, detail="Meal completion not found")
+                
+                # Access control: trainers can access all meal photos, clients only their own
                 if current_user.role == UserRole.TRAINER:
+                    # Trainers can access all meal photos
                     return FileResponse(file_path)
                 elif current_user.role == UserRole.CLIENT:
-                    # Extract client ID from filename and check if it matches current user
-                    if str(current_user.id) in filename:
+                    # Clients can only access their own meal photos
+                    if meal_completion.client_id == current_user.id:
                         return FileResponse(file_path)
                     else:
                         raise HTTPException(status_code=403, detail="Access denied")

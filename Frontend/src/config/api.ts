@@ -4,7 +4,9 @@
 const getApiUrl = () => {
   // Check for environment variable first (highest priority)
   if (import.meta.env.VITE_API_URL) {
-    console.log('Using VITE_API_URL:', import.meta.env.VITE_API_URL);
+    if (import.meta.env.DEV) {
+      console.log('Using VITE_API_URL:', import.meta.env.VITE_API_URL);
+    }
     return import.meta.env.VITE_API_URL;
   }
   
@@ -19,28 +21,28 @@ const getApiUrl = () => {
   // Only use localhost:8000 if we're actually on localhost with dev port
   if (isLocalhost && isDevPort) {
     const apiUrl = 'http://localhost:8000/api';
-    console.log('Local Development API URL:', apiUrl);
-    console.log('Frontend origin:', window.location.origin);
-    console.log('Environment:', import.meta.env.MODE);
+    if (import.meta.env.DEV) {
+      console.log('Local Development API URL:', apiUrl);
+    }
     return apiUrl;
   }
   
   // Production/Docker/Railway: Use same domain as frontend with /api path
   // This works for any reverse proxy setup (Caddy, Nginx, Railway, etc.)
   const apiUrl = `${window.location.origin}/api`;
-  console.log('Production API URL:', apiUrl);
-  console.log('Frontend origin:', window.location.origin);
-  console.log('Environment:', import.meta.env.MODE);
-  console.log('Hostname:', window.location.hostname);
-  console.log('Port:', window.location.port);
+  if (import.meta.env.DEV) {
+    console.log('Production API URL:', apiUrl);
+  }
   
   return apiUrl;
 };
 
 export const API_BASE_URL = getApiUrl();
 
-// Log the API URL being used (for debugging)
-console.log('API Base URL:', API_BASE_URL);
+// Log the API URL being used (for debugging - only in development)
+if (import.meta.env.DEV) {
+  console.log('API Base URL:', API_BASE_URL);
+}
 
 // Helper function to make API calls
 export const apiCall = async (endpoint: string, options: RequestInit = {}) => {

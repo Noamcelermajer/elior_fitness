@@ -148,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (username: string, password: string): Promise<User | null> => {
     try {
-      console.log('Attempting login with API URL:', `${API_BASE_URL}/auth/login`);
+      // Attempting login
       
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
@@ -161,20 +161,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }),
       });
 
-      console.log('Login response status:', response.status);
-      console.log('Login response headers:', Object.fromEntries(response.headers.entries()));
+        // Login response received
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Login successful, token received:', data);
+        // Token received successfully
         setToken(data.access_token);
         
         // Fetch user data
         const userData = await fetchCurrentUser();
-        console.log('User data fetched:', userData);
+        // User data fetched successfully
         if (userData) {
           setUser(userData);
-          console.log('User set in context:', userData);
+          // User set in context
           
           // Request notification permission after successful login
           // On mobile, this might not work unless triggered by user interaction
@@ -187,14 +186,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               // On desktop, we can request permission automatically
               requestNotificationPermission().then(permission => {
                 if (permission === 'granted') {
-                  console.log('Notification permission granted');
+                  // Notification permission granted
                 } else {
-                  console.log('Notification permission denied or not supported');
+                  // Notification permission denied or not supported
                 }
               });
             } else {
               // On mobile, log that permission needs to be requested from user interaction
-              console.log('Mobile device detected - notification permission should be requested from user interaction');
+              // Mobile device detected - notification permission should be requested from user interaction
             }
           }, 1000); // Wait 1 second after login to request permission
           
