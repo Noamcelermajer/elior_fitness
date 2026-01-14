@@ -17,15 +17,17 @@ RUN echo "Build date: ${BUILD_DATE}, Cache bust: ${CACHE_BUST}"
 
 # Copy package files for dependency caching
 COPY Frontend/package*.json ./
+# Install dependencies (production=false to include devDependencies needed for build)
 RUN npm ci --legacy-peer-deps --no-audit --no-fund --production=false
 
 # Copy frontend source - this layer will be invalidated when files change
 COPY Frontend/ ./
 
-# Build frontend (clean npm cache after build)
+# Build frontend with optimizations (clean npm cache after build)
 RUN npm run build && \
     npm cache clean --force && \
-    rm -rf node_modules
+    rm -rf node_modules && \
+    rm -rf .vite
 
 # Stage 2: Production Server
 FROM python:3.11-slim
@@ -36,7 +38,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
-    && apt-get purge -y --auto-remove
+    && apt-get purge -y --auto-remove \
+    && rm -rf /tmp/* /var/tmp/*
 
 WORKDIR /app
 

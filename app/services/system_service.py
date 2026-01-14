@@ -37,8 +37,12 @@ class SystemService:
     def _get_docker(self):
         """Lazy load docker only when needed."""
         if self._docker is None:
-            import docker
-            self._docker = docker
+            try:
+                import docker
+                self._docker = docker
+            except ImportError:
+                logger.warning("Docker package not installed. Docker monitoring will be disabled.")
+                self._docker = None
         return self._docker
     
     def _get_docker_client(self):

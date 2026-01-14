@@ -14,8 +14,9 @@ i18n
       he: { translation: he },
       en: { translation: en },
     },
-    // Remove hardcoded default - let detector handle it
-    fallbackLng: 'en',
+    // Default to Hebrew, fallback to English if needed
+    fallbackLng: 'he',
+    lng: 'he', // Set initial language to Hebrew
     debug: false,
     interpolation: {
       escapeValue: false, // React already escapes values
