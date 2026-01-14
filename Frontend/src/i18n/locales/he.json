@@ -852,6 +852,7 @@
     "clientSubtitle": "פורטל כושר אישי"
   },
   "trainerDashboard": {
+    "checkInCompletion": "אחוז השלמת בדיקות",
     "title": "לוח בקרה למאמן",
     "totalClients": "סך הכל לקוחות",
     "exercises": "תרגילים",
