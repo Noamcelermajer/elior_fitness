@@ -172,9 +172,9 @@ except Exception as e:
 # Import all models to ensure they're registered with Base.metadata
 try:
     logger.info("Importing model modules...")
-    from app.models import user as user_models, workout as workout_models, nutrition as nutrition_models
+    from app.models import user as user_models, workout as workout_models, nutrition as nutrition_models, progress as progress_models, progress_photo as progress_photo_models
     logger.info("✅ Model modules imported successfully")
-    logger.info("📋 Available models: user, workout, nutrition, progress, notification")
+    logger.info("📋 Available models: user, workout, nutrition, progress, progress_photo, notification")
 except Exception as e:
     logger.error(f"❌ Failed to import model modules: {e}")
     logger.error(f"Error type: {type(e).__name__}")
@@ -212,6 +212,8 @@ async def lifespan(app: FastAPI):
         from app.migrations.meal_system_migration import run_meal_system_migrations
         from app.migrations.workout_system_migration import run_workout_system_migrations
         from app.migrations.user_last_login_migration import run_user_last_login_migration
+        from app.migrations.progress_measurements_migration import run_progress_measurements_migration
+        from app.migrations.progress_photos_migration import run_progress_photos_migration
 
         logger.info("Running meal system migrations...")
         run_meal_system_migrations()
@@ -225,6 +227,14 @@ async def lifespan(app: FastAPI):
         run_user_last_login_migration()
         logger.info("✅ User last_login migration completed")
         
+        logger.info("Running progress measurements migration...")
+        run_progress_measurements_migration()
+        logger.info("✅ Progress measurements migration completed")
+        
+        logger.info("Running progress photos migration...")
+        run_progress_photos_migration()
+        logger.info("✅ Progress photos migration completed")
+        
         logger.info("Running meal calorie goal migration...")
         from app.migrations.meal_calorie_goal_migration import run_meal_calorie_goal_migration
         run_meal_calorie_goal_migration()
@@ -234,6 +244,11 @@ async def lifespan(app: FastAPI):
         from app.migrations.progress_measurements_migration import run_progress_measurements_migration
         run_progress_measurements_migration()
         logger.info("✅ Progress measurements migration completed")
+        
+        logger.info("Running progress photos migration...")
+        from app.migrations.progress_photos_migration import run_progress_photos_migration
+        run_progress_photos_migration()
+        logger.info("✅ Progress photos migration completed")
         
         logger.info("✅ All database migrations completed successfully")
     except Exception as migration_error:

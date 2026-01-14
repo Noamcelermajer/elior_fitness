@@ -304,6 +304,30 @@ def get_check_in_summary(
             return None
     
     # Build response data with explicit type validation
+    # #region agent log
+    import json
+    log_data = {
+        "location": "check_in.py:307",
+        "message": "Building summary_data",
+        "data": {
+            "target_client_id": target_client_id,
+            "total_check_ins": total_check_ins,
+            "first_check_in": str(first_check_in) if first_check_in else None,
+            "last_check_in": str(last_check_in) if last_check_in else None,
+            "completion_rate": completion_rate,
+            "today_status": today_status
+        },
+        "timestamp": int(datetime.now().timestamp() * 1000),
+        "sessionId": "debug-session",
+        "runId": "run1",
+        "hypothesisId": "A"
+    }
+    try:
+        with open("c:\\Users\\noamc\\OneDrive\\Desktop\\Projects\\elior_fitness\\.cursor\\debug.log", "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_data) + "\n")
+    except: pass
+    # #endregion
+    
     summary_data = {
         "today_status": str(today_status),  # Ensure it's a string
         "current_streak": int(current_streak),  # Ensure it's an int
@@ -318,9 +342,46 @@ def get_check_in_summary(
         "last_check_in": last_check_in  # datetime or None
     }
     
+    # #region agent log
+    log_data2 = {
+        "location": "check_in.py:330",
+        "message": "summary_data built, before validation",
+        "data": {
+            "summary_data_keys": list(summary_data.keys()),
+            "first_check_in_type": type(summary_data["first_check_in"]).__name__,
+            "last_check_in_type": type(summary_data["last_check_in"]).__name__,
+            "completion_rate_type": type(summary_data["completion_rate"]).__name__,
+            "completion_rate_value": summary_data["completion_rate"]
+        },
+        "timestamp": int(datetime.now().timestamp() * 1000),
+        "sessionId": "debug-session",
+        "runId": "run1",
+        "hypothesisId": "A"
+    }
+    try:
+        with open("c:\\Users\\noamc\\OneDrive\\Desktop\\Projects\\elior_fitness\\.cursor\\debug.log", "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_data2) + "\n")
+    except: pass
+    # #endregion
+    
     try:
         # Validate and create response
         summary = CheckInSummary(**summary_data)
+        # #region agent log
+        log_data3 = {
+            "location": "check_in.py:335",
+            "message": "CheckInSummary validation successful",
+            "data": {"summary_id": "created"},
+            "timestamp": int(datetime.now().timestamp() * 1000),
+            "sessionId": "debug-session",
+            "runId": "run1",
+            "hypothesisId": "A"
+        }
+        try:
+            with open("c:\\Users\\noamc\\OneDrive\\Desktop\\Projects\\elior_fitness\\.cursor\\debug.log", "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_data3) + "\n")
+        except: pass
+        # #endregion
         return summary
     except Exception as e:
         import logging

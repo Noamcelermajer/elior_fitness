@@ -7,6 +7,7 @@ from app.models.nutrition import (
     MealPlan, MealEntry, MealComponent, MealUpload, NutritionEntry
 )
 from app.models.progress import ProgressEntry
+from app.models.progress_photo import ProgressPhoto, PhotoType
 from app.models.notification import Notification
 from app.models.chat import ChatMessage
 from app.models.check_in import DailyCheckIn
@@ -54,6 +55,8 @@ __all__ = [
     "MealUpload",
     "NutritionEntry",
     "ProgressEntry",
+    "ProgressPhoto",
+    "PhotoType",
     "Notification",
     "ChatMessage",
     "DailyCheckIn",

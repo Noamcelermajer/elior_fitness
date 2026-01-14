@@ -82,4 +82,3 @@ export const formatIsraelTime = (
     timeZone: 'Asia/Jerusalem'
   });
 };
-

@@ -8,6 +8,7 @@ from app.database import get_db
 from app.auth.utils import get_current_user
 from app.schemas.auth import UserResponse, UserRole
 from app.models.progress import ProgressEntry
+from app.models.progress_photo import ProgressPhoto, PhotoType
 from app.services.file_service import FileService
 from app.services.notification_triggers import check_client_goals
 
@@ -17,13 +18,19 @@ router = APIRouter(tags=["progress"])
 async def add_weight_entry(
     weight: float = Form(..., description="Weight in kg"),
     notes: Optional[str] = Form(None, description="Optional notes"),
-    photo: Optional[UploadFile] = File(None, description="Optional progress photo"),
+    photo: Optional[UploadFile] = File(None, description="Optional progress photo (deprecated - use photos)"),
+    # Multiple photos support
+    photo_front: Optional[UploadFile] = File(None, description="Front progress photo"),
+    photo_side: Optional[UploadFile] = File(None, description="Side progress photo"),
+    photo_back: Optional[UploadFile] = File(None, description="Back progress photo"),
     client_id: Optional[int] = Form(None, description="Client ID (for trainers)"),
     chest: Optional[float] = Form(None, description="Chest measurement in cm"),
     waist: Optional[float] = Form(None, description="Waist measurement in cm"),
     hips: Optional[float] = Form(None, description="Hips measurement in cm"),
     thighs: Optional[float] = Form(None, description="Thighs measurement in cm"),
-    arms: Optional[float] = Form(None, description="Arms measurement in cm"),
+    arms: Optional[float] = Form(None, description="Arms measurement in cm (deprecated)"),
+    right_arm: Optional[float] = Form(None, description="Right arm circumference in cm"),
+    left_arm: Optional[float] = Form(None, description="Left arm circumference in cm"),
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -39,15 +46,27 @@ async def add_weight_entry(
             raise HTTPException(status_code=403, detail="You can only add entries for your clients")
         target_client_id = client_id
     
-    # Save photo if provided
-    photo_path = None
+    # Save photos if provided (support multiple photos with types)
+    photo_path = None  # Keep for backward compatibility
+    file_service = FileService()
+    
+    # Handle legacy single photo
     if photo:
-        file_service = FileService()
         file_result = await file_service.save_file(photo, "progress_photo", target_client_id)
-        # Store just the filename, not the full path, for easier retrieval
-        # The full path is: /app/uploads/progress_photos/filename.jpg
-        # We'll store just: filename.jpg
         photo_path = file_result.get("filename") or file_result["original_path"]
+    
+    # Handle new multiple photos system
+    photos_to_save = []
+    if photo_front:
+        photos_to_save.append((photo_front, PhotoType.FRONT))
+    if photo_side:
+        photos_to_save.append((photo_side, PhotoType.SIDE))
+    if photo_back:
+        photos_to_save.append((photo_back, PhotoType.BACK))
+    
+    # Limit to 3 photos
+    if len(photos_to_save) > 3:
+        raise HTTPException(status_code=400, detail="Maximum 3 photos allowed (front, side, back)")
     
     # Create progress entry
     progress_entry = ProgressEntry(
@@ -60,12 +79,35 @@ async def add_weight_entry(
         waist=waist,
         hips=hips,
         thighs=thighs,
-        arms=arms
+        arms=arms,  # Keep for backward compatibility
+        right_arm=right_arm,
+        left_arm=left_arm
     )
     
     db.add(progress_entry)
     db.commit()
     db.refresh(progress_entry)
+    
+    # Save multiple photos if provided
+    saved_photos = []
+    for photo_file, photo_type in photos_to_save:
+        file_result = await file_service.save_file(photo_file, "progress_photo", target_client_id)
+        photo_filename = file_result.get("filename") or os.path.basename(file_result["original_path"])
+        
+        progress_photo = ProgressPhoto(
+            progress_entry_id=progress_entry.id,
+            photo_path=photo_filename,
+            photo_type=photo_type
+        )
+        db.add(progress_photo)
+        saved_photos.append({
+            "id": progress_photo.id,
+            "photo_path": photo_filename,
+            "photo_type": photo_type.value
+        })
+    
+    if saved_photos:
+        db.commit()
     
     # Check for goal achievements
     check_client_goals(db, current_user.id)
@@ -86,6 +128,9 @@ async def add_weight_entry(
         "hips": getattr(progress_entry, 'hips', None),
         "thighs": getattr(progress_entry, 'thighs', None),
         "arms": getattr(progress_entry, 'arms', None),
+        "right_arm": getattr(progress_entry, 'right_arm', None),
+        "left_arm": getattr(progress_entry, 'left_arm', None),
+        "photos": saved_photos,  # List of photos with types
         "created_at": progress_entry.created_at.isoformat()
     }
 
@@ -120,6 +165,8 @@ async def get_weight_history(
             "hips": getattr(entry, 'hips', None),
             "thighs": getattr(entry, 'thighs', None),
             "arms": getattr(entry, 'arms', None),
+            "right_arm": getattr(entry, 'right_arm', None),
+            "left_arm": getattr(entry, 'left_arm', None),
             "created_at": entry.created_at.isoformat()
         })
     
@@ -158,19 +205,32 @@ async def get_progress_entries(
         if photo_path and ('/' in photo_path or '\\' in photo_path):
             photo_path = os.path.basename(photo_path)
         
+        # Get photos for this entry
+        photos = []
+        if hasattr(entry, 'photos'):
+            for photo in entry.photos:
+                photos.append({
+                    "id": photo.id,
+                    "photo_path": photo.photo_path,
+                    "photo_type": photo.photo_type.value if hasattr(photo.photo_type, 'value') else str(photo.photo_type)
+                })
+        
         # Safely get body measurements (may not exist in old database entries)
         normalized_entries.append({
             "id": entry.id,
             "client_id": entry.client_id,
             "date": entry.date.isoformat(),
             "weight": entry.weight,
-            "photo_path": photo_path,  # Normalized to just filename
+            "photo_path": photo_path,  # Normalized to just filename (legacy)
+            "photos": photos,  # New multiple photos system
             "notes": entry.notes,
             "chest": getattr(entry, 'chest', None),
             "waist": getattr(entry, 'waist', None),
             "hips": getattr(entry, 'hips', None),
             "thighs": getattr(entry, 'thighs', None),
             "arms": getattr(entry, 'arms', None),
+            "right_arm": getattr(entry, 'right_arm', None),
+            "left_arm": getattr(entry, 'left_arm', None),
             "created_at": entry.created_at.isoformat()
         })
     
@@ -216,6 +276,8 @@ async def get_progress_entry(
         "hips": getattr(entry, 'hips', None),
         "thighs": getattr(entry, 'thighs', None),
         "arms": getattr(entry, 'arms', None),
+        "right_arm": getattr(entry, 'right_arm', None),
+        "left_arm": getattr(entry, 'left_arm', None),
         "created_at": entry.created_at.isoformat()
     }
 
@@ -367,7 +429,9 @@ async def update_progress_entry(
     waist: Optional[float] = Form(None, description="Waist measurement in cm"),
     hips: Optional[float] = Form(None, description="Hips measurement in cm"),
     thighs: Optional[float] = Form(None, description="Thighs measurement in cm"),
-    arms: Optional[float] = Form(None, description="Arms measurement in cm"),
+    arms: Optional[float] = Form(None, description="Arms measurement in cm (deprecated)"),
+    right_arm: Optional[float] = Form(None, description="Right arm circumference in cm"),
+    left_arm: Optional[float] = Form(None, description="Left arm circumference in cm"),
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -404,6 +468,10 @@ async def update_progress_entry(
         entry.thighs = thighs
     if arms is not None:
         entry.arms = arms
+    if right_arm is not None:
+        entry.right_arm = right_arm
+    if left_arm is not None:
+        entry.left_arm = left_arm
     
     db.commit()
     db.refresh(entry)
@@ -426,5 +494,7 @@ async def update_progress_entry(
         "hips": getattr(entry, 'hips', None),
         "thighs": getattr(entry, 'thighs', None),
         "arms": getattr(entry, 'arms', None),
+        "right_arm": getattr(entry, 'right_arm', None),
+        "left_arm": getattr(entry, 'left_arm', None),
         "created_at": entry.created_at.isoformat()
     } 

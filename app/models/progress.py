@@ -17,8 +17,11 @@ class ProgressEntry(Base):
     waist = Column(Float, nullable=True)  # in cm
     hips = Column(Float, nullable=True)  # in cm
     thighs = Column(Float, nullable=True)  # in cm
-    arms = Column(Float, nullable=True)  # in cm
+    arms = Column(Float, nullable=True)  # in cm (deprecated - use right_arm and left_arm)
+    right_arm = Column(Float, nullable=True)  # in cm - right arm circumference
+    left_arm = Column(Float, nullable=True)  # in cm - left arm circumference
     created_at = Column(DateTime, default=func.now())
 
     # Relationships
-    client = relationship("User", back_populates="progress_entries") 
+    client = relationship("User", back_populates="progress_entries")
+    photos = relationship("ProgressPhoto", back_populates="progress_entry", cascade="all, delete-orphan") 

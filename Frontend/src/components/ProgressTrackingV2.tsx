@@ -23,11 +23,18 @@ interface ProgressEntry {
   muscle_mass?: number;
   notes: string;
   photo_path: string;
+  photos?: Array<{
+    id: number;
+    photo_path: string;
+    photo_type: string;
+  }>;
   chest?: number;
   waist?: number;
   hips?: number;
   thighs?: number;
   arms?: number;
+  right_arm?: number;
+  left_arm?: number;
   created_at: string;
 }
 
@@ -47,8 +54,27 @@ const ProgressTrackingV2 = () => {
   const [newHips, setNewHips] = useState('');
   const [newThighs, setNewThighs] = useState('');
   const [newArms, setNewArms] = useState('');
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [newRightArm, setNewRightArm] = useState('');
+  const [newLeftArm, setNewLeftArm] = useState('');
+  // Multiple photos support
+  const [photoFiles, setPhotoFiles] = useState<{
+    front: File | null;
+    side: File | null;
+    back: File | null;
+  }>({
+    front: null,
+    side: null,
+    back: null
+  });
+  const [photoPreviews, setPhotoPreviews] = useState<{
+    front: string | null;
+    side: string | null;
+    back: string | null;
+  }>({
+    front: null,
+    side: null,
+    back: null
+  });
   const [viewingPhoto, setViewingPhoto] = useState<ProgressEntry | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   // State for photo URLs in grid view
@@ -92,21 +118,21 @@ const ProgressTrackingV2 = () => {
     }
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = (type: 'front' | 'side' | 'back', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setPhotoFile(file);
+      setPhotoFiles(prev => ({ ...prev, [type]: file }));
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
+        setPhotoPreviews(prev => ({ ...prev, [type]: reader.result as string }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const removePhoto = () => {
-    setPhotoFile(null);
-    setPhotoPreview(null);
+  const removePhoto = (type: 'front' | 'side' | 'back') => {
+    setPhotoFiles(prev => ({ ...prev, [type]: null }));
+    setPhotoPreviews(prev => ({ ...prev, [type]: null }));
   };
 
   const loadPhotoWithAuth = async (photoPath: string) => {
@@ -162,6 +188,40 @@ const ProgressTrackingV2 = () => {
     }
   };
 
+  const handleDeleteEntry = async (entry: ProgressEntry) => {
+    if (!confirm(t('progress.confirmDelete', 'Are you sure you want to delete this entry?'))) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/progress/weight/${entry.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok || response.status === 204) {
+        // Remove from local state
+        setProgressData(progressData.filter(e => e.id !== entry.id));
+        // Clear photo URLs if needed
+        if (photoUrls[entry.id]) {
+          URL.revokeObjectURL(photoUrls[entry.id]);
+          const newPhotoUrls = { ...photoUrls };
+          delete newPhotoUrls[entry.id];
+          setPhotoUrls(newPhotoUrls);
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({ detail: t('progress.deleteError', 'Failed to delete entry') }));
+        setError(errorData.detail || t('progress.deleteError', 'Failed to delete entry'));
+      }
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      setError(t('progress.deleteError', 'Failed to delete entry'));
+    }
+  };
+
   const addEntry = async () => {
     if (!newWeight) {
       return;
@@ -191,8 +251,21 @@ const ProgressTrackingV2 = () => {
       if (newArms) {
         formData.append('arms', newArms);
       }
-      if (photoFile) {
-        formData.append('photo', photoFile);
+      if (newRightArm) {
+        formData.append('right_arm', newRightArm);
+      }
+      if (newLeftArm) {
+        formData.append('left_arm', newLeftArm);
+      }
+      // Add multiple photos
+      if (photoFiles.front) {
+        formData.append('photo_front', photoFiles.front);
+      }
+      if (photoFiles.side) {
+        formData.append('photo_side', photoFiles.side);
+      }
+      if (photoFiles.back) {
+        formData.append('photo_back', photoFiles.back);
       }
 
       const response = await fetch(`${API_BASE_URL}/progress/weight`, {
@@ -217,8 +290,10 @@ const ProgressTrackingV2 = () => {
         setNewHips('');
         setNewThighs('');
         setNewArms('');
-        setPhotoFile(null);
-        setPhotoPreview(null);
+        setNewRightArm('');
+        setNewLeftArm('');
+        setPhotoFiles({ front: null, side: null, back: null });
+        setPhotoPreviews({ front: null, side: null, back: null });
         // Close dialog after reset
         setIsAddingEntry(false);
         // Clear any errors
@@ -354,15 +429,26 @@ const ProgressTrackingV2 = () => {
                           onChange={(e) => setNewThighs(e.target.value)}
                         />
                       </div>
-                      <div className="col-span-2">
-                        <Label htmlFor="arms" className="text-xs text-muted-foreground">{t('progress.arms', 'Arms')}</Label>
+                      <div>
+                        <Label htmlFor="right_arm" className="text-xs text-muted-foreground">{t('progress.rightArm', 'Right Arm')}</Label>
                         <Input
-                          id="arms"
+                          id="right_arm"
                           type="number"
                           step="0.1"
                           placeholder={t('progress.cm')}
-                          value={newArms}
-                          onChange={(e) => setNewArms(e.target.value)}
+                          value={newRightArm}
+                          onChange={(e) => setNewRightArm(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="left_arm" className="text-xs text-muted-foreground">{t('progress.leftArm', 'Left Arm')}</Label>
+                        <Input
+                          id="left_arm"
+                          type="number"
+                          step="0.1"
+                          placeholder={t('progress.cm')}
+                          value={newLeftArm}
+                          onChange={(e) => setNewLeftArm(e.target.value)}
                         />
                       </div>
                     </div>
@@ -370,40 +456,116 @@ const ProgressTrackingV2 = () => {
                   
                   <div>
                     <Label>{t('progress.progressPhotoOptional')}</Label>
-                    {photoPreview ? (
-                      <div className="relative mt-2">
-                        <img 
-                          src={photoPreview} 
-                          alt={t('progress.photoPreviewAlt')}
-                          className="w-full h-48 object-cover rounded-lg"
-                        />
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="absolute top-2 right-2"
-                          onClick={removePhoto}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="mt-2">
-                        <label htmlFor="photo-upload" className="cursor-pointer">
-                          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:bg-accent transition-colors">
-                            <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">{t('progress.clickToUpload')}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{t('progress.uploadHint')}</p>
+                    <p className="text-xs text-muted-foreground mb-2">{t('progress.uploadHint')}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                      {/* Front Photo */}
+                      <div>
+                        <Label htmlFor="photo-front" className="text-xs mb-1 block">{t('progress.frontPhoto', 'קדימה')}</Label>
+                        {photoPreviews.front ? (
+                          <div className="relative">
+                            <img 
+                              src={photoPreviews.front} 
+                              alt={t('progress.frontPhoto')}
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="absolute top-1 right-1"
+                              onClick={() => removePhoto('front')}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
                           </div>
-                        </label>
+                        ) : (
+                          <label htmlFor="photo-front" className="cursor-pointer">
+                            <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:bg-accent transition-colors h-32 flex flex-col items-center justify-center">
+                              <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                              <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'הוסף')}</p>
+                            </div>
+                          </label>
+                        )}
                         <input
-                          id="photo-upload"
+                          id="photo-front"
                           type="file"
                           accept="image/*"
                           className="hidden"
-                          onChange={handlePhotoChange}
+                          onChange={(e) => handlePhotoChange('front', e)}
                         />
                       </div>
-                    )}
+
+                      {/* Side Photo */}
+                      <div>
+                        <Label htmlFor="photo-side" className="text-xs mb-1 block">{t('progress.sidePhoto', 'צד')}</Label>
+                        {photoPreviews.side ? (
+                          <div className="relative">
+                            <img 
+                              src={photoPreviews.side} 
+                              alt={t('progress.sidePhoto')}
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="absolute top-1 right-1"
+                              onClick={() => removePhoto('side')}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <label htmlFor="photo-side" className="cursor-pointer">
+                            <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:bg-accent transition-colors h-32 flex flex-col items-center justify-center">
+                              <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                              <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'הוסף')}</p>
+                            </div>
+                          </label>
+                        )}
+                        <input
+                          id="photo-side"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handlePhotoChange('side', e)}
+                        />
+                      </div>
+
+                      {/* Back Photo */}
+                      <div>
+                        <Label htmlFor="photo-back" className="text-xs mb-1 block">{t('progress.backPhoto', 'אחורה')}</Label>
+                        {photoPreviews.back ? (
+                          <div className="relative">
+                            <img 
+                              src={photoPreviews.back} 
+                              alt={t('progress.backPhoto')}
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="absolute top-1 right-1"
+                              onClick={() => removePhoto('back')}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <label htmlFor="photo-back" className="cursor-pointer">
+                            <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:bg-accent transition-colors h-32 flex flex-col items-center justify-center">
+                              <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                              <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'הוסף')}</p>
+                            </div>
+                          </label>
+                        )}
+                        <input
+                          id="photo-back"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handlePhotoChange('back', e)}
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button

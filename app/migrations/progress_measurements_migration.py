@@ -134,6 +134,8 @@ def run_progress_measurements_migration() -> None:
                     "hips": "REAL",
                     "thighs": "REAL",
                     "arms": "REAL",
+                    "right_arm": "REAL",
+                    "left_arm": "REAL",
                 },
             )
         except Exception as e:
