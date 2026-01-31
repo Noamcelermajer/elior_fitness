@@ -317,11 +317,12 @@ const MealBank = () => {
     }
   };
 
-  const handleImportExcel = async () => {
-    if (!importFile) {
+  const handleImportExcel = async (file?: File) => {
+    const fileToImport = file || importFile;
+    if (!fileToImport) {
       toast({
         title: t('common.error'),
-        description: 'Please select a file to import',
+        description: t('foodBank.selectFileToImport', 'Please select a file to import'),
         variant: "destructive"
       });
       return;
@@ -331,7 +332,7 @@ const MealBank = () => {
     try {
       const token = localStorage.getItem('access_token');
       const formData = new FormData();
-      formData.append('file', importFile);
+      formData.append('file', fileToImport);
 
       const response = await fetch(`${API_BASE_URL}/v2/meals/meal-bank/import/excel`, {
         method: 'POST',

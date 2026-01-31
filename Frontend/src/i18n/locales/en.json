@@ -775,7 +775,8 @@
     "replace": "Replace",
     "addAnyway": "Add Anyway",
     "ignore": "Ignore",
-    "confirmImport": "Confirm Import"
+    "confirmImport": "Confirm Import",
+    "selectFileToImport": "Please select a file to import"
   },
   "weightProgress": {
     "currentWeight": "Current Weight",
