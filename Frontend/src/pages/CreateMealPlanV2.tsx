@@ -1056,14 +1056,14 @@ const CreateMealPlanV2: React.FC = () => {
           {/* Client Selection */}
           {!client && (
             <div>
-              <Label htmlFor="client">Client *</Label>
+              <Label htmlFor="client">{t('mealCreation.selectClient')} *</Label>
               <select
                 id="client"
                 className="w-full px-3 py-2 border rounded-md"
                 value={formData.client_id}
                 onChange={(e) => setFormData({ ...formData, client_id: parseInt(e.target.value) })}
               >
-                <option value={0}>Select client...</option>
+                <option value={0}>{t('mealCreation.selectClientPlaceholder', 'Select client...')}</option>
                 {clients.map(c => (
                   <option key={c.id} value={c.id}>{c.full_name} ({c.email})</option>
                 ))}
@@ -1073,7 +1073,7 @@ const CreateMealPlanV2: React.FC = () => {
 
           {client && (
             <div className="p-4 bg-muted rounded-md">
-              <Label>Client</Label>
+              <Label>{t('mealCreation.client', 'Client')}</Label>
               <p className="font-semibold">{client.full_name}</p>
               <p className="text-sm text-muted-foreground">{client.email}</p>
             </div>
