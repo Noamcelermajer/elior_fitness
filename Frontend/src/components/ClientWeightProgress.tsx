@@ -1,12 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   TrendingUp, Weight, Calendar, Edit2, Camera, 
-  LineChart, Target, Activity, Plus, Upload, Image, Trash2
+  LineChart, Target, Activity, Plus, Upload, Image, Trash2, X
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import { useToast } from '../hooks/use-toast';
@@ -18,7 +19,19 @@ interface ProgressEntry {
   date: string;
   weight: number;
   photo_path?: string;
+  photos?: Array<{
+    id: number;
+    photo_path: string;
+    photo_type: string;
+  }>;
   notes?: string;
+  chest?: number;
+  waist?: number;
+  hips?: number;
+  thighs?: number;
+  arms?: number;
+  right_arm?: number;
+  left_arm?: number;
   created_at: string;
 }
 
@@ -46,14 +59,55 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
   const [addForm, setAddForm] = useState({
     weight: '',
     notes: '',
-    photo: null as File | null
+    chest: '',
+    waist: '',
+    hips: '',
+    thighs: '',
+    right_arm: '',
+    left_arm: ''
   });
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Multiple photos support
+  const [photoFiles, setPhotoFiles] = useState<{
+    front: File | null;
+    side: File | null;
+    back: File | null;
+  }>({
+    front: null,
+    side: null,
+    back: null
+  });
+  const [photoPreviews, setPhotoPreviews] = useState<{
+    front: string | null;
+    side: string | null;
+    back: string | null;
+  }>({
+    front: null,
+    side: null,
+    back: null
+  });
   const [uploading, setUploading] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<ProgressEntry | null>(null);
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [deletingEntry, setDeletingEntry] = useState<ProgressEntry | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Load photos when viewing dialog opens
+  useEffect(() => {
+    if (viewingPhoto) {
+      if (viewingPhoto.photos && viewingPhoto.photos.length > 0) {
+        viewingPhoto.photos.forEach(photo => {
+          if (!photoUrls[photo.photo_type]) {
+            loadPhotoWithAuth(photo.photo_path, photo.photo_type);
+          }
+        });
+      } else if (viewingPhoto.photo_path) {
+        // Legacy: single photo_path
+        if (!photoUrls['front'] && !photoUrls['single']) {
+          loadPhotoWithAuth(viewingPhoto.photo_path, 'front');
+        }
+      }
+    }
+  }, [viewingPhoto]);
 
   // Sort entries by date
   const sortedEntries = [...progressEntries].sort(
@@ -122,42 +176,41 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setAddForm({ ...addForm, photo: file });
-    }
-  };
-
-  const loadPhotoWithAuth = async (photoPath: string) => {
+  const loadPhotoWithAuth = async (photoPath: string, photoType?: string) => {
     try {
       const token = localStorage.getItem('access_token');
-      // Extract just the filename from the full path
       const filename = photoPath.split('/').pop();
       const response = await fetch(`${API_BASE_URL}/files/media/progress_photos/${filename}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (response.ok) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        setPhotoUrl(url);
-      } else {
-        console.error('Failed to load photo:', response.status);
-        setPhotoUrl(null);
+        if (photoType) {
+          setPhotoUrls(prev => ({ ...prev, [photoType]: url }));
+        } else {
+          // Legacy single photo
+          setPhotoUrls(prev => ({ ...prev, 'single': url }));
+        }
       }
     } catch (error) {
       console.error('Error loading photo:', error);
-      setPhotoUrl(null);
     }
   };
 
   const handleViewPhoto = (entry: ProgressEntry) => {
     setViewingPhoto(entry);
-    if (entry.photo_path) {
-      loadPhotoWithAuth(entry.photo_path);
+    // Load all photos for this entry
+    if (entry.photos && entry.photos.length > 0) {
+      entry.photos.forEach(photo => {
+        if (!photoUrls[photo.photo_type]) {
+          loadPhotoWithAuth(photo.photo_path, photo.photo_type);
+        }
+      });
+    } else if (entry.photo_path) {
+      // Legacy: single photo_path
+      loadPhotoWithAuth(entry.photo_path, 'front');
     }
   };
 
@@ -178,11 +231,38 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
       const formData = new FormData();
       
       formData.append('weight', addForm.weight);
+      formData.append('date', new Date().toISOString());
       if (addForm.notes) {
         formData.append('notes', addForm.notes);
       }
-      if (addForm.photo) {
-        formData.append('photo', addForm.photo);
+      // Add measurements
+      if (addForm.chest) {
+        formData.append('chest', addForm.chest);
+      }
+      if (addForm.waist) {
+        formData.append('waist', addForm.waist);
+      }
+      if (addForm.hips) {
+        formData.append('hips', addForm.hips);
+      }
+      if (addForm.thighs) {
+        formData.append('thighs', addForm.thighs);
+      }
+      if (addForm.right_arm) {
+        formData.append('right_arm', addForm.right_arm);
+      }
+      if (addForm.left_arm) {
+        formData.append('left_arm', addForm.left_arm);
+      }
+      // Add multiple photos
+      if (photoFiles.front) {
+        formData.append('photo_front', photoFiles.front);
+      }
+      if (photoFiles.side) {
+        formData.append('photo_side', photoFiles.side);
+      }
+      if (photoFiles.back) {
+        formData.append('photo_back', photoFiles.back);
       }
       // If this is a trainer adding an entry for a client, include client_id
       if (isTrainer && clientId) {
@@ -202,11 +282,10 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
           title: "Success",
           description: t('weightProgress.successAdd')
         });
-        // Reset form first
-        setAddForm({ weight: '', notes: '', photo: null });
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
+        // Reset form
+        setAddForm({ weight: '', notes: '', chest: '', waist: '', hips: '', thighs: '', right_arm: '', left_arm: '' });
+        setPhotoFiles({ front: null, side: null, back: null });
+        setPhotoPreviews({ front: null, side: null, back: null });
         // Close dialog after reset
         setShowAddDialog(false);
         // Update progress data
@@ -381,7 +460,7 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
                     {entry.notes && (
                       <p className="text-sm text-muted-foreground mt-1">{entry.notes}</p>
                     )}
-                    {entry.photo_path && (
+                    {(entry.photos && entry.photos.length > 0) || entry.photo_path ? (
                       <div className="flex items-center gap-2 mt-2">
                         <Button
                           size="sm"
@@ -390,19 +469,19 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
                           className="flex items-center gap-1"
                         >
                           <Image className="w-3 h-3" />
-                          {t('weightProgress.viewPhoto')}
+                          {t('weightProgress.viewPhoto', 'View Photos')}
                         </Button>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {entry.photo_path && (
+                  {((entry.photos && entry.photos.length > 0) || entry.photo_path) && (
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => handleViewPhoto(entry)}
-                      title={t('weightProgress.viewPhoto')}
+                      title={t('weightProgress.viewPhoto', 'View Photos')}
                     >
                       <Image className="w-4 h-4" />
                     </Button>
@@ -459,40 +538,202 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="add-notes">{t('weightProgress.notes')}</Label>
-              <Input
+              <Label htmlFor="add-notes">{t('weightProgress.notes', 'Notes (Optional)')}</Label>
+              <Textarea
                 id="add-notes"
                 value={addForm.notes}
                 onChange={(e) => setAddForm({...addForm, notes: e.target.value})}
-                placeholder={t('weightProgress.addNotes')}
+                placeholder={t('weightProgress.addNotes', 'Add notes...')}
+                rows={3}
               />
             </div>
 
+            {/* Body Measurements */}
             <div className="space-y-2">
-              <Label htmlFor="add-photo">{t('weightProgress.progressPhoto')}</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="add-photo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  ref={fileInputRef}
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Camera className="w-4 h-4" />
-                </Button>
+              <Label className="text-sm font-medium">{t('progress.measurements', 'Measurements')}</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="chest" className="text-xs text-muted-foreground">{t('progress.chest', 'Chest')}</Label>
+                  <Input
+                    id="chest"
+                    type="number"
+                    step="0.1"
+                    placeholder={t('progress.cm', 'cm')}
+                    value={addForm.chest}
+                    onChange={(e) => setAddForm({...addForm, chest: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="waist" className="text-xs text-muted-foreground">{t('progress.waist', 'Waist')}</Label>
+                  <Input
+                    id="waist"
+                    type="number"
+                    step="0.1"
+                    placeholder={t('progress.cm', 'cm')}
+                    value={addForm.waist}
+                    onChange={(e) => setAddForm({...addForm, waist: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hips" className="text-xs text-muted-foreground">{t('progress.hips', 'Hips')}</Label>
+                  <Input
+                    id="hips"
+                    type="number"
+                    step="0.1"
+                    placeholder={t('progress.cm', 'cm')}
+                    value={addForm.hips}
+                    onChange={(e) => setAddForm({...addForm, hips: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="thighs" className="text-xs text-muted-foreground">{t('progress.thighs', 'Thighs')}</Label>
+                  <Input
+                    id="thighs"
+                    type="number"
+                    step="0.1"
+                    placeholder={t('progress.cm', 'cm')}
+                    value={addForm.thighs}
+                    onChange={(e) => setAddForm({...addForm, thighs: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="right_arm" className="text-xs text-muted-foreground">{t('progress.rightArm', 'Right Arm')}</Label>
+                  <Input
+                    id="right_arm"
+                    type="number"
+                    step="0.1"
+                    placeholder={t('progress.cm', 'cm')}
+                    value={addForm.right_arm}
+                    onChange={(e) => setAddForm({...addForm, right_arm: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="left_arm" className="text-xs text-muted-foreground">{t('progress.leftArm', 'Left Arm')}</Label>
+                  <Input
+                    id="left_arm"
+                    type="number"
+                    step="0.1"
+                    placeholder={t('progress.cm', 'cm')}
+                    value={addForm.left_arm}
+                    onChange={(e) => setAddForm({...addForm, left_arm: e.target.value})}
+                  />
+                </div>
               </div>
-              {addForm.photo && (
-                <p className="text-sm text-muted-foreground">
-                  {t('weightProgress.selectedFile')}: {addForm.photo.name}
-                </p>
-              )}
+            </div>
+
+            {/* Progress Photos */}
+            <div>
+              <Label>{t('progress.progressPhotoOptional', 'Progress Photo (Optional)')}</Label>
+              <p className="text-xs text-muted-foreground mb-2">{t('progress.uploadHint', 'Upload front, side, and back photos')}</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                {/* Front Photo */}
+                <div>
+                  <Label htmlFor="photo-front" className="text-xs mb-1 block">{t('progress.frontPhoto', 'Front')}</Label>
+                  {photoPreviews.front ? (
+                    <div className="relative">
+                      <img 
+                        src={photoPreviews.front} 
+                        alt={t('progress.frontPhoto')}
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-1 right-1"
+                        onClick={() => removePhoto('front')}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label htmlFor="photo-front" className="cursor-pointer">
+                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:bg-accent transition-colors h-32 flex flex-col items-center justify-center">
+                        <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                        <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'Add')}</p>
+                      </div>
+                    </label>
+                  )}
+                  <input
+                    id="photo-front"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handlePhotoChange('front', e)}
+                  />
+                </div>
+
+                {/* Side Photo */}
+                <div>
+                  <Label htmlFor="photo-side" className="text-xs mb-1 block">{t('progress.sidePhoto', 'Side')}</Label>
+                  {photoPreviews.side ? (
+                    <div className="relative">
+                      <img 
+                        src={photoPreviews.side} 
+                        alt={t('progress.sidePhoto')}
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-1 right-1"
+                        onClick={() => removePhoto('side')}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label htmlFor="photo-side" className="cursor-pointer">
+                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:bg-accent transition-colors h-32 flex flex-col items-center justify-center">
+                        <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                        <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'Add')}</p>
+                      </div>
+                    </label>
+                  )}
+                  <input
+                    id="photo-side"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handlePhotoChange('side', e)}
+                  />
+                </div>
+
+                {/* Back Photo */}
+                <div>
+                  <Label htmlFor="photo-back" className="text-xs mb-1 block">{t('progress.backPhoto', 'Back')}</Label>
+                  {photoPreviews.back ? (
+                    <div className="relative">
+                      <img 
+                        src={photoPreviews.back} 
+                        alt={t('progress.backPhoto')}
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-1 right-1"
+                        onClick={() => removePhoto('back')}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label htmlFor="photo-back" className="cursor-pointer">
+                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:bg-accent transition-colors h-32 flex flex-col items-center justify-center">
+                        <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                        <p className="text-xs text-muted-foreground">{t('progress.addPhoto', 'Add')}</p>
+                      </div>
+                    </label>
+                  )}
+                  <input
+                    id="photo-back"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handlePhotoChange('back', e)}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
@@ -501,10 +742,9 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
                 variant="outline"
                 onClick={() => {
                   setShowAddDialog(false);
-                  setAddForm({ weight: '', notes: '', photo: null });
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                  }
+                  setAddForm({ weight: '', notes: '', chest: '', waist: '', hips: '', thighs: '', right_arm: '', left_arm: '' });
+                  setPhotoFiles({ front: null, side: null, back: null });
+                  setPhotoPreviews({ front: null, side: null, back: null });
                 }}
               >
                 {t('weightProgress.cancel')}
@@ -570,34 +810,70 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
       <Dialog open={!!viewingPhoto} onOpenChange={(open) => {
         if (!open) {
           setViewingPhoto(null);
-          if (photoUrl) {
-            URL.revokeObjectURL(photoUrl);
-            setPhotoUrl(null);
-          }
+          // Clean up photo URLs
+          Object.values(photoUrls).forEach(url => {
+            if (url) URL.revokeObjectURL(url);
+          });
+          setPhotoUrls({});
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t('weightProgress.viewPhoto')}</DialogTitle>
+            <DialogTitle>{t('weightProgress.viewPhoto', 'View Progress Photos')}</DialogTitle>
             <DialogDescription>
               {viewingPhoto && `${t('weightProgress.weight')}: ${viewingPhoto.weight} ${t('weightProgress.kg')} - ${new Date(viewingPhoto.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US')}`}
             </DialogDescription>
           </DialogHeader>
           {viewingPhoto && (
             <div className="space-y-4">
-              <div className="relative">
-                {photoUrl ? (
-                  <img 
-                    src={photoUrl}
-                    alt={t('weightProgress.progressPhoto')}
-                    className="w-full h-auto max-h-[70vh] object-contain rounded-lg border"
-                  />
-                ) : (
-                  <div className="w-full h-64 bg-secondary/20 rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground">{t('weightProgress.photoNotFound')}</p>
-                  </div>
-                )}
-              </div>
+              {/* Display all photos */}
+              {viewingPhoto.photos && viewingPhoto.photos.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {['front', 'side', 'back'].map((type) => {
+                    const photo = viewingPhoto.photos?.find(p => p.photo_type === type);
+                    const photoUrl = photo ? photoUrls[type] : null;
+                    return (
+                      <div key={type} className="space-y-2">
+                        <Label className="text-sm font-medium capitalize">{t(`progress.${type}Photo`, type)}</Label>
+                        {photoUrl ? (
+                          <img 
+                            src={photoUrl}
+                            alt={t(`progress.${type}Photo`, type)}
+                            className="w-full h-auto max-h-[50vh] object-contain rounded-lg border"
+                          />
+                        ) : photo ? (
+                          <div className="w-full h-48 bg-secondary/20 rounded-lg flex items-center justify-center">
+                            <p className="text-muted-foreground text-sm">{t('progress.loading', 'Loading...')}</p>
+                          </div>
+                        ) : (
+                          <div className="w-full h-48 bg-secondary/20 rounded-lg flex items-center justify-center">
+                            <p className="text-muted-foreground text-sm">{t('progress.noPhoto', 'No photo')}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : viewingPhoto.photo_path ? (
+                // Legacy: single photo_path
+                <div className="relative">
+                  {photoUrls['front'] || photoUrls['single'] ? (
+                    <img 
+                      src={photoUrls['front'] || photoUrls['single']}
+                      alt={t('weightProgress.progressPhoto')}
+                      className="w-full h-auto max-h-[70vh] object-contain rounded-lg border"
+                    />
+                  ) : (
+                    <div className="w-full h-64 bg-secondary/20 rounded-lg flex items-center justify-center">
+                      <p className="text-muted-foreground">{t('weightProgress.photoNotFound', 'Photo not found')}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-64 bg-secondary/20 rounded-lg flex items-center justify-center">
+                  <p className="text-muted-foreground">{t('weightProgress.noPhotos', 'No photos available')}</p>
+                </div>
+              )}
               {viewingPhoto.notes && (
                 <div className="p-3 bg-secondary/20 rounded-lg">
                   <p className="text-sm text-muted-foreground">
