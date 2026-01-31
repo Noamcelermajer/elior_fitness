@@ -1560,7 +1560,7 @@ async def import_meal_bank_excel(
             except Exception as e:
                 logger.error(f"Error processing row {row_idx}: {str(e)}")
         
-        # If duplicates found, return them for user to decide
+        # ALWAYS return duplicates if found - never auto-import when duplicates exist
         if duplicate_matches:
             return {
                 "duplicates_found": True,
@@ -1577,6 +1577,27 @@ async def import_meal_bank_excel(
         from app.models.meal_system import MeasurementType
         for item_data in items_to_import:
             try:
+                # Double-check for duplicates before importing (safety check)
+                check_name_hebrew = normalize_hebrew(item_data.get("name_hebrew", ""))
+                check_name = normalize_hebrew(item_data.get("name", ""))
+                
+                has_duplicate = False
+                for existing in existing_items:
+                    existing_norm_hebrew = normalize_hebrew(existing.name_hebrew) if existing.name_hebrew else ""
+                    existing_norm_name = normalize_hebrew(existing.name) if existing.name else ""
+                    
+                    if check_name_hebrew and existing_norm_hebrew and check_name_hebrew == existing_norm_hebrew:
+                        has_duplicate = True
+                        break
+                    if check_name and existing_norm_name and check_name == existing_norm_name:
+                        has_duplicate = True
+                        break
+                
+                if has_duplicate:
+                    skipped_count += 1
+                    errors.append(f"Row {item_data['row_index']}: Duplicate detected (safety check)")
+                    continue
+                
                 meal_bank_item = MealBank(
                     name=item_data["name"],
                     name_hebrew=item_data["name_hebrew"],
