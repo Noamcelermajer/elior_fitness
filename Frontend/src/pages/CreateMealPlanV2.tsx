@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Search, Check } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Search, Check, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -171,6 +171,7 @@ const CreateMealPlanV2: React.FC = () => {
     is_public: false
   });
   const [addingFood, setAddingFood] = useState(false);
+  const [duplicateDialog, setDuplicateDialog] = useState<any>(null);
 
   const toNumber = (value: number | null | undefined): number =>
     typeof value === 'number' && !Number.isNaN(value) ? value : 0;
@@ -695,6 +696,50 @@ const CreateMealPlanV2: React.FC = () => {
       setError(error.message || fallbackError);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      setError('');
+      
+      const token = localStorage.getItem('access_token');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_BASE_URL}/v2/meals/plans/import/excel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        if (result.duplicates_found) {
+          // Show duplicate dialog
+          setDuplicateDialog(result);
+        } else {
+          // Success - redirect or reload
+          alert(t('mealCreation.importSuccess', 'Meal plan imported successfully!'));
+          navigate('/trainer-dashboard');
+        }
+      } else {
+        setError(result.detail || t('mealCreation.importError', 'Failed to import meal plan'));
+      }
+    } catch (error) {
+      console.error('Excel import error:', error);
+      setError(t('mealCreation.importError', 'Failed to import meal plan'));
+    } finally {
+      setLoading(false);
+      // Reset file input
+      e.target.value = '';
     }
   };
 
@@ -1445,18 +1490,37 @@ const CreateMealPlanV2: React.FC = () => {
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex justify-end space-x-4">
-        <Button variant="outline" onClick={() => navigate(-1)}>
-          {t('common.cancel')}
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={!isFormValid() || loading}
-          className="gradient-green"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {loading ? primaryButtonLoadingLabel : primaryButtonLabel}
-        </Button>
+      <div className="flex justify-between items-center">
+        <div>
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            id="excel-import"
+            className="hidden"
+            onChange={handleExcelImport}
+          />
+          <Button
+            variant="outline"
+            onClick={() => document.getElementById('excel-import')?.click()}
+            disabled={loading}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            {t('mealCreation.importExcel', 'Import from Excel')}
+          </Button>
+        </div>
+        <div className="flex justify-end space-x-4">
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!isFormValid() || loading}
+            className="gradient-green"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {loading ? primaryButtonLoadingLabel : primaryButtonLabel}
+          </Button>
+        </div>
       </div>
 
       {/* Meal Bank Dialog */}

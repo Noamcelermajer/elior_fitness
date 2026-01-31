@@ -699,7 +699,7 @@ const TrainingDayPage: React.FC = () => {
     const key = `${exerciseId}-${setNumber}`;
     const payload = tempSets[key];
 
-    if (!payload?.reps || (!bodyweightExercises[exerciseId] && !payload.weight)) return;
+    if (!payload?.reps || !payload.weight) return;
 
     try {
       const token = localStorage.getItem('access_token');
@@ -715,7 +715,7 @@ const TrainingDayPage: React.FC = () => {
           workout_exercise_id: exerciseId,
           set_number: setNumber,
           reps_completed: Number(payload.reps),
-          weight_used: Number(bodyweightExercises[exerciseId] ? '0' : payload.weight),
+          weight_used: Number(payload.weight),
           completed_at: new Date().toISOString(),
         }),
       });
@@ -964,17 +964,6 @@ const TrainingDayPage: React.FC = () => {
                     </DialogTrigger>
                     <ExerciseHistoryDialog exerciseId={exercise.id} exerciseName={exerciseName} />
                   </Dialog>
-                  <div className="flex items-center gap-1.5">
-                    <Checkbox
-                      id={`bw-${exercise.id}`}
-                      checked={isBodyweight}
-                      onCheckedChange={() => handleBodyweightToggle(exercise.id)}
-                      className="h-4 w-4"
-                    />
-                    <label htmlFor={`bw-${exercise.id}`} className="cursor-pointer select-none text-[11px] md:text-xs text-muted-foreground">
-                      {t('training.bodyweight')}
-                    </label>
-                  </div>
                 </div>
               </div>
 
@@ -1136,10 +1125,9 @@ const TrainingDayPage: React.FC = () => {
                                 inputMode="decimal"
                                 min={0}
                                 step="0.5"
-                                placeholder={isBodyweight ? t('training.bodyweight') : (suggestionSet ? String(suggestionSet.weight_used) : t('training.enterWeight'))}
-                                value={isBodyweight ? '0' : tempSets[currentKey]?.weight ?? ''}
+                                placeholder={suggestionSet ? String(suggestionSet.weight_used) : t('training.enterWeight')}
+                                value={tempSets[currentKey]?.weight ?? ''}
                                 onChange={(e) => updateTempSet(exercise.id, setNumber, 'weight', e.target.value)}
-                                disabled={isBodyweight}
                                 className="h-10 md:h-9 rounded-lg border-border/50 bg-background/90 text-sm disabled:opacity-60"
                               />
                             </div>
@@ -1148,7 +1136,7 @@ const TrainingDayPage: React.FC = () => {
                             size="sm"
                             className="h-10 md:h-9 shrink-0 rounded-lg px-3 md:px-4 text-xs"
                             onClick={() => handleLogSet(exercise.id, setNumber)}
-                            disabled={!tempSets[currentKey]?.reps || (!isBodyweight && !tempSets[currentKey]?.weight)}
+                            disabled={!tempSets[currentKey]?.reps || !tempSets[currentKey]?.weight}
                           >
                             {t('training.logSet', 'שמור סט')}
                           </Button>

@@ -77,8 +77,8 @@ const ProgressTrackingV2 = () => {
   });
   const [viewingPhoto, setViewingPhoto] = useState<ProgressEntry | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  // State for photo URLs in grid view
-  const [photoUrls, setPhotoUrls] = useState<Record<number, string>>({});
+  // State for photo URLs in grid view - store by entry ID and photo type
+  const [photoUrls, setPhotoUrls] = useState<Record<number, Record<string, string>>>({});
 
   useEffect(() => {
     if (user?.id) {
@@ -89,8 +89,16 @@ const ProgressTrackingV2 = () => {
   // Load photos for grid when progress data changes
   useEffect(() => {
     photosWithData.forEach(entry => {
-      if (entry.photo_path && !photoUrls[entry.id]) {
-        loadPhotoForGrid(entry);
+      // Load all photos for this entry (front, side, back)
+      if (entry.photos && entry.photos.length > 0) {
+        entry.photos.forEach(photo => {
+          if (!photoUrls[entry.id]?.[photo.photo_type]) {
+            loadPhotoForGrid(entry.id, photo.photo_path, photo.photo_type);
+          }
+        });
+      } else if (entry.photo_path && !photoUrls[entry.id]?.['front']) {
+        // Legacy: single photo_path, treat as front
+        loadPhotoForGrid(entry.id, entry.photo_path, 'front');
       }
     });
   }, [progressData]);
@@ -161,12 +169,12 @@ const ProgressTrackingV2 = () => {
   };
 
   // Load photo for grid display
-  const loadPhotoForGrid = async (entry: ProgressEntry) => {
-    if (!entry.photo_path || photoUrls[entry.id]) return;
+  const loadPhotoForGrid = async (entryId: number, photoPath: string, photoType: string) => {
+    if (!photoPath || photoUrls[entryId]?.[photoType]) return;
     
     try {
       const token = localStorage.getItem('access_token');
-      const filename = entry.photo_path.split('/').pop();
+      const filename = photoPath.split('/').pop();
       const response = await fetch(`${API_BASE_URL}/files/media/progress_photos/${filename}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -174,7 +182,13 @@ const ProgressTrackingV2 = () => {
       if (response.ok) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        setPhotoUrls(prev => ({ ...prev, [entry.id]: url }));
+        setPhotoUrls(prev => ({
+          ...prev,
+          [entryId]: {
+            ...(prev[entryId] || {}),
+            [photoType]: url
+          }
+        }));
       }
     } catch (error) {
       console.error('Failed to load photo for grid:', error);
@@ -747,44 +761,84 @@ const ProgressTrackingV2 = () => {
               <CardContent>
                 {photosWithData.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {photosWithData.map((entry) => (
-                      <Card 
-                        key={entry.id} 
-                        className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                        onClick={() => handleViewPhoto(entry)}
-                      >
-                        {photoUrls[entry.id] ? (
-                          <img 
-                            src={photoUrls[entry.id]}
-                            alt={`Progress ${entry.date}`}
-                            className="w-full h-48 object-cover"
-                            onError={(e) => {
-                              console.error('Failed to load image:', entry.photo_path);
-                              e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-48 bg-muted flex items-center justify-center">
-                            <div className="text-center text-muted-foreground">
-                              <Camera className="w-8 h-8 mx-auto mb-2" />
-                              <p className="text-sm">{t('progress.photoNotAvailable')}</p>
+                    {photosWithData.map((entry) => {
+                      const entryPhotos = entry.photos || (entry.photo_path ? [{ photo_path: entry.photo_path, photo_type: 'front' }] : []);
+                      const hasPhotos = entryPhotos.length > 0;
+                      
+                      return (
+                        <Card 
+                          key={entry.id} 
+                          className="overflow-hidden hover:shadow-lg transition-shadow"
+                        >
+                          {hasPhotos ? (
+                            <div className="grid grid-cols-3 gap-1">
+                              {['front', 'side', 'back'].map((type) => {
+                                const photo = entryPhotos.find(p => p.photo_type === type);
+                                const photoUrl = photo ? photoUrls[entry.id]?.[type] : null;
+                                
+                                return (
+                                  <div
+                                    key={type}
+                                    className="relative aspect-square cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                      if (photo) {
+                                        setViewingPhoto(entry);
+                                        loadPhotoWithAuth(photo.photo_path);
+                                      }
+                                    }}
+                                  >
+                                    {photoUrl ? (
+                                      <img 
+                                        src={photoUrl}
+                                        alt={`${type} view - ${entry.date}`}
+                                        className="w-full h-full object-cover"
+                                        style={{ transform: 'rotate(0deg)' }}
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    ) : photo ? (
+                                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                                        <Camera className="w-4 h-4 text-muted-foreground" />
+                                      </div>
+                                    ) : (
+                                      <div className="w-full h-full bg-muted/50 flex items-center justify-center border border-dashed border-muted-foreground/30">
+                                        <span className="text-xs text-muted-foreground">{type}</span>
+                                      </div>
+                                    )}
+                                    {photo && (
+                                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1 py-0.5 text-center">
+                                        {type === 'front' ? (i18n.language === 'he' ? 'קדמי' : 'Front') :
+                                         type === 'side' ? (i18n.language === 'he' ? 'צד' : 'Side') :
+                                         (i18n.language === 'he' ? 'אחורי' : 'Back')}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
-                          </div>
-                        )}
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="font-bold text-lg">{entry.weight} {t('progress.kg')}</p>
-                            <Badge variant="outline">
-                              {new Date(entry.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', { month: 'short', day: 'numeric' })}
-                            </Badge>
-                          </div>
-                          {entry.notes && (
-                            <p className="text-sm text-muted-foreground">{entry.notes}</p>
+                          ) : (
+                            <div className="w-full h-48 bg-muted flex items-center justify-center">
+                              <div className="text-center text-muted-foreground">
+                                <Camera className="w-8 h-8 mx-auto mb-2" />
+                                <p className="text-sm">{t('progress.photoNotAvailable')}</p>
+                              </div>
+                            </div>
                           )}
-                        </CardContent>
-                      </Card>
-                    ))}
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="font-bold text-lg">{entry.weight} {t('progress.kg')}</p>
+                              <Badge variant="outline">
+                                {new Date(entry.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', { month: 'short', day: 'numeric' })}
+                              </Badge>
+                            </div>
+                            {entry.notes && (
+                              <p className="text-sm text-muted-foreground">{entry.notes}</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-12">

@@ -162,6 +162,8 @@ const MealMenuV2 = () => {
   const [completionAdjustments, setCompletionAdjustments] = useState<
     Record<number, { calories: number; protein: number; carbs: number; fat: number }>
   >({});
+  const [allFoodBankItems, setAllFoodBankItems] = useState<any[]>([]);
+  const [showFoodBankDialog, setShowFoodBankDialog] = useState<{slotId: number, macroType: string} | null>(null);
 
   const foodOptionMeta = useMemo(() => {
     const map = new Map<
@@ -237,6 +239,7 @@ const MealMenuV2 = () => {
         await fetchChoices();
         await fetchDailyMacros();
         await fetchMealCompletions();
+        await fetchAllFoodBankItems();
       } finally {
         setLoading(false);
       }
@@ -283,6 +286,24 @@ const MealMenuV2 = () => {
       }
     } catch (error) {
       console.error('Failed to fetch choices:', error);
+    }
+  };
+
+  const fetchAllFoodBankItems = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/v2/meals/meal-bank?include_public=true`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAllFoodBankItems(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch food bank items:', error);
     }
   };
 
@@ -1035,77 +1056,6 @@ const MealMenuV2 = () => {
                       {slot.notes && (
                         <p className="text-sm text-muted-foreground mb-4 italic">{slot.notes}</p>
                       )}
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.calories')}</p>
-                          <p className="text-sm font-semibold">
-                            {formatNumber(effectiveTotals.calories)} {t('mealCreation.unitKcal')}
-                            {caloriesTarget ? ` / ${Math.round(caloriesTarget)} ${t('mealCreation.unitKcal')}` : ''}
-                          </p>
-                          {caloriesDelta !== null && (
-                            <p className="text-xs text-muted-foreground">
-                              {caloriesDelta >= 0
-                                ? `${t('meals.remaining')}: ${Math.round(caloriesDelta)} ${t('mealCreation.unitKcal')}`
-                                : t('mealCreation.overBudget', {
-                                    amount: Math.abs(Math.round(caloriesDelta)),
-                                    unit: t('mealCreation.unitKcal'),
-                                  })}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.protein')}</p>
-                          <p className="text-sm font-semibold">
-                            {formatNumber(effectiveTotals.protein)} {t('mealCreation.unitGrams')}
-                            {proteinTarget ? ` / ${Math.round(proteinTarget)} ${t('mealCreation.unitGrams')}` : ''}
-                          </p>
-                          {proteinDelta !== null && (
-                            <p className="text-xs text-muted-foreground">
-                              {proteinDelta >= 0
-                                ? `${t('meals.remaining')}: ${Math.round(proteinDelta)} ${t('mealCreation.unitGrams')}`
-                                : t('mealCreation.overBudget', {
-                                    amount: Math.abs(Math.round(proteinDelta)),
-                                    unit: t('mealCreation.unitGrams'),
-                                  })}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.carbs')}</p>
-                          <p className="text-sm font-semibold">
-                            {formatNumber(effectiveTotals.carbs)} {t('mealCreation.unitGrams')}
-                            {carbTarget ? ` / ${Math.round(carbTarget)} ${t('mealCreation.unitGrams')}` : ''}
-                          </p>
-                          {carbDelta !== null && (
-                            <p className="text-xs text-muted-foreground">
-                              {carbDelta >= 0
-                                ? `${t('meals.remaining')}: ${Math.round(carbDelta)} ${t('mealCreation.unitGrams')}`
-                                : t('mealCreation.overBudget', {
-                                    amount: Math.abs(Math.round(carbDelta)),
-                                    unit: t('mealCreation.unitGrams'),
-                                  })}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('meals.fat')}</p>
-                          <p className="text-sm font-semibold">
-                            {formatNumber(effectiveTotals.fat)} {t('mealCreation.unitGrams')}
-                            {fatTarget ? ` / ${Math.round(fatTarget)} ${t('mealCreation.unitGrams')}` : ''}
-                          </p>
-                          {fatDelta !== null && (
-                            <p className="text-xs text-muted-foreground">
-                              {fatDelta >= 0
-                                ? `${t('meals.remaining')}: ${Math.round(fatDelta)} ${t('mealCreation.unitGrams')}`
-                                : t('mealCreation.overBudget', {
-                                    amount: Math.abs(Math.round(fatDelta)),
-                                    unit: t('mealCreation.unitGrams'),
-                                  })}
-                            </p>
-                          )}
-                        </div>
-                      </div>
                       
                       <Tabs defaultValue={slot.macro_categories[0]?.macro_type || 'protein'} className="w-full">
                         <TabsList className="grid w-full grid-cols-3">
@@ -1124,13 +1074,11 @@ const MealMenuV2 = () => {
                               </p>
                             )}
                             
-                            {category.food_options.length === 0 ? (
-                              <p className="text-sm text-muted-foreground text-center py-4">
-                                No food options available for this macro
-                              </p>
-                            ) : (
-                              <div className="space-y-2">
-                                {category.food_options.map((option) => {
+                            <div className="space-y-2">
+                              {/* Recommended Foods */}
+                              {category.food_options.length > 0 && (
+                                <>
+                                  {category.food_options.map((option) => {
                                   const isSelected = isFoodOptionSelected(slot.id, option.id);
                                   const selectedChoice = choices.find(
                                     c => c.meal_slot_id === slot.id && c.food_option_id === option.id
@@ -1218,9 +1166,77 @@ const MealMenuV2 = () => {
                                       </div>
                                     </div>
                                   );
+                                  })}
+                              
+                              {/* User-Selected Foods (from food bank, not in recommended list) */}
+                              {choices
+                                .filter(c => c.meal_slot_id === slot.id && c.food_option_id)
+                                .filter(c => {
+                                  // Only show if not in recommended list
+                                  const isRecommended = category.food_options.some(opt => opt.id === c.food_option_id);
+                                  return !isRecommended;
+                                })
+                                .map(choice => {
+                                  const foodBankItem = allFoodBankItems.find(item => item.id === choice.food_option_id);
+                                  if (!foodBankItem || foodBankItem.macro_type !== category.macro_type) return null;
+                                  
+                                  const consumedGrams = parseGrams(choice.quantity);
+                                  return (
+                                    <div
+                                      key={choice.id}
+                                      className="flex items-start space-x-3 p-3 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors border-primary/30"
+                                      onClick={() => {
+                                        const foodOption: FoodOption = {
+                                          id: foodBankItem.id,
+                                          name: foodBankItem.name,
+                                          name_hebrew: foodBankItem.name_hebrew || '',
+                                          calories: foodBankItem.calories || 0,
+                                          protein: foodBankItem.protein || 0,
+                                          carbs: foodBankItem.carbs || 0,
+                                          fat: foodBankItem.fat || 0,
+                                          serving_size: foodBankItem.serving_size || '100g',
+                                          notes: ''
+                                        };
+                                        openFoodDialog(foodOption, slot.id);
+                                      }}
+                                    >
+                                      <div className="flex-1">
+                                        <div className="flex items-center justify-between">
+                                          <p className="font-medium">
+                                            {i18n.language === 'he' ? (foodBankItem.name_hebrew || foodBankItem.name) : foodBankItem.name}
+                                          </p>
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="bg-primary/10 text-primary">
+                                              {choice.quantity || `${Math.round(consumedGrams || 0)}ג`}
+                                            </Badge>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 w-6 p-0"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                deleteFoodChoice(choice.id);
+                                              }}
+                                            >
+                                              ✕
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
                                 })}
-                              </div>
-                            )}
+                              
+                              {/* Add Food Button */}
+                              <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => setShowFoodBankDialog({ slotId: slot.id, macroType: category.macro_type })}
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                {t('meals.addFood', 'Add Food')}
+                              </Button>
+                            </div>
                           </TabsContent>
                         ))}
                       </Tabs>
@@ -1421,6 +1437,80 @@ const MealMenuV2 = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Food Bank Selection Dialog */}
+      <Dialog open={showFoodBankDialog !== null} onOpenChange={(open) => !open && setShowFoodBankDialog(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('meals.selectFood', 'Select Food')}</DialogTitle>
+            <DialogDescription>
+              {t('meals.selectFromFoodBank', 'Select a food from the food bank')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {showFoodBankDialog && (
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {allFoodBankItems
+                .filter(item => item.macro_type === showFoodBankDialog.macroType)
+                .map((item) => {
+                  const isAlreadySelected = choices.some(
+                    c => c.meal_slot_id === showFoodBankDialog.slotId && c.food_option_id === item.id
+                  );
+                  
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        isAlreadySelected 
+                          ? 'bg-primary/10 border-primary' 
+                          : 'bg-card hover:bg-accent'
+                      }`}
+                      onClick={() => {
+                        if (!isAlreadySelected) {
+                          const foodOption: FoodOption = {
+                            id: item.id,
+                            name: item.name,
+                            name_hebrew: item.name_hebrew || '',
+                            calories: item.calories || 0,
+                            protein: item.protein || 0,
+                            carbs: item.carbs || 0,
+                            fat: item.fat || 0,
+                            serving_size: item.serving_size || '100g',
+                            notes: ''
+                          };
+                          openFoodDialog(foodOption, showFoodBankDialog.slotId);
+                          setShowFoodBankDialog(null);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">
+                            {i18n.language === 'he' ? (item.name_hebrew || item.name) : item.name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.calories} {t('meals.kcal')} • {item.protein}ג {t('meals.protein')} • {item.carbs}ג {t('meals.carbs')} • {item.fat}ג {t('meals.fat')}
+                          </p>
+                        </div>
+                        {isAlreadySelected && (
+                          <Badge variant="outline" className="bg-primary/10 text-primary">
+                            {t('meals.selected', 'Selected')}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              
+              {allFoodBankItems.filter(item => item.macro_type === showFoodBankDialog.macroType).length === 0 && (
+                <p className="text-center text-muted-foreground py-8">
+                  {t('meals.noFoodItems', 'No food items available')}
+                </p>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

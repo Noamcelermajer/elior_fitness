@@ -27,6 +27,11 @@ class MacroType(str, enum.Enum):
     CARB = "carb"        # פחמימה
     FAT = "fat"          # שומן
 
+class MeasurementType(str, enum.Enum):
+    """Measurement type for food items"""
+    PER_100G = "per_100g"      # Per 100 grams
+    PER_PORTION = "per_portion"  # Per portion (e.g., 1 slice, 2 pieces)
+
 class MealPlanV2(Base):
     """Main meal plan assigned to a client by trainer"""
     __tablename__ = "meal_plans_v2"
@@ -121,6 +126,7 @@ class FoodOption(Base):
     carbs = Column(Float)    # grams per serving
     fat = Column(Float)      # grams per serving
     serving_size = Column(String)  # e.g., "100g", "1 piece"
+    measurement_type = Column(Enum(MeasurementType), default=MeasurementType.PER_100G, nullable=False)  # per_100g or per_portion
     notes = Column(Text)
     order_index = Column(Integer, default=0)  # For display ordering
     created_at = Column(DateTime, default=func.now())
@@ -188,10 +194,12 @@ class MealBank(Base):
     name = Column(String, nullable=False)  # e.g., "Chicken Breast", "Brown Rice", "Olive Oil"
     name_hebrew = Column(String)  # e.g., "חזה עוף", "אורז מלא", "שמן זית"
     macro_type = Column(Enum(MacroType), nullable=False)  # PROTEIN, CARB, or FAT
-    calories = Column(Integer)  # per 100g
-    protein = Column(Float)  # grams per 100g
-    carbs = Column(Float)    # grams per 100g
-    fat = Column(Float)      # grams per 100g
+    calories = Column(Integer)  # per 100g or per portion (depending on measurement_type)
+    protein = Column(Float)  # grams per 100g or per portion
+    carbs = Column(Float)    # grams per 100g or per portion
+    fat = Column(Float)      # grams per 100g or per portion
+    measurement_type = Column(Enum(MeasurementType), default=MeasurementType.PER_100G, nullable=False)  # per_100g or per_portion
+    serving_size = Column(String)  # e.g., "100g", "1 slice", "2 pieces" - description of serving
     created_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # Trainer who created it
     is_public = Column(Boolean, default=False)  # Share with other trainers?
     created_at = Column(DateTime, default=func.now())

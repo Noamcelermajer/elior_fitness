@@ -12,6 +12,10 @@ class MacroType(str, Enum):
     CARB = "carb"
     FAT = "fat"
 
+class MeasurementType(str, Enum):
+    PER_100G = "per_100g"
+    PER_PORTION = "per_portion"
+
 # ============ Food Option Schemas ============
 
 class FoodOptionBase(BaseModel):
@@ -22,6 +26,7 @@ class FoodOptionBase(BaseModel):
     carbs: Optional[float] = None
     fat: Optional[float] = None
     serving_size: Optional[str] = None
+    measurement_type: MeasurementType = MeasurementType.PER_100G
     notes: Optional[str] = None
     order_index: int = 0
 
@@ -36,6 +41,7 @@ class FoodOptionUpdate(BaseModel):
     carbs: Optional[float] = None
     fat: Optional[float] = None
     serving_size: Optional[str] = None
+    measurement_type: Optional[MeasurementType] = None
     notes: Optional[str] = None
     order_index: Optional[int] = None
 
@@ -161,6 +167,7 @@ class CompleteFoodOption(BaseModel):
     carbs: Optional[float] = None
     fat: Optional[float] = None
     serving_size: Optional[str] = None
+    measurement_type: MeasurementType = MeasurementType.PER_100G
 
 class CompleteMacroCategory(BaseModel):
     macro_type: MacroType
@@ -320,6 +327,8 @@ class MealBankBase(BaseModel):
     protein: Optional[float] = None
     carbs: Optional[float] = None
     fat: Optional[float] = None
+    measurement_type: MeasurementType = MeasurementType.PER_100G
+    serving_size: Optional[str] = None
     is_public: bool = False
 
 class MealBankCreate(MealBankBase):
@@ -333,6 +342,8 @@ class MealBankUpdate(BaseModel):
     protein: Optional[float] = None
     carbs: Optional[float] = None
     fat: Optional[float] = None
+    measurement_type: Optional[MeasurementType] = None
+    serving_size: Optional[str] = None
     is_public: Optional[bool] = None
 
 class MealBankResponse(MealBankBase):

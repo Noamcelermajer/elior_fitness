@@ -658,23 +658,6 @@ const ClientProfile = () => {
                         {activeWorkoutPlan.description && (
                           <p className="text-sm text-muted-foreground">{activeWorkoutPlan.description}</p>
                         )}
-                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                          {activeWorkoutPlan.split_type && (
-                            <Badge variant="outline">
-                              {activeWorkoutPlan.split_type.replace(/_/g, ' ')}
-                            </Badge>
-                          )}
-                          {activeWorkoutPlan.days_per_week && (
-                            <Badge variant="outline">
-                              {t('clientProfile.daysPerWeek', { count: activeWorkoutPlan.days_per_week })}
-                            </Badge>
-                          )}
-                          {activeWorkoutPlan.duration_weeks && (
-                            <Badge variant="outline">
-                              {t('clientProfile.durationWeeks', { count: activeWorkoutPlan.duration_weeks })}
-                            </Badge>
-                          )}
-                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{t('clientProfile.activePlan')}</Badge>

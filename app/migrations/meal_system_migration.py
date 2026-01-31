@@ -210,6 +210,41 @@ def _ensure_meal_slot_targets() -> None:
     )
 
 
+def _ensure_measurement_type_columns() -> None:
+    """Add measurement_type column to food_options_v2 and meal_bank tables"""
+    # For SQLite, we need to handle enum differently
+    if IS_POSTGRESQL:
+        # PostgreSQL - use VARCHAR for enum (will be converted to enum type by SQLAlchemy)
+        _ensure_columns(
+            "food_options_v2",
+            {
+                "measurement_type": "VARCHAR(20) DEFAULT 'per_100g'",
+            },
+        )
+        _ensure_columns(
+            "meal_bank",
+            {
+                "measurement_type": "VARCHAR(20) DEFAULT 'per_100g'",
+                "serving_size": "VARCHAR",
+            },
+        )
+    else:
+        # SQLite - use TEXT for enum
+        _ensure_columns(
+            "food_options_v2",
+            {
+                "measurement_type": "TEXT DEFAULT 'per_100g'",
+            },
+        )
+        _ensure_columns(
+            "meal_bank",
+            {
+                "measurement_type": "TEXT DEFAULT 'per_100g'",
+                "serving_size": "TEXT",
+            },
+        )
+
+
 def _ensure_meal_completion_table() -> None:
     with engine.begin() as connection:
         if IS_POSTGRESQL:
@@ -279,6 +314,7 @@ def run_meal_system_migrations() -> None:
         _ensure_client_meal_choice_nullable_columns()
         _ensure_meal_slot_targets()
         _ensure_meal_completion_table()
+        _ensure_measurement_type_columns()
     except Exception as exc:
         logger.error("Failed to run meal system migrations: %s", exc)
         raise

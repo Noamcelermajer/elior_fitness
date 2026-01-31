@@ -6,6 +6,17 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import he from './locales/he.json';
 import en from './locales/en.json';
 
+// Get stored language preference or default to Hebrew
+const getInitialLanguage = (): string => {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('i18nextLng');
+    if (stored && (stored === 'he' || stored === 'en')) {
+      return stored;
+    }
+  }
+  return 'he'; // Default to Hebrew if no preference stored
+};
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -16,7 +27,7 @@ i18n
     },
     // Default to Hebrew, fallback to English if needed
     fallbackLng: 'he',
-    lng: 'he', // Set initial language to Hebrew
+    lng: getInitialLanguage(), // Use stored preference or default to Hebrew
     debug: false,
     interpolation: {
       escapeValue: false, // React already escapes values

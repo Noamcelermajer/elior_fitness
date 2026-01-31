@@ -161,6 +161,7 @@ const TrainingPlanV2: React.FC = () => {
 
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
   const [dayCompletions, setDayCompletions] = useState<Record<number, boolean>>({});
+  const [completedDates, setCompletedDates] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -183,6 +184,27 @@ const TrainingPlanV2: React.FC = () => {
 
         if (plan) {
           setWorkoutPlan(plan);
+          
+          // Fetch all completed sessions for calendar
+          try {
+            const sessionsResponse = await fetch(
+              `${API_BASE_URL}/v2/workouts/sessions?client_id=${user.id}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (sessionsResponse.ok) {
+              const sessions = await sessionsResponse.json();
+              const completedDatesSet = new Set<string>();
+              sessions.forEach((session: any) => {
+                if (session.is_completed && session.completed_at) {
+                  const date = new Date(session.completed_at).toISOString().split('T')[0];
+                  completedDatesSet.add(date);
+                }
+              });
+              setCompletedDates(completedDatesSet);
+            }
+          } catch (err) {
+            console.error('Failed to fetch sessions for calendar:', err);
+          }
           
           // Fetch day completions only if plan has days
           if (plan.workout_days && plan.workout_days.length > 0) {
@@ -337,6 +359,16 @@ const TrainingPlanV2: React.FC = () => {
           </Card>
         )}
 
+        {/* Training Calendar */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('training.completionCalendar', 'Training Completion Calendar')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TrainingCalendar completedDates={completedDates} />
+          </CardContent>
+        </Card>
+
         {/* Training Days List - Similar to Meal Plan UI */}
         <div className="space-y-4">
           <h2 className="text-xl font-bold">
@@ -361,37 +393,30 @@ const TrainingPlanV2: React.FC = () => {
                   <CardContent className="px-6 py-4">
                     <div className="flex items-center justify-between w-full gap-4">
                       <div className="flex items-start space-x-3 flex-1 min-w-0">
-                        <div className="text-2xl shrink-0 mt-0.5">💪</div>
                         <div className="flex-1 min-w-0 space-y-1">
-                          {/* Day Name - Top */}
+                          {/* Training Name - Top */}
                           <p className="font-semibold text-lg" dir="auto">
-                            {day.name || `יום ${index + 1}`}
+                            {workoutPlan.name}
                           </p>
-                          {/* Notes/Description - Below name */}
+                          {/* Workouts List - Below name */}
+                          {day.workout_exercises && day.workout_exercises.length > 0 && (
+                            <div className="text-sm text-muted-foreground" dir="auto">
+                              {day.workout_exercises
+                                .sort((a, b) => a.order_index - b.order_index)
+                                .map((ex, idx) => (
+                                  <span key={ex.id}>
+                                    {ex.exercise?.name || `Exercise ${idx + 1}`}
+                                    {idx < day.workout_exercises.length - 1 ? ', ' : ''}
+                                  </span>
+                                ))}
+                            </div>
+                          )}
+                          {/* Notes/Description - Below workouts */}
                           {day.notes && (
                             <p className="text-sm text-muted-foreground line-clamp-2" dir="auto">
                               {day.notes}
                             </p>
                           )}
-                          {/* Exercise count and duration - Bottom */}
-                          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Dumbbell className="w-3.5 h-3.5" />
-                              {t('training.exercisesCount', {
-                                defaultValue: '{{count}} תרגילים',
-                                count: totalExercises,
-                              })}
-                            </span>
-                            {day.estimated_duration && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5" />
-                                {t('training.estimatedDuration', {
-                                  defaultValue: '{{minutes}} דק׳',
-                                  minutes: day.estimated_duration,
-                                })}
-                              </span>
-                            )}
-                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
@@ -401,7 +426,6 @@ const TrainingPlanV2: React.FC = () => {
                             {t('training.completed', 'הושלם')}
                           </Badge>
                         )}
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
                       </div>
                     </div>
                   </CardContent>
@@ -430,6 +454,109 @@ const InfoTile: React.FC<InfoTileProps> = ({ label, value, icon: Icon }) => (
     </span>
   </div>
 );
+
+// Training Calendar Component
+const TrainingCalendar: React.FC<{ completedDates: Set<string> }> = ({ completedDates }) => {
+  const { t, i18n } = useTranslation();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+  const daysInMonth = lastDayOfMonth.getDate();
+  const startingDayOfWeek = firstDayOfMonth.getDay();
+  
+  const monthNames = i18n.language === 'he' 
+    ? ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר']
+    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  const weekDays = i18n.language === 'he'
+    ? ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש']
+    : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  
+  const goToPreviousMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
+  };
+  
+  const goToNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
+  };
+  
+  const formatDateKey = (day: number) => {
+    const date = new Date(year, month, day);
+    return date.toISOString().split('T')[0];
+  };
+  
+  const isToday = (day: number) => {
+    const today = new Date();
+    return day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+  };
+  
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4">
+        <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
+          <ChevronRight className={`h-4 w-4 ${i18n.language === 'he' ? '' : 'rotate-180'}`} />
+        </Button>
+        <h3 className="text-lg font-semibold">
+          {monthNames[month]} {year}
+        </h3>
+        <Button variant="outline" size="icon" onClick={goToNextMonth}>
+          <ChevronRight className={`h-4 w-4 ${i18n.language === 'he' ? 'rotate-180' : ''}`} />
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-7 gap-1">
+        {weekDays.map((day, idx) => (
+          <div key={idx} className="text-center text-sm font-medium text-muted-foreground p-2">
+            {day}
+          </div>
+        ))}
+        
+        {Array.from({ length: startingDayOfWeek }).map((_, idx) => (
+          <div key={`empty-${idx}`} className="aspect-square" />
+        ))}
+        
+        {Array.from({ length: daysInMonth }).map((_, idx) => {
+          const day = idx + 1;
+          const dateKey = formatDateKey(day);
+          const isCompleted = completedDates.has(dateKey);
+          const isTodayDate = isToday(day);
+          
+          return (
+            <div
+              key={day}
+              className={cn(
+                "aspect-square flex items-center justify-center rounded-md text-sm font-medium transition-colors",
+                isTodayDate && "ring-2 ring-primary",
+                isCompleted 
+                  ? "bg-green-500 text-white hover:bg-green-600" 
+                  : "bg-muted hover:bg-muted/80",
+                !isCompleted && !isTodayDate && "text-muted-foreground"
+              )}
+              title={isCompleted ? t('training.completed', 'Completed') : ''}
+            >
+              {day}
+            </div>
+          );
+        })}
+      </div>
+      
+      <div className="flex items-center gap-4 mt-4 text-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-md bg-green-500" />
+          <span>{t('training.completed', 'Completed')}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-md bg-muted ring-2 ring-primary" />
+          <span>{t('training.today', 'Today')}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const fetchWorkoutPlan = async (clientId: number, token: string): Promise<WorkoutPlan | null> => {
   try {

@@ -221,7 +221,8 @@ def create_complete_meal_plan(
                     protein=food_data.protein,
                     carbs=food_data.carbs,
                     fat=food_data.fat,
-                    serving_size=food_data.serving_size
+                    serving_size=food_data.serving_size,
+                    measurement_type=food_data.measurement_type if hasattr(food_data, 'measurement_type') else None
                 )
                 db.add(food_option)
 
@@ -384,6 +385,7 @@ def add_food_option(
     if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only trainers can add food options")
     
+    from app.models.meal_system import MeasurementType
     food_option = FoodOption(
         macro_category_id=macro_id,
         name=food_data.name,
@@ -393,6 +395,7 @@ def add_food_option(
         carbs=food_data.carbs,
         fat=food_data.fat,
         serving_size=food_data.serving_size,
+        measurement_type=food_data.measurement_type if hasattr(food_data, 'measurement_type') and food_data.measurement_type else MeasurementType.PER_100G,
         notes=food_data.notes,
         order_index=food_data.order_index
     )
@@ -631,25 +634,29 @@ def get_daily_macros(
             if not food_option:
                 continue
             
-            # Parse quantity (e.g., "150g" or "150")
-            grams_consumed = 100  # Default serving size
+            # Parse quantity (e.g., "150g", "150", "2 slices", "2")
+            import re
+            from app.models.meal_system import MeasurementType
+            
+            quantity_value = 1.0  # Default
             if choice.quantity:
                 try:
-                    # Extract number from string like "150g" or "150"
-                    import re
+                    # Extract number from string like "150g", "150", "2 slices", "2"
                     match = re.search(r'(\d+(?:\.\d+)?)', choice.quantity)
                     if match:
-                        grams_consumed = float(match.group(1))
+                        quantity_value = float(match.group(1))
                 except:
                     pass
             
-            # Calculate macros based on grams consumed
-            # Food options nutritional values are stored per 100g, so we scale based on 100g
-            # The serving_size field is just a recommendation, not the base for calculations
-            base_grams = 100  # Nutritional values are always per 100g
-            
-            # Scale factor: if user ate 150g and nutrition is per 100g, scale = 1.5
-            scale = grams_consumed / base_grams if base_grams > 0 else 1
+            # Calculate macros based on measurement type
+            if food_option.measurement_type == MeasurementType.PER_PORTION:
+                # For per_portion: multiply nutrition values by number of portions
+                scale = quantity_value
+            else:
+                # For per_100g: scale based on grams consumed (default per 100g)
+                grams_consumed = quantity_value
+                base_grams = 100
+                scale = grams_consumed / base_grams if base_grams > 0 else 1
             
             # Add to totals
             if food_option.calories is not None:
@@ -877,8 +884,19 @@ def get_meal_history(
                 if macro_category:
                     macro_type_value = macro_category.macro_type
 
-                grams_consumed = parse_quantity(choice.quantity)
-                scale = grams_consumed / 100 if grams_consumed else 1
+                from app.models.meal_system import MeasurementType
+                import re
+                
+                # Parse quantity
+                quantity_value = parse_quantity(choice.quantity)
+                
+                # Calculate scale based on measurement type
+                if food_option.measurement_type == MeasurementType.PER_PORTION:
+                    # For per_portion: multiply by number of portions
+                    scale = quantity_value
+                else:
+                    # For per_100g: scale based on grams (default per 100g)
+                    scale = quantity_value / 100 if quantity_value else 1
 
                 calories_value = scale_value(food_option.calories, scale)
                 protein_value = scale_value(food_option.protein, scale)
@@ -1134,6 +1152,7 @@ def create_meal_bank_item(
             detail="At least one of name or name_hebrew must be provided"
         )
 
+    from app.models.meal_system import MeasurementType
     meal_bank_item = MealBank(
         name=english_name or hebrew_name,
         name_hebrew=hebrew_name or None,
@@ -1142,6 +1161,8 @@ def create_meal_bank_item(
         protein=item_data.protein,
         carbs=item_data.carbs,
         fat=item_data.fat,
+        measurement_type=item_data.measurement_type if hasattr(item_data, 'measurement_type') and item_data.measurement_type else MeasurementType.PER_100G,
+        serving_size=item_data.serving_size if hasattr(item_data, 'serving_size') else None,
         created_by=current_user.id,
         is_public=item_data.is_public
     )
@@ -1421,6 +1442,7 @@ async def import_meal_bank_excel(
                 )
                 
                 # Create meal bank item
+                from app.models.meal_system import MeasurementType
                 meal_bank_item = MealBank(
                     name=meal_bank_data.name,
                     name_hebrew=meal_bank_data.name_hebrew,
@@ -1429,6 +1451,8 @@ async def import_meal_bank_excel(
                     protein=meal_bank_data.protein,
                     carbs=meal_bank_data.carbs,
                     fat=meal_bank_data.fat,
+                    measurement_type=meal_bank_data.measurement_type if hasattr(meal_bank_data, 'measurement_type') and meal_bank_data.measurement_type else MeasurementType.PER_100G,
+                    serving_size=meal_bank_data.serving_size if hasattr(meal_bank_data, 'serving_size') else None,
                     created_by=current_user.id,
                     is_public=False
                 )
@@ -1462,3 +1486,286 @@ async def import_meal_bank_excel(
             detail=f"Failed to import meal bank: {str(e)}"
         )
 
+@router.post("/plans/import/excel")
+async def import_meal_plan_excel(
+    file: UploadFile = File(...),
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Import meal plan from Excel file with duplicate detection"""
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers can import meal plans"
+        )
+    
+    try:
+        from openpyxl import load_workbook
+        import unicodedata
+        import re
+        
+        # Hebrew text normalization function
+        def normalize_hebrew(text: str) -> str:
+            """Normalize Hebrew text for matching (remove diacritics, handle variations)"""
+            if not text:
+                return ""
+            # Remove diacritics (nikud)
+            text = unicodedata.normalize('NFKD', text)
+            text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+            # Remove extra spaces and convert to lowercase
+            text = re.sub(r'\s+', ' ', text.strip().lower())
+            return text
+        
+        # Fuzzy matching function
+        def fuzzy_match_hebrew(text1: str, text2: str, threshold: float = 0.8) -> bool:
+            """Check if two Hebrew texts are similar using Levenshtein distance"""
+            norm1 = normalize_hebrew(text1)
+            norm2 = normalize_hebrew(text2)
+            
+            if not norm1 or not norm2:
+                return False
+            
+            # Simple Levenshtein distance calculation
+            def levenshtein(s1: str, s2: str) -> int:
+                if len(s1) < len(s2):
+                    return levenshtein(s2, s1)
+                if len(s2) == 0:
+                    return len(s1)
+                
+                previous_row = list(range(len(s2) + 1))
+                for i, c1 in enumerate(s1):
+                    current_row = [i + 1]
+                    for j, c2 in enumerate(s2):
+                        insertions = previous_row[j + 1] + 1
+                        deletions = current_row[j] + 1
+                        substitutions = previous_row[j] + (c1 != c2)
+                        current_row.append(min(insertions, deletions, substitutions))
+                    previous_row = current_row
+                return previous_row[-1]
+            
+            distance = levenshtein(norm1, norm2)
+            max_len = max(len(norm1), len(norm2))
+            similarity = 1 - (distance / max_len) if max_len > 0 else 0
+            return similarity >= threshold
+        
+        # Read file content
+        contents = await file.read()
+        wb = load_workbook(io.BytesIO(contents))
+        
+        # Sheet 1: Meal Plan Info
+        if "Meal Plan Info" not in wb.sheetnames:
+            raise HTTPException(status_code=400, detail="Excel file must contain 'Meal Plan Info' sheet")
+        
+        plan_sheet = wb["Meal Plan Info"]
+        plan_row = list(plan_sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
+        
+        client_id = int(plan_row[0]) if plan_row[0] else None
+        plan_name = str(plan_row[1]).strip() if plan_row[1] else "Imported Meal Plan"
+        plan_description = str(plan_row[2]).strip() if plan_row[2] else None
+        number_of_meals = int(plan_row[3]) if plan_row[3] else 3
+        total_calories = int(plan_row[4]) if plan_row[4] else None
+        protein_target = int(plan_row[5]) if plan_row[5] else None
+        carb_target = int(plan_row[6]) if plan_row[6] else None
+        fat_target = int(plan_row[7]) if plan_row[7] else None
+        
+        if not client_id:
+            raise HTTPException(status_code=400, detail="Client ID is required in Meal Plan Info sheet")
+        
+        # Verify client belongs to trainer
+        from app.models.user import User
+        client = db.query(User).filter(User.id == client_id).first()
+        if not client:
+            raise HTTPException(status_code=404, detail="Client not found")
+        if current_user.role == UserRole.TRAINER and client.trainer_id != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only create meal plans for your clients")
+        
+        # Sheet 2: Meal Slots
+        if "Meal Slots" not in wb.sheetnames:
+            raise HTTPException(status_code=400, detail="Excel file must contain 'Meal Slots' sheet")
+        
+        slots_sheet = wb["Meal Slots"]
+        meal_slots_data = []
+        for row in slots_sheet.iter_rows(min_row=2, values_only=True):
+            if not row[0]:  # Skip empty rows
+                continue
+            meal_slots_data.append({
+                "name": str(row[0]).strip(),
+                "time_suggestion": str(row[1]).strip() if row[1] else None,
+                "target_calories": int(row[2]) if row[2] else None,
+                "target_protein": float(row[3]) if row[3] else None,
+                "target_carbs": float(row[4]) if row[4] else None,
+                "target_fat": float(row[5]) if row[5] else None,
+            })
+        
+        # Sheet 3: Macro Categories
+        if "Macro Categories" not in wb.sheetnames:
+            raise HTTPException(status_code=400, detail="Excel file must contain 'Macro Categories' sheet")
+        
+        categories_sheet = wb["Macro Categories"]
+        macro_categories_data = {}
+        for row in categories_sheet.iter_rows(min_row=2, values_only=True):
+            if not row[0]:  # Skip empty rows
+                continue
+            meal_slot_name = str(row[0]).strip()
+            macro_type = str(row[1]).strip().lower()
+            if macro_type not in ["protein", "carb", "fat"]:
+                continue
+            
+            if meal_slot_name not in macro_categories_data:
+                macro_categories_data[meal_slot_name] = {}
+            
+            macro_categories_data[meal_slot_name][macro_type] = {
+                "quantity_instruction": str(row[2]).strip() if row[2] else None,
+                "calorie_goal": int(row[3]) if row[3] else None,
+            }
+        
+        # Sheet 4: Food Options
+        if "Food Options" not in wb.sheetnames:
+            raise HTTPException(status_code=400, detail="Excel file must contain 'Food Options' sheet")
+        
+        food_sheet = wb["Food Options"]
+        food_options_data = {}
+        duplicate_matches = []
+        
+        # Get existing meal bank items for duplicate detection
+        existing_items = db.query(MealBank).filter(
+            MealBank.created_by == current_user.id
+        ).all()
+        
+        for row in food_sheet.iter_rows(min_row=2, values_only=True):
+            if not row[0]:  # Skip empty rows
+                continue
+            
+            meal_slot_name = str(row[0]).strip()
+            macro_type = str(row[1]).strip().lower()
+            food_name = str(row[2]).strip() if row[2] else None
+            food_name_hebrew = str(row[3]).strip() if row[3] else None
+            
+            if not food_name and not food_name_hebrew:
+                continue
+            
+            # Check for duplicates using Hebrew text matching
+            potential_duplicates = []
+            if food_name_hebrew:
+                for existing in existing_items:
+                    if existing.name_hebrew and fuzzy_match_hebrew(food_name_hebrew, existing.name_hebrew):
+                        potential_duplicates.append({
+                            "id": existing.id,
+                            "name": existing.name,
+                            "name_hebrew": existing.name_hebrew
+                        })
+            
+            if potential_duplicates:
+                duplicate_matches.append({
+                    "new_item": {"name": food_name, "name_hebrew": food_name_hebrew},
+                    "matches": potential_duplicates
+                })
+            
+            key = f"{meal_slot_name}_{macro_type}"
+            if key not in food_options_data:
+                food_options_data[key] = []
+            
+            food_options_data[key].append({
+                "name": food_name,
+                "name_hebrew": food_name_hebrew,
+                "calories": int(row[4]) if row[4] else None,
+                "protein": float(row[5]) if row[5] else None,
+                "carbs": float(row[6]) if row[6] else None,
+                "fat": float(row[7]) if row[7] else None,
+                "serving_size": str(row[8]).strip() if row[8] else "100g",
+                "measurement_type": str(row[9]).strip().lower() if row[9] else "per_100g",
+            })
+        
+        # If duplicates found, return them for user to decide
+        if duplicate_matches:
+            return {
+                "duplicates_found": True,
+                "duplicate_matches": duplicate_matches[:20],  # Limit to 20 for response size
+                "message": f"Found {len(duplicate_matches)} potential duplicate food items. Please review and decide whether to skip, merge, or rename."
+            }
+        
+        # Create meal plan
+        from app.models.meal_system import MeasurementType
+        
+        meal_plan = NewMealPlan(
+            client_id=client_id,
+            trainer_id=current_user.id,
+            name=plan_name,
+            description=plan_description,
+            number_of_meals=number_of_meals,
+            total_calories=total_calories,
+            protein_target=protein_target,
+            carb_target=carb_target,
+            fat_target=fat_target,
+            is_active=True
+        )
+        db.add(meal_plan)
+        db.flush()
+        
+        # Create meal slots
+        for idx, slot_data in enumerate(meal_slots_data):
+            meal_slot = MealSlot(
+                meal_plan_id=meal_plan.id,
+                name=slot_data["name"],
+                order_index=idx,
+                time_suggestion=slot_data["time_suggestion"],
+                target_calories=slot_data["target_calories"],
+                target_protein=slot_data["target_protein"],
+                target_carbs=slot_data["target_carbs"],
+                target_fat=slot_data["target_fat"],
+            )
+            db.add(meal_slot)
+            db.flush()
+            
+            # Create macro categories for this slot
+            slot_categories = macro_categories_data.get(slot_data["name"], {})
+            for macro_type in ["protein", "carb", "fat"]:
+                category_data = slot_categories.get(macro_type, {})
+                macro_category = MacroCategory(
+                    meal_slot_id=meal_slot.id,
+                    macro_type=MacroType(macro_type),
+                    quantity_instruction=category_data.get("quantity_instruction"),
+                    calorie_goal=category_data.get("calorie_goal"),
+                )
+                db.add(macro_category)
+                db.flush()
+                
+                # Add food options for this category
+                food_key = f"{slot_data['name']}_{macro_type}"
+                food_items = food_options_data.get(food_key, [])
+                
+                for food_data in food_items:
+                    food_option = FoodOption(
+                        macro_category_id=macro_category.id,
+                        name=food_data["name"],
+                        name_hebrew=food_data["name_hebrew"],
+                        calories=food_data["calories"],
+                        protein=food_data["protein"],
+                        carbs=food_data["carbs"],
+                        fat=food_data["fat"],
+                        serving_size=food_data["serving_size"],
+                        measurement_type=MeasurementType.PER_100G if food_data["measurement_type"] == "per_100g" else MeasurementType.PER_PORTION,
+                    )
+                    db.add(food_option)
+        
+        db.commit()
+        db.refresh(meal_plan)
+        
+        return {
+            "message": "Meal plan imported successfully",
+            "meal_plan_id": meal_plan.id,
+            "meal_slots_count": len(meal_slots_data),
+            "food_options_count": sum(len(items) for items in food_options_data.values())
+        }
+        
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Excel import requires openpyxl library. Please install it."
+        )
+    except Exception as e:
+        logger.error(f"Error importing meal plan from Excel: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to import meal plan: {str(e)}"
+        )

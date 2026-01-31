@@ -66,7 +66,9 @@ const MealBank = () => {
     calories: '',
     protein: '',
     carbs: '',
-    fat: ''
+    fat: '',
+    measurement_type: 'per_100g' as 'per_100g' | 'per_portion',
+    serving_size: ''
   });
 
   const fetchItems = async () => {
@@ -161,7 +163,9 @@ const MealBank = () => {
         calories: itemForm.calories ? parseInt(itemForm.calories) : null,
         protein: itemForm.protein ? parseFloat(itemForm.protein) : null,
         carbs: itemForm.carbs ? parseFloat(itemForm.carbs) : null,
-        fat: itemForm.fat ? parseFloat(itemForm.fat) : null
+        fat: itemForm.fat ? parseFloat(itemForm.fat) : null,
+        measurement_type: itemForm.measurement_type,
+        serving_size: itemForm.serving_size || null
       };
 
       const response = await fetch(url, {
@@ -247,7 +251,9 @@ const MealBank = () => {
       calories: normalizedItem.calories?.toString() || '',
       protein: normalizedItem.protein?.toString() || '',
       carbs: normalizedItem.carbs?.toString() || '',
-      fat: normalizedItem.fat?.toString() || ''
+      fat: normalizedItem.fat?.toString() || '',
+      measurement_type: (normalizedItem as any).measurement_type || 'per_100g',
+      serving_size: (normalizedItem as any).serving_size || ''
     });
     setCreateDialogOpen(true);
   };
@@ -260,7 +266,9 @@ const MealBank = () => {
       calories: '',
       protein: '',
       carbs: '',
-      fat: ''
+      fat: '',
+      measurement_type: 'per_100g',
+      serving_size: ''
     });
     setActiveTab('details');
   };
@@ -454,35 +462,20 @@ const MealBank = () => {
                     dir="auto"
                   />
                 </div>
-                <div className="flex flex-wrap gap-2 w-full">
-                  <Button
-                    variant={selectedMacroType === 'all' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedMacroType('all')}
-                    className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap"
-                  >
-                    {t('foodBank.allMacros')}
-                  </Button>
-                  {macroTypes.map((macro) => (
-                    <Button
-                      key={macro.value}
-                      variant={selectedMacroType === macro.value ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedMacroType(macro.value)}
-                      className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap flex items-center justify-center"
-                    >
-                      <span>{macro.icon}</span>
-                      <span className="hidden sm:inline ms-1">{t(`foodBank.${macro.value}`)}</span>
-                    </Button>
-                  ))}
-                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Items by Macro Type */}
-          <Tabs defaultValue="protein" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 gap-1 p-1 h-auto">
+          <Tabs defaultValue="all" className="w-full" value={selectedMacroType} onValueChange={setSelectedMacroType}>
+            <TabsList className="grid w-full grid-cols-4 gap-1 p-1 h-auto">
+              <TabsTrigger 
+                value="all" 
+                className="px-1 sm:px-3 py-1.5 text-xs sm:text-sm flex items-center justify-center h-full min-h-[2rem]"
+              >
+                <span className="hidden sm:inline">{t('foodBank.allMacros')}</span>
+                <span className="sm:hidden">All</span>
+              </TabsTrigger>
               {macroTypes.map((macro) => (
                 <TabsTrigger 
                   key={macro.value} 
@@ -495,12 +488,80 @@ const MealBank = () => {
               ))}
             </TabsList>
 
+            <TabsContent value="all" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredItems.length > 0 ? (
+                  filteredItems.map((item) => (
+                    <Card key={item.id} className="hover:shadow-lg transition-shadow">
+                      <CardContent className="p-4">
+                        <div
+                          className={`flex items-start justify-between mb-3 ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`}
+                          dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-lg" dir="rtl">
+                              {item.name_hebrew || item.name}
+                            </h3>
+                            {item.name_hebrew && item.name && (
+                              <p className="text-sm text-muted-foreground" dir="ltr">
+                                {item.name}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0" dir="ltr">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => startEdit(item)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">{t('foodBank.calories')}:</span>
+                            <span className="font-medium">{item.calories ?? '—'} {item.calories ? t('foodBank.kcal') : ''}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">{t('foodBank.protein')}:</span>
+                            <span className="font-medium">{item.protein ?? '—'} {item.protein ? t('foodBank.g') : ''}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">{t('foodBank.carbs')}:</span>
+                            <span className="font-medium">{item.carbs ?? '—'} {item.carbs ? t('foodBank.g') : ''}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">{t('foodBank.fat')}:</span>
+                            <span className="font-medium">{item.fat ?? '—'} {item.fat ? t('foodBank.g') : ''}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-12">
+                    <p className="text-muted-foreground">{t('foodBank.noItems')}</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
             {macroTypes.map((macro) => (
               <TabsContent key={macro.value} value={macro.value} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {groupedItems[macro.value] && groupedItems[macro.value].length > 0 ? (
                     groupedItems[macro.value].map((item) => (
-                        <Card key={item.id} className="hover:shadow-lg transition-shadow">
+                      <Card key={item.id} className="hover:shadow-lg transition-shadow">
                         <CardContent className="p-4">
                           <div
                             className={`flex items-start justify-between mb-3 ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`}
@@ -633,7 +694,32 @@ const MealBank = () => {
                 <TabsContent value="nutrition" className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2 min-w-0">
-                      <Label htmlFor="calories">{t('foodBank.calories')} ({t('foodBank.per100g')})</Label>
+                      <Label htmlFor="measurement_type">{t('foodBank.measurementType', 'Measurement Type')}</Label>
+                      <select
+                        id="measurement_type"
+                        value={itemForm.measurement_type}
+                        onChange={(e) => setItemForm({ ...itemForm, measurement_type: e.target.value as 'per_100g' | 'per_portion' })}
+                        className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      >
+                        <option value="per_100g">{t('foodBank.per100g', 'Per 100g')}</option>
+                        <option value="per_portion">{t('foodBank.perPortion', 'Per Portion')}</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2 min-w-0">
+                      <Label htmlFor="serving_size">{t('foodBank.servingSize', 'Serving Size')}</Label>
+                      <Input
+                        id="serving_size"
+                        type="text"
+                        placeholder={itemForm.measurement_type === 'per_100g' ? '100g' : '1 slice, 2 pieces, etc.'}
+                        value={itemForm.serving_size}
+                        onChange={(e) => setItemForm({ ...itemForm, serving_size: e.target.value })}
+                        className="w-full max-w-full"
+                      />
+                    </div>
+                    <div className="space-y-2 min-w-0">
+                      <Label htmlFor="calories">
+                        {t('foodBank.calories')} ({itemForm.measurement_type === 'per_100g' ? t('foodBank.per100g') : t('foodBank.perPortion', 'per portion')})
+                      </Label>
                       <Input
                         id="calories"
                         type="number"
@@ -645,7 +731,9 @@ const MealBank = () => {
                     </div>
 
                     <div className="space-y-2 min-w-0">
-                      <Label htmlFor="protein">{t('foodBank.protein')} ({t('foodBank.per100g')})</Label>
+                      <Label htmlFor="protein">
+                        {t('foodBank.protein')} ({itemForm.measurement_type === 'per_100g' ? t('foodBank.per100g') : t('foodBank.perPortion', 'per portion')})
+                      </Label>
                       <Input
                         id="protein"
                         type="number"
@@ -658,7 +746,9 @@ const MealBank = () => {
                     </div>
 
                     <div className="space-y-2 min-w-0">
-                      <Label htmlFor="carbs">{t('foodBank.carbs')} ({t('foodBank.per100g')})</Label>
+                      <Label htmlFor="carbs">
+                        {t('foodBank.carbs')} ({itemForm.measurement_type === 'per_100g' ? t('foodBank.per100g') : t('foodBank.perPortion', 'per portion')})
+                      </Label>
                       <Input
                         id="carbs"
                         type="number"
@@ -671,7 +761,9 @@ const MealBank = () => {
                     </div>
 
                     <div className="space-y-2 min-w-0">
-                      <Label htmlFor="fat">{t('foodBank.fat')} ({t('foodBank.per100g')})</Label>
+                      <Label htmlFor="fat">
+                        {t('foodBank.fat')} ({itemForm.measurement_type === 'per_100g' ? t('foodBank.per100g') : t('foodBank.perPortion', 'per portion')})
+                      </Label>
                       <Input
                         id="fat"
                         type="number"
