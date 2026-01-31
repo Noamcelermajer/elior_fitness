@@ -199,6 +199,23 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
     }
   };
 
+  const handlePhotoChange = (type: 'front' | 'side' | 'back', e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFiles(prev => ({ ...prev, [type]: file }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreviews(prev => ({ ...prev, [type]: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removePhoto = (type: 'front' | 'side' | 'back') => {
+    setPhotoFiles(prev => ({ ...prev, [type]: null }));
+    setPhotoPreviews(prev => ({ ...prev, [type]: null }));
+  };
+
   const handleViewPhoto = (entry: ProgressEntry) => {
     setViewingPhoto(entry);
     // Load all photos for this entry
