@@ -2,6 +2,7 @@
   "project": "Elior Fitness",
   "lastUpdated": "2025-01-31",
   "totalIssues": 85,
+  "issuesResolvedThisSession": ["issue-1", "issue-2", "issue-3", "issue-5", "issue-7", "issue-8", "issue-10", "issue-11", "issue-68", "issue-69", "issue-70", "issue-71", "issue-72", "issue-75", "issue-76", "issue-79", "bug-4", "bug-6"],
   "issuesByCategory": {
     "translation": 18,
     "bugs": 7,
@@ -28,7 +29,7 @@
       "location": "Frontend/src/i18n/locales/en.json",
       "description": "Translation key progress.weightChart is missing from en.json. Hebrew translation exists. Component displays raw key instead of translated text.",
       "fix": "Add 'weightChart': 'Weight Chart' to en.json under progress section",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-2",
@@ -38,7 +39,7 @@
       "location": "app/routers/check_in.py:326,362,381",
       "description": "Hardcoded Windows paths with user-specific path will break on Linux/Mac. Debug logging should use relative paths or environment variables.",
       "fix": "Remove hardcoded paths, use relative paths or environment variables, consider removing debug logging",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-3",
@@ -48,7 +49,7 @@
       "location": "app/main.py, app/routers/files.py",
       "description": "Debug endpoints /api/debug/env and /api/debug/paths expose environment variables and file system paths. Should be disabled in production or protected with admin-only access.",
       "fix": "Add environment check to disable debug endpoints in production, or add admin-only authentication",
-      "status": "not-fixed"
+      "status": "fixed"
     }
   ],
   "highPriorityIssues": [
@@ -87,7 +88,7 @@
         "meals.customFoodNamePlaceholder"
       ],
       "fix": "Add all missing keys to en.json with appropriate English translations",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-6",
@@ -107,7 +108,7 @@
       "location": "Frontend/src/i18n/config.ts:29, Frontend/src/App.tsx:264",
       "description": "fallbackLng is hardcoded to 'he'. When user changes language to English, the fallback should also be English, not Hebrew. Currently, if translation is missing or language detection fails, it falls back to Hebrew even if user prefers English.",
       "fix": "Update fallbackLng to use stored language preference from localStorage. If user has selected English, fallback should be 'en'. If user has selected Hebrew, fallback should be 'he'. Default to 'he' only if no preference is stored.",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-8",
@@ -117,7 +118,7 @@
       "location": "app/routers/files.py:209",
       "description": "TODO comment indicates incomplete implementation for meal photo access control",
       "fix": "Complete the implementation",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-9",
@@ -137,7 +138,7 @@
       "location": "app/routers/files.py",
       "description": "Meal photo access control needs completion",
       "fix": "Complete file access control implementation",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-11",
@@ -147,7 +148,7 @@
       "location": "Frontend/src/contexts/AuthContext.tsx:169,174",
       "description": "Tokens and user data logged to console could be exposed in browser dev tools",
       "fix": "Remove or sanitize sensitive data from console logs",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-68",
@@ -157,7 +158,7 @@
       "location": "Frontend/src/components/ProgressTrackingV2.tsx, Frontend/src/components/ClientWeightProgress.tsx",
       "description": "Weight pictures should show all three photos (front, side, back) but currently may only show one or not display all views properly. Photos are uploaded but not displaying in grid view. Old pictures are also shown sideways - EXIF orientation fix may not be working for all images.",
       "fix": "Update photo grid to display all three photo types (front, side, back) for each progress entry. Ensure photos array is properly loaded and displayed. Verify EXIF orientation handling works for all images including existing ones. May need client-side rotation handling.",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-69",
@@ -167,7 +168,7 @@
       "location": "Frontend/src/i18n/locales/en.json, Frontend/src/pages/CreateMealPlanV2.tsx",
       "description": "Translation keys mealCreation.kcalPer100g, mealCreation.addFoodToBank, mealCreation.makeFoodPublic are missing from en.json. These appear as raw keys in the UI.",
       "fix": "Add missing translation keys to en.json: 'kcalPer100g': 'kcal per 100g', 'addFoodToBank': 'Add Food to Meal Bank', 'makeFoodPublic': 'Make this food item public (visible to all trainers)'",
-      "status": "not-fixed"
+      "status": "fixed"
     }
   ],
   "mediumPriorityIssues": [
@@ -309,7 +310,7 @@
       "location": "Frontend/src/components/TrainingPlanV2.tsx:364-395",
       "description": "Training plan cards show day name (שם היום) instead of training name (workout plan name) and list of workouts. Should display training name and list of workout exercises. Also has emoji icon (💪) that should be removed. Text needs translation.",
       "fix": "Replace day name display with training name (workout plan name) and list of workouts/exercises. Remove emoji icon. Ensure all text is properly translated.",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-71",
@@ -319,7 +320,7 @@
       "location": "Frontend/src/pages/TrainingDayPage.tsx, Frontend/src/pages/ClientProfile.tsx, Frontend/src/components/TrainingPlanV2.tsx",
       "description": "Training client view has: 1) Arrow on left side (ChevronRight icon) that should be removed, 2) Number of exercises display that should be removed, 3) Tags/badges under training description (מותאם אישית, 3 אימנים בשבוע, etc.) - should only show training plan name and description, 4) Body weight toggle in exercises that should be removed.",
       "fix": "Remove ChevronRight arrow icon from training day cards. Remove exercise count display. Remove all tags/badges under training description (keep only training plan name and description). Remove body weight checkbox and related logic from exercise display in TrainingDayPage.",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-72",
@@ -329,7 +330,7 @@
       "location": "Frontend/src/pages/TrainingPage.tsx, Frontend/src/components/TrainingPlanV2.tsx, Frontend/src/pages/TrainingDayPage.tsx",
       "description": "Need calendar view that marks training when training was completed. Training completed button exists in TrainingDayPage.tsx but calendar visualization is missing. Calendar should show which days training was completed.",
       "fix": "Add calendar component (use react-calendar or similar) showing training days with completion status. Mark completed days visually (different color/icon). Ensure completion tracking works correctly. Calendar should be visible in TrainingPlanV2 or TrainingPage.",
-      "status": "not-fixed"
+      "status": "fixed"
     },
     {
       "id": "issue-73",
@@ -359,7 +360,7 @@
       "location": "Frontend/src/components/MealMenuV2.tsx",
       "description": "Client meal tracking view should not show calories and macros for each individual meal. Should only display daily totals. Per-meal breakdown should be removed. Marked as resolved but needs verification.",
       "fix": "Verify per-meal calorie and macro display is removed. Keep only daily totals visible with progress visualization. If still present, remove per-meal breakdown grid.",
-      "status": "needs-verification"
+      "status": "fixed"
     },
     {
       "id": "issue-76",
@@ -369,7 +370,7 @@
       "location": "Frontend/src/components/MealMenuV2.tsx",
       "description": "Clients should be able to choose from all food bank options, not just recommended foods. Trainer recommends amount in grams, but client can override and choose different foods/quantities. Calories should be counted automatically. Marked as resolved but needs verification.",
       "fix": "Verify client can choose from all food bank items. Show trainer recommendations but allow adding any food. Allow removing recommended foods (swipe to delete). Update calorie calculation to handle any food combination.",
-      "status": "needs-verification"
+      "status": "fixed"
     },
     {
       "id": "issue-77",
@@ -399,7 +400,7 @@
       "location": "Frontend/src/pages/CreateMealPlanV2.tsx, app/routers/meal_system.py",
       "description": "Trainer should be able to manually set total calories and macro targets (protein, carbs, fat in grams) for each day. Trainer calculates manually and sets values. System should not auto-calculate or override trainer input.",
       "fix": "Ensure trainer can manually input total calories and macro targets (protein, carbs, fat in grams) for the meal plan. Remove any auto-calculation that overrides trainer input. Verify manual input is saved correctly.",
-      "status": "not-fixed"
+      "status": "fixed"
     }
   ],
   "lowPriorityIssues": [
@@ -469,7 +470,7 @@
     {
       "id": "bug-4",
       "title": "Weight chart title translation",
-      "status": "not-fixed",
+      "status": "fixed",
       "location": "Frontend/src/i18n/locales/en.json",
       "description": "Translation key progress.weightChart is missing from en.json",
       "fix": "Add 'weightChart': 'Weight Chart' to en.json"
@@ -484,7 +485,7 @@
     {
       "id": "bug-6",
       "title": "Progress photos don't show all three views (front, side, back)",
-      "status": "not-fixed",
+      "status": "fixed",
       "location": "Frontend/src/components/ProgressTrackingV2.tsx",
       "description": "Weight pictures should show all three photos (front, side, back) but currently may only show one or not display all views properly.",
       "fix": "Update photo grid to display all three photo types for each progress entry"

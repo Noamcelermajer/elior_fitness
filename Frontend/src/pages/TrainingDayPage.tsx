@@ -287,7 +287,6 @@ const TrainingDayPage: React.FC = () => {
   const [previousSessions, setPreviousSessions] = useState<Record<number, SetCompletion[]>>({});
   const [tempSets, setTempSets] = useState<Record<string, { reps: string; weight: string }>>({});
   const [customSetCounts, setCustomSetCounts] = useState<Record<number, number>>({});
-  const [bodyweightExercises, setBodyweightExercises] = useState<Record<number, boolean>>({});
   const [dayCompleted, setDayCompleted] = useState(false);
   const [highlightedExerciseId, setHighlightedExerciseId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -546,20 +545,6 @@ const TrainingDayPage: React.FC = () => {
     } catch (err) {
       console.error('Failed to toggle day completion:', err);
     }
-  };
-
-  const handleBodyweightToggle = (exerciseId: number) => {
-    const newValue = !bodyweightExercises[exerciseId];
-    setBodyweightExercises((prev) => ({ ...prev, [exerciseId]: newValue }));
-    setTempSets((prev) => {
-      const next = { ...prev };
-      Object.keys(next).forEach((key) => {
-        if (key.startsWith(`${exerciseId}-`)) {
-          next[key] = { ...next[key], weight: newValue ? '0' : '' };
-        }
-      });
-      return next;
-    });
   };
 
   const updateTempSet = (exerciseId: number, setNumber: number, field: 'reps' | 'weight', value: string) => {
@@ -825,7 +810,6 @@ const TrainingDayPage: React.FC = () => {
     }
     
     const lastTwoSets = previousSets.slice(0, 2); // Get last 2 sets from history
-    const isBodyweight = !!bodyweightExercises[exercise.id];
     const isExerciseComplete = completedSets.length >= targetSets && targetSets > 0;
 
     return (
@@ -847,7 +831,7 @@ const TrainingDayPage: React.FC = () => {
                 <button
                   type="button"
                   className="relative h-20 w-16 md:h-24 md:w-20 shrink-0 overflow-hidden rounded-xl border border-border/40"
-                  aria-label={t('training.watchVideo', 'צפה בווידאו')}
+                  aria-label={t('training.watchVideo', 'Watch video')}
                 >
                   {thumbnail ? (
                     <img src={thumbnail} alt={exerciseName} className="h-full w-full object-cover" loading="lazy" />
@@ -926,12 +910,12 @@ const TrainingDayPage: React.FC = () => {
                     {isExerciseComplete && (
                       <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
-                        {t('training.completed', 'הושלם')}
+                        {t('training.completed', 'Completed')}
                       </Badge>
                     )}
                     {hasStarted && !isExerciseComplete && (
                       <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                        {t('training.inProgress', 'בתהליך')}
+                        {t('training.inProgress', 'In progress')}
                       </Badge>
                     )}
                   </div>
@@ -985,7 +969,7 @@ const TrainingDayPage: React.FC = () => {
           {!hasStarted && hasHistory && lastTwoSets.length > 0 && (
             <div className="space-y-2 mb-3">
               <p className="text-xs text-muted-foreground mb-2">
-                {t('training.lastTwoSets', '2 הסטים האחרונים (הצעות)')}:
+                {t('training.lastTwoSets', 'Last 2 sets (suggestions)')}:
               </p>
               {lastTwoSets.map((prevSet, idx) => (
                 <div
@@ -1058,7 +1042,7 @@ const TrainingDayPage: React.FC = () => {
                     <button
                       onClick={() => handleDeleteSet(exercise.id, setNumber)}
                       className="hidden md:flex items-center justify-center h-8 w-8 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive transition-all duration-200 ml-auto shrink-0"
-                      aria-label={t('training.delete', 'מחק')}
+                      aria-label={t('training.delete', 'Delete')}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -1084,7 +1068,7 @@ const TrainingDayPage: React.FC = () => {
                         isSwiped ? 'opacity-100' : 'opacity-0'
                       )}
                     >
-                      {t('training.delete', 'מחק')}
+                      {t('training.delete', 'Delete')}
                     </div>
                     <span className="flex h-7 w-7 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] md:text-xs font-semibold text-foreground">
                       {setNumber.toString().padStart(2, '0')}
@@ -1138,7 +1122,7 @@ const TrainingDayPage: React.FC = () => {
                             onClick={() => handleLogSet(exercise.id, setNumber)}
                             disabled={!tempSets[currentKey]?.reps || !tempSets[currentKey]?.weight}
                           >
-                            {t('training.logSet', 'שמור סט')}
+                            {t('training.logSet', 'Log set')}
                           </Button>
                         </>
                       )}
@@ -1237,14 +1221,14 @@ const TrainingDayPage: React.FC = () => {
                   className="h-5 w-5"
                 />
                 <label htmlFor="day-complete" className="text-xs sm:text-sm font-medium cursor-pointer whitespace-nowrap">
-                  {dayCompleted ? t('training.dayCompleted', 'יום הושלם') : t('training.markDayComplete', 'סמן יום כמושלם')}
+                  {dayCompleted ? t('training.dayCompleted', 'Day completed') : t('training.markDayComplete', 'Mark day complete')}
                 </label>
               </div>
             </div>
             {workoutDay.estimated_duration && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                <span>{t('training.estimatedDuration', { minutes: workoutDay.estimated_duration, defaultValue: '{{minutes}} דק׳' })}</span>
+                <span>{t('training.estimatedDuration', { minutes: workoutDay.estimated_duration, defaultValue: '{{minutes}} min' })}</span>
               </div>
             )}
           </div>

@@ -290,6 +290,8 @@
     "totalWorkouts": "Total Workouts",
     "weeklyFrequency": "Weekly Frequency",
     "completionRate": "Completion Rate",
+    "completionCalendar": "Training Completion Calendar",
+    "trainingDays": "Training Days",
     "myWorkouts": "My Workouts",
     "noActiveWorkoutPlan": "No Active Workout Plan",
     "noWorkoutPlanAssigned": "You don't have an active workout plan yet. Contact your trainer to get started!",

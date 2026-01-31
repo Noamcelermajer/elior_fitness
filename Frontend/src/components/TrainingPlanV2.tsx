@@ -372,7 +372,7 @@ const TrainingPlanV2: React.FC = () => {
         {/* Training Days List - Similar to Meal Plan UI */}
         <div className="space-y-4">
           <h2 className="text-xl font-bold">
-            {t('training.trainingDays', 'ימי אימון')} ({planDays.length})
+            {t('training.trainingDays', 'Training Days')} ({planDays.length})
           </h2>
           
           <div className="space-y-3">

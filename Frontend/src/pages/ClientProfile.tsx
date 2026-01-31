@@ -700,7 +700,7 @@ const ClientProfile = () => {
                           variant="ghost"
                           size="icon"
                           onClick={async () => {
-                            const confirmMessage = t('clientProfile.confirmDeleteWorkout') || 'האם אתה בטוח שברצונך למחוק את תוכנית האימון הזו?';
+                            const confirmMessage = t('clientProfile.confirmDeleteWorkout') || 'Are you sure you want to delete this workout plan?';
                             if (confirm(confirmMessage)) {
                               try {
                                 const token = localStorage.getItem('access_token');
@@ -715,12 +715,12 @@ const ClientProfile = () => {
                                 if (response.ok) {
                                   await fetchClientData();
                                 } else {
-                                  const errorMessage = t('clientProfile.deleteWorkoutError') || 'מחיקת תוכנית האימון נכשלה';
+                                  const errorMessage = t('clientProfile.deleteWorkoutError') || 'Failed to delete workout plan';
                                   alert(errorMessage);
                                 }
                               } catch (error) {
                                 console.error('Error deleting workout plan:', error);
-                                const errorMessage = t('clientProfile.deleteWorkoutError') || 'מחיקת תוכנית האימון נכשלה';
+                                const errorMessage = t('clientProfile.deleteWorkoutError') || 'Failed to delete workout plan';
                                 alert(errorMessage);
                               }
                             }
