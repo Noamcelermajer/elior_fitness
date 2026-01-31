@@ -797,7 +797,6 @@
     "updateFoodItem": "עדכן פריט מזון",
     "createFoodItem": "צור פריט מזון",
     "deleteConfirm": "האם אתה בטוח שברצונך למחוק את פריט המזון הזה?",
-    "per100g": "ל-100 גרם",
     "successCreated": "פריט המזון נוצר בהצלחה",
     "successUpdated": "פריט המזון עודכן בהצלחה",
     "successDeleted": "פריט המזון נמחק בהצלחה",
