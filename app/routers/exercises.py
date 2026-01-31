@@ -3,7 +3,7 @@ from fastapi import Request as FastAPIRequest
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import logging
 import json
 import io
@@ -491,109 +491,129 @@ def export_exercises_excel(
             detail=f"Failed to export exercises: {str(e)}"
         )
 
+def _normalize_hebrew(text: str) -> str:
+    """Normalize Hebrew text for matching (remove nikud, lowercase, collapse spaces)."""
+    import unicodedata
+    import re
+    if not text:
+        return ""
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(c for c in text if unicodedata.category(c) != "Mn")
+    text = re.sub(r"\s+", " ", text.strip().lower())
+    return text
+
+
+def _similarity_hebrew(text1: str, text2: str) -> float:
+    """Return similarity 0..1. Hebrew-safe; exact match after norm = 1.0."""
+    import unicodedata
+    import re
+    if not text1 or not text2:
+        return 0.0
+    n1 = _normalize_hebrew(text1)
+    n2 = _normalize_hebrew(text2)
+    if not n1 or not n2:
+        return 0.0
+    if n1 == n2:
+        return 1.0
+
+    def lev(s1: str, s2: str) -> int:
+        if len(s1) < len(s2):
+            return lev(s2, s1)
+        if len(s2) == 0:
+            return len(s1)
+        prev = list(range(len(s2) + 1))
+        for i, c1 in enumerate(s1):
+            curr = [i + 1]
+            for j, c2 in enumerate(s2):
+                curr.append(min(prev[j + 1] + 1, curr[j] + 1, prev[j] + (1 if c1 != c2 else 0)))
+            prev = curr
+        return prev[-1]
+
+    d = lev(n1, n2)
+    max_len = max(len(n1), len(n2))
+    return 1.0 - (d / max_len) if max_len > 0 else 0.0
+
+
 @router.post("/import/excel")
 async def import_exercises_excel(
     file: UploadFile = File(...),
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Import exercises from Excel file. Updates existing exercises by name, creates new ones if they don't exist.
-    Always assigns new IDs (ignores ID from Excel) and sets created_by to the uploading trainer."""
+    """Parse Excel and return a preview of all rows with match status (Hebrew-aware). No import until user reviews via /import/excel/process."""
     if current_user.role != UserRole.TRAINER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only trainers can import exercises"
         )
-    
     try:
         from openpyxl import load_workbook
-        
-        # Read file content
+
+        POSSIBLE_DUPLICATE_THRESHOLD = 0.60
+
         contents = await file.read()
         wb = load_workbook(io.BytesIO(contents))
         ws = wb.active
-        
-        # Skip header row and process data
-        imported_count = 0
-        updated_count = 0
-        skipped_count = 0
-        errors = []
-        
-        workout_service = WorkoutService(db)
-        
+
+        existing = db.query(Exercise).filter(Exercise.created_by == current_user.id).all()
+        rows_preview: List[Dict[str, Any]] = []
+
         for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
             try:
-                # Skip empty rows
-                if not row[0] and not row[1]:
+                if not row or len(row) < 2:
                     continue
-                
-                # Parse row data (ID, Name, Description, Muscle Group, Equipment, Instructions, Category, Video URL, Image Path, Created By, Created At)
-                # Note: We ignore ID, Created By, and Created At from Excel - always use database values
                 name = str(row[1]).strip() if row[1] else None
                 if not name:
-                    skipped_count += 1
                     continue
-                
-                # Check if exercise with this name already exists (case-insensitive)
-                existing_exercise = db.query(Exercise).filter(
-                    func.lower(Exercise.name) == func.lower(name)
-                ).first()
-                
-                if existing_exercise:
-                    # Update existing exercise
-                    exercise_update = ExerciseUpdate(
-                        name=name,
-                        description=str(row[2]).strip() if row[2] else None,
-                        muscle_group=str(row[3]).strip() if row[3] else existing_exercise.muscle_group,
-                        equipment_needed=str(row[4]).strip() if row[4] else None,
-                        instructions=str(row[5]).strip() if row[5] else None,
-                        category=str(row[6]).strip() if row[6] else None,
-                        video_url=str(row[7]).strip() if row[7] else None,
-                        image_path=str(row[8]).strip() if row[8] else None
-                    )
-                    
-                    # Update the exercise fields
-                    for field, value in exercise_update.dict(exclude_unset=True).items():
-                        setattr(existing_exercise, field, value)
-                    
-                    # Update created_by to the uploading trainer
-                    existing_exercise.created_by = current_user.id
-                    
-                    db.commit()
-                    db.refresh(existing_exercise)
-                    
-                    updated_count += 1
-                else:
-                    # Create new exercise
-                    exercise_data = ExerciseCreate(
-                        name=name,
-                        description=str(row[2]).strip() if row[2] else None,
-                        muscle_group=str(row[3]).strip() if row[3] else "other",
-                        equipment_needed=str(row[4]).strip() if row[4] else None,
-                        instructions=str(row[5]).strip() if row[5] else None,
-                        category=str(row[6]).strip() if row[6] else None,
-                        video_url=str(row[7]).strip() if row[7] else None,
-                        image_path=str(row[8]).strip() if row[8] else None
-                    )
-                    
-                    workout_service.create_exercise(exercise_data, current_user.id)
-                    imported_count += 1
-                
+
+                description = str(row[2]).strip() if len(row) > 2 and row[2] else None
+                muscle_group = str(row[3]).strip() if len(row) > 3 and row[3] else "other"
+                if muscle_group not in ("chest", "back", "shoulders", "biceps", "triceps", "legs", "core", "cardio", "full_body", "other"):
+                    muscle_group = "other"
+                equipment_needed = str(row[4]).strip() if len(row) > 4 and row[4] else None
+                instructions = str(row[5]).strip() if len(row) > 5 and row[5] else None
+                category = str(row[6]).strip() if len(row) > 6 and row[6] else None
+                video_url = str(row[7]).strip() if len(row) > 7 and row[7] else None
+                image_path = str(row[8]).strip() if len(row) > 8 and row[8] else None
+
+                data = {
+                    "row_index": row_idx,
+                    "name": name,
+                    "description": description,
+                    "muscle_group": muscle_group,
+                    "equipment_needed": equipment_needed,
+                    "instructions": instructions,
+                    "category": category,
+                    "video_url": video_url,
+                    "image_path": image_path,
+                }
+                matches: List[Dict[str, Any]] = []
+                for ex in existing:
+                    sim = _similarity_hebrew(name, ex.name or "")
+                    if sim >= POSSIBLE_DUPLICATE_THRESHOLD:
+                        matches.append({
+                            "id": ex.id,
+                            "name": ex.name,
+                            "description": ex.description,
+                            "muscle_group": ex.muscle_group,
+                            "equipment_needed": ex.equipment_needed,
+                            "similarity": round(sim, 2),
+                        })
+                status_key = "possible_duplicate" if matches else "new"
+                rows_preview.append({
+                    "row_index": row_idx,
+                    "data": data,
+                    "status": status_key,
+                    "matches": matches,
+                })
             except Exception as e:
-                errors.append(f"Row {row_idx}: {str(e)}")
-                skipped_count += 1
-                logger.error(f"Error importing row {row_idx}: {str(e)}")
-        
-        db.commit()
-        
+                logger.error(f"Error processing exercise row {row_idx}: {str(e)}")
+
+        possible = sum(1 for r in rows_preview if r["status"] == "possible_duplicate")
         return {
-            "message": f"Import completed: {imported_count} exercises created, {updated_count} exercises updated, {skipped_count} skipped",
-            "imported_count": imported_count,
-            "updated_count": updated_count,
-            "skipped_count": skipped_count,
-            "errors": errors[:10]  # Return first 10 errors
+            "rows": rows_preview,
+            "message": f"Review {len(rows_preview)} rows. {possible} may match existing exercises; confirm each action before importing.",
         }
-        
     except ImportError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -604,4 +624,99 @@ async def import_exercises_excel(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to import exercises: {str(e)}"
+        )
+
+
+@router.post("/import/excel/process")
+async def process_exercises_import(
+    import_data: Dict[str, Any],
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Apply import from preview: decisions = { row_index: \"skip\" | \"add\" | \"replace:<existing_id>\" }."""
+    if current_user.role != UserRole.TRAINER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers can import exercises"
+        )
+    try:
+        rows = import_data.get("rows", [])
+        decisions = import_data.get("decisions", {})
+        row_by_index = {r["row_index"]: r for r in rows}
+        workout_service = WorkoutService(db)
+        imported_count = 0
+        replaced_count = 0
+        skipped_count = 0
+        errors = []
+
+        for row_index_str, decision in decisions.items():
+            try:
+                row_index = int(row_index_str)
+                row_info = row_by_index.get(row_index)
+                if not row_info:
+                    skipped_count += 1
+                    continue
+                data = row_info.get("data", {})
+                if decision == "skip":
+                    skipped_count += 1
+                    continue
+                if decision == "add":
+                    exercise_data = ExerciseCreate(
+                        name=data.get("name", ""),
+                        description=data.get("description"),
+                        muscle_group=data.get("muscle_group", "other"),
+                        equipment_needed=data.get("equipment_needed"),
+                        instructions=data.get("instructions"),
+                        category=data.get("category"),
+                        video_url=data.get("video_url"),
+                        image_path=data.get("image_path"),
+                    )
+                    workout_service.create_exercise(exercise_data, current_user.id)
+                    imported_count += 1
+                    continue
+                if decision.startswith("replace:"):
+                    try:
+                        existing_id = int(decision.split(":", 1)[1])
+                    except (ValueError, IndexError):
+                        skipped_count += 1
+                        continue
+                    existing_item = db.query(Exercise).filter(Exercise.id == existing_id, Exercise.created_by == current_user.id).first()
+                    if not existing_item:
+                        skipped_count += 1
+                        continue
+                    exercise_update = ExerciseUpdate(
+                        name=data.get("name", existing_item.name),
+                        description=data.get("description"),
+                        muscle_group=data.get("muscle_group", existing_item.muscle_group),
+                        equipment_needed=data.get("equipment_needed"),
+                        instructions=data.get("instructions"),
+                        category=data.get("category"),
+                        video_url=data.get("video_url"),
+                        image_path=data.get("image_path"),
+                    )
+                    for field, value in exercise_update.model_dump(exclude_unset=True).items():
+                        setattr(existing_item, field, value)
+                    existing_item.created_by = current_user.id
+                    replaced_count += 1
+                else:
+                    skipped_count += 1
+            except Exception as e:
+                errors.append(f"Row {row_index_str}: {str(e)}")
+                skipped_count += 1
+                logger.error(f"Error processing exercise row {row_index_str}: {str(e)}")
+
+        db.commit()
+        return {
+            "message": f"Import completed: {imported_count} exercises created, {replaced_count} replaced, {skipped_count} skipped",
+            "imported_count": imported_count,
+            "replaced_count": replaced_count,
+            "skipped_count": skipped_count,
+            "errors": errors[:10],
+        }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error processing exercises import: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process import: {str(e)}"
         ) 

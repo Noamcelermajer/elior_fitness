@@ -20,6 +20,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import { useToast } from '../hooks/use-toast';
 import { useTranslation } from 'react-i18next';
+import {
+  ExerciseImportReviewDialog,
+  type ExerciseImportPreviewRow,
+  type ExerciseImportDecision,
+} from '../components/ExerciseImportReviewDialog';
 interface Exercise {
   id: number;
   name: string;
@@ -62,7 +67,9 @@ const ExerciseBank = () => {
   const [muscleGroupError, setMuscleGroupError] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  
+  const [importReviewOpen, setImportReviewOpen] = useState(false);
+  const [importReviewData, setImportReviewData] = useState<{ rows: ExerciseImportPreviewRow[]; message?: string } | null>(null);
+
   const [exerciseForm, setExerciseForm] = useState({
     name: '',
     description: '',
@@ -720,10 +727,11 @@ const ExerciseBank = () => {
   };
 
   const handleImportExcel = async () => {
-    if (!importFile) {
+    const fileToImport = importFile;
+    if (!fileToImport) {
       toast({
         title: t('common.error'),
-        description: 'Please select a file to import',
+        description: t('exerciseBank.selectFileToImport', 'Please select a file to import'),
         variant: "destructive"
       });
       return;
@@ -733,7 +741,7 @@ const ExerciseBank = () => {
     try {
       const token = localStorage.getItem('access_token');
       const formData = new FormData();
-      formData.append('file', importFile);
+      formData.append('file', fileToImport);
 
       const response = await fetch(`${API_BASE_URL}/exercises/import/excel`, {
         method: 'POST',
@@ -745,12 +753,18 @@ const ExerciseBank = () => {
 
       if (response.ok) {
         const result = await response.json();
-        toast({
-          title: t('common.success'),
-          description: result.message || `Imported ${result.imported_count} exercises`
-        });
-        setImportFile(null);
-        fetchExercises();
+        const rows: ExerciseImportPreviewRow[] = result.rows ?? [];
+        if (rows.length === 0) {
+          toast({
+            title: t('common.warning', 'Warning'),
+            description: result.message || t('exerciseBank.importReviewNoRows', 'No valid rows to import.'),
+            variant: 'destructive'
+          });
+          setImportFile(null);
+          return;
+        }
+        setImportReviewData({ rows, message: result.message });
+        setImportReviewOpen(true);
       } else {
         const error = await response.json();
         throw new Error(error.detail || 'Import failed');
@@ -758,7 +772,50 @@ const ExerciseBank = () => {
     } catch (error) {
       toast({
         title: t('common.error'),
-        description: error instanceof Error ? error.message : 'Failed to import exercises',
+        description: error instanceof Error ? error.message : t('exerciseBank.errorImport', 'Failed to import exercises'),
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleImportReviewConfirm = async (decisions: Record<number, ExerciseImportDecision>) => {
+    if (!importReviewData?.rows) return;
+
+    setIsImporting(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/exercises/import/excel/process`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          rows: importReviewData.rows,
+          decisions
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: t('common.success'),
+          description: result.message || `Imported ${result.imported_count} exercises`
+        });
+        setImportReviewOpen(false);
+        setImportReviewData(null);
+        setImportFile(null);
+        fetchExercises();
+      } else {
+        const error = await response.json();
+        throw new Error(error.detail || 'Import processing failed');
+      }
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('exerciseBank.errorImport', 'Failed to process import'),
         variant: "destructive"
       });
     } finally {
@@ -1329,6 +1386,20 @@ const ExerciseBank = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {importReviewData?.rows && (
+          <ExerciseImportReviewDialog
+            open={importReviewOpen}
+            rows={importReviewData.rows}
+            message={importReviewData.message}
+            onClose={() => {
+              setImportReviewOpen(false);
+              setImportReviewData(null);
+              setImportFile(null);
+            }}
+            onConfirm={handleImportReviewConfirm}
+          />
+        )}
       </div>
     </Layout>
   );

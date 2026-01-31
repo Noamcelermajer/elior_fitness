@@ -14,7 +14,7 @@ import { API_BASE_URL } from '../config/api';
 import { useToast } from '../hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { useOverflow } from '../hooks/use-overflow';
-import { DuplicateDetectionDialog } from '../components/DuplicateDetectionDialog';
+import { ImportReviewDialog, type ImportPreviewRow, type ImportDecision } from '../components/ImportReviewDialog';
 
 interface MealBankItem {
   id: number;
@@ -344,20 +344,18 @@ const MealBank = () => {
 
       if (response.ok) {
         const result = await response.json();
-        
-        // Check if duplicates were found
-        if (result.duplicates_found) {
-          setDuplicateData(result);
-          setDuplicateDialogOpen(true);
-        } else {
-          // No duplicates, import completed
+        const rows: ImportPreviewRow[] = result.rows ?? [];
+        if (rows.length === 0) {
           toast({
-            title: t('common.success'),
-            description: result.message || `Imported ${result.imported_count} items`
+            title: t('common.warning', 'Warning'),
+            description: result.message || t('foodBank.importReviewNoRows', 'No valid rows to import.'),
+            variant: 'destructive'
           });
           setImportFile(null);
-          fetchItems();
+          return;
         }
+        setDuplicateData({ rows, message: result.message });
+        setDuplicateDialogOpen(true);
       } else {
         const error = await response.json();
         throw new Error(error.detail || 'Import failed');
@@ -373,8 +371,8 @@ const MealBank = () => {
     }
   };
 
-  const handleDuplicateConfirm = async (decisions: Record<number, 'replace' | 'add' | 'ignore'>) => {
-    if (!duplicateData) return;
+  const handleImportReviewConfirm = async (decisions: Record<number, ImportDecision>) => {
+    if (!duplicateData?.rows) return;
 
     setIsImporting(true);
     try {
@@ -387,9 +385,8 @@ const MealBank = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          items_to_import: duplicateData.items_to_import || [],
-          duplicate_matches: duplicateData.duplicate_matches || [],
-          duplicate_decisions: decisions
+          rows: duplicateData.rows,
+          decisions
         })
       });
 
@@ -851,14 +848,16 @@ const MealBank = () => {
 
       {/* Duplicate Detection Dialog */}
       {duplicateData && (
-        <DuplicateDetectionDialog
+        <ImportReviewDialog
           open={duplicateDialogOpen}
-          duplicates={duplicateData.duplicate_matches || []}
+          rows={duplicateData.rows}
+          message={duplicateData.message}
           onClose={() => {
             setDuplicateDialogOpen(false);
             setDuplicateData(null);
+            setImportFile(null);
           }}
-          onConfirm={handleDuplicateConfirm}
+          onConfirm={handleImportReviewConfirm}
         />
       )}
     </Layout>

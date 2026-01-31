@@ -1510,7 +1510,7 @@ async def import_meal_bank_excel(
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Import meal bank items from Excel file with duplicate detection"""
+    """Parse Excel and return a preview of all rows with match status. No import until user reviews and confirms via /process."""
     if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -1522,122 +1522,92 @@ async def import_meal_bank_excel(
         import unicodedata
         import re
         
-        # Hebrew text normalization function
         def normalize_hebrew(text: str) -> str:
-            """Normalize Hebrew text for matching (remove diacritics, handle variations)"""
             if not text:
                 return ""
-            # Remove diacritics (nikud)
             text = unicodedata.normalize('NFKD', text)
             text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
-            # Remove extra spaces and convert to lowercase
             text = re.sub(r'\s+', ' ', text.strip().lower())
             return text
         
-        # Fuzzy matching function
-        def fuzzy_match_hebrew(text1: str, text2: str, threshold: float = 0.75) -> bool:
-            """Check if two Hebrew texts are similar using Levenshtein distance"""
+        def similarity_hebrew(text1: str, text2: str) -> float:
+            """Return similarity 0..1. Exact match after norm = 1.0."""
             if not text1 or not text2:
-                return False
-                
+                return 0.0
             norm1 = normalize_hebrew(text1)
             norm2 = normalize_hebrew(text2)
-            
             if not norm1 or not norm2:
-                return False
-            
-            # Exact match after normalization
+                return 0.0
             if norm1 == norm2:
-                return True
-            
-            # Simple Levenshtein distance calculation
-            def levenshtein(s1: str, s2: str) -> int:
+                return 1.0
+            # Levenshtein
+            def lev(s1: str, s2: str) -> int:
                 if len(s1) < len(s2):
-                    return levenshtein(s2, s1)
+                    return lev(s2, s1)
                 if len(s2) == 0:
                     return len(s1)
-                
-                previous_row = list(range(len(s2) + 1))
+                prev = list(range(len(s2) + 1))
                 for i, c1 in enumerate(s1):
-                    current_row = [i + 1]
+                    curr = [i + 1]
                     for j, c2 in enumerate(s2):
-                        insertions = previous_row[j + 1] + 1
-                        deletions = current_row[j] + 1
-                        substitutions = previous_row[j] + (c1 != c2)
-                        current_row.append(min(insertions, deletions, substitutions))
-                    previous_row = current_row
-                return previous_row[-1]
-            
-            distance = levenshtein(norm1, norm2)
+                        curr.append(min(prev[j + 1] + 1, curr[j] + 1, prev[j] + (1 if c1 != c2 else 0)))
+                    prev = curr
+                return prev[-1]
+            d = lev(norm1, norm2)
             max_len = max(len(norm1), len(norm2))
-            similarity = 1 - (distance / max_len) if max_len > 0 else 0
-            
-            # For short strings (3 chars or less), require exact match
-            if max_len <= 3:
-                return similarity == 1.0
-            
-            return similarity >= threshold
+            return 1.0 - (d / max_len) if max_len > 0 else 0.0
         
-        # Read file content
+        # Possible duplicate if similarity >= this (catch more candidates for manual review)
+        POSSIBLE_DUPLICATE_THRESHOLD = 0.60
+        
         contents = await file.read()
         wb = load_workbook(io.BytesIO(contents))
         ws = wb.active
         
-        # Get existing meal bank items for duplicate detection
         existing_items = db.query(MealBank).filter(
             (MealBank.created_by == current_user.id) | (MealBank.is_public == True)
         ).all()
         
-        # First pass: detect duplicates
-        duplicate_matches = []
-        items_to_import = []
+        rows_preview: List[Dict[str, Any]] = []
         
         for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
             try:
-                # Skip empty rows
-                if not row[1] and not row[2]:
+                if not row or (not row[1] and not row[2]):
                     continue
-                
-                # Parse row data (ID, Name, Name Hebrew, Macro Type, Calories, Protein, Carbs, Fat)
-                name = str(row[1]).strip() if row[1] else None
-                name_hebrew = str(row[2]).strip() if row[2] else None
-                
+                name = str(row[1]).strip() if len(row) > 1 and row[1] else None
+                name_hebrew = str(row[2]).strip() if len(row) > 2 and row[2] else None
                 if not name and not name_hebrew:
                     continue
                 
-                # Parse macro type
-                macro_type_str = str(row[3]).strip().lower() if row[3] else "protein"
+                macro_type_str = str(row[3]).strip().lower() if len(row) > 3 and row[3] else "protein"
                 if macro_type_str not in ["protein", "carb", "fat"]:
-                    macro_type_str = "protein"  # Default
+                    macro_type_str = "protein"
                 
-                # Check for duplicates using Hebrew text matching
-                potential_duplicates = []
+                item_data = {
+                    "row_index": row_idx,
+                    "name": name or name_hebrew,
+                    "name_hebrew": name_hebrew if name_hebrew else None,
+                    "macro_type": macro_type_str,
+                    "calories": int(row[4]) if len(row) > 4 and row[4] and str(row[4]).strip() else None,
+                    "protein": float(row[5]) if len(row) > 5 and row[5] and str(row[5]).strip() else None,
+                    "carbs": float(row[6]) if len(row) > 6 and row[6] and str(row[6]).strip() else None,
+                    "fat": float(row[7]) if len(row) > 7 and row[7] and str(row[7]).strip() else None,
+                }
                 
-                # Normalize both new and existing items for comparison
-                norm_name_hebrew = normalize_hebrew(name_hebrew) if name_hebrew else ""
-                norm_name = normalize_hebrew(name) if name else ""
+                matches: List[Dict[str, Any]] = []
+                norm_hebrew = normalize_hebrew(name_hebrew or "")
+                norm_name = normalize_hebrew(name or "")
                 
                 for existing in existing_items:
-                    existing_norm_hebrew = normalize_hebrew(existing.name_hebrew) if existing.name_hebrew else ""
-                    existing_norm_name = normalize_hebrew(existing.name) if existing.name else ""
-                    
-                    # Check exact matches first (case-insensitive, normalized)
-                    is_exact_match = False
-                    if norm_name_hebrew and existing_norm_hebrew:
-                        is_exact_match = norm_name_hebrew == existing_norm_hebrew
-                    if not is_exact_match and norm_name and existing_norm_name:
-                        is_exact_match = norm_name == existing_norm_name
-                    
-                    # Check fuzzy match for Hebrew names (lower threshold for better detection)
-                    is_fuzzy_match = False
-                    if norm_name_hebrew and existing_norm_hebrew:
-                        is_fuzzy_match = fuzzy_match_hebrew(name_hebrew, existing.name_hebrew, threshold=0.75)
-                    # Also check English names with fuzzy matching
-                    if not is_fuzzy_match and norm_name and existing_norm_name:
-                        is_fuzzy_match = fuzzy_match_hebrew(name, existing.name, threshold=0.75)
-                    
-                    if is_exact_match or is_fuzzy_match:
-                        potential_duplicates.append({
+                    ex_hebrew = normalize_hebrew(existing.name_hebrew or "")
+                    ex_name = normalize_hebrew(existing.name or "")
+                    sim = 0.0
+                    if norm_hebrew and ex_hebrew:
+                        sim = max(sim, similarity_hebrew(name_hebrew or "", existing.name_hebrew or ""))
+                    if norm_name and ex_name:
+                        sim = max(sim, similarity_hebrew(name or "", existing.name or ""))
+                    if sim >= POSSIBLE_DUPLICATE_THRESHOLD:
+                        matches.append({
                             "id": existing.id,
                             "name": existing.name,
                             "name_hebrew": existing.name_hebrew,
@@ -1645,97 +1615,24 @@ async def import_meal_bank_excel(
                             "calories": existing.calories,
                             "protein": existing.protein,
                             "carbs": existing.carbs,
-                            "fat": existing.fat
+                            "fat": existing.fat,
+                            "similarity": round(sim, 2),
                         })
                 
-                item_data = {
+                status_key = "possible_duplicate" if matches else "new"
+                rows_preview.append({
                     "row_index": row_idx,
-                    "name": name or name_hebrew,
-                    "name_hebrew": name_hebrew if name_hebrew else None,
-                    "macro_type": macro_type_str,
-                    "calories": int(row[4]) if row[4] and str(row[4]).strip() else None,
-                    "protein": float(row[5]) if row[5] and str(row[5]).strip() else None,
-                    "carbs": float(row[6]) if row[6] and str(row[6]).strip() else None,
-                    "fat": float(row[7]) if row[7] and str(row[7]).strip() else None
-                }
-                
-                if potential_duplicates:
-                    duplicate_matches.append({
-                        "new_item": item_data,
-                        "matches": potential_duplicates
-                    })
-                else:
-                    items_to_import.append(item_data)
-                    
+                    "data": item_data,
+                    "status": status_key,
+                    "matches": matches,
+                })
             except Exception as e:
                 logger.error(f"Error processing row {row_idx}: {str(e)}")
         
-        # ALWAYS return duplicates if found - never auto-import when duplicates exist
-        if duplicate_matches:
-            return {
-                "duplicates_found": True,
-                "duplicate_matches": duplicate_matches,
-                "items_to_import": items_to_import,
-                "message": f"Found {len(duplicate_matches)} potential duplicate food items. Please review and decide whether to replace, add anyway, or ignore."
-            }
-        
-        # No duplicates, proceed with import
-        imported_count = 0
-        skipped_count = 0
-        errors = []
-        
-        from app.models.meal_system import MeasurementType
-        for item_data in items_to_import:
-            try:
-                # Double-check for duplicates before importing (safety check)
-                check_name_hebrew = normalize_hebrew(item_data.get("name_hebrew", ""))
-                check_name = normalize_hebrew(item_data.get("name", ""))
-                
-                has_duplicate = False
-                for existing in existing_items:
-                    existing_norm_hebrew = normalize_hebrew(existing.name_hebrew) if existing.name_hebrew else ""
-                    existing_norm_name = normalize_hebrew(existing.name) if existing.name else ""
-                    
-                    if check_name_hebrew and existing_norm_hebrew and check_name_hebrew == existing_norm_hebrew:
-                        has_duplicate = True
-                        break
-                    if check_name and existing_norm_name and check_name == existing_norm_name:
-                        has_duplicate = True
-                        break
-                
-                if has_duplicate:
-                    skipped_count += 1
-                    errors.append(f"Row {item_data['row_index']}: Duplicate detected (safety check)")
-                    continue
-                
-                meal_bank_item = MealBank(
-                    name=item_data["name"],
-                    name_hebrew=item_data["name_hebrew"],
-                    macro_type=MacroType(item_data["macro_type"]),
-                    calories=item_data["calories"],
-                    protein=item_data["protein"],
-                    carbs=item_data["carbs"],
-                    fat=item_data["fat"],
-                    measurement_type=MeasurementType.PER_100G,
-                    serving_size=None,
-                    created_by=current_user.id,
-                    is_public=False
-                )
-                db.add(meal_bank_item)
-                imported_count += 1
-            except Exception as e:
-                errors.append(f"Row {item_data['row_index']}: {str(e)}")
-                skipped_count += 1
-                logger.error(f"Error importing row {item_data['row_index']}: {str(e)}")
-        
-        db.commit()
-        
+        possible = sum(1 for r in rows_preview if r["status"] == "possible_duplicate")
         return {
-            "duplicates_found": False,
-            "message": f"Import completed: {imported_count} items imported, {skipped_count} skipped",
-            "imported_count": imported_count,
-            "skipped_count": skipped_count,
-            "errors": errors[:10]
+            "rows": rows_preview,
+            "message": f"Review {len(rows_preview)} rows. {possible} may match existing items; confirm each action before importing.",
         }
         
     except ImportError:
@@ -1756,7 +1653,7 @@ async def process_meal_bank_import(
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Process meal bank import with user decisions for duplicates"""
+    """Apply import from preview: decisions = { row_index: "skip" | "add" | "replace:<existing_id>" }."""
     if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -1766,86 +1663,39 @@ async def process_meal_bank_import(
     try:
         from app.models.meal_system import MeasurementType
         
-        items_to_import = import_data.get("items_to_import", [])
-        duplicate_decisions = import_data.get("duplicate_decisions", {})  # {row_index: "replace"|"add"|"ignore"}
+        rows = import_data.get("rows", [])
+        decisions = import_data.get("decisions", {})  # { row_index: "skip" | "add" | "replace:<id>" }
         
         imported_count = 0
         replaced_count = 0
         skipped_count = 0
         errors = []
         
-        # Process items without duplicates
-        for item_data in items_to_import:
-            try:
-                meal_bank_item = MealBank(
-                    name=item_data["name"],
-                    name_hebrew=item_data.get("name_hebrew"),
-                    macro_type=MacroType(item_data["macro_type"]),
-                    calories=item_data.get("calories"),
-                    protein=item_data.get("protein"),
-                    carbs=item_data.get("carbs"),
-                    fat=item_data.get("fat"),
-                    measurement_type=MeasurementType.PER_100G,
-                    serving_size=None,
-                    created_by=current_user.id,
-                    is_public=False
-                )
-                db.add(meal_bank_item)
-                imported_count += 1
-            except Exception as e:
-                errors.append(f"Row {item_data.get('row_index', 'unknown')}: {str(e)}")
-                skipped_count += 1
-                logger.error(f"Error importing item: {str(e)}")
+        row_by_index = {r["row_index"]: r for r in rows}
         
-        # Process duplicates based on user decisions
-        for row_index_str, decision in duplicate_decisions.items():
+        for row_index_str, decision in decisions.items():
             try:
                 row_index = int(row_index_str)
-                duplicate_info = import_data.get("duplicate_matches", [])
+                row_info = row_by_index.get(row_index)
+                if not row_info:
+                    skipped_count += 1
+                    continue
+                data = row_info.get("data", {})
+                matches = row_info.get("matches", [])
                 
-                # Find the duplicate match for this row
-                duplicate_match = None
-                for match in duplicate_info:
-                    if match.get("new_item", {}).get("row_index") == row_index:
-                        duplicate_match = match
-                        break
-                
-                if not duplicate_match:
+                if decision == "skip":
                     skipped_count += 1
                     continue
                 
-                new_item = duplicate_match["new_item"]
-                existing_matches = duplicate_match.get("matches", [])
-                
-                if decision == "ignore":
-                    skipped_count += 1
-                    continue
-                elif decision == "replace" and existing_matches:
-                    # Replace the first match
-                    existing_id = existing_matches[0]["id"]
-                    existing_item = db.query(MealBank).filter(MealBank.id == existing_id).first()
-                    
-                    if existing_item and (existing_item.created_by == current_user.id or current_user.role == UserRole.ADMIN):
-                        existing_item.name = new_item["name"]
-                        existing_item.name_hebrew = new_item.get("name_hebrew")
-                        existing_item.macro_type = MacroType(new_item["macro_type"])
-                        existing_item.calories = new_item.get("calories")
-                        existing_item.protein = new_item.get("protein")
-                        existing_item.carbs = new_item.get("carbs")
-                        existing_item.fat = new_item.get("fat")
-                        replaced_count += 1
-                    else:
-                        skipped_count += 1
-                elif decision == "add":
-                    # Add as new item
+                if decision == "add":
                     meal_bank_item = MealBank(
-                        name=new_item["name"],
-                        name_hebrew=new_item.get("name_hebrew"),
-                        macro_type=MacroType(new_item["macro_type"]),
-                        calories=new_item.get("calories"),
-                        protein=new_item.get("protein"),
-                        carbs=new_item.get("carbs"),
-                        fat=new_item.get("fat"),
+                        name=data.get("name"),
+                        name_hebrew=data.get("name_hebrew"),
+                        macro_type=MacroType(data.get("macro_type", "protein")),
+                        calories=data.get("calories"),
+                        protein=data.get("protein"),
+                        carbs=data.get("carbs"),
+                        fat=data.get("fat"),
                         measurement_type=MeasurementType.PER_100G,
                         serving_size=None,
                         created_by=current_user.id,
@@ -1853,13 +1703,32 @@ async def process_meal_bank_import(
                     )
                     db.add(meal_bank_item)
                     imported_count += 1
+                    continue
+                
+                if decision.startswith("replace:"):
+                    try:
+                        existing_id = int(decision.split(":", 1)[1])
+                    except (ValueError, IndexError):
+                        skipped_count += 1
+                        continue
+                    existing_item = db.query(MealBank).filter(MealBank.id == existing_id).first()
+                    if not existing_item or (existing_item.created_by != current_user.id and current_user.role != UserRole.ADMIN):
+                        skipped_count += 1
+                        continue
+                    existing_item.name = data.get("name")
+                    existing_item.name_hebrew = data.get("name_hebrew")
+                    existing_item.macro_type = MacroType(data.get("macro_type", "protein"))
+                    existing_item.calories = data.get("calories")
+                    existing_item.protein = data.get("protein")
+                    existing_item.carbs = data.get("carbs")
+                    existing_item.fat = data.get("fat")
+                    replaced_count += 1
                 else:
                     skipped_count += 1
-                    
             except Exception as e:
                 errors.append(f"Row {row_index_str}: {str(e)}")
                 skipped_count += 1
-                logger.error(f"Error processing duplicate decision: {str(e)}")
+                logger.error(f"Error processing row {row_index_str}: {str(e)}")
         
         db.commit()
         

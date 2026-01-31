@@ -1,6 +1,7 @@
 # Production Dockerfile for Railway deployment
 # Multi-stage build for optimal size and security
 # Updated: 2025-07-10 15:20 - Removed Nginx, FastAPI only
+# Note: Railway may run this build on multiple Metal builders; that can make deploy take 3x longer (~10 min).
 
 # Build argument to force cache invalidation - Railway will pass this
 ARG BUILD_DATE=unknown

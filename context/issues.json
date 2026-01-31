@@ -2,7 +2,7 @@
   "project": "Elior Fitness",
   "lastUpdated": "2025-01-31",
   "totalIssues": 85,
-  "issuesResolvedThisSession": ["issue-1", "issue-2", "issue-3", "issue-5", "issue-7", "issue-8", "issue-10", "issue-11", "issue-68", "issue-69", "issue-70", "issue-71", "issue-72", "issue-75", "issue-76", "issue-79", "bug-4", "bug-6"],
+  "issuesResolvedThisSession": ["issue-1", "issue-2", "issue-3", "issue-5", "issue-7", "issue-8", "issue-10", "issue-11", "issue-68", "issue-69", "issue-70", "issue-71", "issue-72", "issue-75", "issue-76", "issue-78", "issue-79", "bug-4", "bug-6", "excel-import-review"],
   "issuesByCategory": {
     "translation": 18,
     "bugs": 7,
@@ -385,12 +385,12 @@
     {
       "id": "issue-78",
       "category": "featureCompleteness",
-      "title": "Food bank Excel import needs duplicate detection with Hebrew text matching (resolved - verification needed)",
+      "title": "Food bank Excel import - duplicate detection, Hebrew matching, review-before-import",
       "severity": "medium",
-      "location": "app/routers/meal_system.py",
-      "description": "Hebrew text normalization and fuzzy matching using Levenshtein distance is implemented. Marked as resolved but needs verification that duplicate detection works correctly when importing food bank items.",
-      "fix": "Verify Hebrew text matching works correctly. Test duplicate detection with similar Hebrew food names. Ensure popup shows potential matches correctly.",
-      "status": "resolved-needs-verification"
+      "location": "app/routers/meal_system.py, Frontend/src/components/ImportReviewDialog.tsx, Frontend/src/pages/MealBank.tsx",
+      "description": "Implemented: import returns preview only (no auto-import); Hebrew normalization + similarity (0.60); per-row review (Skip/Add/Replace existing); process endpoint applies user decisions. Same flow added for Exercise Bank (exercises.py, ExerciseImportReviewDialog, ExerciseBank.tsx).",
+      "fix": "Verify in browser: upload Excel → review dialog shows all rows and possible duplicates → confirm import.",
+      "status": "fixed"
     },
     {
       "id": "issue-79",
@@ -595,10 +595,10 @@
       },
       {
         "id": "food-6",
-        "title": "Food bank Excel import - duplicate detection, Hebrew matching, popup if item exists",
-        "shortSummary": "Backend has Hebrew normalization + fuzzy match. Popup on duplicate. Verify in browser.",
-        "status": "resolved-needs-verification",
-        "location": "app/routers/meal_system.py"
+        "title": "Food bank Excel import - duplicate detection, Hebrew matching, review-before-import",
+        "shortSummary": "Preview-only import; Hebrew matching; per-row Skip/Add/Replace; same for Exercise Bank. Verify in browser.",
+        "status": "fixed",
+        "location": "app/routers/meal_system.py, app/routers/exercises.py, Frontend ImportReviewDialog, ExerciseImportReviewDialog"
       },
       {
         "id": "food-7",

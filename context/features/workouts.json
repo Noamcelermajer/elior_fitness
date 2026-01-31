@@ -88,7 +88,7 @@
       }
     ],
     "knownIssues": [],
-    "implementationNotes": "Workout system v2 supports workout plans with splits (Push/Pull/Legs), workout days, exercises, and session tracking. Legacy workout system still exists. Exercise library is trainer-owned. Personal records tracked per exercise."
+    "implementationNotes": "Workout system v2 supports workout plans with splits (Push/Pull/Legs), workout days, exercises, and session tracking. Legacy workout system still exists. Exercise library is trainer-owned. Personal records tracked per exercise. Exercise Bank Excel import: POST /exercises/import/excel returns preview only (Hebrew-aware matching, 0.60 similarity); POST /exercises/import/excel/process applies decisions (skip/add/replace:id). ExerciseImportReviewDialog in Frontend."
   },
   "frontend": {
     "status": "working",

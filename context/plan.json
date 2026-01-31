@@ -9,7 +9,7 @@
   "vision": {
     "foodPlan": "Trainer manually sets total calories and macro grams per day. No auto-calculation overriding trainer input. Remove per-meal calories/macros display; daily totals only.",
     "clientTracking": "Trainee gets meal plan but can choose from all food bank options. Trainer recommends amount in grams; trainee can change food/quantity; calories counted; swipe to remove recommended item; Complete button to finish meal.",
-    "foodBank": "Single filter (no duplicate filter under search and under box). Per-portion vs per-100g option (e.g. slice of bread: 1 slice, 2 slices). Excel import with duplicate detection and Hebrew text matching; popup when item already exists."
+    "foodBank": "Single filter (no duplicate filter under search and under box). Per-portion vs per-100g option (e.g. slice of bread: 1 slice, 2 slices). Excel import: always preview (no auto-import); Hebrew-first matching; per-row review (Skip / Add / Replace existing) like Explorer replace dialog; same flow for Exercise Bank."
   },
   "excelFoodPlanStructure": {
     "idea": "One sheet per day or one sheet with day column; columns: day/meal_name, slot, food_name_he/en, quantity, unit (g or portion). Optional: macros per row. Backend already has meal plan Excel import; verify structure in app/routers/meal_system.py."
@@ -23,7 +23,7 @@
     "Verify meal creation translations (no raw keys)",
     "Implement per-portion vs per-100g (models + UI)",
     "Consolidate food bank filter to single UI",
-    "Verify Excel import and duplicate detection with Hebrew"
+    "Verify Excel import review flow (meal bank + exercise bank) in browser"
   ],
   "currentState": {
     "mealPlanCreation": {
@@ -102,6 +102,11 @@
     "translation-fix-addFromMealBank": {
       "status": "pending-verification",
       "notes": "Translation key exists in en.json. May need app rebuild to see changes. Will verify after deployment."
+    },
+    "excel-import-review-meal-and-exercise": {
+      "status": "completed",
+      "completedDate": "2025-01-31",
+      "notes": "Meal bank: POST /meal-bank/import/excel returns preview only; POST /meal-bank/import/excel/process with decisions (skip/add/replace:id). Exercise bank: same pattern at POST /exercises/import/excel and /exercises/import/excel/process. Hebrew normalization + similarity (0.60 threshold). ImportReviewDialog (meal) and ExerciseImportReviewDialog (exercise). No auto-import; trainer reviews every row."
     }
   },
   "requiredChanges": [
@@ -203,10 +208,11 @@
     "3. Progress: open Progress, add/view entry; verify three photo slots (front/side/back); check if old photos sideways",
     "4. Training: open Training, verify calendar with completed days; open a day, verify Training completed checkbox; verify card shows plan name + workouts (not day name), no emoji, no arrow, no exercise count, no tags under description, no body weight toggle",
     "5. Meal plan: Create/Edit meal plan; verify daily targets editable (calories, protein/carb/fat grams); verify no per-meal calories/macros; verify meal creation strings translated (kcalPer100g, addFoodToBank, makeFoodPublic)",
-    "6. Food bank: verify single filter (or flag duplicate filters)",
+    "6. Food bank: verify single filter; Excel import: upload file → review dialog (all rows, Skip/Add/Replace) → confirm",
     "7. Client: login (user / user123)",
     "8. Meals: verify daily totals only (no per-meal breakdown); verify Add Food from bank; verify swipe to remove, Complete meal",
-    "9. Training (client): same checks as trainer view for arrow/count/tags/body weight"
+    "9. Exercise bank: Excel import → review dialog (all rows, Skip/Add/Replace) → confirm; Hebrew names match correctly",
+    "10. Training (client): same checks as trainer view for arrow/count/tags/body weight"
   ],
   "notes": {
     "backendConsiderations": "Backend may still store per-meal targets, but frontend should not display or require them",

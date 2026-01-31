@@ -719,7 +719,15 @@
       "core": "Core",
       "cardio": "Cardio",
       "full body": "Full Body"
-    }
+    },
+    "importReviewTitle": "Review Import",
+    "importReviewDescription": "Review each row and choose: Skip, Add as new, or Replace an existing exercise. Excel files are often in Hebrew.",
+    "importReviewNoRows": "No valid rows to import from the file.",
+    "importReviewName": "Name",
+    "importReviewMuscleGroup": "Muscle Group",
+    "confirmImport": "Confirm Import",
+    "selectFileToImport": "Please select a file to import",
+    "errorImport": "Failed to import exercises"
   },
   "foodBank": {
     "title": "Food Bank",
@@ -780,7 +788,23 @@
     "addAnyway": "Add Anyway",
     "ignore": "Ignore",
     "confirmImport": "Confirm Import",
-    "selectFileToImport": "Please select a file to import"
+    "selectFileToImport": "Please select a file to import",
+    "importReviewTitle": "Review Import",
+    "importReviewDescription": "Review each row and choose: Skip, Add as new, or Replace an existing item. Like replacing files in Explorer.",
+    "importReviewNoRows": "No valid rows to import from the file.",
+    "importReviewSummary": "Summary",
+    "importReviewRow": "Row",
+    "importReviewName": "Name",
+    "importReviewMacro": "Macro",
+    "importReviewCalories": "Cal",
+    "importReviewStatus": "Status",
+    "importReviewAction": "Action",
+    "importStatusNew": "New",
+    "importStatusPossibleDuplicate": "Possible duplicate",
+    "importActionSkip": "Skip",
+    "importActionAdd": "Add",
+    "importActionReplace": "Replace",
+    "importActionReplaceWith": "Replace with..."
   },
   "weightProgress": {
     "currentWeight": "Current Weight",

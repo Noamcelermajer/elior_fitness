@@ -212,7 +212,7 @@
         "location": "app/routers/meal_system.py",
         "description": "When trainer imports food via Excel, need matching to prevent duplicates. Should match via Hebrew text with clever matching algorithm (fuzzy matching, normalization).",
         "fix": "Implement Hebrew text normalization (remove diacritics, handle variations). Use fuzzy string matching (Levenshtein distance). Show popup with potential matches when duplicates detected. Allow user to skip, merge, or rename.",
-        "resolution": "Implemented Hebrew text normalization (unicodedata.normalize with NFKD, removes diacritics/nikud) and fuzzy matching using Levenshtein distance with 0.8 similarity threshold. Used in meal plan Excel import endpoint. Returns duplicate matches for user review."
+        "resolution": "Meal bank: POST /meal-bank/import/excel returns preview only (rows with status new/possible_duplicate, matches). Hebrew normalization + similarity (0.60). POST /meal-bank/import/excel/process applies decisions (skip/add/replace:id). ImportReviewDialog shows all rows; trainer chooses Skip/Add/Replace per row. No auto-import."
       },
       {
         "issue": "Hardcoded Hebrew fallback strings in MealMenuV2.tsx",
