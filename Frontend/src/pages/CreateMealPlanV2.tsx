@@ -1557,7 +1557,7 @@ const CreateMealPlanV2: React.FC = () => {
                           <div className="min-w-0 flex-1 overflow-hidden" dir="rtl">
                             <div className="font-semibold truncate" dir="rtl">{item.name_hebrew || item.name}</div>
                             {item.name_hebrew && item.name && (
-                              <div className="text-sm text-muted-foreground truncate" dir="ltr">
+                              <div className="text-sm text-muted-foreground truncate" dir="rtl">
                                 {item.name}
                               </div>
                             )}
@@ -1575,17 +1575,15 @@ const CreateMealPlanV2: React.FC = () => {
                           <div className="text-xs text-muted-foreground whitespace-nowrap" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                             {i18n.language === 'he' ? (
                               <>
-                                {item.protein !== null && `${t('meals.protein')} : ${item.protein}ג`}
-                                {item.protein !== null && (item.carbs !== null || item.fat !== null) && ' / '}
-                                {item.carbs !== null && `${t('meals.carbs')} : ${item.carbs}ג`}
-                                {item.carbs !== null && item.fat !== null && ' / '}
-                                {item.fat !== null && `${t('meals.fat')} : ${item.fat}ג`}
+                                {item.macro_type === 'protein' && item.protein !== null && `${t('meals.protein')} : ${item.protein}ג`}
+                                {item.macro_type === 'carb' && item.carbs !== null && `${t('meals.carbs')} : ${item.carbs}ג`}
+                                {item.macro_type === 'fat' && item.fat !== null && `${t('meals.fat')} : ${item.fat}ג`}
                               </>
                             ) : (
                               <>
-                                {item.protein !== null && `${item.protein}g ${t('meals.protein').substring(0, 1)}`} {item.protein !== null && item.carbs !== null && '/'} {' '}
-                                {item.carbs !== null && `${item.carbs}g ${t('meals.carbs').substring(0, 1)}`} {item.carbs !== null && item.fat !== null && '/'} {' '}
-                                {item.fat !== null && `${item.fat}g ${t('meals.fat').substring(0, 1)}`}
+                                {item.macro_type === 'protein' && item.protein !== null && `${item.protein}g ${t('meals.protein').substring(0, 1)}`}
+                                {item.macro_type === 'carb' && item.carbs !== null && `${item.carbs}g ${t('meals.carbs').substring(0, 1)}`}
+                                {item.macro_type === 'fat' && item.fat !== null && `${item.fat}g ${t('meals.fat').substring(0, 1)}`}
                               </>
                             )}
                           </div>
