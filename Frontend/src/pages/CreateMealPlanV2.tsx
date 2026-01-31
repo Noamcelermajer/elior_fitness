@@ -651,24 +651,17 @@ const CreateMealPlanV2: React.FC = () => {
       setLoading(true);
       setError('');
 
-      // Calculate total_calories from sum of all meal slot calories (which are calculated from macro goals)
-      const calculatedTotalCalories = formData.meal_slots.reduce((sum, slot) => {
-        return sum + calculateMealCalories(slot);
-      }, 0);
-
-      // Prepare form data with calculated total_calories and updated meal slot target_calories and macro targets
+      // Use trainer's manual inputs for daily targets (no auto-calculation)
+      // Per-meal targets are not set (removed from UI)
       const submitData = {
         ...formData,
-        total_calories: calculatedTotalCalories > 0 ? calculatedTotalCalories : null,
-        protein_target: calculateTotalProteinTarget() || null,
-        carb_target: calculateTotalCarbTarget() || null,
-        fat_target: calculateTotalFatTarget() || null,
         meal_slots: formData.meal_slots.map(slot => ({
           ...slot,
-          target_calories: calculateMealCalories(slot), // Update target_calories from macro goals
-          target_protein: calculateProteinTarget(slot) || null,
-          target_carbs: calculateCarbTarget(slot) || null,
-          target_fat: calculateFatTarget(slot) || null,
+          // Remove per-meal targets - they are not displayed or required
+          target_calories: null,
+          target_protein: null,
+          target_carbs: null,
+          target_fat: null,
         })),
       };
 
@@ -964,14 +957,9 @@ const CreateMealPlanV2: React.FC = () => {
     
     macro[field] = value;
     
-    // Update meal target_calories and macro targets when macro calorie goals change
+    // Recalculate all food option quantities based on new calorie goal
+    // Per-meal targets are no longer calculated or displayed
     if (field === 'calorie_goal') {
-      mealSlot.target_calories = calculateMealCalories(mealSlot);
-      mealSlot.target_protein = calculateProteinTarget(mealSlot);
-      mealSlot.target_carbs = calculateCarbTarget(mealSlot);
-      mealSlot.target_fat = calculateFatTarget(mealSlot);
-      
-      // Recalculate all food option quantities based on new calorie goal
       if (macro.calorie_goal) {
         const remainingCalories = calculateRemainingCalories(macro, mealSlot);
         macro.food_options.forEach((food, idx) => {
@@ -1135,60 +1123,60 @@ const CreateMealPlanV2: React.FC = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <Label htmlFor="total_calories">{t('mealCreation.targetCalories')} {t('mealCreation.calculated', '(Calculated)')}</Label>
+              <Label htmlFor="total_calories">{t('mealCreation.targetCalories')}</Label>
               <Input
                 id="total_calories"
                 type="number"
-                placeholder={t('mealCreation.calculatedFromMeals', 'Calculated from sum of all meal calories')}
-                value={formData.meal_slots.reduce((sum, slot) => sum + calculateMealCalories(slot), 0) || ''}
-                readOnly
-                className="bg-muted select-none"
+                min={0}
+                placeholder={t('mealCreation.targetCalories')}
+                value={formData.total_calories ?? ''}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? null : parseFloat(e.target.value);
+                  setFormData(prev => ({ ...prev, total_calories: value }));
+                }}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('mealCreation.calculatedFromMeals', 'Calculated from sum of all meal calories')}
-              </p>
             </div>
             <div>
-              <Label htmlFor="protein_target">{t('mealCreation.proteinTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
+              <Label htmlFor="protein_target">{t('mealCreation.proteinTarget')}</Label>
               <Input
                 id="protein_target"
                 type="number"
-                value={calculateTotalProteinTarget()}
-                readOnly
-                className="bg-muted"
-                placeholder="Calculated from protein calorie goals"
+                min={0}
+                placeholder={t('mealCreation.proteinTarget')}
+                value={formData.protein_target ?? ''}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? null : parseFloat(e.target.value);
+                  setFormData(prev => ({ ...prev, protein_target: value }));
+                }}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('mealCreation.calculatedFromMacroGoals', 'Calculated from sum of protein macro calorie goals (÷ 4)')}
-              </p>
             </div>
             <div>
-              <Label htmlFor="carb_target">{t('mealCreation.carbTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
+              <Label htmlFor="carb_target">{t('mealCreation.carbTarget')}</Label>
               <Input
                 id="carb_target"
                 type="number"
-                value={calculateTotalCarbTarget()}
-                readOnly
-                className="bg-muted"
-                placeholder="Calculated from carb calorie goals"
+                min={0}
+                placeholder={t('mealCreation.carbTarget')}
+                value={formData.carb_target ?? ''}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? null : parseFloat(e.target.value);
+                  setFormData(prev => ({ ...prev, carb_target: value }));
+                }}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('mealCreation.calculatedFromMacroGoals', 'Calculated from sum of carb macro calorie goals (÷ 4)')}
-              </p>
             </div>
             <div>
-              <Label htmlFor="fat_target">{t('mealCreation.fatTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
+              <Label htmlFor="fat_target">{t('mealCreation.fatTarget')}</Label>
               <Input
                 id="fat_target"
                 type="number"
-                value={calculateTotalFatTarget()}
-                readOnly
-                className="bg-muted"
-                placeholder="Calculated from fat calorie goals"
+                min={0}
+                placeholder={t('mealCreation.fatTarget')}
+                value={formData.fat_target ?? ''}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? null : parseFloat(e.target.value);
+                  setFormData(prev => ({ ...prev, fat_target: value }));
+                }}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('mealCreation.calculatedFromMacroGoals', 'Calculated from sum of fat macro calorie goals (÷ 9)')}
-              </p>
             </div>
           </div>
         </CardContent>
@@ -1254,64 +1242,6 @@ const CreateMealPlanV2: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div>
-                        <Label>{t('mealCreation.mealCaloriesTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={calculateMealCalories(slot)}
-                          readOnly
-                          className="bg-muted select-none"
-                          placeholder="Calculated from macro goals"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {t('mealCreation.calculatedFromMacroGoals', 'Calculated from sum of macro calorie goals')}
-                        </p>
-                      </div>
-                      <div>
-                        <Label>{t('mealCreation.mealProteinTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={calculateProteinTarget(slot)}
-                          readOnly
-                          className="bg-muted select-none"
-                          placeholder="Calculated from protein calorie goal"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {t('mealCreation.calculatedFromMacroGoals', 'Calculated from protein calorie goal (÷ 4)')}
-                        </p>
-                      </div>
-                      <div>
-                        <Label>{t('mealCreation.mealCarbTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={calculateCarbTarget(slot)}
-                          readOnly
-                          className="bg-muted select-none"
-                          placeholder="Calculated from carb calorie goal"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {t('mealCreation.calculatedFromMacroGoals', 'Calculated from carb calorie goal (÷ 4)')}
-                        </p>
-                      </div>
-                      <div>
-                        <Label>{t('mealCreation.mealFatTarget')} {t('mealCreation.calculated', '(Calculated)')}</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={calculateFatTarget(slot)}
-                          readOnly
-                          className="bg-muted select-none"
-                          placeholder="Calculated from fat calorie goal"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {t('mealCreation.calculatedFromMacroGoals', 'Calculated from fat calorie goal (÷ 9)')}
-                        </p>
-                      </div>
-                    </div>
 
                     <Separator />
 

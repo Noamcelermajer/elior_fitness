@@ -431,22 +431,9 @@ const MealMenuV2 = () => {
 
     const tolerance = 0.5;
 
-    mealPlan.meal_slots.forEach((slot) => {
-      const totals = getMealTotals(slot.id);
-      const targets = {
-        calories: slot.target_calories ?? null,
-        protein: slot.target_protein ?? null,
-        carbs: slot.target_carbs ?? null,
-        fat: slot.target_fat ?? null,
-      };
-
-      const hasTargets = Object.values(targets).some((value) => value && value > 0);
-      if (!hasTargets) {
-        return;
-      }
-
-      const meetsCalories =
-        !targets.calories || totals.calories >= targets.calories - tolerance;
+    // Per-meal targets removed - auto-completion based on per-meal targets is disabled
+    // Meals can only be manually marked as complete now
+    // Auto-completion based on daily totals could be added in the future if needed
       const meetsProtein =
         !targets.protein || totals.protein >= targets.protein - tolerance;
       const meetsCarbs =
@@ -561,15 +548,21 @@ const MealMenuV2 = () => {
     const totals = getMealTotals(slotId);
 
     if (checked && slot) {
-      const caloriesTarget = slot.target_calories ?? 0;
-      const proteinTarget = slot.target_protein ?? 0;
-      const carbTarget = slot.target_carbs ?? 0;
-      const fatTarget = slot.target_fat ?? 0;
+      // Use daily targets instead of per-meal targets
+      // Calculate remaining based on daily totals, not per-meal
+      const dailyTargets = {
+        calories: mealPlan?.total_calories ?? 0,
+        protein: mealPlan?.protein_target ?? 0,
+        carbs: mealPlan?.carb_target ?? 0,
+        fat: mealPlan?.fat_target ?? 0,
+      };
 
-      const caloriesRemaining = Math.max(0, caloriesTarget - totals.calories);
-      const proteinRemaining = Math.max(0, proteinTarget - totals.protein);
-      const carbRemaining = Math.max(0, carbTarget - totals.carbs);
-      const fatRemaining = Math.max(0, fatTarget - totals.fat);
+      // Get all consumed totals (including this meal)
+      const allTotals = getDailyTotals();
+      const caloriesRemaining = Math.max(0, dailyTargets.calories - allTotals.consumed.calories);
+      const proteinRemaining = Math.max(0, dailyTargets.protein - allTotals.consumed.protein);
+      const carbRemaining = Math.max(0, dailyTargets.carbs - allTotals.consumed.carbs);
+      const fatRemaining = Math.max(0, dailyTargets.fat - allTotals.consumed.fat);
 
       setCompletionAdjustments((prev) => ({
         ...prev,
@@ -1012,15 +1005,8 @@ const MealMenuV2 = () => {
                 carbs: mealTotals.carbs + completionAdjustment.carbs,
                 fat: mealTotals.fat + completionAdjustment.fat,
               };
-              const caloriesTarget = slot.target_calories ?? null;
-              const proteinTarget = slot.target_protein ?? null;
-              const carbTarget = slot.target_carbs ?? null;
-              const fatTarget = slot.target_fat ?? null;
-
-              const caloriesDelta = caloriesTarget !== null ? caloriesTarget - effectiveTotals.calories : null;
-              const proteinDelta = proteinTarget !== null ? proteinTarget - effectiveTotals.protein : null;
-              const carbDelta = carbTarget !== null ? carbTarget - effectiveTotals.carbs : null;
-              const fatDelta = fatTarget !== null ? fatTarget - effectiveTotals.fat : null;
+              // Per-meal targets removed - only use daily totals
+              // No per-meal delta calculations
 
               return (
                 <AccordionItem key={slot.id} value={`meal-${slot.id}`} className="border rounded-lg">

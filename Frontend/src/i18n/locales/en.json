@@ -763,7 +763,11 @@
     "errorDelete": "Failed to delete food item",
     "nameRequired": "Please provide at least a Hebrew or English name.",
     "kcal": "kcal",
-    "g": "g"
+    "g": "g",
+    "gPer100g": "g per 100g",
+    "perPortion": "per portion",
+    "measurementType": "Measurement Type",
+    "servingSize": "Serving Size"
   },
   "weightProgress": {
     "currentWeight": "Current Weight",
@@ -1125,7 +1129,14 @@
     "adding": "Adding...",
     "addToMealBank": "Add to Meal Bank",
     "addFromMealBank": "Add from Meal Bank",
-    "notAvailable": "N/A"
+    "notAvailable": "N/A",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fats": "Fats",
+    "addFood": "Add Food",
+    "importExcel": "Import from Excel",
+    "importSuccess": "Meal plan imported successfully!",
+    "importError": "Failed to import meal plan"
   },
   "checkIn": {
     "title": "Daily Check-In",
