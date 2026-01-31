@@ -1200,9 +1200,12 @@ def get_meal_bank_items(
         query = query.filter(MealBank.macro_type == macro_type)
     
     if search:
+        from sqlalchemy import or_
         query = query.filter(
-            (MealBank.name.contains(search)) | 
-            (MealBank.name_hebrew.contains(search) if MealBank.name_hebrew else False)
+            or_(
+                MealBank.name.contains(search),
+                MealBank.name_hebrew.contains(search)
+            )
         )
     
     return query.order_by(MealBank.name).all()
