@@ -1167,6 +1167,8 @@ const MealMenuV2 = () => {
                                     </div>
                                   );
                                   })}
+                                </>
+                              )}
                               
                               {/* User-Selected Foods (from food bank, not in recommended list) */}
                               {choices
