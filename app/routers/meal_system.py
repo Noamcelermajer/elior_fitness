@@ -1319,6 +1319,104 @@ def delete_meal_bank_item(
     
     return None
 
+@router.post("/meal-bank/cleanup-duplicates")
+def cleanup_duplicate_meal_bank_items(
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Find and remove duplicate meal bank items (trainer/admin only)"""
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers and admins can cleanup duplicates"
+        )
+    
+    try:
+        import unicodedata
+        import re
+        
+        # Hebrew text normalization function
+        def normalize_hebrew(text: str) -> str:
+            """Normalize Hebrew text for matching (remove diacritics, handle variations)"""
+            if not text:
+                return ""
+            text = unicodedata.normalize('NFKD', text)
+            text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+            text = re.sub(r'\s+', ' ', text.strip().lower())
+            return text
+        
+        # Get all meal bank items
+        all_items = db.query(MealBank).all()
+        
+        # Group items by normalized name
+        seen = {}
+        duplicates_to_remove = []
+        
+        for item in all_items:
+            # Normalize both Hebrew and English names
+            norm_hebrew = normalize_hebrew(item.name_hebrew) if item.name_hebrew else ""
+            norm_name = normalize_hebrew(item.name) if item.name else ""
+            
+            # Use Hebrew name as primary key if available, otherwise English
+            key = norm_hebrew if norm_hebrew else norm_name
+            
+            if not key:
+                continue
+            
+            if key in seen:
+                # Found a duplicate - keep the one with more complete data or older one
+                existing = seen[key]
+                
+                # Prefer item with more complete data (has both names, more macros, etc.)
+                existing_score = (
+                    (1 if existing.name_hebrew else 0) +
+                    (1 if existing.name else 0) +
+                    (1 if existing.calories else 0) +
+                    (1 if existing.protein else 0) +
+                    (1 if existing.carbs else 0) +
+                    (1 if existing.fat else 0)
+                )
+                item_score = (
+                    (1 if item.name_hebrew else 0) +
+                    (1 if item.name else 0) +
+                    (1 if item.calories else 0) +
+                    (1 if item.protein else 0) +
+                    (1 if item.carbs else 0) +
+                    (1 if item.fat else 0)
+                )
+                
+                # If new item is better, mark existing as duplicate, otherwise mark new as duplicate
+                if item_score > existing_score:
+                    duplicates_to_remove.append(existing.id)
+                    seen[key] = item
+                else:
+                    duplicates_to_remove.append(item.id)
+            else:
+                seen[key] = item
+        
+        # Remove duplicates
+        removed_count = 0
+        for item_id in duplicates_to_remove:
+            item = db.query(MealBank).filter(MealBank.id == item_id).first()
+            if item:
+                db.delete(item)
+                removed_count += 1
+        
+        db.commit()
+        
+        return {
+            "message": f"Cleanup completed: {removed_count} duplicate items removed",
+            "removed_count": removed_count,
+            "duplicates_found": len(duplicates_to_remove)
+        }
+    except Exception as e:
+        logger.error(f"Error cleaning up duplicates: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to cleanup duplicates: {str(e)}"
+        )
+
 @router.get("/meal-bank/export/excel")
 def export_meal_bank_excel(
     current_user: UserResponse = Depends(get_current_user),
