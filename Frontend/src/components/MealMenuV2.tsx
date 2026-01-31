@@ -429,31 +429,10 @@ const MealMenuV2 = () => {
   useEffect(() => {
     if (!mealPlan) return;
 
-    const tolerance = 0.5;
-
     // Per-meal targets removed - auto-completion based on per-meal targets is disabled
     // Meals can only be manually marked as complete now
     // Auto-completion based on daily totals could be added in the future if needed
-      const meetsProtein =
-        !targets.protein || totals.protein >= targets.protein - tolerance;
-      const meetsCarbs =
-        !targets.carbs || totals.carbs >= targets.carbs - tolerance;
-      const meetsFat = !targets.fat || totals.fat >= targets.fat - tolerance;
-
-      const meetsAll = meetsCalories && meetsProtein && meetsCarbs && meetsFat;
-      const status = mealCompletions[slot.id];
-
-      if (meetsAll) {
-        if (!status || !status.isCompleted || status.method !== 'manual') {
-          if (!status || !status.isCompleted || status.method !== 'auto') {
-            upsertMealCompletion(slot.id, true, 'auto');
-          }
-        }
-      } else if (status && status.isCompleted && status.method === 'auto') {
-        upsertMealCompletion(slot.id, false, 'auto');
-      }
-    });
-  }, [mealPlan, mealCompletions, getMealTotals, upsertMealCompletion]);
+  }, [mealPlan]);
 
   const getRemainingAllowanceForOption = useCallback(
     (food: FoodOption, slotId: number) => {
