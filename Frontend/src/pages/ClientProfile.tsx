@@ -140,8 +140,19 @@ interface ProgressEntry {
   weight?: number;
   body_fat?: number;
   photo_path?: string;
+  photos?: Array<{
+    id: number;
+    photo_path: string;
+    photo_type: string;
+  }>;
   notes?: string;
   recorded_at: string;
+  chest?: number;
+  waist?: number;
+  hips?: number;
+  thighs?: number;
+  right_arm?: number;
+  left_arm?: number;
 }
 
 const ClientProfile = () => {
@@ -192,13 +203,20 @@ const ClientProfile = () => {
           fetch(`${API_BASE_URL}/v2/workouts/plans?client_id=${clientId}`, { headers }),
           fetch(`${API_BASE_URL}/v2/meals/plans?client_id=${clientId}`, { headers }),
           fetch(`${API_BASE_URL}/progress/?client_id=${clientId}`, { headers }),
-          fetch(`${API_BASE_URL}/check-ins/summary?client_id=${clientId}`, { headers })
+          fetch(`${API_BASE_URL}/check-ins/summary?client_id=${clientId}`, { headers }).catch(() => ({ ok: false }))
         ]);
 
         const workoutData = workoutRes.ok ? await workoutRes.json() : [];
         const mealData = mealRes.ok ? await mealRes.json() : [];
         const progressData = progressRes.ok ? await progressRes.json() : [];
-        const checkInSummaryData = checkInSummaryRes.ok ? await checkInSummaryRes.json() : null;
+        let checkInSummaryData = null;
+        if (checkInSummaryRes.ok) {
+          try {
+            checkInSummaryData = await checkInSummaryRes.json();
+          } catch (e) {
+            console.error('Error parsing check-in summary:', e);
+          }
+        }
         
         if (checkInSummaryData) {
           setCheckInSummary(checkInSummaryData);
@@ -318,7 +336,14 @@ const ClientProfile = () => {
     date: entry.recorded_at || entry.date || '',
     weight: entry.weight ?? 0,
     photo_path: entry.photo_path,
+    photos: entry.photos || (entry.photo_path ? [{ id: 0, photo_path: entry.photo_path, photo_type: 'front' }] : undefined),
     notes: entry.notes,
+    chest: entry.chest,
+    waist: entry.waist,
+    hips: entry.hips,
+    thighs: entry.thighs,
+    right_arm: entry.right_arm,
+    left_arm: entry.left_arm,
     created_at: entry.created_at || entry.recorded_at || '',
   }));
 
