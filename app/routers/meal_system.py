@@ -1437,13 +1437,20 @@ async def import_meal_bank_excel(
             return text
         
         # Fuzzy matching function
-        def fuzzy_match_hebrew(text1: str, text2: str, threshold: float = 0.8) -> bool:
+        def fuzzy_match_hebrew(text1: str, text2: str, threshold: float = 0.75) -> bool:
             """Check if two Hebrew texts are similar using Levenshtein distance"""
+            if not text1 or not text2:
+                return False
+                
             norm1 = normalize_hebrew(text1)
             norm2 = normalize_hebrew(text2)
             
             if not norm1 or not norm2:
                 return False
+            
+            # Exact match after normalization
+            if norm1 == norm2:
+                return True
             
             # Simple Levenshtein distance calculation
             def levenshtein(s1: str, s2: str) -> int:
@@ -1466,6 +1473,11 @@ async def import_meal_bank_excel(
             distance = levenshtein(norm1, norm2)
             max_len = max(len(norm1), len(norm2))
             similarity = 1 - (distance / max_len) if max_len > 0 else 0
+            
+            # For short strings (3 chars or less), require exact match
+            if max_len <= 3:
+                return similarity == 1.0
+            
             return similarity >= threshold
         
         # Read file content
@@ -1800,13 +1812,20 @@ async def import_meal_plan_excel(
             return text
         
         # Fuzzy matching function
-        def fuzzy_match_hebrew(text1: str, text2: str, threshold: float = 0.8) -> bool:
+        def fuzzy_match_hebrew(text1: str, text2: str, threshold: float = 0.75) -> bool:
             """Check if two Hebrew texts are similar using Levenshtein distance"""
+            if not text1 or not text2:
+                return False
+                
             norm1 = normalize_hebrew(text1)
             norm2 = normalize_hebrew(text2)
             
             if not norm1 or not norm2:
                 return False
+            
+            # Exact match after normalization
+            if norm1 == norm2:
+                return True
             
             # Simple Levenshtein distance calculation
             def levenshtein(s1: str, s2: str) -> int:
@@ -1829,6 +1848,11 @@ async def import_meal_plan_excel(
             distance = levenshtein(norm1, norm2)
             max_len = max(len(norm1), len(norm2))
             similarity = 1 - (distance / max_len) if max_len > 0 else 0
+            
+            # For short strings (3 chars or less), require exact match
+            if max_len <= 3:
+                return similarity == 1.0
+            
             return similarity >= threshold
         
         # Read file content
