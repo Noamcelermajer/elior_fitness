@@ -402,7 +402,7 @@ const MealBank = () => {
                 className={`${isOverflowing ? 'w-full' : 'w-full sm:w-auto'} px-4 py-2 text-sm sm:text-base whitespace-nowrap`}
               >
                 <Download className="w-4 h-4 me-2 flex-shrink-0" />
-                <span className="truncate">Export Excel</span>
+                <span className="truncate">{t('common.exportExcel')}</span>
               </Button>
               <label className={`${isOverflowing ? 'w-full' : 'w-full sm:w-auto'} cursor-pointer`}>
                 <input
@@ -429,7 +429,7 @@ const MealBank = () => {
                   }}
                 >
                   <Upload className="w-4 h-4 me-2 flex-shrink-0" />
-                  <span className="truncate">{isImporting ? 'Importing...' : 'Import Excel'}</span>
+                  <span className="truncate">{isImporting ? t('common.importing') : t('common.importExcel')}</span>
                 </Button>
               </label>
               <DialogTrigger asChild>

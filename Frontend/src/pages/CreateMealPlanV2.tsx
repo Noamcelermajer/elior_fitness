@@ -1563,13 +1563,18 @@ const CreateMealPlanV2: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0" dir="ltr">
+                        <div className="text-right flex-shrink-0" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                           <div className="text-sm font-medium whitespace-nowrap">
-                            {item.calories !== null && item.calories !== undefined ? `${item.calories} ${t('mealCreation.kcalPer100g')}` : t('mealCreation.notAvailable')}
+                            {item.calories !== null && item.calories !== undefined ? `${item.calories} ${t('meals.kcal', 'kcal')}` : t('mealCreation.notAvailable')}
                           </div>
-                          <div className="text-xs text-muted-foreground whitespace-nowrap">
-                            {item.protein !== null && `${item.protein}ג ${t('meals.protein').substring(0, 1)}`} /{' '}
-                            {item.carbs !== null && `${item.carbs}ג ${t('meals.carbs').substring(0, 1)}`} /{' '}
+                          {item.serving_size && (
+                            <div className="text-xs text-muted-foreground whitespace-nowrap" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                              {item.serving_size}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground whitespace-nowrap" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                            {item.protein !== null && `${item.protein}ג ${t('meals.protein').substring(0, 1)}`} {item.protein !== null && item.carbs !== null && '/'} {' '}
+                            {item.carbs !== null && `${item.carbs}ג ${t('meals.carbs').substring(0, 1)}`} {item.carbs !== null && item.fat !== null && '/'} {' '}
                             {item.fat !== null && `${item.fat}ג ${t('meals.fat').substring(0, 1)}`}
                           </div>
                         </div>
