@@ -1144,7 +1144,9 @@
     "notAvailable": "לא זמין",
     "importExcel": "ייבא מאקסל",
     "importSuccess": "תוכנית התזונה יובאה בהצלחה!",
-    "importError": "נכשל בייבא תוכנית התזונה"
+    "importError": "נכשל בייבא תוכנית התזונה",
+    "selectClientPlaceholder": "בחר לקוח...",
+    "client": "לקוח"
   },
   "checkIn": {
     "title": "בדיקה יומית",
