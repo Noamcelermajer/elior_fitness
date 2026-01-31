@@ -1,0 +1,110 @@
+{
+  "feature": "notifications",
+  "status": "working",
+  "summary": "Real-time notifications with WebSocket support, notification management, and notification triggers",
+  "lastUpdated": "2025-01-31",
+  "backend": {
+    "status": "working",
+    "models": ["app/models/notification.py"],
+    "routers": ["app/routers/notifications.py", "app/routers/websocket.py"],
+    "services": [
+      "app/services/notification_service.py",
+      "app/services/websocket_service.py",
+      "app/services/notification_triggers.py"
+    ],
+    "schemas": ["app/schemas/notification.py"],
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/notifications",
+        "description": "Get notifications for current user",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/notifications/count",
+        "description": "Get notification count (unread and total)",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/notifications",
+        "description": "Create notification (admin/trainer only)",
+        "auth": true,
+        "roles": ["ADMIN", "TRAINER"]
+      },
+      {
+        "method": "PUT",
+        "path": "/api/notifications/{notification_id}/read",
+        "description": "Mark notification as read",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "PUT",
+        "path": "/api/notifications/read-all",
+        "description": "Mark all notifications as read",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/notifications/{notification_id}",
+        "description": "Delete notification",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/ws",
+        "description": "WebSocket endpoint for real-time notifications",
+        "auth": true,
+        "roles": []
+      }
+    ],
+    "knownIssues": [],
+    "implementationNotes": "WebSocket support for real-time notifications. Notification triggers for various events (goal achievements, milestones, etc.). Notification service handles creation, marking as read, and deletion."
+  },
+  "frontend": {
+    "status": "working",
+    "pages": [],
+    "components": [
+      "Frontend/src/components/NotificationBell.tsx",
+      "Frontend/src/components/NotificationContainer.tsx",
+      "Frontend/src/components/NotificationToast.tsx"
+    ],
+    "contexts": ["Frontend/src/contexts/NotificationContext.tsx"],
+    "routes": [],
+    "knownIssues": [
+      {
+        "issue": "Hardcoded English ARIA label: 'Close notification'",
+        "severity": "low",
+        "location": "Frontend/src/components/NotificationToast.tsx:98"
+      }
+    ],
+    "implementationNotes": "NotificationBell shows unread count. NotificationContainer manages notification display. NotificationToast for toast notifications. NotificationContext manages notification state and WebSocket connection."
+  },
+  "api": {
+    "basePath": "/api/notifications",
+    "endpoints": [
+      "/api/notifications",
+      "/api/notifications/count",
+      "/api/notifications/{notification_id}/read",
+      "/api/notifications/read-all",
+      "/api/ws"
+    ]
+  },
+  "database": {
+    "tables": ["notifications"],
+    "relationships": "Notification linked to User via user_id (recipient) and sender_id (optional)."
+  },
+  "documentation": {
+    "relatedFiles": ["README.md"],
+    "sections": ["Real-time Features section in README"]
+  },
+  "keywords": ["notifications", "websocket", "real-time", "alerts", "messages", "notifications"],
+  "tags": ["core", "real-time", "communication"],
+  "relatedFeatures": ["users"]
+}

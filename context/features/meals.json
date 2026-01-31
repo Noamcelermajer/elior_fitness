@@ -1,0 +1,287 @@
+{
+  "feature": "meals",
+  "status": "working",
+  "summary": "Meal planning system v2 with calorie tracking, macro counting, meal bank, and food options",
+  "lastUpdated": "2025-01-31",
+  "backend": {
+    "status": "working",
+    "models": ["app/models/meal_system.py"],
+    "routers": ["app/routers/meal_system.py"],
+    "services": ["app/services/meal_plan_service.py"],
+    "schemas": ["app/schemas/meal_system.py"],
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/v2/meals/plans",
+        "description": "Create meal plan (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/meals/plans/complete",
+        "description": "Create complete meal plan with all meals (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/meals/plans",
+        "description": "Get meal plans (filtered by role)",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/meals/plans/{plan_id}",
+        "description": "Get specific meal plan",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v2/meals/plans/{plan_id}",
+        "description": "Update meal plan (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v2/meals/plans/{plan_id}",
+        "description": "Delete meal plan (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/meals/plans/{plan_id}/slots",
+        "description": "Add meal slot (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/meals/macro-categories/{macro_id}/foods",
+        "description": "Add food option (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/meals/choices",
+        "description": "Record meal choice - supports meal plan foods and custom foods (client only)",
+        "auth": true,
+        "roles": ["CLIENT"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/meals/choices",
+        "description": "Get meal choices - clients see own, trainers see clients",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/meals/daily-macros",
+        "description": "Calculate daily macro consumption - KEY ENDPOINT for calorie counting",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/meals/history",
+        "description": "Get meal history with detailed meal breakdown",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/meals/history",
+        "description": "Save/update daily meal history",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/meals/meal-bank",
+        "description": "Get meal bank items",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/meals/meal-bank",
+        "description": "Create meal bank item (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/meals/meal-bank/export/excel",
+        "description": "Export meal bank to Excel",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/meals/meal-bank/import/excel",
+        "description": "Import meal bank from Excel",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/meals/plans/import/excel",
+        "description": "Import complete meal plan from Excel with duplicate detection (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"],
+        "details": "Imports entire meal plan structure from Excel file with 4 sheets: Meal Plan Info, Meal Slots, Macro Categories, Food Options. Uses Hebrew text fuzzy matching (Levenshtein distance) for duplicate detection. Returns duplicate matches if found for user review."
+      }
+    ],
+    "knownIssues": [],
+    "implementationNotes": "Nutrition values stored per 100g or per portion (based on measurement_type). Quantity parsing handles various formats (150g, 150, 150.5g). Dates normalized to UTC start of day. Only one active meal plan per client. Auto-completion uses 0.5 tolerance. Excel import supports full meal plan structure with Hebrew text duplicate detection using fuzzy matching (Levenshtein distance, 0.8 similarity threshold)."
+  },
+  "frontend": {
+    "status": "working",
+    "pages": ["Frontend/src/pages/MealsPage.tsx", "Frontend/src/pages/CreateMealPlanV2.tsx", "Frontend/src/pages/MealBank.tsx"],
+    "components": [
+      "Frontend/src/components/MealMenuV2.tsx",
+      "Frontend/src/components/MealHistory.tsx",
+      "Frontend/src/components/MacroCircle.tsx"
+    ],
+    "routes": ["/meals", "/create-meal-plan", "/meal-bank"],
+    "knownIssues": [
+      {
+        "issue": "Missing mealCreation translation keys in English",
+        "severity": "high",
+        "status": "resolved",
+        "location": "Frontend/src/i18n/locales/en.json, Frontend/src/pages/CreateMealPlanV2.tsx",
+        "description": "Translation keys mealCreation.kcalPer100g, mealCreation.addFoodToBank, mealCreation.makeFoodPublic are missing from en.json. These appear as raw keys in the UI.",
+        "fix": "Add missing translation keys to en.json: 'kcalPer100g': 'kcal per 100g', 'addFoodToBank': 'Add Food to Meal Bank', 'makeFoodPublic': 'Make this food item public (visible to all trainers)'",
+        "resolution": "Added missing translation keys to en.json: 'kcalPer100g', 'addFoodToBank', 'addFoodToBankDescription', 'makeFoodPublic'"
+      },
+      {
+        "issue": "Food bank has duplicate filters - need consolidation",
+        "severity": "medium",
+        "status": "resolved",
+        "location": "Frontend/src/pages/MealBank.tsx:109-124, Frontend/src/pages/CreateMealPlanV2.tsx:584-595",
+        "description": "Food bank has two filter UIs - one under search and another under the box. To filter protein, user must select both protein tags which is confusing.",
+        "fix": "Remove duplicate filter UI. Keep single filter selector (either under search or as tabs, not both). Ensure filter works correctly with single selection.",
+        "resolution": "Consolidated filters to use single tab-based filter with 'All' option. Removed duplicate filter buttons. Filter now works with single selection."
+      },
+      {
+        "issue": "Meal system needs per-portion vs per-100g option",
+        "severity": "medium",
+        "status": "resolved",
+        "location": "app/models/meal_system.py, app/models/meal_bank.py, Frontend/src/pages/CreateMealPlanV2.tsx, Frontend/src/pages/MealBank.tsx",
+        "description": "Some food items shouldn't be per 100g (e.g., slice of bread should be per portion - 1 slice, 2 slices). Need option to select either per gram or per portion.",
+        "fix": "Add measurement_type field to FoodOption and MealBank models (per_100g or per_portion). Add UI selector (radio buttons). Update quantity input to show appropriate units. Update calorie calculation logic.",
+        "resolution": "Added measurement_type enum (PER_100G, PER_PORTION) and serving_size field to MealBank and FoodOption models. Added database migration. Updated UI with measurement type selector and serving size input. Updated calorie calculation logic to handle both types."
+      },
+      {
+        "issue": "Client meal view shows per-meal calories/macros - should only show daily totals",
+        "severity": "medium",
+        "status": "resolved",
+        "location": "Frontend/src/components/MealMenuV2.tsx",
+        "description": "Client meal tracking view shows calories and macros for each meal. Should remove per-meal breakdown and only show daily totals.",
+        "fix": "Hide per-meal calorie and macro breakdowns in client view. Keep only daily totals visible with progress visualization.",
+        "resolution": "Removed per-meal calorie and macro display grid. Kept only daily totals with progress visualization using MacroCircle components."
+      },
+      {
+        "issue": "Client food selection limited to recommended foods - should allow all food bank items",
+        "severity": "medium",
+        "status": "resolved",
+        "location": "Frontend/src/components/MealMenuV2.tsx",
+        "description": "Clients can only choose from recommended foods in meal plan. Should be able to choose from all food bank options. Trainer recommends amount in grams, but client can override and choose different foods/quantities. Calories should be counted automatically.",
+        "fix": "Modify food selection to fetch all food bank items. Show trainer recommendations but allow adding any food. Allow removing recommended foods (swipe to delete). Update calorie calculation to handle any food combination. Ensure real-time macro updates.",
+        "resolution": "Overhauled client food selection to allow choosing from all food bank items. Added 'Add Food' button and dialog. Shows trainer recommendations but allows adding any food. Implemented swipe-to-delete for selected items. Real-time macro updates working."
+      },
+      {
+        "issue": "Excel import for food plans missing",
+        "severity": "medium",
+        "status": "resolved",
+        "location": "app/routers/meal_system.py, Frontend/src/pages/CreateMealPlanV2.tsx",
+        "description": "No option to import food plan by Excel. Trainers should be able to import meal plans with all structure (meal slots, macro categories, food options) from Excel file.",
+        "fix": "Create Excel import endpoint. Design Excel template structure (4 sheets: Meal Plan Info, Meal Slots, Macro Categories, Food Options). Add file upload UI. Validate Excel structure and create meal plan from data.",
+        "resolution": "Implemented POST /api/v2/meals/plans/import/excel endpoint. Supports 4-sheet Excel structure. Includes Hebrew text duplicate detection with fuzzy matching (Levenshtein distance, 0.8 threshold). Returns duplicate matches for user review before import."
+      },
+      {
+        "issue": "Food bank Excel import needs duplicate detection with Hebrew text matching",
+        "severity": "medium",
+        "status": "resolved",
+        "location": "app/routers/meal_system.py",
+        "description": "When trainer imports food via Excel, need matching to prevent duplicates. Should match via Hebrew text with clever matching algorithm (fuzzy matching, normalization).",
+        "fix": "Implement Hebrew text normalization (remove diacritics, handle variations). Use fuzzy string matching (Levenshtein distance). Show popup with potential matches when duplicates detected. Allow user to skip, merge, or rename.",
+        "resolution": "Implemented Hebrew text normalization (unicodedata.normalize with NFKD, removes diacritics/nikud) and fuzzy matching using Levenshtein distance with 0.8 similarity threshold. Used in meal plan Excel import endpoint. Returns duplicate matches for user review."
+      },
+      {
+        "issue": "Hardcoded Hebrew fallback strings in MealMenuV2.tsx",
+        "severity": "medium",
+        "location": "Frontend/src/components/MealMenuV2.tsx:812-821"
+      },
+      {
+        "issue": "Missing translation keys in English: meals.addFood, meals.hide, meals.show, meals.remainingAmount, meals.per, meals.over, meals.customFoodNamePlaceholder",
+        "severity": "low",
+        "location": "Frontend/src/i18n/locales/en.json"
+      },
+      {
+        "issue": "Meal system overhaul - trainer should manually calculate and set calories/macros per day",
+        "severity": "high",
+        "location": "Frontend/src/pages/CreateMealPlanV2.tsx, app/routers/meal_system.py",
+        "description": "Current system may auto-calculate calories. Trainer should be able to manually set total calories and macro targets (protein, carbs, fat in grams) for each day. Trainer calculates manually and sets values.",
+        "fix": "Ensure trainer can manually input total calories and macro targets (protein, carbs, fat in grams) for the meal plan. Remove any auto-calculation that overrides trainer input."
+      },
+      {
+        "issue": "Remove per-meal calorie and macro display - should only show daily totals",
+        "severity": "high",
+        "location": "Frontend/src/components/MealMenuV2.tsx",
+        "description": "Client meal tracking view should not show calories and macros for each individual meal. Should only display daily totals. Per-meal breakdown should be removed.",
+        "fix": "Remove per-meal calorie and macro display grid. Keep only daily totals visible with progress visualization. This is already marked as resolved but may need verification."
+      },
+      {
+        "issue": "Food bank duplicate filter issue - two filter UIs causing confusion",
+        "severity": "high",
+        "location": "Frontend/src/pages/MealBank.tsx, Frontend/src/pages/CreateMealPlanV2.tsx",
+        "description": "Food bank has duplicate filter UIs - one under search and another under the food items box. To filter protein, user must select both protein tags which is confusing and redundant.",
+        "fix": "Remove duplicate filter UI. Keep single filter selector (tab-based filter is preferred). Ensure filter works correctly with single selection. This is marked as resolved but may need verification."
+      }
+    ],
+    "implementationNotes": "MealMenuV2 is main component for client meal tracking. Real-time calorie and macro tracking. Custom food entry supported. Daily macro progress visualization with MacroCircle components. Meal completion tracking (auto or manual). Data refresh logic fixed - refreshes choices and macros after all food operations. Excel import UI added to CreateMealPlanV2 with file upload and import functionality for complete meal plans."
+  },
+  "api": {
+    "basePath": "/api/v2/meals",
+    "endpoints": [
+      "/api/v2/meals/plans",
+      "/api/v2/meals/plans/complete",
+      "/api/v2/meals/plans/{plan_id}",
+      "/api/v2/meals/plans/{plan_id}/slots",
+      "/api/v2/meals/macro-categories/{macro_id}/foods",
+      "/api/v2/meals/choices",
+      "/api/v2/meals/daily-macros",
+      "/api/v2/meals/history",
+      "/api/v2/meals/completions",
+      "/api/v2/meals/meal-bank",
+      "/api/v2/meals/plans/import/excel"
+    ]
+  },
+  "database": {
+    "tables": [
+      "meal_plans_v2",
+      "meal_slots_v2",
+      "macro_categories_v2",
+      "food_options_v2",
+      "client_meal_choices_v2",
+      "meal_completion_status_v2",
+      "daily_meal_history_v2",
+      "meal_bank"
+    ],
+    "relationships": "MealPlanV2 -> MealSlot -> MacroCategory -> FoodOption -> ClientMealChoice. DailyMealHistory aggregates daily totals."
+  },
+  "documentation": {
+    "relatedFiles": ["MEAL_SYSTEM_SUMMARY.md", "MEAL_SYSTEM_INDEX.md"],
+    "sections": ["Meal Planning section in README"]
+  },
+  "keywords": ["meals", "calories", "macros", "nutrition", "food", "meal-plan", "meal-bank", "calorie-tracking"],
+  "tags": ["core", "nutrition", "tracking"],
+  "relatedFeatures": ["users", "files"]
+}

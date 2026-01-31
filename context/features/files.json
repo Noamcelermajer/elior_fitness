@@ -1,0 +1,79 @@
+{
+  "feature": "files",
+  "status": "working",
+  "summary": "File upload system with image processing, thumbnail generation, secure file access, and organized storage",
+  "lastUpdated": "2025-01-31",
+  "backend": {
+    "status": "working",
+    "models": [],
+    "routers": ["app/routers/files.py"],
+    "services": ["app/services/file_service.py"],
+    "schemas": [],
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/files/upload",
+        "description": "Upload file with type and optional metadata",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/files/media/{file_type}/{filename}",
+        "description": "Serve media files with access control",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/files/media/exercise_images/{filename}",
+        "description": "Serve exercise images publicly (no auth required)",
+        "auth": false,
+        "roles": []
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/files/{file_id}",
+        "description": "Delete file",
+        "auth": true,
+        "roles": []
+      }
+    ],
+    "knownIssues": [
+      {
+        "issue": "Meal photo access control has TODO comment - incomplete implementation",
+        "severity": "medium",
+        "location": "app/routers/files.py:209"
+      }
+    ],
+    "implementationNotes": "File types: meal_photos, profile_photos, progress_photos, documents, exercise_images. Image processing with Pillow. Automatic thumbnail generation. EXIF orientation fix for progress photos. File size limits enforced. MIME type validation."
+  },
+  "frontend": {
+    "status": "working",
+    "pages": [],
+    "components": [],
+    "routes": [],
+    "knownIssues": [],
+    "implementationNotes": "File uploads integrated into various components (progress photos, exercise images, profile photos, meal photos). FileService handles uploads and processing."
+  },
+  "api": {
+    "basePath": "/api/files",
+    "endpoints": [
+      "/api/files/upload",
+      "/api/files/media/{file_type}/{filename}",
+      "/api/files/media/exercise_images/{filename}",
+      "/api/files/{file_id}"
+    ]
+  },
+  "database": {
+    "tables": [],
+    "relationships": "Files stored on filesystem, paths stored in related tables (progress_photos, exercises, etc.)"
+  },
+  "documentation": {
+    "relatedFiles": ["README.md", "COMPREHENSIVE_CODE_REVIEW_REPORT.md"],
+    "sections": ["File Management section in README"]
+  },
+  "keywords": ["files", "upload", "images", "photos", "thumbnails", "media", "file-upload"],
+  "tags": ["core", "storage", "media"],
+  "relatedFeatures": ["progress", "workouts", "meals", "users"]
+}

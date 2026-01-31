@@ -1,0 +1,165 @@
+{
+  "project": "Elior Fitness",
+  "lastUpdated": "2025-01-31",
+  "deploymentMethods": {
+    "local": {
+      "method": "Docker Compose",
+      "command": "docker-compose up --build",
+      "description": "Single command to start everything",
+      "access": {
+        "application": "http://localhost:8000 (deprecated - use https://ecshape.org for testing)",
+        "production": "https://ecshape.org",
+        "apiDocs": "http://localhost:8000/docs",
+        "healthCheck": "http://localhost:8000/health"
+      },
+      "testing": {
+        "note": "All testing should be done on https://ecshape.org (production environment)",
+        "testUsers": {
+          "trainer": "elior:elior123",
+          "client": "user:user123"
+        }
+      },
+      "defaultUsers": {
+        "admin": "admin@elior.com / admin123",
+        "trainer": "trainer@elior.com / trainer123",
+        "client": "client@elior.com / client123"
+      },
+      "fileStructure": {
+        "database": "./data/elior_fitness.db",
+        "uploads": "./uploads/",
+        "logs": "./logs/"
+      },
+      "environmentVariables": {
+        "ENVIRONMENT": "development",
+        "DOMAIN": "localhost",
+        "CORS_ORIGINS": "http://localhost:3000,http://localhost:5173,http://localhost:8000",
+        "LOG_LEVEL": "INFO",
+        "PORT": "8000",
+        "DATABASE_PATH": "/app/data/elior_fitness.db",
+        "DATABASE_URL": "sqlite:////app/data/elior_fitness.db"
+      }
+    },
+    "railway": {
+      "method": "Railway.app",
+      "description": "Cloud deployment platform",
+      "setup": {
+        "step1": "Connect GitHub repository to Railway",
+        "step2": "Railway detects Dockerfile automatically",
+        "step3": "Configure environment variables",
+        "step4": "Add persistent volumes",
+        "step5": "Deploy"
+      },
+      "requiredVariables": {
+        "ENVIRONMENT": "production",
+        "DOMAIN": "your-railway-domain.railway.app",
+        "CORS_ORIGINS": "https://your-railway-domain.railway.app",
+        "JWT_SECRET": "your-secure-jwt-secret-here-minimum-32-characters",
+        "JWT_ALGORITHM": "HS256",
+        "ACCESS_TOKEN_EXPIRE_MINUTES": "30",
+        "DATABASE_PATH": "/app/data/elior_fitness.db",
+        "DATABASE_URL": "sqlite:////app/data/elior_fitness.db",
+        "LOG_LEVEL": "WARNING",
+        "PORT": "8000"
+      },
+      "optionalVariables": {
+        "MAX_FILE_SIZE": "5242880",
+        "UPLOAD_DIR": "/app/uploads",
+        "WORKERS": "1",
+        "MAX_CONCURRENT_REQUESTS": "50",
+        "MAX_REQUESTS_PER_WORKER": "1000",
+        "ENABLE_DEBUG_LOGGING": "false"
+      },
+      "volumes": {
+        "database": "/app/data",
+        "uploads": "/app/uploads",
+        "logs": "/app/logs"
+      },
+      "healthCheck": {
+        "endpoint": "/health",
+        "interval": "30s",
+        "timeout": "10s",
+        "retries": "3"
+      },
+      "documentation": "docs/RAILWAY_DEPLOYMENT.md"
+    }
+  },
+  "docker": {
+    "dockerfile": "Dockerfile",
+    "dockerCompose": "docker-compose.yml",
+    "structure": "Multi-stage build: Frontend builder (node:18-slim) -> Production server (python:3.11-slim)",
+    "optimizations": {
+      "frontend": "Builds frontend during image creation, removes node_modules after build",
+      "python": "Uses --no-cache-dir for pip installs",
+      "imageSize": "~800-1000MB (can be optimized to ~500-600MB)"
+    },
+    "buildTime": "~5-8 minutes (can be optimized to ~3-5 minutes)",
+    "dependencies": {
+      "python": "requirements.txt",
+      "node": "Frontend/package.json"
+    }
+  },
+  "environmentVariables": {
+    "required": [
+      "ENVIRONMENT",
+      "DOMAIN",
+      "CORS_ORIGINS",
+      "JWT_SECRET",
+      "JWT_ALGORITHM",
+      "ACCESS_TOKEN_EXPIRE_MINUTES",
+      "DATABASE_PATH",
+      "DATABASE_URL",
+      "PORT"
+    ],
+    "optional": [
+      "MAX_FILE_SIZE",
+      "UPLOAD_DIR",
+      "WORKERS",
+      "MAX_CONCURRENT_REQUESTS",
+      "MAX_REQUESTS_PER_WORKER",
+      "ENABLE_DEBUG_LOGGING",
+      "LOG_LEVEL",
+      "PERSISTENT_PATH"
+    ]
+  },
+  "commands": {
+    "start": "docker-compose up --build",
+    "startBackground": "docker-compose up -d --build",
+    "stop": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "rebuild": "docker-compose build --no-cache && docker-compose up",
+    "reset": "docker-compose down -v && docker system prune -a && docker-compose up --build",
+    "resetDatabase": "Remove-Item data\\elior_fitness.db (Windows) or rm data/elior_fitness.db (Linux/Mac) then docker-compose up --build"
+  },
+  "troubleshooting": {
+    "portInUse": "Change port in docker-compose.yml or kill process using port 8000",
+    "containerWontStart": "docker-compose down -v && docker-compose up --build",
+    "databaseIssues": "Delete data/elior_fitness.db and restart",
+    "frontendNotLoading": "Check container status, logs, and port mapping",
+    "changesNotReflecting": "Rebuild container with docker-compose up --build"
+  },
+  "production": {
+    "considerations": {
+      "security": "Use strong JWT secret (minimum 32 characters), never commit .env files",
+      "performance": "Monitor resource usage, adjust WORKERS based on traffic",
+      "backups": "Regularly backup database volume",
+      "monitoring": "Use Railway's built-in metrics, set up alerts for errors"
+    },
+    "postgresql": {
+      "option": "Railway offers managed PostgreSQL",
+      "migration": "For larger deployments, consider migrating from SQLite to PostgreSQL",
+      "documentation": "docs/PRODUCTION_POSTGRESQL_ENFORCEMENT.md"
+    }
+  },
+  "documentation": {
+    "localDevelopment": "LOCAL_DEVELOPMENT.md",
+    "railwayDeployment": "docs/RAILWAY_DEPLOYMENT.md",
+    "railwayTroubleshooting": [
+      "docs/RAILWAY_POSTGRESQL_TROUBLESHOOTING.md",
+      "docs/RAILWAY_POSTGRES_TIMEOUT_FIX.md",
+      "docs/RAILWAY_ERROR_CODE_11_FIX.md",
+      "docs/RAILWAY_CACHE_FIX.md",
+      "docs/RAILWAY_PERSISTENT_VOLUMES.md"
+    ],
+    "optimization": "DOCKER_OPTIMIZATION_REPORT.md"
+  }
+}

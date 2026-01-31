@@ -1,0 +1,193 @@
+{
+  "planName": "Meal Plan Creation Overhaul - Updated Based on Current State",
+  "lastUpdated": "2025-01-31",
+  "testEnvironment": "https://ecshape.org",
+  "currentState": {
+    "mealPlanCreation": {
+      "dailyTargets": {
+        "status": "auto-calculated",
+        "location": "Frontend/src/pages/CreateMealPlanV2.tsx:1138-1192",
+        "description": "All daily targets (total_calories, protein_target, carb_target, fat_target) are readOnly and auto-calculated from meal slots",
+        "issue": "Trainer cannot manually input daily targets"
+      },
+      "perMealTargets": {
+        "status": "displayed-and-calculated",
+        "location": "Frontend/src/pages/CreateMealPlanV2.tsx:1258-1313",
+        "description": "Per-meal targets (target_calories, target_protein, target_carbs, target_fat) are displayed and calculated",
+        "issue": "Should be removed - only daily totals should be shown"
+      },
+      "submissionLogic": {
+        "status": "auto-override",
+        "location": "Frontend/src/pages/CreateMealPlanV2.tsx:654-673",
+        "description": "On submit, calculated values override formData values",
+        "issue": "Even if trainer could input manually, submission would override with calculated values"
+      }
+    },
+    "clientMealView": {
+      "perMealDisplay": {
+        "status": "exists",
+        "location": "Frontend/src/components/MealMenuV2.tsx:564-567, 1015-1018",
+        "description": "Per-meal targets are used in client view for progress tracking",
+        "issue": "User wants per-meal calories/macros removed from client view"
+      }
+    },
+    "translations": {
+      "missingKeys": [
+        {
+          "key": "mealCreation.addFromMealBank",
+          "status": "exists-in-json-but-not-loading",
+          "location": "Frontend/src/i18n/locales/en.json:1127, Frontend/src/pages/CreateMealPlanV2.tsx:1373",
+          "issue": "Translation key exists but button shows raw key 'mealCreation.addFromMealBank'"
+        },
+        {
+          "key": "mealCreation.kcalPer100g",
+          "status": "exists-in-json",
+          "location": "Frontend/src/i18n/locales/en.json:1118, Frontend/src/pages/CreateMealPlanV2.tsx:1638",
+          "issue": "May not be loading properly"
+        },
+        {
+          "key": "mealCreation.addFoodToBank",
+          "status": "exists-in-json",
+          "location": "Frontend/src/i18n/locales/en.json:1120, Frontend/src/pages/CreateMealPlanV2.tsx:1680",
+          "issue": "May not be loading properly"
+        },
+        {
+          "key": "mealCreation.makeFoodPublic",
+          "status": "exists-in-json",
+          "location": "Frontend/src/i18n/locales/en.json:1122, Frontend/src/pages/CreateMealPlanV2.tsx:1806",
+          "issue": "May not be loading properly"
+        }
+      ]
+    }
+  },
+  "implementationStatus": {
+    "meal-manual-daily-targets": {
+      "status": "completed",
+      "completedDate": "2025-01-31",
+      "notes": "Daily targets are now manually editable. Removed readOnly, removed calculated labels, added onChange handlers."
+    },
+    "meal-remove-per-meal-targets": {
+      "status": "completed",
+      "completedDate": "2025-01-31",
+      "notes": "Per-meal targets display removed from meal plan creation form."
+    },
+    "meal-remove-per-meal-client-view": {
+      "status": "completed",
+      "completedDate": "2025-01-31",
+      "notes": "Per-meal targets removed from client view. Completion logic updated to use daily totals."
+    },
+    "translation-fix-addFromMealBank": {
+      "status": "pending-verification",
+      "notes": "Translation key exists in en.json. May need app rebuild to see changes. Will verify after deployment."
+    }
+  },
+  "requiredChanges": [
+    {
+      "id": "meal-manual-daily-targets",
+      "priority": 1,
+      "title": "Make daily targets manually editable (remove auto-calculation)",
+      "severity": "critical",
+      "location": "Frontend/src/pages/CreateMealPlanV2.tsx:1138-1192, 654-673",
+      "currentBehavior": "Daily targets are readOnly and calculated from meal slots",
+      "requiredBehavior": "Trainer manually inputs total_calories, protein_target, carb_target, fat_target per day",
+      "changes": [
+        "Remove readOnly from total_calories, protein_target, carb_target, fat_target inputs",
+        "Remove bg-muted styling (make them editable)",
+        "Remove calculated labels and descriptions",
+        "Update formData state to store manual inputs",
+        "Remove auto-calculation in handleSubmit (lines 654-665)",
+        "Submit trainer's manual inputs directly"
+      ],
+      "estimatedTime": "2-3 hours",
+      "dependencies": []
+    },
+    {
+      "id": "meal-remove-per-meal-targets",
+      "priority": 2,
+      "title": "Remove per-meal calories/macros display from meal plan creation",
+      "severity": "high",
+      "location": "Frontend/src/pages/CreateMealPlanV2.tsx:1258-1313",
+      "currentBehavior": "Per-meal targets (target_calories, target_protein, target_carbs, target_fat) are displayed for each meal slot",
+      "requiredBehavior": "Remove per-meal target display. Only show daily totals.",
+      "changes": [
+        "Remove the entire grid showing per-meal targets (lines 1257-1314)",
+        "Keep only meal name, time suggestion, and macro categories",
+        "Update MealSlot interface to make target fields optional (they may still exist in backend but not displayed)"
+      ],
+      "estimatedTime": "1 hour",
+      "dependencies": []
+    },
+    {
+      "id": "meal-remove-per-meal-client-view",
+      "priority": 3,
+      "title": "Remove per-meal calories/macros from client meal view",
+      "severity": "high",
+      "location": "Frontend/src/components/MealMenuV2.tsx",
+      "currentBehavior": "Client view shows per-meal targets for progress tracking",
+      "requiredBehavior": "Remove per-meal breakdown. Show only daily totals.",
+      "changes": [
+        "Remove per-meal target display in client view",
+        "Keep only daily totals display",
+        "Update progress tracking to use daily totals only"
+      ],
+      "estimatedTime": "1-2 hours",
+      "dependencies": []
+    },
+    {
+      "id": "translation-fix-addFromMealBank",
+      "priority": 4,
+      "title": "Fix translation loading for addFromMealBank and other keys",
+      "severity": "high",
+      "location": "Frontend/src/pages/CreateMealPlanV2.tsx:1373, Frontend/src/i18n/config.ts",
+      "currentBehavior": "Button shows raw key 'mealCreation.addFromMealBank' instead of translation",
+      "requiredBehavior": "Button should show 'Add from Meal Bank' (English) or 'הוסף מבנק האוכל' (Hebrew)",
+      "changes": [
+        "Check i18n namespace configuration",
+        "Verify translation keys are properly loaded",
+        "Test translation switching",
+        "Fix any namespace or loading issues"
+      ],
+      "estimatedTime": "1 hour",
+      "dependencies": []
+    },
+    {
+      "id": "translation-verify-other-keys",
+      "priority": 5,
+      "title": "Verify and fix other translation keys (kcalPer100g, addFoodToBank, makeFoodPublic)",
+      "severity": "medium",
+      "location": "Frontend/src/pages/CreateMealPlanV2.tsx:1638, 1680, 1806",
+      "currentBehavior": "Keys exist in en.json but may not be loading",
+      "requiredBehavior": "All keys should load properly",
+      "changes": [
+        "Test all translation keys in browser",
+        "Fix any loading issues",
+        "Ensure all keys have proper translations in both en.json and he.json"
+      ],
+      "estimatedTime": "30 minutes",
+      "dependencies": ["translation-fix-addFromMealBank"]
+    }
+  ],
+  "implementationOrder": [
+    "translation-fix-addFromMealBank",
+    "meal-manual-daily-targets",
+    "meal-remove-per-meal-targets",
+    "meal-remove-per-meal-client-view",
+    "translation-verify-other-keys"
+  ],
+  "verificationSteps": [
+    "1. Login as trainer on ecshape.org",
+    "2. Navigate to create meal plan",
+    "3. Verify daily targets are editable (not readOnly)",
+    "4. Verify per-meal targets are not displayed",
+    "5. Input manual values for daily targets",
+    "6. Submit and verify manual values are saved (not overridden)",
+    "7. Login as client and verify per-meal breakdown is not shown",
+    "8. Verify all translation keys load properly",
+    "9. Test language switching"
+  ],
+  "notes": {
+    "backendConsiderations": "Backend may still store per-meal targets, but frontend should not display or require them",
+    "dataMigration": "Existing meal plans with calculated values should work, but new plans will use manual input",
+    "testing": "All testing must be done on https://ecshape.org (not localhost)"
+  }
+}

@@ -1,0 +1,507 @@
+{
+  "project": "Elior Fitness",
+  "lastUpdated": "2025-01-31",
+  "totalIssues": 85,
+  "issuesByCategory": {
+    "translation": 18,
+    "bugs": 7,
+    "codeAnomalies": 12,
+    "security": 8,
+    "featureCompleteness": 18,
+    "codeQuality": 9,
+    "apiConsistency": 5,
+    "performance": 3,
+    "ui": 5
+  },
+  "issuesBySeverity": {
+    "critical": 3,
+    "high": 15,
+    "medium": 35,
+    "low": 32
+  },
+  "criticalIssues": [
+    {
+      "id": "issue-1",
+      "category": "translation",
+      "title": "Missing progress.weightChart translation in English",
+      "severity": "critical",
+      "location": "Frontend/src/i18n/locales/en.json",
+      "description": "Translation key progress.weightChart is missing from en.json. Hebrew translation exists. Component displays raw key instead of translated text.",
+      "fix": "Add 'weightChart': 'Weight Chart' to en.json under progress section",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-2",
+      "category": "codeAnomalies",
+      "title": "Hardcoded Windows file paths in check_in.py",
+      "severity": "critical",
+      "location": "app/routers/check_in.py:326,362,381",
+      "description": "Hardcoded Windows paths with user-specific path will break on Linux/Mac. Debug logging should use relative paths or environment variables.",
+      "fix": "Remove hardcoded paths, use relative paths or environment variables, consider removing debug logging",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-3",
+      "category": "security",
+      "title": "Debug endpoints expose sensitive information",
+      "severity": "critical",
+      "location": "app/main.py, app/routers/files.py",
+      "description": "Debug endpoints /api/debug/env and /api/debug/paths expose environment variables and file system paths. Should be disabled in production or protected with admin-only access.",
+      "fix": "Add environment check to disable debug endpoints in production, or add admin-only authentication",
+      "status": "not-fixed"
+    }
+  ],
+  "highPriorityIssues": [
+    {
+      "id": "issue-4",
+      "category": "translation",
+      "title": "Hardcoded Hebrew fallback strings",
+      "severity": "high",
+      "location": "Multiple components",
+      "description": "Fallback strings should be in English, not Hebrew. Causes English users to see Hebrew text when translations are missing.",
+      "fix": "Replace all Hebrew fallback strings with English equivalents",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-5",
+      "category": "translation",
+      "title": "Missing translation keys in English",
+      "severity": "high",
+      "location": "Frontend/src/i18n/locales/en.json",
+      "description": "Multiple translation keys present in Hebrew but missing in English",
+      "missingKeys": [
+        "progress.frontPhoto",
+        "progress.sidePhoto",
+        "progress.backPhoto",
+        "progress.addPhoto",
+        "progress.viewPhoto",
+        "progress.photoNotFound",
+        "progress.rightArm",
+        "progress.leftArm",
+        "meals.addFood",
+        "meals.hide",
+        "meals.show",
+        "meals.remainingAmount",
+        "meals.per",
+        "meals.over",
+        "meals.customFoodNamePlaceholder"
+      ],
+      "fix": "Add all missing keys to en.json with appropriate English translations",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-6",
+      "category": "translation",
+      "title": "Hardcoded English strings in components",
+      "severity": "high",
+      "location": "Multiple files",
+      "description": "Hardcoded English strings should be extracted to translation files",
+      "fix": "Extract all hardcoded strings to translation files and use t() function",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-7",
+      "category": "translation",
+      "title": "Language persistence issue - fallbackLng should change when user changes language",
+      "severity": "high",
+      "location": "Frontend/src/i18n/config.ts:29, Frontend/src/App.tsx:264",
+      "description": "fallbackLng is hardcoded to 'he'. When user changes language to English, the fallback should also be English, not Hebrew. Currently, if translation is missing or language detection fails, it falls back to Hebrew even if user prefers English.",
+      "fix": "Update fallbackLng to use stored language preference from localStorage. If user has selected English, fallback should be 'en'. If user has selected Hebrew, fallback should be 'he'. Default to 'he' only if no preference is stored.",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-8",
+      "category": "featureCompleteness",
+      "title": "Meal photo access control incomplete",
+      "severity": "high",
+      "location": "app/routers/files.py:209",
+      "description": "TODO comment indicates incomplete implementation for meal photo access control",
+      "fix": "Complete the implementation",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-9",
+      "category": "codeQuality",
+      "title": "Inconsistent error handling patterns",
+      "severity": "high",
+      "location": "Multiple components",
+      "description": "Some components use detailed error messages, others use generic messages. Error format varies.",
+      "fix": "Standardize error handling patterns across all components",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-10",
+      "category": "security",
+      "title": "File access control incomplete",
+      "severity": "high",
+      "location": "app/routers/files.py",
+      "description": "Meal photo access control needs completion",
+      "fix": "Complete file access control implementation",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-11",
+      "category": "security",
+      "title": "Console logging of sensitive data",
+      "severity": "high",
+      "location": "Frontend/src/contexts/AuthContext.tsx:169,174",
+      "description": "Tokens and user data logged to console could be exposed in browser dev tools",
+      "fix": "Remove or sanitize sensitive data from console logs",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-68",
+      "category": "bugs",
+      "title": "Progress photos don't show all three views (front, side, back) and old photos shown sideways",
+      "severity": "high",
+      "location": "Frontend/src/components/ProgressTrackingV2.tsx, Frontend/src/components/ClientWeightProgress.tsx",
+      "description": "Weight pictures should show all three photos (front, side, back) but currently may only show one or not display all views properly. Photos are uploaded but not displaying in grid view. Old pictures are also shown sideways - EXIF orientation fix may not be working for all images.",
+      "fix": "Update photo grid to display all three photo types (front, side, back) for each progress entry. Ensure photos array is properly loaded and displayed. Verify EXIF orientation handling works for all images including existing ones. May need client-side rotation handling.",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-69",
+      "category": "translation",
+      "title": "Missing mealCreation translation keys in English",
+      "severity": "high",
+      "location": "Frontend/src/i18n/locales/en.json, Frontend/src/pages/CreateMealPlanV2.tsx",
+      "description": "Translation keys mealCreation.kcalPer100g, mealCreation.addFoodToBank, mealCreation.makeFoodPublic are missing from en.json. These appear as raw keys in the UI.",
+      "fix": "Add missing translation keys to en.json: 'kcalPer100g': 'kcal per 100g', 'addFoodToBank': 'Add Food to Meal Bank', 'makeFoodPublic': 'Make this food item public (visible to all trainers)'",
+      "status": "not-fixed"
+    }
+  ],
+  "mediumPriorityIssues": [
+    {
+      "id": "issue-12",
+      "category": "translation",
+      "title": "Inconsistent translation key organization",
+      "severity": "medium",
+      "location": "Frontend/src/i18n/locales/en.json vs he.json",
+      "description": "Some keys exist in one file but not the other. Nested structure inconsistencies.",
+      "fix": "Audit and synchronize both translation files to ensure identical structure",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-13",
+      "category": "codeAnomalies",
+      "title": "Excessive console logging",
+      "severity": "medium",
+      "location": "Multiple files",
+      "description": "173 console.log/error/warn statements across frontend. Production code should not have excessive console logging.",
+      "fix": "Remove or replace with proper logging service, keep only critical error logging",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-14",
+      "category": "codeAnomalies",
+      "title": "TODO comment in files.py",
+      "severity": "medium",
+      "location": "app/routers/files.py:209",
+      "description": "Access control for meal photos is incomplete",
+      "fix": "Implement proper meal completion lookup and access control",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-15",
+      "category": "codeAnomalies",
+      "title": "Inconsistent error messages",
+      "severity": "medium",
+      "location": "Multiple routers",
+      "description": "Some endpoints return detailed error messages, others return generic messages. Error format varies.",
+      "fix": "Standardize error response format across all endpoints",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-16",
+      "category": "codeAnomalies",
+      "title": "Missing type definitions",
+      "severity": "medium",
+      "location": "Multiple TypeScript files",
+      "description": "Some components use 'any' type. Missing interface definitions for API responses.",
+      "fix": "Audit all TypeScript files for type safety improvements",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-17",
+      "category": "codeAnomalies",
+      "title": "Mixed API versioning",
+      "severity": "medium",
+      "location": "app/routers/",
+      "description": "Some endpoints use /api/v2/ prefix, others use /api/ directly. No clear versioning strategy.",
+      "fix": "Document versioning strategy or standardize on one approach",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-18",
+      "category": "featureCompleteness",
+      "title": "Legacy pages still in routes",
+      "severity": "medium",
+      "location": "Frontend/src/App.tsx",
+      "description": "Legacy routes still accessible: /create-workout-old, /create-exercise-old, /create-meal-plan-old",
+      "fix": "Remove legacy routes or mark them as deprecated",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-19",
+      "category": "featureCompleteness",
+      "title": "Legacy database models",
+      "severity": "medium",
+      "location": "app/models/nutrition.py, app/models/workout.py",
+      "description": "Legacy models kept for backward compatibility but may not be used",
+      "fix": "Verify if legacy models are still in use, consider migration plan to remove them",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-20",
+      "category": "codeQuality",
+      "title": "Image loading strategy",
+      "severity": "medium",
+      "location": "Frontend/src/components/ProgressTrackingV2.tsx",
+      "description": "Photos loaded on-demand (lazy loading) may cause delay in displaying images. No loading indicators.",
+      "fix": "Add loading indicators for images, consider preloading visible images, implement image caching strategy",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-21",
+      "category": "apiConsistency",
+      "title": "Inconsistent response formats",
+      "severity": "medium",
+      "location": "Multiple routers",
+      "description": "Some endpoints return objects directly, others wrap in response objects. Error responses vary in format.",
+      "fix": "Standardize API response format across all endpoints",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-22",
+      "category": "apiConsistency",
+      "title": "Inconsistent endpoint naming",
+      "severity": "medium",
+      "location": "app/routers/",
+      "description": "Some use plural: /exercises, /workouts. Others use singular: /user, /progress. Mixed conventions.",
+      "fix": "Standardize on one naming convention (preferably plural for resources)",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-23",
+      "category": "codeQuality",
+      "title": "Test coverage unknown",
+      "severity": "medium",
+      "location": "tests/ directory",
+      "description": "Test directory exists but coverage is unknown",
+      "fix": "Verify test coverage, add tests for critical paths, ensure tests run in CI/CD",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-24",
+      "category": "codeQuality",
+      "title": "Missing ARIA labels",
+      "severity": "medium",
+      "location": "Multiple components",
+      "description": "Some components have ARIA labels, others may be missing them. Hardcoded English ARIA labels should be translated.",
+      "fix": "Add ARIA labels to all interactive elements and translate them",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-70",
+      "category": "ui",
+      "title": "Training plan display shows day name instead of training name and workouts",
+      "severity": "high",
+      "location": "Frontend/src/components/TrainingPlanV2.tsx:364-395",
+      "description": "Training plan cards show day name (שם היום) instead of training name (workout plan name) and list of workouts. Should display training name and list of workout exercises. Also has emoji icon (💪) that should be removed. Text needs translation.",
+      "fix": "Replace day name display with training name (workout plan name) and list of workouts/exercises. Remove emoji icon. Ensure all text is properly translated.",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-71",
+      "category": "ui",
+      "title": "Training UI has unnecessary elements - arrow, exercise count, tags, body weight toggle",
+      "severity": "high",
+      "location": "Frontend/src/pages/TrainingDayPage.tsx, Frontend/src/pages/ClientProfile.tsx, Frontend/src/components/TrainingPlanV2.tsx",
+      "description": "Training client view has: 1) Arrow on left side (ChevronRight icon) that should be removed, 2) Number of exercises display that should be removed, 3) Tags/badges under training description (מותאם אישית, 3 אימנים בשבוע, etc.) - should only show training plan name and description, 4) Body weight toggle in exercises that should be removed.",
+      "fix": "Remove ChevronRight arrow icon from training day cards. Remove exercise count display. Remove all tags/badges under training description (keep only training plan name and description). Remove body weight checkbox and related logic from exercise display in TrainingDayPage.",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-72",
+      "category": "featureCompleteness",
+      "title": "Training completion calendar missing - need calendar that marks completed training days",
+      "severity": "high",
+      "location": "Frontend/src/pages/TrainingPage.tsx, Frontend/src/components/TrainingPlanV2.tsx, Frontend/src/pages/TrainingDayPage.tsx",
+      "description": "Need calendar view that marks training when training was completed. Training completed button exists in TrainingDayPage.tsx but calendar visualization is missing. Calendar should show which days training was completed.",
+      "fix": "Add calendar component (use react-calendar or similar) showing training days with completion status. Mark completed days visually (different color/icon). Ensure completion tracking works correctly. Calendar should be visible in TrainingPlanV2 or TrainingPage.",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-73",
+      "category": "featureCompleteness",
+      "title": "Food bank has duplicate filters - need consolidation",
+      "severity": "medium",
+      "location": "Frontend/src/pages/MealBank.tsx:109-124, Frontend/src/pages/CreateMealPlanV2.tsx:584-595",
+      "description": "Food bank has two filter UIs - one under search and another under the box. To filter protein, user must select both protein tags which is confusing.",
+      "fix": "Remove duplicate filter UI. Keep single filter selector (either under search or as tabs, not both). Ensure filter works correctly with single selection.",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-74",
+      "category": "featureCompleteness",
+      "title": "Meal system needs per-portion vs per-100g option",
+      "severity": "medium",
+      "location": "app/models/meal_system.py, app/models/meal_bank.py, Frontend/src/pages/CreateMealPlanV2.tsx, Frontend/src/pages/MealBank.tsx",
+      "description": "Some food items shouldn't be per 100g (e.g., slice of bread should be per portion - 1 slice, 2 slices). Need option to select either per gram or per portion.",
+      "fix": "Add measurement_type field to FoodOption and MealBank models (per_100g or per_portion). Add UI selector (radio buttons). Update quantity input to show appropriate units. Update calorie calculation logic.",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-75",
+      "category": "featureCompleteness",
+      "title": "Client meal view shows per-meal calories/macros - should only show daily totals (verification needed)",
+      "severity": "high",
+      "location": "Frontend/src/components/MealMenuV2.tsx",
+      "description": "Client meal tracking view should not show calories and macros for each individual meal. Should only display daily totals. Per-meal breakdown should be removed. Marked as resolved but needs verification.",
+      "fix": "Verify per-meal calorie and macro display is removed. Keep only daily totals visible with progress visualization. If still present, remove per-meal breakdown grid.",
+      "status": "needs-verification"
+    },
+    {
+      "id": "issue-76",
+      "category": "featureCompleteness",
+      "title": "Client food selection limited to recommended foods - should allow all food bank items (verification needed)",
+      "severity": "high",
+      "location": "Frontend/src/components/MealMenuV2.tsx",
+      "description": "Clients should be able to choose from all food bank options, not just recommended foods. Trainer recommends amount in grams, but client can override and choose different foods/quantities. Calories should be counted automatically. Marked as resolved but needs verification.",
+      "fix": "Verify client can choose from all food bank items. Show trainer recommendations but allow adding any food. Allow removing recommended foods (swipe to delete). Update calorie calculation to handle any food combination.",
+      "status": "needs-verification"
+    },
+    {
+      "id": "issue-77",
+      "category": "featureCompleteness",
+      "title": "Excel import for food plans (resolved - verification needed)",
+      "severity": "medium",
+      "location": "app/routers/meal_system.py, Frontend/src/pages/CreateMealPlanV2.tsx",
+      "description": "Excel import for meal plans is implemented. Supports 4-sheet Excel structure with Hebrew text duplicate detection. Marked as resolved but needs verification that it works correctly.",
+      "fix": "Verify Excel import works correctly. Test with sample Excel file. Ensure duplicate detection works properly.",
+      "status": "resolved-needs-verification"
+    },
+    {
+      "id": "issue-78",
+      "category": "featureCompleteness",
+      "title": "Food bank Excel import needs duplicate detection with Hebrew text matching (resolved - verification needed)",
+      "severity": "medium",
+      "location": "app/routers/meal_system.py",
+      "description": "Hebrew text normalization and fuzzy matching using Levenshtein distance is implemented. Marked as resolved but needs verification that duplicate detection works correctly when importing food bank items.",
+      "fix": "Verify Hebrew text matching works correctly. Test duplicate detection with similar Hebrew food names. Ensure popup shows potential matches correctly.",
+      "status": "resolved-needs-verification"
+    },
+    {
+      "id": "issue-79",
+      "category": "featureCompleteness",
+      "title": "Meal system - trainer should manually calculate and set calories/macros per day",
+      "severity": "high",
+      "location": "Frontend/src/pages/CreateMealPlanV2.tsx, app/routers/meal_system.py",
+      "description": "Trainer should be able to manually set total calories and macro targets (protein, carbs, fat in grams) for each day. Trainer calculates manually and sets values. System should not auto-calculate or override trainer input.",
+      "fix": "Ensure trainer can manually input total calories and macro targets (protein, carbs, fat in grams) for the meal plan. Remove any auto-calculation that overrides trainer input. Verify manual input is saved correctly.",
+      "status": "not-fixed"
+    }
+  ],
+  "lowPriorityIssues": [
+    {
+      "id": "issue-25",
+      "category": "codeAnomalies",
+      "title": "Unused imports",
+      "severity": "low",
+      "location": "Multiple files",
+      "description": "Some files may have unused imports",
+      "fix": "Run linter to identify and remove unused imports",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-26",
+      "category": "performance",
+      "title": "N+1 query potential",
+      "severity": "low",
+      "location": "Backend routers",
+      "description": "Some endpoints may have N+1 query issues when loading related data",
+      "fix": "Review database queries for optimization opportunities",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-27",
+      "category": "codeQuality",
+      "title": "Repeated code patterns",
+      "severity": "low",
+      "location": "Multiple files",
+      "description": "Some code patterns are repeated across files (e.g., API call patterns, error handling)",
+      "fix": "Extract common patterns into reusable utilities or hooks",
+      "status": "not-fixed"
+    },
+    {
+      "id": "issue-28",
+      "category": "codeQuality",
+      "title": "Missing documentation",
+      "severity": "low",
+      "location": "Multiple files",
+      "description": "Some functions lack docstrings. API endpoints may need better documentation.",
+      "fix": "Add comprehensive documentation for public APIs and components",
+      "status": "not-fixed"
+    }
+  ],
+  "knownBugs": [
+    {
+      "id": "bug-1",
+      "title": "Language reset on app close",
+      "status": "fixed",
+      "location": "Frontend/src/i18n/config.ts, Frontend/src/App.tsx",
+      "description": "Hebrew is now the default language as requested"
+    },
+    {
+      "id": "bug-2",
+      "title": "Weight addition modal not closing",
+      "status": "fixed",
+      "location": "Frontend/src/components/ProgressTrackingV2.tsx:298",
+      "description": "Code appears correct, may need user testing to confirm"
+    },
+    {
+      "id": "bug-3",
+      "title": "Image rotation in progress entry",
+      "status": "fixed",
+      "location": "app/services/file_service.py:221,282,299",
+      "description": "EXIF orientation fix is implemented. Test with new image uploads to verify fix works."
+    },
+    {
+      "id": "bug-4",
+      "title": "Weight chart title translation",
+      "status": "not-fixed",
+      "location": "Frontend/src/i18n/locales/en.json",
+      "description": "Translation key progress.weightChart is missing from en.json",
+      "fix": "Add 'weightChart': 'Weight Chart' to en.json"
+    },
+    {
+      "id": "bug-5",
+      "title": "Progress images not displaying initially",
+      "status": "partially-addressed",
+      "location": "Frontend/src/components/ProgressTrackingV2.tsx:165-182",
+      "description": "Photos loaded lazily, may not appear immediately. Ensure photos load when entries are first rendered."
+    },
+    {
+      "id": "bug-6",
+      "title": "Progress photos don't show all three views (front, side, back)",
+      "status": "not-fixed",
+      "location": "Frontend/src/components/ProgressTrackingV2.tsx",
+      "description": "Weight pictures should show all three photos (front, side, back) but currently may only show one or not display all views properly.",
+      "fix": "Update photo grid to display all three photo types for each progress entry"
+    },
+    {
+      "id": "bug-7",
+      "title": "Old progress pictures shown sideways",
+      "status": "not-fixed",
+      "location": "Frontend/src/components/ProgressTrackingV2.tsx, app/services/file_service.py",
+      "description": "Old progress pictures are displayed sideways. EXIF orientation fix is implemented but may need testing or additional handling for existing images.",
+      "fix": "Ensure EXIF orientation is properly handled for all images, including existing ones. May need to reprocess existing images or add client-side rotation handling."
+    }
+  ],
+  "documentation": {
+    "source": "COMPREHENSIVE_CODE_REVIEW_REPORT.md",
+    "lastReview": "January 2025",
+    "totalFilesReviewed": "150+",
+    "linesOfCodeReviewed": "50000+"
+  }
+}

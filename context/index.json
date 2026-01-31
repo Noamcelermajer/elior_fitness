@@ -1,0 +1,111 @@
+{
+  "project": "Elior Fitness",
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-31",
+  "description": "Comprehensive fitness management platform for personal trainers and their clients",
+  "features": {
+    "authentication": {
+      "file": "features/authentication.json",
+      "summary": "Login, registration, JWT tokens, role-based access control",
+      "status": "working",
+      "backend": true,
+      "frontend": true,
+      "keywords": ["login", "auth", "jwt", "token", "register", "password", "security"]
+    },
+    "meals": {
+      "file": "features/meals.json",
+      "summary": "Meal planning v2, calorie tracking, macro counting, meal bank",
+      "status": "working",
+      "backend": true,
+      "frontend": true,
+      "keywords": ["meals", "calories", "macros", "nutrition", "food", "meal-plan", "meal-bank"]
+    },
+    "workouts": {
+      "file": "features/workouts.json",
+      "summary": "Workout system v2, exercise library, workout plans, session tracking",
+      "status": "working",
+      "backend": true,
+      "frontend": true,
+      "keywords": ["workouts", "exercises", "training", "sessions", "workout-plan", "exercise-bank"]
+    },
+    "progress": {
+      "file": "features/progress.json",
+      "summary": "Progress tracking, weight entries, body measurements, progress photos",
+      "status": "working",
+      "backend": true,
+      "frontend": true,
+      "keywords": ["progress", "weight", "measurements", "photos", "tracking", "body-composition"]
+    },
+    "check-ins": {
+      "file": "features/check-ins.json",
+      "summary": "Daily check-in system with questionnaire, streak tracking, statistics",
+      "status": "working",
+      "backend": true,
+      "frontend": true,
+      "keywords": ["check-in", "daily", "questionnaire", "streak", "health", "wellness"]
+    },
+    "notifications": {
+      "file": "features/notifications.json",
+      "summary": "Real-time notifications, WebSocket support, notification management",
+      "status": "working",
+      "backend": true,
+      "frontend": true,
+      "keywords": ["notifications", "websocket", "real-time", "alerts", "messages"]
+    },
+    "files": {
+      "file": "features/files.json",
+      "summary": "File uploads, image processing, thumbnail generation, secure file access",
+      "status": "working",
+      "backend": true,
+      "frontend": true,
+      "keywords": ["files", "upload", "images", "photos", "thumbnails", "media"]
+    },
+    "users": {
+      "file": "features/users.json",
+      "summary": "User management, roles (Admin/Trainer/Client), profiles, trainer-client relationships",
+      "status": "working",
+      "backend": true,
+      "frontend": true,
+      "keywords": ["users", "profiles", "roles", "trainer", "client", "admin", "management"]
+    },
+    "system": {
+      "file": "features/system.json",
+      "summary": "System monitoring, health checks, resource monitoring, admin tools",
+      "status": "working",
+      "backend": true,
+      "frontend": true,
+      "keywords": ["system", "monitoring", "health", "admin", "status", "metrics"]
+    },
+    "chat": {
+      "file": "features/chat.json",
+      "summary": "Trainer-client messaging, real-time chat, conversation management",
+      "status": "working",
+      "backend": true,
+      "frontend": true,
+      "keywords": ["chat", "messaging", "conversations", "communication"]
+    }
+  },
+  "quickLinks": {
+    "login": "features/authentication.json",
+    "meals": "features/meals.json",
+    "workouts": "features/workouts.json",
+    "progress": "features/progress.json",
+    "check-in": "features/check-ins.json",
+    "notifications": "features/notifications.json",
+    "files": "features/files.json",
+    "users": "features/users.json",
+    "system": "features/system.json",
+    "chat": "features/chat.json",
+    "auth": "features/authentication.json",
+    "calories": "features/meals.json",
+    "exercises": "features/workouts.json",
+    "weight": "features/progress.json",
+    "daily-check-in": "features/check-ins.json"
+  },
+  "architecture": "architecture.json",
+  "deployment": "deployment.json",
+  "issues": "issues.json",
+  "plan": "plan.json",
+  "verification": "verification.json",
+  "translationFixes": "translation-fixes.json"
+}

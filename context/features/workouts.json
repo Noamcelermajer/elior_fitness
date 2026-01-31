@@ -1,0 +1,173 @@
+{
+  "feature": "workouts",
+  "status": "working",
+  "summary": "Workout system v2 with exercise library, workout plans, splits, session tracking, and personal records",
+  "lastUpdated": "2025-01-31",
+  "backend": {
+    "status": "working",
+    "models": ["app/models/workout_system.py", "app/models/workout.py", "app/models/muscle_group.py", "app/models/workout_split.py"],
+    "routers": [
+      "app/routers/workout_system.py",
+      "app/routers/workouts.py",
+      "app/routers/exercises.py",
+      "app/routers/muscle_groups.py",
+      "app/routers/workout_splits.py"
+    ],
+    "services": ["app/services/workout_service.py"],
+    "schemas": ["app/schemas/workout_system.py", "app/schemas/workout.py"],
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/v2/workouts/plans",
+        "description": "Create workout plan (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/workouts/plans/complete",
+        "description": "Create complete workout plan with all days (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/workouts/plans",
+        "description": "Get workout plans (filtered by role)",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/workouts/plans/{plan_id}",
+        "description": "Get specific workout plan",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/v2/workouts/sessions",
+        "description": "Create workout session (client only)",
+        "auth": true,
+        "roles": ["CLIENT"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/v2/workouts/sessions",
+        "description": "Get workout sessions",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/exercises",
+        "description": "Create exercise (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/exercises",
+        "description": "Get exercises with filtering",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/muscle-groups",
+        "description": "Get muscle groups",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/workout-splits",
+        "description": "Get workout splits",
+        "auth": true,
+        "roles": []
+      }
+    ],
+    "knownIssues": [],
+    "implementationNotes": "Workout system v2 supports workout plans with splits (Push/Pull/Legs), workout days, exercises, and session tracking. Legacy workout system still exists. Exercise library is trainer-owned. Personal records tracked per exercise."
+  },
+  "frontend": {
+    "status": "working",
+    "pages": [
+      "Frontend/src/pages/TrainingPage.tsx",
+      "Frontend/src/pages/TrainingDayPage.tsx",
+      "Frontend/src/pages/CreateWorkoutPlanV2.tsx",
+      "Frontend/src/pages/CreateExercise.tsx",
+      "Frontend/src/pages/ExerciseBank.tsx",
+      "Frontend/src/pages/WorkoutDetailPage.tsx"
+    ],
+    "components": [
+      "Frontend/src/components/TrainingPlan.tsx",
+      "Frontend/src/components/TrainingPlanV2.tsx"
+    ],
+    "routes": [
+      "/training",
+      "/training/day/:dayId",
+      "/create-workout-plan-v2",
+      "/create-exercise",
+      "/exercises",
+      "/workout/:id"
+    ],
+    "knownIssues": [
+      {
+        "issue": "Training plan display shows day name instead of training name and workouts",
+        "severity": "high",
+        "location": "Frontend/src/components/TrainingPlanV2.tsx:364-395",
+        "description": "Training plan cards show day name (שם היום) instead of training name and list of workouts. Should display training name (workout plan name) and list of workout exercises. Also has emoji icon (💪) that should be removed. Text needs translation.",
+        "fix": "Replace day name display with training name (workout plan name) and list of workouts/exercises. Remove emoji icon. Ensure all text is properly translated."
+      },
+      {
+        "issue": "Training UI has unnecessary elements - arrow, exercise count, tags, body weight toggle",
+        "severity": "high",
+        "location": "Frontend/src/pages/TrainingDayPage.tsx, Frontend/src/pages/ClientProfile.tsx, Frontend/src/components/TrainingPlanV2.tsx",
+        "description": "Training client view has: 1) Arrow on left side (ChevronRight icon) that should be removed, 2) Number of exercises display that should be removed, 3) Tags/badges under training description (מותאם אישית, 3 אימנים בשבוע, etc.) - should only show training plan name and description, 4) Body weight toggle in exercises that should be removed.",
+        "fix": "Remove ChevronRight arrow icon from training day cards. Remove exercise count display. Remove all tags/badges under training description (keep only training plan name and description). Remove body weight checkbox and related logic from exercise display in TrainingDayPage."
+      },
+      {
+        "issue": "Training completion calendar missing - need calendar that marks completed training days",
+        "severity": "high",
+        "location": "Frontend/src/pages/TrainingPage.tsx, Frontend/src/components/TrainingPlanV2.tsx, Frontend/src/pages/TrainingDayPage.tsx",
+        "description": "Need calendar view that marks training when training was completed. Training completed button exists in TrainingDayPage.tsx but calendar visualization is missing. Calendar should show which days training was completed.",
+        "fix": "Add calendar component (use react-calendar or similar) showing training days with completion status. Mark completed days visually (different color/icon). Ensure completion tracking works correctly. Calendar should be visible in TrainingPlanV2 or TrainingPage."
+      }
+    ],
+    "implementationNotes": "TrainingPage shows active workout plan. TrainingDayPage shows specific day with exercises. CreateWorkoutPlanV2 for trainers to create plans. ExerciseBank shows trainer's exercise library."
+  },
+  "api": {
+    "basePath": "/api/v2/workouts",
+    "endpoints": [
+      "/api/v2/workouts/plans",
+      "/api/v2/workouts/plans/complete",
+      "/api/v2/workouts/plans/{plan_id}",
+      "/api/v2/workouts/sessions",
+      "/api/exercises",
+      "/api/muscle-groups",
+      "/api/workout-splits"
+    ]
+  },
+  "database": {
+    "tables": [
+      "workout_plans_v2",
+      "workout_days",
+      "workout_exercises_v2",
+      "workout_sessions_v2",
+      "set_completions",
+      "exercise_personal_records",
+      "exercises",
+      "muscle_groups",
+      "workout_splits"
+    ],
+    "relationships": "WorkoutPlanV2 -> WorkoutDay -> WorkoutExerciseV2 -> WorkoutSessionV2 -> SetCompletion. Exercise -> ExercisePersonalRecord."
+  },
+  "documentation": {
+    "relatedFiles": ["README.md"],
+    "sections": ["Workout Management section in README"]
+  },
+  "keywords": ["workouts", "exercises", "training", "sessions", "workout-plan", "exercise-bank", "workout-split"],
+  "tags": ["core", "training", "fitness"],
+  "relatedFeatures": ["users", "files"]
+}

@@ -1,0 +1,308 @@
+{
+  "project": "Elior Fitness",
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-31",
+  "description": "Comprehensive fitness management platform architecture",
+  "technologyStack": {
+    "backend": {
+      "framework": "FastAPI 0.120.0",
+      "database": "SQLite with SQLAlchemy 2.0",
+      "authentication": "JWT with python-jose and passlib",
+      "fileProcessing": "Pillow, python-magic",
+      "async": "uvicorn with uvloop",
+      "language": "Python 3.11"
+    },
+    "frontend": {
+      "framework": "React 18 + TypeScript",
+      "buildTool": "Vite",
+      "styling": "Tailwind CSS",
+      "uiLibrary": "shadcn/ui",
+      "state": "React Query (TanStack Query)",
+      "routing": "React Router v6",
+      "i18n": "react-i18next",
+      "charts": "Recharts",
+      "dateHandling": "date-fns"
+    },
+    "infrastructure": {
+      "containerization": "Docker + Docker Compose",
+      "deployment": "Single container architecture",
+      "architecture": "Monolith - FastAPI serves both API and static files",
+      "database": "SQLite (local), PostgreSQL (production option)"
+    }
+  },
+  "projectStructure": {
+    "backend": {
+      "models": {
+        "location": "app/models/",
+        "files": [
+          "user.py",
+          "workout.py",
+          "workout_system.py",
+          "nutrition.py",
+          "meal_system.py",
+          "progress.py",
+          "progress_photo.py",
+          "notification.py",
+          "check_in.py",
+          "chat.py",
+          "muscle_group.py",
+          "workout_split.py"
+        ],
+        "description": "SQLAlchemy ORM models for database tables"
+      },
+      "routers": {
+        "location": "app/routers/",
+        "files": [
+          "auth.py",
+          "users.py",
+          "exercises.py",
+          "workouts.py",
+          "workout_system.py",
+          "nutrition.py",
+          "meal_plans.py",
+          "meal_system.py",
+          "progress.py",
+          "files.py",
+          "notifications.py",
+          "websocket.py",
+          "system.py",
+          "check_in.py",
+          "chat.py",
+          "muscle_groups.py",
+          "workout_splits.py"
+        ],
+        "description": "FastAPI routers for API endpoints"
+      },
+      "services": {
+        "location": "app/services/",
+        "files": [
+          "auth_service.py",
+          "user_service.py",
+          "workout_service.py",
+          "nutrition_service.py",
+          "meal_plan_service.py",
+          "file_service.py",
+          "notification_service.py",
+          "websocket_service.py",
+          "system_service.py",
+          "password_service.py",
+          "scheduler_service.py",
+          "notification_triggers.py"
+        ],
+        "description": "Business logic services"
+      },
+      "schemas": {
+        "location": "app/schemas/",
+        "description": "Pydantic schemas for request/response validation"
+      }
+    },
+    "frontend": {
+      "pages": {
+        "location": "Frontend/src/pages/",
+        "count": 25,
+        "description": "Page components for routes"
+      },
+      "components": {
+        "location": "Frontend/src/components/",
+        "description": "Reusable React components including shadcn/ui components"
+      },
+      "contexts": {
+        "location": "Frontend/src/contexts/",
+        "files": [
+          "AuthContext.tsx",
+          "ThemeContext.tsx",
+          "NotificationContext.tsx"
+        ],
+        "description": "React Context providers"
+      },
+      "services": {
+        "location": "Frontend/src/services/",
+        "description": "API service functions"
+      },
+      "hooks": {
+        "location": "Frontend/src/hooks/",
+        "description": "Custom React hooks"
+      },
+      "config": {
+        "location": "Frontend/src/config/",
+        "description": "Configuration files (API, i18n)"
+      },
+      "i18n": {
+        "location": "Frontend/src/i18n/",
+        "description": "Internationalization (Hebrew and English)"
+      }
+    },
+    "data": {
+      "database": "data/elior_fitness.db",
+      "uploads": "uploads/",
+      "logs": "logs/"
+    }
+  },
+  "apiStructure": {
+    "routers": [
+      {
+        "name": "auth",
+        "path": "/api/auth",
+        "description": "Authentication and registration"
+      },
+      {
+        "name": "users",
+        "path": "/api/users",
+        "description": "User management"
+      },
+      {
+        "name": "exercises",
+        "path": "/api/exercises",
+        "description": "Exercise operations"
+      },
+      {
+        "name": "workouts",
+        "path": "/api/workouts",
+        "description": "Workout plans and sessions (v1 - legacy)"
+      },
+      {
+        "name": "workout_system",
+        "path": "/api/v2/workouts",
+        "description": "Workout system v2"
+      },
+      {
+        "name": "nutrition",
+        "path": "/api/nutrition",
+        "description": "Legacy nutrition system"
+      },
+      {
+        "name": "meal-plans",
+        "path": "/api/meal-plans",
+        "description": "Advanced meal planning"
+      },
+      {
+        "name": "meal_system",
+        "path": "/api/v2/meals",
+        "description": "Meal system v2"
+      },
+      {
+        "name": "progress",
+        "path": "/api/progress",
+        "description": "Progress tracking"
+      },
+      {
+        "name": "files",
+        "path": "/api/files",
+        "description": "File management"
+      },
+      {
+        "name": "notifications",
+        "path": "/api/notifications",
+        "description": "Notification management"
+      },
+      {
+        "name": "websocket",
+        "path": "/api/ws",
+        "description": "WebSocket connections"
+      },
+      {
+        "name": "system",
+        "path": "/api/system",
+        "description": "System monitoring"
+      },
+      {
+        "name": "check_in",
+        "path": "/api/check-ins",
+        "description": "Daily check-in system"
+      },
+      {
+        "name": "chat",
+        "path": "/api",
+        "description": "Chat and messaging"
+      },
+      {
+        "name": "muscle_groups",
+        "path": "/api/muscle-groups",
+        "description": "Muscle groups"
+      },
+      {
+        "name": "workout_splits",
+        "path": "/api/workout-splits",
+        "description": "Workout splits"
+      }
+    ]
+  },
+  "databaseSchema": {
+    "coreTables": [
+      "users",
+      "client_profiles"
+    ],
+    "workoutTables": [
+      "exercises",
+      "workout_plans",
+      "workout_sessions",
+      "workout_plans_v2",
+      "workout_days",
+      "workout_exercises_v2",
+      "workout_sessions_v2",
+      "set_completions",
+      "exercise_personal_records",
+      "muscle_groups",
+      "workout_splits"
+    ],
+    "mealTables": [
+      "nutrition_plans",
+      "recipes",
+      "nutrition_entries",
+      "meal_plans",
+      "meal_plans_v2",
+      "meal_slots_v2",
+      "macro_categories_v2",
+      "food_options_v2",
+      "client_meal_choices_v2",
+      "meal_completion_status_v2",
+      "daily_meal_history_v2",
+      "meal_bank"
+    ],
+    "progressTables": [
+      "progress_entries",
+      "progress_photos"
+    ],
+    "otherTables": [
+      "notifications",
+      "daily_check_ins",
+      "conversations",
+      "messages"
+    ]
+  },
+  "dataFlow": {
+    "authentication": "User login -> JWT token -> Protected routes -> Role-based access",
+    "mealTracking": "Trainer creates meal plan -> Client views plan -> Client selects foods -> System calculates calories -> Display progress",
+    "workoutTracking": "Trainer creates workout plan -> Client views plan -> Client logs session -> System tracks progress -> Display analytics",
+    "progressTracking": "Client adds weight entry -> Optional photos/measurements -> System stores -> Display charts/history",
+    "notifications": "Event occurs -> Notification service creates -> WebSocket broadcasts -> Frontend displays",
+    "fileUpload": "User uploads file -> FileService validates -> Processes image -> Stores file -> Returns path"
+  },
+  "componentRelationships": {
+    "backend": "Models -> Services -> Routers -> API Endpoints",
+    "frontend": "Pages -> Components -> Services -> API -> Backend",
+    "authentication": "AuthContext -> ProtectedRoute -> API calls -> JWT validation",
+    "stateManagement": "React Context (Auth, Theme, Notifications) + React Query (API state)"
+  },
+  "deployment": {
+    "type": "Docker container",
+    "structure": "Single container with FastAPI serving API and static files",
+    "database": "SQLite (local) or PostgreSQL (production)",
+    "volumes": ["/app/data", "/app/uploads", "/app/logs"],
+    "port": "8000"
+  },
+  "security": {
+    "authentication": "JWT tokens with HS256",
+    "passwordHashing": "bcrypt",
+    "accessControl": "Role-based (ADMIN, TRAINER, CLIENT)",
+    "fileSecurity": "Access control on file endpoints",
+    "sqlInjection": "Protected via SQLAlchemy ORM",
+    "cors": "Configured for allowed origins"
+  },
+  "internationalization": {
+    "languages": ["Hebrew (עברית)", "English"],
+    "default": "Hebrew",
+    "library": "react-i18next",
+    "storage": "localStorage for language preference"
+  }
+}

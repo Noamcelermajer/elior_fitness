@@ -1,0 +1,138 @@
+{
+  "feature": "authentication",
+  "status": "working",
+  "summary": "User authentication, registration, JWT token management, and role-based access control",
+  "lastUpdated": "2025-01-31",
+  "backend": {
+    "status": "working",
+    "models": ["app/models/user.py"],
+    "routers": ["app/routers/auth.py"],
+    "services": ["app/services/auth_service.py", "app/services/password_service.py"],
+    "schemas": ["app/schemas/auth.py"],
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/login",
+        "description": "JSON login endpoint - returns JWT token",
+        "auth": false,
+        "roles": [],
+        "requestBody": "UserLogin (username, password)"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/token",
+        "description": "OAuth2 compatible token login - returns JWT token",
+        "auth": false,
+        "roles": [],
+        "requestBody": "OAuth2PasswordRequestForm"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/register",
+        "description": "Public registration (clients only) or authenticated registration",
+        "auth": false,
+        "roles": [],
+        "requestBody": "UserCreate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/register/client",
+        "description": "Register a new client (trainer/admin only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/register/trainer",
+        "description": "Register a new trainer (admin only)",
+        "auth": true,
+        "roles": ["ADMIN"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/me",
+        "description": "Get current authenticated user information",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/registered-users",
+        "description": "Get all registered users (public, for login page)",
+        "auth": false,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset-request",
+        "description": "Request password reset",
+        "auth": false,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset",
+        "description": "Reset password with token",
+        "auth": false,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/change",
+        "description": "Change password (authenticated users)",
+        "auth": true,
+        "roles": []
+      }
+    ],
+    "knownIssues": [],
+    "implementationNotes": "JWT tokens with HS256 algorithm. Password hashing using bcrypt. Role-based access control enforced. Default users: admin@elior.com/admin123, trainer@elior.com/trainer123, client@elior.com/client123"
+  },
+  "frontend": {
+    "status": "working",
+    "pages": ["Frontend/src/pages/Login.tsx"],
+    "components": ["Frontend/src/components/ProtectedRoute.tsx", "Frontend/src/components/PublicRoute.tsx"],
+    "contexts": ["Frontend/src/contexts/AuthContext.tsx"],
+    "routes": ["/login"],
+    "knownIssues": [
+      {
+        "issue": "Language persistence - default language should change when user changes language preference",
+        "severity": "high",
+        "location": "Frontend/src/i18n/config.ts:29, Frontend/src/App.tsx:264",
+        "description": "fallbackLng is hardcoded to 'he'. When user changes language to English, the fallback should also be English, not Hebrew. Currently, if translation is missing or language detection fails, it falls back to Hebrew even if user prefers English.",
+        "fix": "Update fallbackLng to use stored language preference from localStorage. If user has selected English, fallback should be 'en'. If user has selected Hebrew, fallback should be 'he'. Default to 'he' only if no preference is stored."
+      },
+      {
+        "issue": "Console logging of sensitive data (tokens, user data)",
+        "severity": "low",
+        "location": "Frontend/src/contexts/AuthContext.tsx:169,174"
+      }
+    ],
+    "implementationNotes": "Login page redirects based on role: ADMIN -> /admin, TRAINER -> /trainer-dashboard, CLIENT -> /. Protected routes use ProtectedRoute component. Auth state managed via AuthContext with React Context API."
+  },
+  "api": {
+    "basePath": "/api/auth",
+    "endpoints": [
+      "/api/auth/login",
+      "/api/auth/token",
+      "/api/auth/register",
+      "/api/auth/register/client",
+      "/api/auth/register/trainer",
+      "/api/auth/me",
+      "/api/auth/registered-users",
+      "/api/auth/password/reset-request",
+      "/api/auth/password/reset",
+      "/api/auth/password/change"
+    ]
+  },
+  "database": {
+    "tables": ["users"],
+    "relationships": "User model with role enum (ADMIN, TRAINER, CLIENT), trainer_id foreign key for client-trainer relationships"
+  },
+  "documentation": {
+    "relatedFiles": ["README.md", "LOCAL_DEVELOPMENT.md"],
+    "sections": ["Authentication & Security section in README"]
+  },
+  "keywords": ["login", "auth", "jwt", "token", "register", "password", "security", "authentication"],
+  "tags": ["core", "security", "authentication"],
+  "relatedFeatures": ["users"]
+}

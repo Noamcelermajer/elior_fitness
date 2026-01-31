@@ -1,0 +1,75 @@
+{
+  "feature": "chat",
+  "status": "working",
+  "summary": "Trainer-client messaging system with real-time chat and conversation management",
+  "lastUpdated": "2025-01-31",
+  "backend": {
+    "status": "working",
+    "models": ["app/models/chat.py"],
+    "routers": ["app/routers/chat.py"],
+    "services": [],
+    "schemas": [],
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/conversations",
+        "description": "Get conversations for current user",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/conversations/{conversation_id}/messages",
+        "description": "Get messages for a conversation",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "POST",
+        "path": "/api/conversations/{conversation_id}/messages",
+        "description": "Send message in conversation",
+        "auth": true,
+        "roles": []
+      }
+    ],
+    "knownIssues": [],
+    "implementationNotes": "Chat system for trainer-client communication. Conversations created automatically when trainer and client are linked."
+  },
+  "frontend": {
+    "status": "working",
+    "pages": ["Frontend/src/pages/ChatPage.tsx"],
+    "components": ["Frontend/src/components/Chat.tsx"],
+    "routes": ["/chat"],
+    "knownIssues": [
+      {
+        "issue": "Hardcoded Hebrew strings: 'מתאמן' (client), 'מאמן' (trainer)",
+        "severity": "medium",
+        "location": "Frontend/src/components/Chat.tsx:184-185"
+      },
+      {
+        "issue": "Hardcoded English ARIA labels",
+        "severity": "low",
+        "location": "Frontend/src/components/Chat.tsx:715,860,1016,1256"
+      }
+    ],
+    "implementationNotes": "ChatPage shows conversations and messages. Chat component handles real-time messaging. Profile sidebar with progress photos."
+  },
+  "api": {
+    "basePath": "/api",
+    "endpoints": [
+      "/api/conversations",
+      "/api/conversations/{conversation_id}/messages"
+    ]
+  },
+  "database": {
+    "tables": ["conversations", "messages"],
+    "relationships": "Conversation links trainer and client. Message belongs to conversation and has sender."
+  },
+  "documentation": {
+    "relatedFiles": ["README.md"],
+    "sections": ["Real-time Features section in README"]
+  },
+  "keywords": ["chat", "messaging", "conversations", "communication", "messages"],
+  "tags": ["feature", "communication"],
+  "relatedFeatures": ["users", "notifications"]
+}

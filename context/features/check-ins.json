@@ -1,0 +1,104 @@
+{
+  "feature": "check-ins",
+  "status": "working",
+  "summary": "Daily check-in system with optional questionnaire, streak tracking, and statistics",
+  "lastUpdated": "2025-01-31",
+  "backend": {
+    "status": "working",
+    "models": ["app/models/check_in.py"],
+    "routers": ["app/routers/check_in.py"],
+    "services": [],
+    "schemas": ["app/schemas/check_in.py"],
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/check-ins",
+        "description": "Create daily check-in (client only)",
+        "auth": true,
+        "roles": ["CLIENT"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/check-ins",
+        "description": "Get check-ins with filtering - clients see own, trainers see clients",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/check-ins/today",
+        "description": "Get today's check-in for current client",
+        "auth": true,
+        "roles": ["CLIENT"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/check-ins/{check_in_id}",
+        "description": "Get specific check-in by ID",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/check-ins/summary",
+        "description": "Get summary statistics for a client (streak, completion rate, averages)",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/check-ins/trainer/dashboard",
+        "description": "Get check-in status for all trainer's clients (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER"]
+      }
+    ],
+    "knownIssues": [
+      {
+        "issue": "Hardcoded Windows file paths in debug logging",
+        "severity": "high",
+        "location": "app/routers/check_in.py:326,362,381"
+      }
+    ],
+    "implementationNotes": "One check-in per day per client (unique constraint). All fields optional. Date normalization to start of day. Streak calculated backwards from today. Completion rate based on calendar days since first check-in."
+  },
+  "frontend": {
+    "status": "working",
+    "pages": ["Frontend/src/pages/Index.tsx", "Frontend/src/pages/ClientProfile.tsx", "Frontend/src/pages/TrainerDashboard.tsx"],
+    "components": [
+      "Frontend/src/components/DailyCheckInCard.tsx",
+      "Frontend/src/components/DailyCheckInCardV2.tsx",
+      "Frontend/src/components/DailyCheckInForm.tsx",
+      "Frontend/src/components/CheckInStatusBadge.tsx",
+      "Frontend/src/components/ClientCheckInSummary.tsx",
+      "Frontend/src/components/ClientCheckInHistory.tsx",
+      "Frontend/src/components/ClientCheckInDetail.tsx",
+      "Frontend/src/components/YesNoSkipButtons.tsx",
+      "Frontend/src/components/RatingScale.tsx"
+    ],
+    "routes": [],
+    "knownIssues": [],
+    "implementationNotes": "DailyCheckInCard on client dashboard. DailyCheckInForm for submission with YesNoSkipButtons and RatingScale components. Trainer dashboard shows check-in status badges. ClientProfile has check-in tab with summary, history, and detail views."
+  },
+  "api": {
+    "basePath": "/api/check-ins",
+    "endpoints": [
+      "/api/check-ins",
+      "/api/check-ins/today",
+      "/api/check-ins/{check_in_id}",
+      "/api/check-ins/summary",
+      "/api/check-ins/trainer/dashboard"
+    ]
+  },
+  "database": {
+    "tables": ["daily_check_ins"],
+    "relationships": "DailyCheckIn linked to User via client_id. Unique constraint on (client_id, date)."
+  },
+  "documentation": {
+    "relatedFiles": ["DAILY_CHECK_IN_IMPLEMENTATION.md"],
+    "sections": []
+  },
+  "keywords": ["check-in", "daily", "questionnaire", "streak", "health", "wellness", "daily-check-in"],
+  "tags": ["feature", "health", "tracking"],
+  "relatedFeatures": ["users"]
+}

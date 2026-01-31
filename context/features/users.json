@@ -1,0 +1,123 @@
+{
+  "feature": "users",
+  "status": "working",
+  "summary": "User management with roles (Admin/Trainer/Client), profiles, trainer-client relationships, and user operations",
+  "lastUpdated": "2025-01-31",
+  "backend": {
+    "status": "working",
+    "models": ["app/models/user.py"],
+    "routers": ["app/routers/users.py"],
+    "services": ["app/services/user_service.py"],
+    "schemas": ["app/schemas/auth.py"],
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/users/me",
+        "description": "Get current user information",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/api/users",
+        "description": "Get all users (admin/trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/users/clients",
+        "description": "Get trainer's clients or all clients (admin)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/users/trainers",
+        "description": "Get all trainers (admin/trainer only)",
+        "auth": true,
+        "roles": ["TRAINER", "ADMIN"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/users/clients/{client_id}/assign",
+        "description": "Assign client to trainer (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/users/clients/{client_id}/remove",
+        "description": "Remove client from trainer (trainer only)",
+        "auth": true,
+        "roles": ["TRAINER"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/users/{user_id}",
+        "description": "Get user by ID",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "PUT",
+        "path": "/api/users/{user_id}",
+        "description": "Update user (admin/trainer for clients, or own profile)",
+        "auth": true,
+        "roles": []
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/users/{user_id}",
+        "description": "Delete user (admin only)",
+        "auth": true,
+        "roles": ["ADMIN"]
+      }
+    ],
+    "knownIssues": [],
+    "implementationNotes": "Three roles: ADMIN, TRAINER, CLIENT. Trainer-client relationships via trainer_id foreign key. ClientProfile model for additional client information. Role-based access control enforced on all endpoints."
+  },
+  "frontend": {
+    "status": "working",
+    "pages": [
+      "Frontend/src/pages/UsersPage.tsx",
+      "Frontend/src/pages/ClientProfile.tsx",
+      "Frontend/src/pages/EditClient.tsx",
+      "Frontend/src/pages/TrainerDashboard.tsx",
+      "Frontend/src/pages/AdminDashboard.tsx"
+    ],
+    "components": [],
+    "routes": [
+      "/users",
+      "/client/:clientId",
+      "/client/:clientId/edit",
+      "/trainer-dashboard",
+      "/admin"
+    ],
+    "knownIssues": [],
+    "implementationNotes": "UsersPage for admin user management. ClientProfile shows client details with tabs. TrainerDashboard shows trainer's clients. AdminDashboard shows system overview."
+  },
+  "api": {
+    "basePath": "/api/users",
+    "endpoints": [
+      "/api/users/me",
+      "/api/users",
+      "/api/users/clients",
+      "/api/users/trainers",
+      "/api/users/clients/{client_id}/assign",
+      "/api/users/clients/{client_id}/remove",
+      "/api/users/{user_id}"
+    ]
+  },
+  "database": {
+    "tables": ["users", "client_profiles"],
+    "relationships": "User model with role enum. ClientProfile linked to User. Trainer-client relationship via User.trainer_id foreign key."
+  },
+  "documentation": {
+    "relatedFiles": ["README.md"],
+    "sections": ["User Management section in README"]
+  },
+  "keywords": ["users", "profiles", "roles", "trainer", "client", "admin", "management", "user-management"],
+  "tags": ["core", "management"],
+  "relatedFeatures": ["authentication"]
+}

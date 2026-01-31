@@ -1,0 +1,109 @@
+{
+  "feature": "system",
+  "status": "working",
+  "summary": "System monitoring, health checks, resource monitoring, admin tools, and system status",
+  "lastUpdated": "2025-01-31",
+  "backend": {
+    "status": "working",
+    "models": [],
+    "routers": ["app/routers/system.py"],
+    "services": ["app/services/system_service.py"],
+    "schemas": [],
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/system/status",
+        "description": "Get system status and health metrics (admin only)",
+        "auth": true,
+        "roles": ["ADMIN"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/system/logs",
+        "description": "Get recent system logs (admin only)",
+        "auth": true,
+        "roles": ["ADMIN"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/system/maintenance",
+        "description": "Toggle maintenance mode (admin only)",
+        "auth": true,
+        "roles": ["ADMIN"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/system/restart",
+        "description": "Restart system services (admin only)",
+        "auth": true,
+        "roles": ["ADMIN"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/system/backup",
+        "description": "Create database backup (admin only)",
+        "auth": true,
+        "roles": ["ADMIN"]
+      },
+      {
+        "method": "GET",
+        "path": "/health",
+        "description": "Health check endpoint (public)",
+        "auth": false,
+        "roles": []
+      },
+      {
+        "method": "GET",
+        "path": "/status/database",
+        "description": "Database status (public)",
+        "auth": false,
+        "roles": []
+      }
+    ],
+    "knownIssues": [
+      {
+        "issue": "Debug endpoints expose environment variables and file system paths",
+        "severity": "medium",
+        "location": "app/main.py, app/routers/files.py - /api/debug/env, /api/debug/paths"
+      }
+    ],
+    "implementationNotes": "System monitoring uses psutil for resource monitoring. Docker stats available if docker package installed. Health check endpoint for deployment monitoring. System status includes CPU, memory, database connections, active users."
+  },
+  "frontend": {
+    "status": "working",
+    "pages": ["Frontend/src/pages/SystemPage.tsx", "Frontend/src/pages/AdminDashboard.tsx"],
+    "components": [],
+    "routes": ["/system", "/admin"],
+    "knownIssues": [
+      {
+        "issue": "Hardcoded English error message: 'Action failed'",
+        "severity": "low",
+        "location": "Frontend/src/pages/SystemPage.tsx:251"
+      }
+    ],
+    "implementationNotes": "SystemPage shows system status, logs, and admin tools. AdminDashboard shows system overview with metrics."
+  },
+  "api": {
+    "basePath": "/api/system",
+    "endpoints": [
+      "/api/system/status",
+      "/api/system/logs",
+      "/api/system/maintenance",
+      "/api/system/restart",
+      "/api/system/backup",
+      "/health",
+      "/status/database"
+    ]
+  },
+  "database": {
+    "tables": [],
+    "relationships": "System monitoring queries database for stats but doesn't have dedicated tables"
+  },
+  "documentation": {
+    "relatedFiles": ["README.md", "docs/RAILWAY_DEPLOYMENT.md"],
+    "sections": []
+  },
+  "keywords": ["system", "monitoring", "health", "admin", "status", "metrics", "system-status"],
+  "tags": ["admin", "monitoring"],
+  "relatedFeatures": ["users"]
+}
