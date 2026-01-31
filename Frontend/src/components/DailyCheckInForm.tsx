@@ -22,8 +22,9 @@ export const DailyCheckInForm: React.FC<DailyCheckInFormProps> = ({
   onSuccess,
   initialDate
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const isRtl = i18n.language === 'he';
   
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -129,12 +130,12 @@ export const DailyCheckInForm: React.FC<DailyCheckInFormProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-background max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md bg-background max-h-[90vh] overflow-y-auto" dir={isRtl ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle>{t('checkIn.title')}</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
           {/* Date */}
           <div className="space-y-2">
             <Label htmlFor="date">{t('common.date')}</Label>
@@ -145,6 +146,7 @@ export const DailyCheckInForm: React.FC<DailyCheckInFormProps> = ({
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               className="bg-secondary border-border text-foreground"
               required
+              dir={isRtl ? 'rtl' : 'ltr'}
             />
           </div>
 

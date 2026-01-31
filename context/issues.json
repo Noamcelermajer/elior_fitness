@@ -640,6 +640,29 @@
     "clientLogin": "user / user123",
     "instructions": "Manually verify: language persistence, progress photos (3 views + sideways), training calendar + completed button, training name/workouts not day name, workout client view (no arrow/count/tags/body-weight), meal plan manual calories + no per-meal display, meal creation translations, food bank single filter, client meal tracker (add from bank, swipe remove, Complete)."
   },
+  "browserTestResults": {
+    "lastRun": "2025-01-31",
+    "trainerFlow": {
+      "login": "PASS – elior/elior123, refs e2 (username), e3 (password), e5 (login button); navigates to /trainer-dashboard",
+      "createMealPlan": "PASS – /create-meal-plan shows Hebrew UI; daily targets visible (יעד קלוריות, יעד חלבון); no per-meal calories/macros on main form; Select client, Program name, Add Meal, Description present",
+      "mealBank": "PASS – /meal-bank shows single filter row below search (הכל, חלבון, פחמימות, שומן); Add Food, Import/Export Excel; food item shows יחידה 1 (unit). Second filter under box not confirmed – scroll or add-food dialog may have duplicate",
+      "progress": "PENDING – /progress as trainer may redirect to dashboard; progress photos (3 slots, sideways) need testing as client",
+      "training": "PENDING – /training as trainer; client profile /client/1 returned Client Not Found (client IDs may differ). Training calendar, day card (name + workouts, no arrow/count/tags), completed button need client or correct clientId",
+      "language": "PENDING – language switch (globe) and fallback not tested; refs changed after navigation"
+    },
+    "clientFlow": {
+      "login": "PENDING – refs e2/e3/e5 stale on return to /login; need fresh snapshot to fill user/user123",
+      "meals": "PENDING – daily totals only, Add Food from bank, swipe remove, Complete – need client login",
+      "training": "PENDING – day card checks – need client login",
+      "progress": "PENDING – 3 photo slots, sideways – need client login"
+    },
+    "nextSteps": [
+      "Get fresh snapshot on /login; fill user/user123, click login; then test /meals, /training, /progress as client",
+      "Open hamburger menu on trainer dashboard to find Clients list and correct clientId for /client/:id",
+      "Test language: click globe, select English, reload page, verify fallback",
+      "In Create Meal Plan: add a meal and open meal bank dialog to check for duplicate filters and raw translation keys (kcalPer100g, addFoodToBank, makeFoodPublic)"
+    ]
+  },
   "stillBuggedSummary": {
     "fromCodeReview": [
       "Progress: old photos sideways (bug-7) - EXIF fix may not apply to existing images.",

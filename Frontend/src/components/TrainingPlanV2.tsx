@@ -156,7 +156,7 @@ const normalizeDays = (days: WorkoutDay[]) => [...days].sort((a, b) => a.order_i
 
 const TrainingPlanV2: React.FC = () => {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
@@ -330,21 +330,6 @@ const TrainingPlanV2: React.FC = () => {
                   t('training.defaultPlanDescription', 'התוכנית האישית שלך לאימונים')}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {workoutPlan.split_type ? (
-                <Badge variant="outline" className="px-3 py-3 text-sm">
-                  {t(`training.splitTypes.${workoutPlan.split_type}`, workoutPlan.split_type)}
-                </Badge>
-              ) : null}
-              {workoutPlan.days_per_week ? (
-                <Badge variant="outline" className="px-3 py-3 text-sm">
-                  {t('training.daysPerWeek', {
-                    defaultValue: '{{count}} אימונים בשבוע',
-                    count: workoutPlan.days_per_week,
-                  })}
-                </Badge>
-              ) : null}
-            </div>
           </div>
         </div>
       </div>
@@ -369,16 +354,15 @@ const TrainingPlanV2: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Training Days List - Similar to Meal Plan UI */}
+        {/* Workouts list */}
         <div className="space-y-4">
           <h2 className="text-xl font-bold">
-            {t('training.trainingDays', 'Training Days')} ({planDays.length})
+            {t('training.workouts', 'Workouts')} ({planDays.length})
           </h2>
           
           <div className="space-y-3">
-            {planDays.map((day, index) => {
+            {planDays.map((day) => {
               const isCompleted = dayCompletions[day.id] || false;
-              const totalExercises = day.workout_exercises.length;
               
               return (
                 <Card
@@ -390,7 +374,7 @@ const TrainingPlanV2: React.FC = () => {
                   )}
                   onClick={() => navigate(`/training/day/${day.id}`)}
                 >
-                  <CardContent className="px-6 py-4">
+                  <CardContent className="px-6 py-4" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                     <div className="flex items-center justify-between w-full gap-4">
                       <div className="flex items-start space-x-3 flex-1 min-w-0">
                         <div className="flex-1 min-w-0 space-y-1">
@@ -398,14 +382,14 @@ const TrainingPlanV2: React.FC = () => {
                           <p className="font-semibold text-lg" dir="auto">
                             {workoutPlan.name}
                           </p>
-                          {/* Workouts List - Below name */}
+                          {/* Workouts List - Below name (no exercise count) */}
                           {day.workout_exercises && day.workout_exercises.length > 0 && (
                             <div className="text-sm text-muted-foreground" dir="auto">
                               {day.workout_exercises
                                 .sort((a, b) => a.order_index - b.order_index)
                                 .map((ex, idx) => (
                                   <span key={ex.id}>
-                                    {ex.exercise?.name || `Exercise ${idx + 1}`}
+                                    {ex.exercise?.name || t('training.unnamedExercise', 'Unnamed Exercise')}
                                     {idx < day.workout_exercises.length - 1 ? ', ' : ''}
                                   </span>
                                 ))}

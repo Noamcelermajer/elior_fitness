@@ -792,6 +792,7 @@
     "perPortion": "למנה",
     "measurementType": "סוג מדידה",
     "servingSize": "גודל מנה",
+    "servingSizePlaceholderPerPortion": "פרוסה 1, 2 חתיכות וכו׳",
     "duplicateItemsFound": "נמצאו פריטים כפולים",
     "duplicateItemsDescription": "הפריטים הבאים עשויים כבר להתקיים בבנק האוכל שלך. בחר פעולה עבור כל פריט.",
     "newItem": "פריט חדש (מאקסל)",

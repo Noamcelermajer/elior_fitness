@@ -768,7 +768,7 @@ const MealBank = () => {
                       <Input
                         id="serving_size"
                         type="text"
-                        placeholder={itemForm.measurement_type === 'per_100g' ? '100g' : '1 slice, 2 pieces, etc.'}
+                        placeholder={itemForm.measurement_type === 'per_100g' ? '100g' : t('foodBank.servingSizePlaceholderPerPortion', '1 slice, 2 pieces, etc.')}
                         value={itemForm.serving_size}
                         onChange={(e) => setItemForm({ ...itemForm, serving_size: e.target.value })}
                         className="w-full max-w-full"
