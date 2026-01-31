@@ -23,20 +23,26 @@ def _table_info(table_name: str) -> List[Dict[str, object]]:
                 is_nullable,
                 column_default
             FROM information_schema.columns
-            WHERE table_name = :table_name
+            WHERE table_schema = 'public' AND table_name = :table_name
             ORDER BY ordinal_position
         """)
-        with engine.connect() as connection:
-            result = connection.execute(query, {"table_name": table_name})
-            return [
-                {
-                    "name": row.name,
-                    "type": row.data_type,
-                    "notnull": row.is_nullable == "NO",
-                    "dflt_value": row.column_default
-                }
-                for row in result
-            ]
+        try:
+            with engine.connect() as connection:
+                # Set a statement timeout for this query (30 seconds)
+                connection.execute(text("SET statement_timeout = '30s'"))
+                result = connection.execute(query, {"table_name": table_name})
+                return [
+                    {
+                        "name": row.name,
+                        "type": row.data_type,
+                        "notnull": row.is_nullable == "NO",
+                        "dflt_value": row.column_default
+                    }
+                    for row in result
+                ]
+        except Exception as e:
+            logger.error(f"Error fetching table info for {table_name}: {e}")
+            raise
     else:
         # SQLite
         query = text(f"PRAGMA table_info('{table_name}')")
@@ -46,7 +52,31 @@ def _table_info(table_name: str) -> List[Dict[str, object]]:
 
 
 def _column_exists(table_name: str, column_name: str) -> bool:
-    return any(col["name"] == column_name for col in _table_info(table_name))
+    """Check if column exists - optimized to avoid fetching all columns."""
+    if IS_POSTGRESQL:
+        # Use a direct query that only checks for the specific column - much faster
+        query = text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = :table_name AND column_name = :column_name
+            LIMIT 1
+        """)
+        try:
+            with engine.connect() as connection:
+                result = connection.execute(query, {"table_name": table_name, "column_name": column_name})
+                return result.fetchone() is not None
+        except Exception as e:
+            logger.warning(f"Error checking column existence for {table_name}.{column_name}: {e}")
+            # Fallback to table_info if direct query fails
+            try:
+                return any(col["name"] == column_name for col in _table_info(table_name))
+            except Exception as fallback_error:
+                logger.error(f"Fallback table_info also failed: {fallback_error}")
+                # Assume column doesn't exist if we can't check
+                return False
+    else:
+        # SQLite - use table_info
+        return any(col["name"] == column_name for col in _table_info(table_name))
 
 
 def _ensure_columns(table_name: str, columns: Dict[str, str]) -> None:
