@@ -1053,6 +1053,8 @@
     "subtitle": "Create a personalized meal plan for your client",
     "back": "Back",
     "selectClient": "Select Client",
+    "selectClientPlaceholder": "Select client...",
+    "client": "Client",
     "planTitle": "Plan Title",
     "planTitleRequired": "Plan Title *",
     "planTitlePlaceholder": "e.g., High Protein Diet",
