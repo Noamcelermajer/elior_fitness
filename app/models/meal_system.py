@@ -15,6 +15,7 @@ from sqlalchemy import (
     Enum,
     Text,
     UniqueConstraint,
+    TypeDecorator,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -31,6 +32,42 @@ class MeasurementType(str, enum.Enum):
     """Measurement type for food items"""
     PER_100G = "per_100g"      # Per 100 grams
     PER_PORTION = "per_portion"  # Per portion (e.g., 1 slice, 2 pieces)
+
+class MeasurementTypeColumn(TypeDecorator):
+    """Custom type decorator to handle enum value conversion for backward compatibility"""
+    impl = String
+    cache_ok = True
+    
+    def __init__(self, length=20):
+        super().__init__(length=length)
+    
+    def process_bind_param(self, value, dialect):
+        """Convert enum to value when writing to database"""
+        if value is None:
+            return None
+        if isinstance(value, MeasurementType):
+            return value.value
+        return value
+    
+    def process_result_value(self, value, dialect):
+        """Convert database value to enum when reading"""
+        if value is None:
+            return None
+        # Handle both enum names and values
+        if value == 'per_100g' or value == 'PER_100G':
+            return MeasurementType.PER_100G
+        elif value == 'per_portion' or value == 'PER_PORTION':
+            return MeasurementType.PER_PORTION
+        # Try to find by value first
+        try:
+            return MeasurementType(value)
+        except ValueError:
+            # Try to find by name
+            try:
+                return MeasurementType[value]
+            except KeyError:
+                # Default fallback
+                return MeasurementType.PER_100G
 
 class MealPlanV2(Base):
     """Main meal plan assigned to a client by trainer"""
@@ -126,7 +163,7 @@ class FoodOption(Base):
     carbs = Column(Float)    # grams per serving
     fat = Column(Float)      # grams per serving
     serving_size = Column(String)  # e.g., "100g", "1 piece"
-    measurement_type = Column(Enum(MeasurementType, native_enum=False, length=20), default=MeasurementType.PER_100G, nullable=False)  # per_100g or per_portion
+    measurement_type = Column(MeasurementTypeColumn(length=20), default=MeasurementType.PER_100G, nullable=False)  # per_100g or per_portion
     notes = Column(Text)
     order_index = Column(Integer, default=0)  # For display ordering
     created_at = Column(DateTime, default=func.now())
@@ -198,7 +235,7 @@ class MealBank(Base):
     protein = Column(Float)  # grams per 100g or per portion
     carbs = Column(Float)    # grams per 100g or per portion
     fat = Column(Float)      # grams per 100g or per portion
-    measurement_type = Column(Enum(MeasurementType, native_enum=False, length=20), default=MeasurementType.PER_100G, nullable=False)  # per_100g or per_portion
+    measurement_type = Column(MeasurementTypeColumn(length=20), default=MeasurementType.PER_100G, nullable=False)  # per_100g or per_portion
     serving_size = Column(String)  # e.g., "100g", "1 slice", "2 pieces" - description of serving
     created_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # Trainer who created it
     is_public = Column(Boolean, default=False)  # Share with other trainers?
