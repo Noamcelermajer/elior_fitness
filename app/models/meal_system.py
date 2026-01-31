@@ -126,7 +126,7 @@ class FoodOption(Base):
     carbs = Column(Float)    # grams per serving
     fat = Column(Float)      # grams per serving
     serving_size = Column(String)  # e.g., "100g", "1 piece"
-    measurement_type = Column(Enum(MeasurementType, values_callable=lambda obj: [e.value for e in obj]), default=MeasurementType.PER_100G, nullable=False)  # per_100g or per_portion
+    measurement_type = Column(Enum(MeasurementType, native_enum=False, length=20), default=MeasurementType.PER_100G, nullable=False)  # per_100g or per_portion
     notes = Column(Text)
     order_index = Column(Integer, default=0)  # For display ordering
     created_at = Column(DateTime, default=func.now())
@@ -198,7 +198,7 @@ class MealBank(Base):
     protein = Column(Float)  # grams per 100g or per portion
     carbs = Column(Float)    # grams per 100g or per portion
     fat = Column(Float)      # grams per 100g or per portion
-    measurement_type = Column(Enum(MeasurementType, values_callable=lambda obj: [e.value for e in obj]), default=MeasurementType.PER_100G, nullable=False)  # per_100g or per_portion
+    measurement_type = Column(Enum(MeasurementType, native_enum=False, length=20), default=MeasurementType.PER_100G, nullable=False)  # per_100g or per_portion
     serving_size = Column(String)  # e.g., "100g", "1 slice", "2 pieces" - description of serving
     created_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # Trainer who created it
     is_public = Column(Boolean, default=False)  # Share with other trainers?
