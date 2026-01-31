@@ -515,7 +515,8 @@ const MealBank = () => {
                     const file = e.target.files?.[0];
                     if (file) {
                       setImportFile(file);
-                      setTimeout(() => handleImportExcel(), 100);
+                      // Pass file directly to avoid state timing issues
+                      handleImportExcel(file);
                     }
                   }}
                   className="hidden"
