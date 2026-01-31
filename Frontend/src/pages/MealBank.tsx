@@ -891,6 +891,19 @@ const MealBank = () => {
             </form>
           </DialogContent>
       </Dialog>
+
+      {/* Duplicate Detection Dialog */}
+      {duplicateData && (
+        <DuplicateDetectionDialog
+          open={duplicateDialogOpen}
+          duplicates={duplicateData.duplicate_matches || []}
+          onClose={() => {
+            setDuplicateDialogOpen(false);
+            setDuplicateData(null);
+          }}
+          onConfirm={handleDuplicateConfirm}
+        />
+      )}
     </Layout>
   );
 };
