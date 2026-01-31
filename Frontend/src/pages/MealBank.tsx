@@ -418,51 +418,6 @@ const MealBank = () => {
     }
   };
 
-  const handleDuplicateConfirm = async (decisions: Record<number, 'replace' | 'add' | 'ignore'>) => {
-    if (!duplicateData) return;
-
-    setIsImporting(true);
-    try {
-      const token = localStorage.getItem('access_token');
-      
-      const response = await fetch(`${API_BASE_URL}/v2/meals/meal-bank/import/excel/process`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          items_to_import: duplicateData.items_to_import || [],
-          duplicate_matches: duplicateData.duplicate_matches || [],
-          duplicate_decisions: decisions
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast({
-          title: t('common.success'),
-          description: result.message || `Imported ${result.imported_count} items`
-        });
-        setDuplicateDialogOpen(false);
-        setDuplicateData(null);
-        setImportFile(null);
-        fetchItems();
-      } else {
-        const error = await response.json();
-        throw new Error(error.detail || 'Import processing failed');
-      }
-    } catch (error) {
-      toast({
-        title: t('common.error'),
-        description: error instanceof Error ? error.message : 'Failed to process import',
-        variant: "destructive"
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
   if (loading) {
     return (
       <Layout currentPage="meal-bank">
