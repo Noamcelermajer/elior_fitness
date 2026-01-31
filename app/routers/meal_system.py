@@ -1183,32 +1183,49 @@ def get_meal_bank_items(
     db: Session = Depends(get_db)
 ):
     """Get meal bank items (trainers and admins see all items, clients see only public)"""
-    query = db.query(MealBank)
-    
-    if current_user.role == UserRole.TRAINER or current_user.role == UserRole.ADMIN:
-        # Trainers and admins see all items
-        pass
-    else:
-        # Clients only see public items
-        query = query.filter(MealBank.is_public == True)
-    
-    # Only apply trainer_id filter if explicitly provided
-    if trainer_id:
-        query = query.filter(MealBank.created_by == trainer_id)
-    
-    if macro_type:
-        query = query.filter(MealBank.macro_type == macro_type)
-    
-    if search:
-        from sqlalchemy import or_
-        query = query.filter(
-            or_(
-                MealBank.name.contains(search),
-                MealBank.name_hebrew.contains(search)
+    try:
+        query = db.query(MealBank)
+        
+        if current_user.role == UserRole.TRAINER or current_user.role == UserRole.ADMIN:
+            # Trainers and admins see all items
+            if not include_public:
+                # If include_public is False, only show items created by current user
+                query = query.filter(MealBank.created_by == current_user.id)
+        else:
+            # Clients only see public items
+            query = query.filter(MealBank.is_public == True)
+        
+        # Only apply trainer_id filter if explicitly provided
+        if trainer_id:
+            query = query.filter(MealBank.created_by == trainer_id)
+        
+        if macro_type:
+            query = query.filter(MealBank.macro_type == macro_type)
+        
+        if search:
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    MealBank.name.contains(search),
+                    MealBank.name_hebrew.contains(search)
+                )
             )
+        
+        items = query.order_by(MealBank.name).all()
+        
+        # Ensure all items have measurement_type set (for backward compatibility)
+        from app.models.meal_system import MeasurementType
+        for item in items:
+            if not hasattr(item, 'measurement_type') or item.measurement_type is None:
+                item.measurement_type = MeasurementType.PER_100G
+        
+        return items
+    except Exception as e:
+        logger.error(f"Error fetching meal bank items: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch meal bank items: {str(e)}"
         )
-    
-    return query.order_by(MealBank.name).all()
 
 @router.get("/meal-bank/{item_id}", response_model=MealBankResponse)
 def get_meal_bank_item(
