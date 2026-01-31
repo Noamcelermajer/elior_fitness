@@ -499,6 +499,162 @@
       "fix": "Ensure EXIF orientation is properly handled for all images, including existing ones. May need to reprocess existing images or add client-side rotation handling."
     }
   ],
+  "knownIssuesToFix": {
+    "lastUpdated": "2025-01-31",
+    "summary": "Consolidated list from user: language, progress photos, training UI, food plan overhaul. Status: needs-verification = believed fixed, not-fixed = still to do.",
+    "language": [
+      {
+        "id": "lang-1",
+        "title": "Language persistence - default should change when user changes language",
+        "shortSummary": "When user switches to English, fallback/default should be English not Hebrew. App.tsx sets fallbackLng from currentLang.",
+        "status": "needs-verification",
+        "location": "Frontend/src/App.tsx, Frontend/src/i18n/config.ts"
+      }
+    ],
+    "progressPhotos": [
+      {
+        "id": "prog-1",
+        "title": "Weight pictures should show all three (front, side, back)",
+        "shortSummary": "ProgressTrackingV2 grid maps front/side/back per entry. Verify in browser that all three slots show or load.",
+        "status": "needs-verification",
+        "location": "Frontend/src/components/ProgressTrackingV2.tsx"
+      },
+      {
+        "id": "prog-2",
+        "title": "Old progress pictures shown sideways",
+        "shortSummary": "EXIF fix in backend; existing images may still display rotated. Consider client-side rotation or reprocess.",
+        "status": "not-fixed",
+        "location": "app/services/file_service.py, Frontend ProgressTrackingV2"
+      }
+    ],
+    "training": [
+      {
+        "id": "tr-1",
+        "title": "Training completion calendar - mark when training was completed",
+        "shortSummary": "TrainingPlanV2 has TrainingCalendar + completedDates. Verify calendar shows and marks completed days.",
+        "status": "needs-verification",
+        "location": "Frontend/src/components/TrainingPlanV2.tsx"
+      },
+      {
+        "id": "tr-2",
+        "title": "Training completed button in training day",
+        "shortSummary": "TrainingDayPage has day-complete checkbox. Verify it exists and marks day complete.",
+        "status": "needs-verification",
+        "location": "Frontend/src/pages/TrainingDayPage.tsx"
+      },
+      {
+        "id": "tr-3",
+        "title": "Show training name and workouts instead of day name (שם היום / ימי אימונים)",
+        "shortSummary": "TrainingPlanV2 shows workoutPlan.name and workout_exercises list. Hebrew fallback fixed to Training Days. Remove any emoji.",
+        "status": "needs-verification",
+        "location": "Frontend/src/components/TrainingPlanV2.tsx"
+      },
+      {
+        "id": "tr-4",
+        "title": "Workout client view: remove arrow (>), exercise count, tags under description, body weight toggle",
+        "shortSummary": "Remove ChevronRight from day cards; remove exercise count; remove tags (מותאם אישית, 3 אימנים בשבוע); only name + description. Body weight state removed from TrainingDayPage.",
+        "status": "needs-verification",
+        "location": "Frontend/src/pages/TrainingDayPage.tsx, TrainingPlanV2.tsx, ClientProfile.tsx"
+      }
+    ],
+    "foodPlanOverhaul": [
+      {
+        "id": "food-1",
+        "title": "Trainer manually sets calories and macro grams per day",
+        "shortSummary": "CreateMealPlanV2 has editable total_calories, protein_target, carb_target, fat_target. No auto-override on submit.",
+        "status": "needs-verification",
+        "location": "Frontend/src/pages/CreateMealPlanV2.tsx"
+      },
+      {
+        "id": "food-2",
+        "title": "Remove calories per meal and macros (daily totals only)",
+        "shortSummary": "MealMenuV2 uses daily totals only; per-meal display removed.",
+        "status": "needs-verification",
+        "location": "Frontend/src/components/MealMenuV2.tsx"
+      },
+      {
+        "id": "food-3",
+        "title": "Meal creation translations (kcalPer100g, addFoodToBank, makeFoodPublic and others)",
+        "shortSummary": "Keys exist in en.json. Verify no raw keys in UI.",
+        "status": "needs-verification",
+        "location": "Frontend/src/i18n/locales/en.json, CreateMealPlanV2.tsx"
+      },
+      {
+        "id": "food-4",
+        "title": "Per portion vs per 100g (e.g. slice of bread = 1 slice, 2 slices)",
+        "shortSummary": "Add measurement_type (per_100g | per_portion) to models and UI; quantity units by type.",
+        "status": "not-fixed",
+        "location": "app/models/meal_system.py, meal_bank.py, CreateMealPlanV2, MealBank, MealMenuV2"
+      },
+      {
+        "id": "food-5",
+        "title": "Import food plan by Excel (structure per meal plan)",
+        "shortSummary": "Excel import exists. Define/verify structure: sheets per day or meals, columns for meals/macros/foods.",
+        "status": "resolved-needs-verification",
+        "location": "app/routers/meal_system.py, CreateMealPlanV2.tsx"
+      },
+      {
+        "id": "food-6",
+        "title": "Food bank Excel import - duplicate detection, Hebrew matching, popup if item exists",
+        "shortSummary": "Backend has Hebrew normalization + fuzzy match. Popup on duplicate. Verify in browser.",
+        "status": "resolved-needs-verification",
+        "location": "app/routers/meal_system.py"
+      },
+      {
+        "id": "food-7",
+        "title": "Trainee: choose from all food bank; trainer recommends grams; trainee can change food/amount; calories counted; swipe to remove; Complete button",
+        "shortSummary": "MealMenuV2: add from food bank, recommendations, custom quantity, daily totals, swipe delete, mark meal complete.",
+        "status": "needs-verification",
+        "location": "Frontend/src/components/MealMenuV2.tsx"
+      },
+      {
+        "id": "food-8",
+        "title": "Food bank - single filter (no duplicate filters under search and under box)",
+        "shortSummary": "Consolidate to one filter (e.g. tabs or single selector). Currently two places to filter protein.",
+        "status": "not-fixed",
+        "location": "Frontend/src/pages/MealBank.tsx, CreateMealPlanV2.tsx"
+      }
+    ]
+  },
+  "fixPlanOrder": [
+    "lang-1",
+    "prog-1",
+    "prog-2",
+    "tr-1",
+    "tr-2",
+    "tr-3",
+    "tr-4",
+    "food-1",
+    "food-2",
+    "food-3",
+    "food-4",
+    "food-5",
+    "food-6",
+    "food-7",
+    "food-8"
+  ],
+  "browserVerificationNote": {
+    "lastUpdated": "2025-01-31",
+    "url": "https://ecshape.org",
+    "trainerLogin": "elior / elior123",
+    "clientLogin": "user / user123",
+    "instructions": "Manually verify: language persistence, progress photos (3 views + sideways), training calendar + completed button, training name/workouts not day name, workout client view (no arrow/count/tags/body-weight), meal plan manual calories + no per-meal display, meal creation translations, food bank single filter, client meal tracker (add from bank, swipe remove, Complete)."
+  },
+  "stillBuggedSummary": {
+    "fromCodeReview": [
+      "Progress: old photos sideways (bug-7) - EXIF fix may not apply to existing images.",
+      "Food bank: two filter UIs (issue-73) - filter under search and under box; consolidate to one.",
+      "Per portion vs per 100g (issue-74) - not implemented; need measurement_type in models + UI.",
+      "Meal creation: any raw translation keys - verify in browser; keys exist in en.json."
+    ],
+    "needsManualCheck": [
+      "Language: after switching to English and reload, missing keys should fallback to English not Hebrew.",
+      "Progress: each entry should show 3 photo slots (front/side/back); old entries may show sideways.",
+      "Training: calendar should show completed days; day card should show plan name + workout list; no ChevronRight on card, no exercise count, no tags (מותאם אישית etc), no body weight toggle.",
+      "Meal plan: daily targets editable; no per-meal calories/macros; all mealCreation.* strings translated.",
+      "Client meals: daily totals only; Add Food from bank; swipe to delete recommended; Complete meal button."
+    ]
+  },
   "documentation": {
     "source": "COMPREHENSIVE_CODE_REVIEW_REPORT.md",
     "lastReview": "January 2025",

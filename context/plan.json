@@ -2,6 +2,29 @@
   "planName": "Meal Plan Creation Overhaul - Updated Based on Current State",
   "lastUpdated": "2025-01-31",
   "testEnvironment": "https://ecshape.org",
+  "testCredentials": {
+    "trainer": { "username": "elior", "password": "elior123" },
+    "client": { "username": "user", "password": "user123" }
+  },
+  "vision": {
+    "foodPlan": "Trainer manually sets total calories and macro grams per day. No auto-calculation overriding trainer input. Remove per-meal calories/macros display; daily totals only.",
+    "clientTracking": "Trainee gets meal plan but can choose from all food bank options. Trainer recommends amount in grams; trainee can change food/quantity; calories counted; swipe to remove recommended item; Complete button to finish meal.",
+    "foodBank": "Single filter (no duplicate filter under search and under box). Per-portion vs per-100g option (e.g. slice of bread: 1 slice, 2 slices). Excel import with duplicate detection and Hebrew text matching; popup when item already exists."
+  },
+  "excelFoodPlanStructure": {
+    "idea": "One sheet per day or one sheet with day column; columns: day/meal_name, slot, food_name_he/en, quantity, unit (g or portion). Optional: macros per row. Backend already has meal plan Excel import; verify structure in app/routers/meal_system.py."
+  },
+  "remainingWork": [
+    "Verify language persistence (fallbackLng) in browser",
+    "Verify progress photos show all three views; flag if old photos still sideways",
+    "Verify training calendar and completed button",
+    "Verify training name + workouts (not day name), no emoji, no arrow/count/tags/body-weight in client workout view",
+    "Verify trainer manual calories/macros and no per-meal display",
+    "Verify meal creation translations (no raw keys)",
+    "Implement per-portion vs per-100g (models + UI)",
+    "Consolidate food bank filter to single UI",
+    "Verify Excel import and duplicate detection with Hebrew"
+  ],
   "currentState": {
     "mealPlanCreation": {
       "dailyTargets": {
@@ -175,15 +198,15 @@
     "translation-verify-other-keys"
   ],
   "verificationSteps": [
-    "1. Login as trainer on ecshape.org",
-    "2. Navigate to create meal plan",
-    "3. Verify daily targets are editable (not readOnly)",
-    "4. Verify per-meal targets are not displayed",
-    "5. Input manual values for daily targets",
-    "6. Submit and verify manual values are saved (not overridden)",
-    "7. Login as client and verify per-meal breakdown is not shown",
-    "8. Verify all translation keys load properly",
-    "9. Test language switching"
+    "1. Trainer: login ecshape.org (elior / elior123)",
+    "2. Language: switch to English, reload; verify fallback/default is English",
+    "3. Progress: open Progress, add/view entry; verify three photo slots (front/side/back); check if old photos sideways",
+    "4. Training: open Training, verify calendar with completed days; open a day, verify Training completed checkbox; verify card shows plan name + workouts (not day name), no emoji, no arrow, no exercise count, no tags under description, no body weight toggle",
+    "5. Meal plan: Create/Edit meal plan; verify daily targets editable (calories, protein/carb/fat grams); verify no per-meal calories/macros; verify meal creation strings translated (kcalPer100g, addFoodToBank, makeFoodPublic)",
+    "6. Food bank: verify single filter (or flag duplicate filters)",
+    "7. Client: login (user / user123)",
+    "8. Meals: verify daily totals only (no per-meal breakdown); verify Add Food from bank; verify swipe to remove, Complete meal",
+    "9. Training (client): same checks as trainer view for arrow/count/tags/body weight"
   ],
   "notes": {
     "backendConsiderations": "Backend may still store per-meal targets, but frontend should not display or require them",
