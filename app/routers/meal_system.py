@@ -1412,7 +1412,7 @@ async def import_meal_bank_excel(
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Import meal bank items from Excel file"""
+    """Import meal bank items from Excel file with duplicate detection"""
     if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -1421,16 +1421,66 @@ async def import_meal_bank_excel(
     
     try:
         from openpyxl import load_workbook
+        import unicodedata
+        import re
+        
+        # Hebrew text normalization function
+        def normalize_hebrew(text: str) -> str:
+            """Normalize Hebrew text for matching (remove diacritics, handle variations)"""
+            if not text:
+                return ""
+            # Remove diacritics (nikud)
+            text = unicodedata.normalize('NFKD', text)
+            text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+            # Remove extra spaces and convert to lowercase
+            text = re.sub(r'\s+', ' ', text.strip().lower())
+            return text
+        
+        # Fuzzy matching function
+        def fuzzy_match_hebrew(text1: str, text2: str, threshold: float = 0.8) -> bool:
+            """Check if two Hebrew texts are similar using Levenshtein distance"""
+            norm1 = normalize_hebrew(text1)
+            norm2 = normalize_hebrew(text2)
+            
+            if not norm1 or not norm2:
+                return False
+            
+            # Simple Levenshtein distance calculation
+            def levenshtein(s1: str, s2: str) -> int:
+                if len(s1) < len(s2):
+                    return levenshtein(s2, s1)
+                if len(s2) == 0:
+                    return len(s1)
+                
+                previous_row = list(range(len(s2) + 1))
+                for i, c1 in enumerate(s1):
+                    current_row = [i + 1]
+                    for j, c2 in enumerate(s2):
+                        insertions = previous_row[j + 1] + 1
+                        deletions = current_row[j] + 1
+                        substitutions = previous_row[j] + (c1 != c2)
+                        current_row.append(min(insertions, deletions, substitutions))
+                    previous_row = current_row
+                return previous_row[-1]
+            
+            distance = levenshtein(norm1, norm2)
+            max_len = max(len(norm1), len(norm2))
+            similarity = 1 - (distance / max_len) if max_len > 0 else 0
+            return similarity >= threshold
         
         # Read file content
         contents = await file.read()
         wb = load_workbook(io.BytesIO(contents))
         ws = wb.active
         
-        # Skip header row and process data
-        imported_count = 0
-        skipped_count = 0
-        errors = []
+        # Get existing meal bank items for duplicate detection
+        existing_items = db.query(MealBank).filter(
+            (MealBank.created_by == current_user.id) | (MealBank.is_public == True)
+        ).all()
+        
+        # First pass: detect duplicates
+        duplicate_matches = []
+        items_to_import = []
         
         for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
             try:
@@ -1443,7 +1493,6 @@ async def import_meal_bank_excel(
                 name_hebrew = str(row[2]).strip() if row[2] else None
                 
                 if not name and not name_hebrew:
-                    skipped_count += 1
                     continue
                 
                 # Parse macro type
@@ -1451,47 +1500,103 @@ async def import_meal_bank_excel(
                 if macro_type_str not in ["protein", "carb", "fat"]:
                     macro_type_str = "protein"  # Default
                 
-                meal_bank_data = MealBankCreate(
-                    name=name or name_hebrew,
-                    name_hebrew=name_hebrew if name_hebrew else None,
-                    macro_type=MacroType(macro_type_str),
-                    calories=int(row[4]) if row[4] and str(row[4]).strip() else None,
-                    protein=float(row[5]) if row[5] and str(row[5]).strip() else None,
-                    carbs=float(row[6]) if row[6] and str(row[6]).strip() else None,
-                    fat=float(row[7]) if row[7] and str(row[7]).strip() else None
-                )
+                # Check for duplicates using Hebrew text matching
+                potential_duplicates = []
+                if name_hebrew:
+                    for existing in existing_items:
+                        if existing.name_hebrew and fuzzy_match_hebrew(name_hebrew, existing.name_hebrew):
+                            potential_duplicates.append({
+                                "id": existing.id,
+                                "name": existing.name,
+                                "name_hebrew": existing.name_hebrew,
+                                "macro_type": existing.macro_type.value,
+                                "calories": existing.calories,
+                                "protein": existing.protein,
+                                "carbs": existing.carbs,
+                                "fat": existing.fat
+                            })
+                elif name:
+                    # Also check English name if no Hebrew name
+                    for existing in existing_items:
+                        if existing.name and normalize_hebrew(name) == normalize_hebrew(existing.name):
+                            potential_duplicates.append({
+                                "id": existing.id,
+                                "name": existing.name,
+                                "name_hebrew": existing.name_hebrew,
+                                "macro_type": existing.macro_type.value,
+                                "calories": existing.calories,
+                                "protein": existing.protein,
+                                "carbs": existing.carbs,
+                                "fat": existing.fat
+                            })
                 
-                # Create meal bank item
-                from app.models.meal_system import MeasurementType
+                item_data = {
+                    "row_index": row_idx,
+                    "name": name or name_hebrew,
+                    "name_hebrew": name_hebrew if name_hebrew else None,
+                    "macro_type": macro_type_str,
+                    "calories": int(row[4]) if row[4] and str(row[4]).strip() else None,
+                    "protein": float(row[5]) if row[5] and str(row[5]).strip() else None,
+                    "carbs": float(row[6]) if row[6] and str(row[6]).strip() else None,
+                    "fat": float(row[7]) if row[7] and str(row[7]).strip() else None
+                }
+                
+                if potential_duplicates:
+                    duplicate_matches.append({
+                        "new_item": item_data,
+                        "matches": potential_duplicates
+                    })
+                else:
+                    items_to_import.append(item_data)
+                    
+            except Exception as e:
+                logger.error(f"Error processing row {row_idx}: {str(e)}")
+        
+        # If duplicates found, return them for user to decide
+        if duplicate_matches:
+            return {
+                "duplicates_found": True,
+                "duplicate_matches": duplicate_matches,
+                "items_to_import": items_to_import,
+                "message": f"Found {len(duplicate_matches)} potential duplicate food items. Please review and decide whether to replace, add anyway, or ignore."
+            }
+        
+        # No duplicates, proceed with import
+        imported_count = 0
+        skipped_count = 0
+        errors = []
+        
+        from app.models.meal_system import MeasurementType
+        for item_data in items_to_import:
+            try:
                 meal_bank_item = MealBank(
-                    name=meal_bank_data.name,
-                    name_hebrew=meal_bank_data.name_hebrew,
-                    macro_type=meal_bank_data.macro_type,
-                    calories=meal_bank_data.calories,
-                    protein=meal_bank_data.protein,
-                    carbs=meal_bank_data.carbs,
-                    fat=meal_bank_data.fat,
-                    measurement_type=meal_bank_data.measurement_type if hasattr(meal_bank_data, 'measurement_type') and meal_bank_data.measurement_type else MeasurementType.PER_100G,
-                    serving_size=meal_bank_data.serving_size if hasattr(meal_bank_data, 'serving_size') else None,
+                    name=item_data["name"],
+                    name_hebrew=item_data["name_hebrew"],
+                    macro_type=MacroType(item_data["macro_type"]),
+                    calories=item_data["calories"],
+                    protein=item_data["protein"],
+                    carbs=item_data["carbs"],
+                    fat=item_data["fat"],
+                    measurement_type=MeasurementType.PER_100G,
+                    serving_size=None,
                     created_by=current_user.id,
                     is_public=False
                 )
-                
                 db.add(meal_bank_item)
                 imported_count += 1
-                
             except Exception as e:
-                errors.append(f"Row {row_idx}: {str(e)}")
+                errors.append(f"Row {item_data['row_index']}: {str(e)}")
                 skipped_count += 1
-                logger.error(f"Error importing row {row_idx}: {str(e)}")
+                logger.error(f"Error importing row {item_data['row_index']}: {str(e)}")
         
         db.commit()
         
         return {
+            "duplicates_found": False,
             "message": f"Import completed: {imported_count} items imported, {skipped_count} skipped",
             "imported_count": imported_count,
             "skipped_count": skipped_count,
-            "errors": errors[:10]  # Return first 10 errors
+            "errors": errors[:10]
         }
         
     except ImportError:
@@ -1504,6 +1609,135 @@ async def import_meal_bank_excel(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to import meal bank: {str(e)}"
+        )
+
+@router.post("/meal-bank/import/excel/process")
+async def process_meal_bank_import(
+    import_data: Dict[str, Any],
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Process meal bank import with user decisions for duplicates"""
+    if current_user.role != UserRole.TRAINER and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers can import meal bank items"
+        )
+    
+    try:
+        from app.models.meal_system import MeasurementType
+        
+        items_to_import = import_data.get("items_to_import", [])
+        duplicate_decisions = import_data.get("duplicate_decisions", {})  # {row_index: "replace"|"add"|"ignore"}
+        
+        imported_count = 0
+        replaced_count = 0
+        skipped_count = 0
+        errors = []
+        
+        # Process items without duplicates
+        for item_data in items_to_import:
+            try:
+                meal_bank_item = MealBank(
+                    name=item_data["name"],
+                    name_hebrew=item_data.get("name_hebrew"),
+                    macro_type=MacroType(item_data["macro_type"]),
+                    calories=item_data.get("calories"),
+                    protein=item_data.get("protein"),
+                    carbs=item_data.get("carbs"),
+                    fat=item_data.get("fat"),
+                    measurement_type=MeasurementType.PER_100G,
+                    serving_size=None,
+                    created_by=current_user.id,
+                    is_public=False
+                )
+                db.add(meal_bank_item)
+                imported_count += 1
+            except Exception as e:
+                errors.append(f"Row {item_data.get('row_index', 'unknown')}: {str(e)}")
+                skipped_count += 1
+                logger.error(f"Error importing item: {str(e)}")
+        
+        # Process duplicates based on user decisions
+        for row_index_str, decision in duplicate_decisions.items():
+            try:
+                row_index = int(row_index_str)
+                duplicate_info = import_data.get("duplicate_matches", [])
+                
+                # Find the duplicate match for this row
+                duplicate_match = None
+                for match in duplicate_info:
+                    if match.get("new_item", {}).get("row_index") == row_index:
+                        duplicate_match = match
+                        break
+                
+                if not duplicate_match:
+                    skipped_count += 1
+                    continue
+                
+                new_item = duplicate_match["new_item"]
+                existing_matches = duplicate_match.get("matches", [])
+                
+                if decision == "ignore":
+                    skipped_count += 1
+                    continue
+                elif decision == "replace" and existing_matches:
+                    # Replace the first match
+                    existing_id = existing_matches[0]["id"]
+                    existing_item = db.query(MealBank).filter(MealBank.id == existing_id).first()
+                    
+                    if existing_item and (existing_item.created_by == current_user.id or current_user.role == UserRole.ADMIN):
+                        existing_item.name = new_item["name"]
+                        existing_item.name_hebrew = new_item.get("name_hebrew")
+                        existing_item.macro_type = MacroType(new_item["macro_type"])
+                        existing_item.calories = new_item.get("calories")
+                        existing_item.protein = new_item.get("protein")
+                        existing_item.carbs = new_item.get("carbs")
+                        existing_item.fat = new_item.get("fat")
+                        replaced_count += 1
+                    else:
+                        skipped_count += 1
+                elif decision == "add":
+                    # Add as new item
+                    meal_bank_item = MealBank(
+                        name=new_item["name"],
+                        name_hebrew=new_item.get("name_hebrew"),
+                        macro_type=MacroType(new_item["macro_type"]),
+                        calories=new_item.get("calories"),
+                        protein=new_item.get("protein"),
+                        carbs=new_item.get("carbs"),
+                        fat=new_item.get("fat"),
+                        measurement_type=MeasurementType.PER_100G,
+                        serving_size=None,
+                        created_by=current_user.id,
+                        is_public=False
+                    )
+                    db.add(meal_bank_item)
+                    imported_count += 1
+                else:
+                    skipped_count += 1
+                    
+            except Exception as e:
+                errors.append(f"Row {row_index_str}: {str(e)}")
+                skipped_count += 1
+                logger.error(f"Error processing duplicate decision: {str(e)}")
+        
+        db.commit()
+        
+        return {
+            "message": f"Import completed: {imported_count} items imported, {replaced_count} replaced, {skipped_count} skipped",
+            "imported_count": imported_count,
+            "replaced_count": replaced_count,
+            "skipped_count": skipped_count,
+            "errors": errors[:10]
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error processing meal bank import: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process import: {str(e)}"
         )
 
 @router.post("/plans/import/excel")

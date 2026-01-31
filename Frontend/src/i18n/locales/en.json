@@ -767,7 +767,15 @@
     "gPer100g": "g per 100g",
     "perPortion": "per portion",
     "measurementType": "Measurement Type",
-    "servingSize": "Serving Size"
+    "servingSize": "Serving Size",
+    "duplicateItemsFound": "Duplicate Items Found",
+    "duplicateItemsDescription": "The following items may already exist in your meal bank. Choose an action for each item.",
+    "newItem": "New Item (from Excel)",
+    "existingItem": "Existing Item",
+    "replace": "Replace",
+    "addAnyway": "Add Anyway",
+    "ignore": "Ignore",
+    "confirmImport": "Confirm Import"
   },
   "weightProgress": {
     "currentWeight": "Current Weight",
