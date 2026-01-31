@@ -306,6 +306,7 @@
     "noWorkoutPlanAssigned": "עדיין אין לך תוכנית אימון פעילה. צור קשר עם המאמן שלך כדי להתחיל!",
     "defaultPlanDescription": "התוכנית האישית שלך לאימונים",
     "loadingPlan": "טוען את תוכנית האימון...",
+    "completionCalendar": "לוח השלמת אימונים",
     "daysPerWeek": "{{count}} אימונים בשבוע",
     "exercisesCount": "{{count}} תרגילים",
     "estimatedDuration": "{{minutes}} דק׳",

@@ -35,6 +35,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -344,15 +345,24 @@ const TrainingPlanV2: React.FC = () => {
           </Card>
         )}
 
-        {/* Training Calendar */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('training.completionCalendar', 'Training Completion Calendar')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TrainingCalendar completedDates={completedDates} />
-          </CardContent>
-        </Card>
+        {/* Training Calendar - collapsible */}
+        <Collapsible defaultOpen={false} className="group">
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors rounded-t-lg flex flex-row items-center justify-between gap-2">
+                <CardTitle className="text-2xl font-semibold leading-none tracking-tight">
+                  {t('training.completionCalendar', 'Training Completion Calendar')}
+                </CardTitle>
+                <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <TrainingCalendar completedDates={completedDates} />
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
         {/* Workouts list */}
         <div className="space-y-4">
