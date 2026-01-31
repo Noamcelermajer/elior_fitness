@@ -1513,7 +1513,7 @@ const CreateMealPlanV2: React.FC = () => {
               <div className="relative">
                 <Search className={`absolute ${i18n.language === 'he' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
                 <Input
-                  placeholder={t('mealCreation.searchFoodItems')}
+                  placeholder={t('mealCreation.searchFoodItems', i18n.language === 'he' ? 'חפש פריטי מזון...' : 'Search for food items...')}
                   value={mealBankSearch}
                   onChange={(e) => setMealBankSearch(e.target.value)}
                   className={i18n.language === 'he' ? 'pr-10' : 'pl-10'}
@@ -1568,14 +1568,26 @@ const CreateMealPlanV2: React.FC = () => {
                             {item.calories !== null && item.calories !== undefined ? `${item.calories} ${t('meals.kcal', 'kcal')}` : t('mealCreation.notAvailable')}
                           </div>
                           {item.serving_size && (
-                            <div className="text-xs text-muted-foreground whitespace-nowrap" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                            <div className="text-xs text-muted-foreground whitespace-nowrap" dir="rtl">
                               {item.serving_size}
                             </div>
                           )}
                           <div className="text-xs text-muted-foreground whitespace-nowrap" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-                            {item.protein !== null && `${item.protein}ג ${t('meals.protein').substring(0, 1)}`} {item.protein !== null && item.carbs !== null && '/'} {' '}
-                            {item.carbs !== null && `${item.carbs}ג ${t('meals.carbs').substring(0, 1)}`} {item.carbs !== null && item.fat !== null && '/'} {' '}
-                            {item.fat !== null && `${item.fat}ג ${t('meals.fat').substring(0, 1)}`}
+                            {i18n.language === 'he' ? (
+                              <>
+                                {item.protein !== null && `${t('meals.protein')} : ${item.protein}ג`}
+                                {item.protein !== null && (item.carbs !== null || item.fat !== null) && ' / '}
+                                {item.carbs !== null && `${t('meals.carbs')} : ${item.carbs}ג`}
+                                {item.carbs !== null && item.fat !== null && ' / '}
+                                {item.fat !== null && `${t('meals.fat')} : ${item.fat}ג`}
+                              </>
+                            ) : (
+                              <>
+                                {item.protein !== null && `${item.protein}g ${t('meals.protein').substring(0, 1)}`} {item.protein !== null && item.carbs !== null && '/'} {' '}
+                                {item.carbs !== null && `${item.carbs}g ${t('meals.carbs').substring(0, 1)}`} {item.carbs !== null && item.fat !== null && '/'} {' '}
+                                {item.fat !== null && `${item.fat}g ${t('meals.fat').substring(0, 1)}`}
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
