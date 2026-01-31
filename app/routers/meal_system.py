@@ -1502,33 +1502,41 @@ async def import_meal_bank_excel(
                 
                 # Check for duplicates using Hebrew text matching
                 potential_duplicates = []
-                if name_hebrew:
-                    for existing in existing_items:
-                        if existing.name_hebrew and fuzzy_match_hebrew(name_hebrew, existing.name_hebrew):
-                            potential_duplicates.append({
-                                "id": existing.id,
-                                "name": existing.name,
-                                "name_hebrew": existing.name_hebrew,
-                                "macro_type": existing.macro_type.value,
-                                "calories": existing.calories,
-                                "protein": existing.protein,
-                                "carbs": existing.carbs,
-                                "fat": existing.fat
-                            })
-                elif name:
-                    # Also check English name if no Hebrew name
-                    for existing in existing_items:
-                        if existing.name and normalize_hebrew(name) == normalize_hebrew(existing.name):
-                            potential_duplicates.append({
-                                "id": existing.id,
-                                "name": existing.name,
-                                "name_hebrew": existing.name_hebrew,
-                                "macro_type": existing.macro_type.value,
-                                "calories": existing.calories,
-                                "protein": existing.protein,
-                                "carbs": existing.carbs,
-                                "fat": existing.fat
-                            })
+                
+                # Normalize both new and existing items for comparison
+                norm_name_hebrew = normalize_hebrew(name_hebrew) if name_hebrew else ""
+                norm_name = normalize_hebrew(name) if name else ""
+                
+                for existing in existing_items:
+                    existing_norm_hebrew = normalize_hebrew(existing.name_hebrew) if existing.name_hebrew else ""
+                    existing_norm_name = normalize_hebrew(existing.name) if existing.name else ""
+                    
+                    # Check exact matches first (case-insensitive, normalized)
+                    is_exact_match = False
+                    if norm_name_hebrew and existing_norm_hebrew:
+                        is_exact_match = norm_name_hebrew == existing_norm_hebrew
+                    if not is_exact_match and norm_name and existing_norm_name:
+                        is_exact_match = norm_name == existing_norm_name
+                    
+                    # Check fuzzy match for Hebrew names (lower threshold for better detection)
+                    is_fuzzy_match = False
+                    if norm_name_hebrew and existing_norm_hebrew:
+                        is_fuzzy_match = fuzzy_match_hebrew(name_hebrew, existing.name_hebrew, threshold=0.75)
+                    # Also check English names with fuzzy matching
+                    if not is_fuzzy_match and norm_name and existing_norm_name:
+                        is_fuzzy_match = fuzzy_match_hebrew(name, existing.name, threshold=0.75)
+                    
+                    if is_exact_match or is_fuzzy_match:
+                        potential_duplicates.append({
+                            "id": existing.id,
+                            "name": existing.name,
+                            "name_hebrew": existing.name_hebrew,
+                            "macro_type": existing.macro_type.value,
+                            "calories": existing.calories,
+                            "protein": existing.protein,
+                            "carbs": existing.carbs,
+                            "fat": existing.fat
+                        })
                 
                 item_data = {
                     "row_index": row_idx,
