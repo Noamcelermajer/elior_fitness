@@ -89,6 +89,7 @@
     "meals": "Meals",
     "training": "Training",
     "progress": "Progress",
+    "chat": "Chat",
     "exercises": "Exercises",
     "settings": "Settings",
     "profile": "Profile",
@@ -231,7 +232,10 @@
     "remainingAmount": "Remaining Amount",
     "per": "per",
     "over": "over",
-    "customFoodNamePlaceholder": "e.g., snack, pizza slice, etc."
+    "customFoodNamePlaceholder": "e.g., snack, pizza slice, etc.",
+    "today": "Today",
+    "prevDay": "Previous day",
+    "nextDay": "Next day"
   },
   "training": {
     "training": "Training",
@@ -923,6 +927,8 @@
     "createMealPlan": "Create Meal Plan",
     "createNewWorkout": "Create New Workout",
     "updateWorkoutPlan": "Update Workout Plan",
+    "deleteWorkout": "Delete Workout Plan",
+    "deleteWorkoutError": "Failed to delete workout plan",
     "createNewMealPlan": "Create New Meal Plan",
     "updateMealPlan": "Update Meal Plan",
     "weightProgress": "Weight Progress",

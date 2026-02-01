@@ -8,7 +8,7 @@
   },
   "vision": {
     "foodPlan": "Trainer manually sets total calories and macro grams per day. No auto-calculation overriding trainer input. Remove per-meal calories/macros display; daily totals only.",
-    "clientTracking": "Trainee gets meal plan but can choose from all food bank options. Trainer recommends amount in grams; trainee can change food/quantity; calories counted; swipe to remove recommended item; Complete button to finish meal.",
+    "clientTracking": "No per-meal calorie goal. Daily goal only (trainer sets). User chooses food options and quantity from each category; calories and macros are calculated from those. Swapping/adding/removing food updates totals. Date navigation (prev/today/next) for logging different days. Per-meal row shows calculated total only (sum of items in that meal). Add Food from bank, Complete button per meal. Reference: inspiration screenshot (daily Kcal P C F at top, meal sections with calculated totals, food list + Add Food + Complete).",
     "foodBank": "Single filter (no duplicate filter under search and under box). Per-portion vs per-100g option (e.g. slice of bread: 1 slice, 2 slices). Excel import: always preview (no auto-import); Hebrew-first matching; per-row review (Skip / Add / Replace existing) like Explorer replace dialog; same flow for Exercise Bank."
   },
   "excelFoodPlanStructure": {
@@ -217,6 +217,7 @@
   "notes": {
     "backendConsiderations": "Backend may still store per-meal targets, but frontend should not display or require them",
     "dataMigration": "Existing meal plans with calculated values should work, but new plans will use manual input",
-    "testing": "All testing must be done on https://ecshape.org (not localhost)"
+    "testing": "All testing must be done on https://ecshape.org (not localhost)",
+    "fullBrowserVerificationPlan": "context/BROWSER_VERIFICATION_PLAN.md – complete step-by-step plan to verify every feature and issue in context (auth, language, progress, training CRUD + calendar + day card + completed, meal plan CRUD + manual targets + client meals, food bank, exercise bank). Includes report template and mapping from every fixed/needs-verification issue to specific checks."
   }
 }

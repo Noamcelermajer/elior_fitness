@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Check, Clock, Utensils, Flame, Apple, Camera, TrendingUp, History } from 'lucide-react';
+import { Plus, Check, Clock, Utensils, Flame, Apple, Camera, TrendingUp, History, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import MacroCircle from './MacroCircle';
@@ -164,6 +164,7 @@ const MealMenuV2 = () => {
   >({});
   const [allFoodBankItems, setAllFoodBankItems] = useState<any[]>([]);
   const [showFoodBankDialog, setShowFoodBankDialog] = useState<{slotId: number, macroType: string} | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   const foodOptionMeta = useMemo(() => {
     const map = new Map<
@@ -236,9 +237,9 @@ const MealMenuV2 = () => {
       setLoading(true);
       try {
         await fetchMealPlan();
-        await fetchChoices();
-        await fetchDailyMacros();
-        await fetchMealCompletions();
+        await fetchChoices(selectedDate);
+        await fetchDailyMacros(selectedDate);
+        await fetchMealCompletions(selectedDate);
         await fetchAllFoodBankItems();
       } finally {
         setLoading(false);
@@ -246,7 +247,7 @@ const MealMenuV2 = () => {
     };
 
     initialise();
-  }, [user?.id]);
+  }, [user?.id, selectedDate]);
 
   const fetchMealPlan = async () => {
     try {
@@ -269,11 +270,11 @@ const MealMenuV2 = () => {
     }
   };
 
-  const fetchChoices = async () => {
+  const fetchChoices = async (dateOverride?: string) => {
     try {
       const token = localStorage.getItem('access_token');
-      const today = new Date().toISOString().split('T')[0];
-      const response = await fetch(`${API_BASE_URL}/v2/meals/choices?client_id=${user?.id}&date=${today}`, {
+      const dateParam = dateOverride ?? selectedDate ?? new Date().toISOString().split('T')[0];
+      const response = await fetch(`${API_BASE_URL}/v2/meals/choices?client_id=${user?.id}&date=${dateParam}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -282,7 +283,7 @@ const MealMenuV2 = () => {
       if (response.ok) {
         const data = await response.json();
         setChoices(data);
-        await fetchMealCompletions(today);
+        await fetchMealCompletions(dateParam);
       }
     } catch (error) {
       console.error('Failed to fetch choices:', error);
@@ -364,7 +365,7 @@ const MealMenuV2 = () => {
           },
           body: JSON.stringify({
             meal_slot_id: mealSlotId,
-            date: new Date().toISOString(),
+            date: `${selectedDate || new Date().toISOString().split('T')[0]}T12:00:00.000Z`,
             is_completed: isCompleted,
             completion_method: method,
           }),
@@ -384,7 +385,7 @@ const MealMenuV2 = () => {
         console.error('Failed to update meal completion:', error);
       }
     },
-    []
+    [selectedDate]
   );
 
   const getMealTotals = useCallback(
@@ -465,7 +466,7 @@ const MealMenuV2 = () => {
     if (!selectedFood || !gramsInput) return;
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const dateParam = selectedDate || new Date().toISOString().split('T')[0];
       const token = localStorage.getItem('access_token');
       const existingChoice = choices.find(
         c => c.meal_slot_id === selectedFood.slotId && c.food_option_id === selectedFood.food.id
@@ -499,7 +500,7 @@ const MealMenuV2 = () => {
           body: JSON.stringify({
             food_option_id: selectedFood.food.id,
             meal_slot_id: selectedFood.slotId,
-            date: new Date().toISOString(),
+            date: `${dateParam}T12:00:00.000Z`,
             quantity: `${gramsInput}g`,
           }),
         });
@@ -511,8 +512,8 @@ const MealMenuV2 = () => {
       }
 
       // Refresh choices and macro calculations to ensure consistency
-      await fetchChoices();
-      await fetchDailyMacros(today);
+      await fetchChoices(selectedDate);
+      await fetchDailyMacros(selectedDate);
       
       // Close dialog
       setSelectedFood(null);
@@ -567,7 +568,7 @@ const MealMenuV2 = () => {
     if (!customFood.name.trim() || !customFood.calories) return;
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const dateParam = selectedDate || new Date().toISOString().split('T')[0];
       const token = localStorage.getItem('access_token');
       const response = await fetch(`${API_BASE_URL}/v2/meals/choices`, {
         method: 'POST',
@@ -581,7 +582,7 @@ const MealMenuV2 = () => {
           custom_protein: parseFloat(customFood.protein) || 0,
           custom_carbs: parseFloat(customFood.carbs) || 0,
           custom_fat: parseFloat(customFood.fat) || 0,
-          date: new Date().toISOString(),
+          date: `${selectedDate || new Date().toISOString().split('T')[0]}T12:00:00.000Z`,
         }),
       });
 
@@ -590,9 +591,8 @@ const MealMenuV2 = () => {
         setChoices([...choices, newChoice]);
         setCustomFood({ name: '', calories: '', protein: '', carbs: '', fat: '' });
         setShowCustomFoodDialog(false);
-        // Refresh choices and macros to ensure consistency
-        await fetchChoices();
-        await fetchDailyMacros(today);
+        await fetchChoices(selectedDate);
+        await fetchDailyMacros(selectedDate);
         toast({
           title: t('common.success'),
           description: t('meals.customFoodAdded'),
@@ -625,10 +625,8 @@ const MealMenuV2 = () => {
         },
       });
       setChoices(choices.filter(c => c.id !== choiceId));
-      const today = new Date().toISOString().split('T')[0];
-      // Refresh choices and macros to ensure consistency
-      await fetchChoices();
-      await fetchDailyMacros(today);
+      await fetchChoices(selectedDate);
+      await fetchDailyMacros(selectedDate);
     } catch (error) {
       console.error('Failed to delete choice:', error);
     }
@@ -826,7 +824,40 @@ const MealMenuV2 = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 lg:px-6 py-6 space-y-6">
-        {/* Daily Macro Progress */}
+        {/* Date navigation: user chooses day; totals are calculated from selected foods */}
+        <div className="flex items-center justify-center gap-4 py-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const d = new Date(selectedDate + 'T12:00:00');
+              d.setDate(d.getDate() - 1);
+              setSelectedDate(d.toISOString().split('T')[0]);
+            }}
+            aria-label={t('meals.prevDay', 'Previous day')}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium min-w-[120px] text-center">
+            {selectedDate === new Date().toISOString().split('T')[0]
+              ? t('meals.today', 'Today')
+              : new Date(selectedDate + 'T12:00:00').toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const d = new Date(selectedDate + 'T12:00:00');
+              d.setDate(d.getDate() + 1);
+              setSelectedDate(d.toISOString().split('T')[0]);
+            }}
+            aria-label={t('meals.nextDay', 'Next day')}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Daily Macro Progress: daily goal vs consumed (calculated from user's food choices) */}
         {displayDailyMacros && (
           <Card className="bg-gradient-to-br from-card to-secondary border-border/50">
             <CardHeader>
@@ -991,28 +1022,37 @@ const MealMenuV2 = () => {
                 <AccordionItem key={slot.id} value={`meal-${slot.id}`} className="border rounded-lg">
                   <Card>
                     <AccordionTrigger className="hover:no-underline px-6 py-4">
-                      <div className="flex items-center justify-between w-full pr-4">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">🍽️</span>
-                          <div className="text-left">
-                            <p className="font-semibold text-lg">{slot.name}</p>
-                            {slot.time_suggestion && (
-                              <p className="text-sm text-muted-foreground flex items-center">
-                                <Clock className="w-3 h-3 mr-1" />
-                                {slot.time_suggestion}
-                              </p>
-                            )}
+                      <div className="flex flex-col gap-2 w-full pr-4 text-left">
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-2xl">🍽️</span>
+                            <div>
+                              <p className="font-semibold text-lg">{slot.name}</p>
+                              {slot.time_suggestion && (
+                                <p className="text-sm text-muted-foreground flex items-center">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  {slot.time_suggestion}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div
+                            className="flex items-center gap-2 text-sm text-muted-foreground"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Checkbox
+                              checked={isCompleted}
+                              onCheckedChange={(checked) => handleToggleCompletion(slot.id, Boolean(checked))}
+                            />
+                            <span>{isCompleted ? t('meals.mealCompleted') : t('meals.markComplete')}</span>
                           </div>
                         </div>
-                        <div
-                          className="flex items-center gap-2 text-sm text-muted-foreground"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Checkbox
-                            checked={isCompleted}
-                            onCheckedChange={(checked) => handleToggleCompletion(slot.id, Boolean(checked))}
-                          />
-                          <span>{isCompleted ? t('meals.mealCompleted') : t('meals.markComplete')}</span>
+                        {/* Per-meal calculated total (no goal per meal – sum of user's food choices) */}
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground ms-11">
+                          <span className="text-orange-600 dark:text-orange-400 font-medium">{Math.round(effectiveTotals.calories)} {t('meals.kcal')}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">{Math.round(effectiveTotals.protein)}g {t('meals.protein')}</span>
+                          <span className="text-cyan-600 dark:text-cyan-400">{Math.round(effectiveTotals.carbs)}g {t('meals.carbs')}</span>
+                          <span className="text-purple-600 dark:text-purple-400">{Math.round(effectiveTotals.fat)}g {t('meals.fat')}</span>
                         </div>
                       </div>
                     </AccordionTrigger>
