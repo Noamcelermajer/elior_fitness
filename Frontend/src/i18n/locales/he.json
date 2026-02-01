@@ -243,6 +243,8 @@
     "customFoodError": "שמירת המזון המותאם נכשלה. נסה שוב.",
     "totalCaloriesWeek": "סה\"כ קלוריות בשבוע",
     "quantity": "כמות",
+    "gramsShort": "גרם",
+    "allTab": "הכל",
     "today": "היום",
     "prevDay": "יום קודם",
     "nextDay": "יום הבא"

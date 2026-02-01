@@ -119,10 +119,10 @@ const parseGrams = (value?: string | number | null): number => {
   return Number.isNaN(parsed) ? 0 : parsed;
 };
 
-const formatGrams = (value?: string | number | null): string => {
+// Unit for grams is localized in component via t('meals.gramsShort')
+const formatGramsValue = (value?: string | number | null): number => {
   const grams = parseGrams(value);
-  if (!grams) return '';
-  return `${Math.round(grams)}g`;
+  return grams ? Math.round(grams) : 0;
 };
 
 const formatNumber = (value: number): string => {
@@ -163,7 +163,7 @@ const MealMenuV2 = () => {
     Record<number, { calories: number; protein: number; carbs: number; fat: number }>
   >({});
   const [allFoodBankItems, setAllFoodBankItems] = useState<any[]>([]);
-  const [showFoodBankDialog, setShowFoodBankDialog] = useState<{slotId: number, macroType: string} | null>(null);
+  const [showFoodBankDialog, setShowFoodBankDialog] = useState<{slotId: number, macroType: string} | null>(null); // macroType can be 'protein'|'carb'|'fat'|'all'
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   const foodOptionMeta = useMemo(() => {
@@ -182,15 +182,40 @@ const MealMenuV2 = () => {
           map.set(option.id, {
             slotId: slot.id,
             macroType: category.macro_type,
-            serving: parseGrams(option.serving_size),
+            serving: parseGrams(option.serving_size) || 100,
             option,
           });
         });
       });
     });
 
+    // Include user-added foods from food bank (not in plan) so meal totals calculate correctly
+    choices.forEach((choice) => {
+      if (!choice.food_option_id || map.has(choice.food_option_id)) return;
+      const item = allFoodBankItems.find((i) => i.id === choice.food_option_id);
+      if (!item || !choice.meal_slot_id) return;
+      const macroType = (String(item.macro_type || 'protein').toLowerCase()) as MacroCategory['macro_type'];
+      const option: FoodOption = {
+        id: item.id,
+        name: item.name,
+        name_hebrew: item.name_hebrew || '',
+        calories: item.calories || 0,
+        protein: item.protein || 0,
+        carbs: item.carbs || 0,
+        fat: item.fat || 0,
+        serving_size: item.serving_size || '100g',
+        notes: '',
+      };
+      map.set(choice.food_option_id, {
+        slotId: choice.meal_slot_id,
+        macroType,
+        serving: parseGrams(item.serving_size) || 100,
+        option,
+      });
+    });
+
     return map;
-  }, [mealPlan]);
+  }, [mealPlan, choices, allFoodBankItems]);
 
   const getCategoryTotalConsumed = useCallback(
     (slotId: number, macroType: MacroCategory['macro_type']) => {
@@ -223,7 +248,7 @@ const MealMenuV2 = () => {
 
   const getOptionRemainingGrams = useCallback(
     (slotId: number, _macroType: MacroCategory['macro_type'], option: FoodOption) => {
-      const recommended = parseGrams(option.serving_size);
+      const recommended = parseGrams(option.recommended_quantity || option.serving_size);
       if (recommended <= 0) return 0;
       const consumed = getOptionConsumedGrams(slotId, option.id);
       return Math.max(0, recommended - consumed);
@@ -447,18 +472,16 @@ const MealMenuV2 = () => {
   );
 
   const openFoodDialog = (food: FoodOption, slotId: number) => {
-    // Check if already selected
     const existingChoice = choices.find(
       c => c.meal_slot_id === slotId && c.food_option_id === food.id
     );
-    
+    const defaultAmount = food.recommended_quantity || food.serving_size;
     if (existingChoice) {
       const existingValue = parseGrams(existingChoice.quantity);
-      setGramsInput(existingValue > 0 ? existingValue.toString() : getServingDefault(food.serving_size));
+      setGramsInput(existingValue > 0 ? existingValue.toString() : getServingDefault(defaultAmount));
     } else {
-      setGramsInput(getServingDefault(food.serving_size));
+      setGramsInput(getServingDefault(defaultAmount));
     }
-    
     setSelectedFood({ food, slotId });
   };
 
@@ -872,21 +895,21 @@ const MealMenuV2 = () => {
                   label={t('meals.carbohydrates')}
                   consumed={displayDailyMacros.consumed.carbs}
                   target={displayDailyMacros.targets.carbs}
-                  unit="ג"
+                  unit={t('meals.gramsShort', 'g')}
                   color="rgb(34, 197, 194)"
                 />
                 <MacroCircle
                   label={t('meals.fat')}
                   consumed={displayDailyMacros.consumed.fat}
                   target={displayDailyMacros.targets.fat}
-                  unit="ג"
+                  unit={t('meals.gramsShort', 'g')}
                   color="rgb(168, 85, 247)"
                 />
                 <MacroCircle
                   label={t('meals.protein')}
                   consumed={displayDailyMacros.consumed.protein}
                   target={displayDailyMacros.targets.protein}
-                  unit="ג"
+                  unit={t('meals.gramsShort', 'g')}
                   color="rgb(251, 146, 60)"
                 />
               </div>
@@ -926,20 +949,20 @@ const MealMenuV2 = () => {
                     <div className="space-y-1 text-xs">
                       {displayDailyMacros.consumed.protein > displayDailyMacros.targets.protein && (
                         <p className="text-destructive">
-                          {t('meals.protein')}: {displayDailyMacros.consumed.protein.toFixed(0)}ג / {displayDailyMacros.targets.protein}ג 
-                          (+{(displayDailyMacros.consumed.protein - displayDailyMacros.targets.protein).toFixed(0)}ג {t('meals.over')})
+                          {t('meals.protein')}: {displayDailyMacros.consumed.protein.toFixed(0)}{t('meals.gramsShort', 'g')} / {displayDailyMacros.targets.protein}{t('meals.gramsShort', 'g')} 
+                          (+{(displayDailyMacros.consumed.protein - displayDailyMacros.targets.protein).toFixed(0)}{t('meals.gramsShort', 'g')} {t('meals.over')})
                         </p>
                       )}
                       {displayDailyMacros.consumed.carbs > displayDailyMacros.targets.carbs && (
                         <p className="text-destructive">
-                          {t('meals.carbs')}: {displayDailyMacros.consumed.carbs.toFixed(0)}ג / {displayDailyMacros.targets.carbs}ג 
-                          (+{(displayDailyMacros.consumed.carbs - displayDailyMacros.targets.carbs).toFixed(0)}ג {t('meals.over')})
+                          {t('meals.carbs')}: {displayDailyMacros.consumed.carbs.toFixed(0)}{t('meals.gramsShort', 'g')} / {displayDailyMacros.targets.carbs}{t('meals.gramsShort', 'g')} 
+                          (+{(displayDailyMacros.consumed.carbs - displayDailyMacros.targets.carbs).toFixed(0)}{t('meals.gramsShort', 'g')} {t('meals.over')})
                         </p>
                       )}
                       {displayDailyMacros.consumed.fat > displayDailyMacros.targets.fat && (
                         <p className="text-destructive">
-                          {t('meals.fat')}: {displayDailyMacros.consumed.fat.toFixed(0)}ג / {displayDailyMacros.targets.fat}ג 
-                          (+{(displayDailyMacros.consumed.fat - displayDailyMacros.targets.fat).toFixed(0)}ג {t('meals.over')})
+                          {t('meals.fat')}: {displayDailyMacros.consumed.fat.toFixed(0)}{t('meals.gramsShort', 'g')} / {displayDailyMacros.targets.fat}{t('meals.gramsShort', 'g')} 
+                          (+{(displayDailyMacros.consumed.fat - displayDailyMacros.targets.fat).toFixed(0)}{t('meals.gramsShort', 'g')} {t('meals.over')})
                         </p>
                       )}
                     </div>
@@ -972,15 +995,15 @@ const MealMenuV2 = () => {
                         </div>
                         <div className="flex flex-col items-center p-2 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-md border border-emerald-500/20">
                           <span className="text-xs text-muted-foreground mb-0.5">{t('meals.protein')}</span>
-                          <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{choice.custom_protein?.toFixed(0) || 0}ג</span>
+                          <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{choice.custom_protein?.toFixed(0) || 0}{t('meals.gramsShort', 'g')}</span>
                         </div>
                         <div className="flex flex-col items-center p-2 bg-cyan-500/10 dark:bg-cyan-500/20 rounded-md border border-cyan-500/20">
                           <span className="text-xs text-muted-foreground mb-0.5">{t('meals.carbs')}</span>
-                          <span className="text-sm font-semibold text-cyan-600 dark:text-cyan-400">{choice.custom_carbs?.toFixed(0) || 0}ג</span>
+                          <span className="text-sm font-semibold text-cyan-600 dark:text-cyan-400">{choice.custom_carbs?.toFixed(0) || 0}{t('meals.gramsShort', 'g')}</span>
                         </div>
                         <div className="flex flex-col items-center p-2 bg-purple-500/10 dark:bg-purple-500/20 rounded-md border border-purple-500/20">
                           <span className="text-xs text-muted-foreground mb-0.5">{t('meals.fat')}</span>
-                          <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">{choice.custom_fat?.toFixed(0) || 0}ג</span>
+                          <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">{choice.custom_fat?.toFixed(0) || 0}{t('meals.gramsShort', 'g')}</span>
                         </div>
                       </div>
                     </div>
@@ -1062,14 +1085,108 @@ const MealMenuV2 = () => {
                         <p className="text-sm text-muted-foreground mb-4 italic">{slot.notes}</p>
                       )}
                       
-                      <Tabs defaultValue={slot.macro_categories[0]?.macro_type || 'protein'} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
+                      <Tabs defaultValue="all" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 gap-1">
+                          <TabsTrigger value="all" className="text-xs sm:text-sm">
+                            {t('meals.allTab', 'All')}
+                          </TabsTrigger>
                           {slot.macro_categories.map((category) => (
-                            <TabsTrigger key={category.id} value={category.macro_type}>
+                            <TabsTrigger key={category.id} value={category.macro_type} className="text-xs sm:text-sm">
                               {getMacroIcon(category.macro_type)} {getMacroName(category.macro_type)}
                             </TabsTrigger>
                           ))}
                         </TabsList>
+
+                        {/* All tab: show all food from all categories */}
+                        <TabsContent value="all" className="mt-4 space-y-3">
+                          <div className="space-y-2">
+                            {slot.macro_categories.map((category) => (
+                              <React.Fragment key={category.id}>
+                                {category.food_options.length > 0 && (
+                                  <>
+                                    {category.food_options.map((option) => {
+                                      const isSelected = isFoodOptionSelected(slot.id, option.id);
+                                      const selectedChoice = choices.find(
+                                        c => c.meal_slot_id === slot.id && c.food_option_id === option.id
+                                      );
+                                      const recommendedGrams = option.recommended_quantity
+                                        ? parseGrams(option.recommended_quantity)
+                                        : parseGrams(option.serving_size);
+                                      const remainingGrams = getOptionRemainingGrams(slot.id, category.macro_type, option);
+                                      const consumedGrams = getOptionConsumedGrams(slot.id, option.id);
+                                      return (
+                                        <div
+                                          key={option.id}
+                                          className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                                            isSelected ? 'bg-primary/10 border-primary' : 'bg-card hover:bg-accent'
+                                          }`}
+                                          onClick={() => openFoodDialog(option, slot.id)}
+                                        >
+                                          <div className="flex-1">
+                                            <div className="flex items-center justify-between">
+                                              <p className="font-medium">
+                                                {i18n.language === 'he' ? (option.name_hebrew || option.name) : option.name}
+                                              </p>
+                                              {isSelected && (
+                                                <div className="flex items-center gap-2">
+                                                  <Badge variant="outline" className="bg-primary/10 text-primary">
+                                                    {selectedChoice?.quantity || `${Math.round(consumedGrams || 0)}${t('meals.gramsShort', 'g')}`}
+                                                  </Badge>
+                                                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); if (selectedChoice) deleteFoodChoice(selectedChoice.id); }}>✕</Button>
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                                              <span>{getMacroName(category.macro_type)}</span>
+                                              <span>•</span>
+                                              <span>{option.calories} {t('meals.kcal')} • {option.protein}{t('meals.gramsShort', 'g')} {t('meals.protein')} • {option.carbs}{t('meals.gramsShort', 'g')} {t('meals.carbs')} • {option.fat}{t('meals.gramsShort', 'g')} {t('meals.fat')}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </>
+                                )}
+                              </React.Fragment>
+                            ))}
+                            {choices
+                              .filter(c => c.meal_slot_id === slot.id && c.food_option_id)
+                              .filter(c => !slot.macro_categories.some(cat => cat.food_options.some((opt: FoodOption) => opt.id === c.food_option_id)))
+                              .map(choice => {
+                                const foodBankItem = allFoodBankItems.find(item => item.id === choice.food_option_id);
+                                if (!foodBankItem) return null;
+                                const consumedGrams = parseGrams(choice.quantity);
+                                return (
+                                  <div
+                                    key={choice.id}
+                                    className="flex items-start space-x-3 p-3 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors border-primary/30"
+                                    onClick={() => {
+                                      const foodOption: FoodOption = {
+                                        id: foodBankItem.id, name: foodBankItem.name, name_hebrew: foodBankItem.name_hebrew || '',
+                                        calories: foodBankItem.calories || 0, protein: foodBankItem.protein || 0, carbs: foodBankItem.carbs || 0, fat: foodBankItem.fat || 0,
+                                        serving_size: foodBankItem.serving_size || '100g', notes: ''
+                                      };
+                                      openFoodDialog(foodOption, slot.id);
+                                    }}
+                                  >
+                                    <div className="flex-1">
+                                      <div className="flex items-center justify-between">
+                                        <p className="font-medium">{i18n.language === 'he' ? (foodBankItem.name_hebrew || foodBankItem.name) : foodBankItem.name}</p>
+                                        <div className="flex items-center gap-2">
+                                          <Badge variant="outline" className="bg-primary/10 text-primary">{choice.quantity || `${Math.round(consumedGrams || 0)}${t('meals.gramsShort', 'g')}`}</Badge>
+                                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); deleteFoodChoice(choice.id); }}>✕</Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            <Button variant="outline" className="w-full" onClick={() => setShowFoodBankDialog({ slotId: slot.id, macroType: 'all' })}>
+                              <Plus className="w-4 h-4 mr-2" />
+                              {t('meals.addFood', 'Add Food')}
+                            </Button>
+                          </div>
+                        </TabsContent>
                         
                         {slot.macro_categories.map((category) => (
                           <TabsContent key={category.id} value={category.macro_type} className="mt-4 space-y-3">
@@ -1112,7 +1229,7 @@ const MealMenuV2 = () => {
                                           {isSelected && (
                                             <div className="flex items-center gap-2">
                                               <Badge variant="outline" className="bg-primary/10 text-primary">
-                                                {selectedChoice?.quantity || `${Math.round(consumedGrams || 0)}ג`}
+                                                {selectedChoice?.quantity || `${Math.round(consumedGrams || 0)}${t('meals.gramsShort', 'g')}`}
                                               </Badge>
                                               <Button
                                                 size="sm"
@@ -1137,15 +1254,15 @@ const MealMenuV2 = () => {
                                             </div>
                                             <div className="flex flex-col items-center p-2 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-md border border-emerald-500/20">
                                               <span className="text-xs text-muted-foreground mb-0.5">{t('meals.protein')}</span>
-                                              <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{option.protein}ג</span>
+                                              <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{option.protein}{t('meals.gramsShort', 'g')}</span>
                                             </div>
                                             <div className="flex flex-col items-center p-2 bg-cyan-500/10 dark:bg-cyan-500/20 rounded-md border border-cyan-500/20">
                                               <span className="text-xs text-muted-foreground mb-0.5">{t('meals.carbs')}</span>
-                                              <span className="text-sm font-semibold text-cyan-600 dark:text-cyan-400">{option.carbs}ג</span>
+                                              <span className="text-sm font-semibold text-cyan-600 dark:text-cyan-400">{option.carbs}{t('meals.gramsShort', 'g')}</span>
                                             </div>
                                             <div className="flex flex-col items-center p-2 bg-purple-500/10 dark:bg-purple-500/20 rounded-md border border-purple-500/20">
                                               <span className="text-xs text-muted-foreground mb-0.5">{t('meals.fat')}</span>
-                                              <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">{option.fat}ג</span>
+                                              <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">{option.fat}{t('meals.gramsShort', 'g')}</span>
                                             </div>
                                           </div>
                                           
@@ -1155,17 +1272,17 @@ const MealMenuV2 = () => {
                                               <span className="text-muted-foreground">
                                                 {option.recommended_quantity 
                                                   ? t('meals.recommendedAmount', 'Recommended') 
-                                                  : t('meals.servingSize')}: <span className="font-medium text-foreground">{formatGrams(recommendedGrams)}</span>
+                                                  : t('meals.servingSize')}: <span className="font-medium text-foreground">{formatGramsValue(recommendedGrams)}{formatGramsValue(recommendedGrams) ? t('meals.gramsShort', 'g') : ''}</span>
                                               </span>
                                             )}
                                             <span className="text-muted-foreground">
-                                              {t('meals.remainingAmount', 'Remaining Amount')}: <span className="font-medium text-foreground">{Math.max(0, Math.round(remainingGrams))}ג</span>
+                                              {t('meals.remainingAmount', 'Remaining Amount')}: <span className="font-medium text-foreground">{Math.max(0, Math.round(remainingGrams))}{t('meals.gramsShort', 'g')}</span>
                                             </span>
                                           </div>
                                         </div>
                                         {consumedGrams > 0 && (
                                           <p className="text-xs text-muted-foreground">
-                                            {t('meals.eaten')}: {Math.round(consumedGrams)}ג
+                                            {t('meals.eaten')}: {Math.round(consumedGrams)}{t('meals.gramsShort', 'g')}
                                           </p>
                                         )}
                                       </div>
@@ -1214,7 +1331,7 @@ const MealMenuV2 = () => {
                                           </p>
                                           <div className="flex items-center gap-2">
                                             <Badge variant="outline" className="bg-primary/10 text-primary">
-                                              {choice.quantity || `${Math.round(consumedGrams || 0)}ג`}
+                                              {choice.quantity || `${Math.round(consumedGrams || 0)}${t('meals.gramsShort', 'g')}`}
                                             </Badge>
                                             <Button
                                               size="sm"
@@ -1296,12 +1413,12 @@ const MealMenuV2 = () => {
             return (
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-2">{t('meals.nutritionalInfo', 'Nutritional Info')} ({t('meals.per', 'per')} {selectedFood.food.serving_size || '100g'})</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('meals.nutritionalInfo', 'Nutritional Info')} ({t('meals.per', 'per')} {selectedFood.food.serving_size || `100${t('meals.gramsShort', 'g')}`})</p>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>{t('meals.calories')}: <span className="font-medium">{selectedFood.food.calories} {t('meals.kcal')}</span></div>
-                    <div>{t('meals.protein')}: <span className="font-medium">{selectedFood.food.protein}ג</span></div>
-                    <div>{t('meals.carbs')}: <span className="font-medium">{selectedFood.food.carbs}ג</span></div>
-                    <div>{t('meals.fat')}: <span className="font-medium">{selectedFood.food.fat}ג</span></div>
+                    <div>{t('meals.protein')}: <span className="font-medium">{selectedFood.food.protein}{t('meals.gramsShort', 'g')}</span></div>
+                    <div>{t('meals.carbs')}: <span className="font-medium">{selectedFood.food.carbs}{t('meals.gramsShort', 'g')}</span></div>
+                    <div>{t('meals.fat')}: <span className="font-medium">{selectedFood.food.fat}{t('meals.gramsShort', 'g')}</span></div>
                   </div>
                 </div>
 
@@ -1309,7 +1426,7 @@ const MealMenuV2 = () => {
                 {hasFiniteLimit && (
                   <div className={`p-3 rounded-lg border ${exceedsLimit ? 'bg-destructive/10 border-destructive/20' : 'bg-primary/10 border-primary/20'}`}>
                     <p className={`text-sm font-medium ${exceedsLimit ? 'text-destructive' : 'text-primary'}`}>
-                      {t('meals.remainingDailyAllowance')}: <span className="font-bold">{normalizedRemaining}g</span>
+                      {t('meals.remainingDailyAllowance')}: <span className="font-bold">{normalizedRemaining}{t('meals.gramsShort', 'g')}</span>
                     </p>
                   </div>
                 )}
@@ -1460,7 +1577,12 @@ const MealMenuV2 = () => {
           {showFoodBankDialog && (
             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
               {allFoodBankItems
-                .filter(item => item.macro_type === showFoodBankDialog.macroType)
+                .filter(item => {
+                  if (showFoodBankDialog.macroType === 'all') return true;
+                  const itemMacro = String(item.macro_type ?? '').toLowerCase();
+                  const filterMacro = String(showFoodBankDialog.macroType).toLowerCase();
+                  return itemMacro === filterMacro;
+                })
                 .map((item) => {
                   const isAlreadySelected = choices.some(
                     c => c.meal_slot_id === showFoodBankDialog.slotId && c.food_option_id === item.id
@@ -1498,7 +1620,7 @@ const MealMenuV2 = () => {
                             {i18n.language === 'he' ? (item.name_hebrew || item.name) : item.name}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {item.calories} {t('meals.kcal')} • {item.protein}ג {t('meals.protein')} • {item.carbs}ג {t('meals.carbs')} • {item.fat}ג {t('meals.fat')}
+                            {item.calories} {t('meals.kcal')} • {item.protein}{t('meals.gramsShort', 'g')} {t('meals.protein')} • {item.carbs}{t('meals.gramsShort', 'g')} {t('meals.carbs')} • {item.fat}{t('meals.gramsShort', 'g')} {t('meals.fat')}
                           </p>
                         </div>
                         {isAlreadySelected && (
@@ -1511,7 +1633,12 @@ const MealMenuV2 = () => {
                   );
                 })}
               
-              {allFoodBankItems.filter(item => item.macro_type === showFoodBankDialog.macroType).length === 0 && (
+              {allFoodBankItems.filter(item => {
+                if (showFoodBankDialog.macroType === 'all') return true;
+                const itemMacro = String(item.macro_type ?? '').toLowerCase();
+                const filterMacro = String(showFoodBankDialog.macroType).toLowerCase();
+                return itemMacro === filterMacro;
+              }).length === 0 && (
                 <p className="text-center text-muted-foreground py-8">
                   {t('meals.noFoodItems', 'No food items available')}
                 </p>

@@ -226,6 +226,8 @@
     "customFoodError": "Failed to log custom food. Please try again.",
     "totalCaloriesWeek": "Total Calories (Week)",
     "quantity": "Quantity",
+    "gramsShort": "g",
+    "allTab": "All",
     "addFood": "Add Food",
     "hide": "Hide",
     "show": "Show",
