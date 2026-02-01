@@ -9,6 +9,7 @@ import {
   TrendingUp, Weight, Calendar, Edit2, Camera, 
   LineChart, Target, Activity, Plus, Upload, Image, Trash2, X
 } from 'lucide-react';
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { API_BASE_URL } from '../config/api';
 import { useToast } from '../hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -109,10 +110,19 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
     }
   }, [viewingPhoto]);
 
-  // Sort entries by date
+  // Sort entries by date (newest first for list)
   const sortedEntries = [...progressEntries].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
+
+  // Chart data: chronological order for graph, with locale-aware date label
+  const chartData = [...progressEntries]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map(entry => ({
+      date: new Date(entry.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', { month: 'short', day: 'numeric' }),
+      weight: entry.weight,
+      fullDate: entry.date,
+    }));
 
   // Calculate statistics
   const latestEntry = sortedEntries[0];
@@ -428,7 +438,7 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
         </Card>
       </div>
 
-      {/* Progress Chart Placeholder */}
+      {/* Weight Progress Chart */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -437,9 +447,40 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 bg-secondary/20 rounded-lg flex items-center justify-center">
-            <p className="text-muted-foreground text-center">{t('weightProgress.chartVisualization')}</p>
-          </div>
+          {chartData.length > 0 ? (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height={256}>
+                <RechartsLineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 12 }}
+                    className="text-muted-foreground"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    className="text-muted-foreground"
+                    tickFormatter={(v) => `${v} ${t('weightProgress.kg')}`}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [`${value} ${t('weightProgress.kg')}`, t('weightProgress.weight')]}
+                    labelFormatter={(_, payload) => payload?.[0]?.payload?.fullDate ? new Date(payload[0].payload.fullDate).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', { dateStyle: 'medium' }) : ''}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="weight"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                  />
+                </RechartsLineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-64 bg-secondary/20 rounded-lg flex items-center justify-center">
+              <p className="text-muted-foreground text-center">{t('weightProgress.chartVisualization')}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

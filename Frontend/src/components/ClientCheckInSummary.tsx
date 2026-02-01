@@ -39,13 +39,7 @@ export const ClientCheckInSummary: React.FC<ClientCheckInSummaryProps> = ({
   }
 
   if (!summary) {
-    return (
-      <Card className="bg-gradient-to-br from-card to-secondary border-border/50">
-        <CardContent className="p-6">
-          <div className="text-center text-muted-foreground">{t('checkIn.noData')}</div>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   const stats = [

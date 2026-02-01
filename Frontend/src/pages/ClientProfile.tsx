@@ -528,13 +528,13 @@ const ClientProfile = () => {
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="pt-4">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 gap-1 h-auto min-h-[3rem] p-2">
-              <TabsTrigger value="profile" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.profile', 'Profile')}</TabsTrigger>
-              <TabsTrigger value="progress" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.weightProgress')}</TabsTrigger>
-              <TabsTrigger value="workouts" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.workoutPlans')}</TabsTrigger>
-              <TabsTrigger value="meals" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.mealPlans')}</TabsTrigger>
-              <TabsTrigger value="nutrition" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('clientProfile.nutritionHistory')}</TabsTrigger>
-              <TabsTrigger value="checkins" className="text-sm sm:text-base px-4 py-3 whitespace-normal break-words">{t('checkIn.trainer.tabTitle')}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 gap-1 h-auto min-h-[3rem] p-2 min-w-0">
+              <TabsTrigger value="profile" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('clientProfile.profile', 'Profile')}</TabsTrigger>
+              <TabsTrigger value="progress" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('clientProfile.weightProgress')}</TabsTrigger>
+              <TabsTrigger value="workouts" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('clientProfile.workoutPlans')}</TabsTrigger>
+              <TabsTrigger value="meals" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('clientProfile.mealPlans')}</TabsTrigger>
+              <TabsTrigger value="nutrition" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('clientProfile.nutritionHistory')}</TabsTrigger>
+              <TabsTrigger value="checkins" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('checkIn.trainer.tabTitle')}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -673,7 +673,7 @@ const ClientProfile = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeWorkoutPlan ? (
-                <Card className="hover:shadow-lg transition-shadow" data-testid="workout-plan-card">
+                <Card className="hover:shadow-lg transition-shadow" data-testid="workout-plan-card" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                   <CardHeader className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-2">

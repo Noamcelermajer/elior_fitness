@@ -333,6 +333,7 @@
     "previousSetShort": "{{reps}}×{{weight}}",
     "previousSet": "האימון הקודם: {{reps}} חזרות · {{weight}} ק״ג",
     "unnamedExercise": "תרגיל ללא שם",
+    "logSet": "רשום סט",
     "saveSet": "שמור סט",
     "addSet": "הוסף סט",
     "completedSet": "{{reps}} חזרות · {{weight}} ק״ג",

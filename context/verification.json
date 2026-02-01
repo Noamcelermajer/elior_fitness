@@ -5,6 +5,8 @@
     "trainer": "elior:elior123",
     "client": "user:user123"
   },
+  "fullVerificationPlan": "BROWSER_VERIFICATION_PLAN.md",
+  "planDescription": "Complete step-by-step browser check: auth, language, progress photos, training (trainer + client: create/edit/delete workout plan, calendar, day card, mark completed), meal plan (trainer: create/edit/delete for user, manual targets, no per-meal; client: daily totals, add from bank, swipe remove, Complete), food bank (single filter, Excel import review), exercise bank (Excel import review). Report template and context-issue mapping included.",
   "verifiedIssues": {
     "languagePersistence": {
       "status": "needs-testing",

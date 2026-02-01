@@ -319,22 +319,6 @@ const TrainingPlanV2: React.FC = () => {
 
   return (
     <div className="pb-20">
-      <div className="bg-gradient-to-br from-card to-secondary px-4 lg:px-6 py-4 lg:py-6 shadow-sm">
-        <div className="max-w-6xl mx-auto space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
-                {workoutPlan.name}
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                {workoutPlan.description ||
-                  t('training.defaultPlanDescription', 'התוכנית האישית שלך לאימונים')}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-6xl mx-auto space-y-4 md:space-y-6 px-4 lg:px-6 py-4 md:py-6">
         {error && (
           <Card className="border-destructive/40 bg-destructive/10">
@@ -387,24 +371,32 @@ const TrainingPlanV2: React.FC = () => {
                   <CardContent className="px-6 py-4" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
                     <div className="flex items-center justify-between w-full gap-4">
                       <div className="flex items-start space-x-3 flex-1 min-w-0">
-                        <div className="flex-1 min-w-0 space-y-1">
-                          {/* Training Name - Top */}
-                          <p className="font-semibold text-lg" dir="auto">
+                        <div className="flex-1 min-w-0 space-y-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+                          {/* Training Name - RTL for Hebrew */}
+                          <p className="font-semibold text-lg">
                             {workoutPlan.name}
                           </p>
-                          {/* Workouts List - Below name (no exercise count) */}
-                          {day.workout_exercises && day.workout_exercises.length > 0 && (
-                            <div className="text-sm text-muted-foreground" dir="auto">
-                              {day.workout_exercises
-                                .sort((a, b) => a.order_index - b.order_index)
-                                .map((ex, idx) => (
+                          {/* Workouts List - only exercises with a real name (exclude empty and "תרגיל ללא שם") */}
+                          {(() => {
+                            const unnamedLabel = t('training.unnamedExercise', 'Unnamed Exercise');
+                            const named = (day.workout_exercises || [])
+                              .filter((ex) => {
+                                const n = ex.exercise?.name?.trim();
+                                return n && n !== unnamedLabel;
+                              })
+                              .sort((a, b) => a.order_index - b.order_index);
+                            if (named.length === 0) return null;
+                            return (
+                              <div className="text-sm text-muted-foreground">
+                                {named.map((ex, idx) => (
                                   <span key={ex.id}>
-                                    {ex.exercise?.name || t('training.unnamedExercise', 'Unnamed Exercise')}
-                                    {idx < day.workout_exercises.length - 1 ? ', ' : ''}
+                                    {ex.exercise?.name}
+                                    {idx < named.length - 1 ? ', ' : ''}
                                   </span>
                                 ))}
-                            </div>
-                          )}
+                              </div>
+                            );
+                          })()}
                           {/* Notes/Description - Below workouts */}
                           {day.notes && (
                             <p className="text-sm text-muted-foreground line-clamp-2" dir="auto">

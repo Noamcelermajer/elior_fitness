@@ -325,6 +325,7 @@
     "previousSetShort": "{{reps}}×{{weight}}",
     "previousSet": "Previous session: {{reps}} reps · {{weight}} kg",
     "unnamedExercise": "Unnamed Exercise",
+    "logSet": "Log set",
     "saveSet": "Save set",
     "addSet": "Add set",
     "completedSet": "{{reps}} reps · {{weight}} kg",

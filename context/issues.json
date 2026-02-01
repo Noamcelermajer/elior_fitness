@@ -657,11 +657,13 @@
       "progress": "PENDING – 3 photo slots, sideways – need client login"
     },
     "nextSteps": [
+      "Complete manual verification using context/BROWSER_VERIFICATION_REPORT.md (full checklist, Part 9 matrix, Part 10 summary)",
       "Get fresh snapshot on /login; fill user/user123, click login; then test /meals, /training, /progress as client",
       "Open hamburger menu on trainer dashboard to find Clients list and correct clientId for /client/:id",
       "Test language: click globe, select English, reload page, verify fallback",
       "In Create Meal Plan: add a meal and open meal bank dialog to check for duplicate filters and raw translation keys (kcalPer100g, addFoodToBank, makeFoodPublic)"
-    ]
+    ],
+    "verificationReport": "context/BROWSER_VERIFICATION_REPORT.md"
   },
   "stillBuggedSummary": {
     "fromCodeReview": [

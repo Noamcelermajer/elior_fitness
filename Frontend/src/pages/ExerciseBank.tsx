@@ -854,42 +854,6 @@ const ExerciseBank = () => {
               <span className="truncate">{t('exerciseBank.addExercise')}</span>
             </Button>
             <Button 
-              onClick={handleExportExcel}
-              variant="outline"
-              className="w-full md:w-auto px-4 py-2 text-sm md:text-base whitespace-nowrap"
-            >
-              <Download className="w-4 h-4 me-2 flex-shrink-0" />
-              <span className="truncate">{t('common.exportExcel')}</span>
-            </Button>
-            <label className="w-full md:w-auto min-w-0 cursor-pointer">
-              <input
-                type="file"
-                id="exercise-import-file"
-                accept=".xlsx,.xls"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setImportFile(file);
-                    setTimeout(() => handleImportExcel(), 100);
-                  }
-                }}
-                className="hidden"
-                disabled={isImporting}
-              />
-              <Button 
-                variant="outline"
-                className="w-full md:w-auto px-4 py-2 text-sm md:text-base whitespace-nowrap"
-                disabled={isImporting}
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById('exercise-import-file')?.click();
-                }}
-              >
-                <Upload className="w-4 h-4 me-2 flex-shrink-0" />
-                <span className="truncate">{isImporting ? t('common.importing') : t('common.importExcel')}</span>
-              </Button>
-            </label>
-            <Button 
               onClick={() => navigate('/create-workout-plan-v2?createSplit=true')} 
               variant="outline"
               className="w-full md:w-auto px-4 py-2 text-sm md:text-base whitespace-nowrap"
@@ -1024,14 +988,56 @@ const ExerciseBank = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-x-4 mb-6 mt-2">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10"
-                  placeholder={t('exerciseBank.searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                />
+              <div className="flex items-center gap-2 flex-1 w-full min-w-0">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className="h-10 w-10 flex-shrink-0"
+                  onClick={handleExportExcel}
+                  aria-label={t('common.exportExcel')}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+                <label className="cursor-pointer flex-shrink-0">
+                  <input
+                    type="file"
+                    id="exercise-import-file"
+                    accept=".xlsx,.xls"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setImportFile(file);
+                        setTimeout(() => handleImportExcel(), 100);
+                      }
+                    }}
+                    className="hidden"
+                    disabled={isImporting}
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    className="h-10 w-10"
+                    disabled={isImporting}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById('exercise-import-file')?.click();
+                    }}
+                    aria-label={isImporting ? t('common.importing') : t('common.importExcel')}
+                  >
+                    <Upload className="w-4 h-4" />
+                  </Button>
+                </label>
+                <div className="flex-1 relative min-w-0">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10"
+                    placeholder={t('exerciseBank.searchPlaceholder')}
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="w-full md:w-[220px]">
                 <Select value={selectedMuscleGroup} onValueChange={setSelectedMuscleGroup}>
