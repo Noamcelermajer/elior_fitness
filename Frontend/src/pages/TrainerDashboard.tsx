@@ -301,9 +301,9 @@ const TrainerDashboard = () => {
                         <p className="text-sm text-muted-foreground">{client.email}</p>
                       </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-4">
-                      <Button size="sm" variant="outline" className="flex-1 min-w-0 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors text-xs sm:text-sm" onClick={() => handleViewProgress(client)}>{t('client.viewProgress')}</Button>
-                      <Button size="sm" variant="outline" className="flex-1 min-w-0 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors text-xs sm:text-sm" onClick={() => navigate(`/client/${client.id}`)}>{t('client.viewProfile')}</Button>
+                    <div className="flex flex-col gap-3 mt-auto pt-4">
+                      <Button variant="outline" className="w-full h-12 sm:h-11 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors text-base sm:text-sm font-medium border-2 rounded-lg" onClick={() => handleViewProgress(client)}>{t('client.viewProgress')}</Button>
+                      <Button variant="outline" className="w-full h-12 sm:h-11 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors text-base sm:text-sm font-medium border-2 rounded-lg" onClick={() => navigate(`/client/${client.id}`)}>{t('client.viewProfile')}</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -448,14 +448,14 @@ const TrainerDashboard = () => {
                 <Label htmlFor="password">{t('trainerDashboard.password')}</Label>
                 <div className="relative">
                   <Input id="password" type={showPassword ? 'text' : 'password'} value={addClientForm.password} onChange={e => setAddClientForm({ ...addClientForm, password: e.target.value })} className="pl-10 pr-3 text-right" required />
-                  <button type="button" className="absolute left-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 flex items-center justify-center hover:bg-transparent" onClick={() => setShowPassword(v => !v)}>{showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}</button>
+                  <button type="button" className="absolute left-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 flex items-center justify-center hover:bg-transparent touch-manipulation" onClick={() => setShowPassword(v => !v)}>{showPassword ? <EyeOff className="w-5 h-5 text-muted-foreground" /> : <Eye className="w-5 h-5 text-muted-foreground" />}</button>
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">{t('trainerDashboard.confirmPassword')}</Label>
                 <div className="relative">
                   <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={addClientForm.confirmPassword} onChange={e => setAddClientForm({ ...addClientForm, confirmPassword: e.target.value })} className="pl-10 pr-3 text-right" required />
-                  <button type="button" className="absolute left-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 flex items-center justify-center hover:bg-transparent" onClick={() => setShowConfirmPassword(v => !v)}>{showConfirmPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}</button>
+                  <button type="button" className="absolute left-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 flex items-center justify-center hover:bg-transparent touch-manipulation" onClick={() => setShowConfirmPassword(v => !v)}>{showConfirmPassword ? <EyeOff className="w-5 h-5 text-muted-foreground" /> : <Eye className="w-5 h-5 text-muted-foreground" />}</button>
                 </div>
               </div>
               {addClientError && <div className="text-red-500 text-sm">{addClientError}</div>}

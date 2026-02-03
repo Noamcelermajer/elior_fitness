@@ -756,7 +756,7 @@ const ClientProfile = () => {
                                       {exercise.exercise?.name || exercise.exercise_name}
                                     </span>
                                     {exercise.exercise?.muscle_group && (
-                                      <Badge variant="outline" className="text-[10px]">
+                                      <Badge variant="outline" className="text-xs">
                                         {exercise.exercise.muscle_group}
                                       </Badge>
                                     )}
@@ -771,7 +771,7 @@ const ClientProfile = () => {
                                       .join(' • ') || t('clientProfile.noWorkoutDetails')}
                                   </div>
                                   {exercise.notes ? (
-                                    <div className="mt-1 text-[11px] text-orange-600">
+                                    <div className="mt-1 text-xs text-orange-600">
                                       {t('clientProfile.notePrefix')} {exercise.notes}
                                     </div>
                                   ) : null}

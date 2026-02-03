@@ -89,7 +89,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
             <LanguageSelector />
             <ThemeToggle />
             <div className="flex items-center gap-1 sm:gap-2 me-1 sm:me-2">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-xs sm:text-sm flex-shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-sm sm:text-base flex-shrink-0">
                 👤
               </div>
               <span className="text-xs sm:text-sm font-medium text-foreground hidden md:inline truncate max-w-[80px]">{user?.full_name}</span>
@@ -98,9 +98,9 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
               variant="ghost"
               size="icon"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden w-8 h-8 flex-shrink-0"
+              className="lg:hidden w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0"
             >
-              {mobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
             </Button>
           </div>
         </div>
@@ -243,21 +243,20 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
         className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border/50 lg:hidden shadow-2xl z-50 overflow-hidden"
         dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
       >
-        <div className={`flex items-center justify-around px-1 sm:px-2 pt-2 overflow-x-auto scrollbar-hide ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`} style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
+        <div className={`flex items-center justify-around px-2 sm:px-3 pt-3 pb-2 overflow-x-auto scrollbar-hide ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`} style={{ paddingBottom: 'max(8px, calc(env(safe-area-inset-bottom) + 8px))' }}>
           {navigationItems.map((item) => (
             <Button
               key={item.id}
               variant="ghost"
-              size="sm"
-              className={`flex flex-col items-center gap-0.5 sm:gap-1 h-auto py-1.5 sm:py-2 px-1.5 sm:px-2 min-w-0 flex-shrink-0 transform hover:scale-110 transition-all duration-200 ${
+              className={`flex flex-col items-center gap-1 sm:gap-1.5 min-h-[56px] sm:min-h-[52px] py-2 sm:py-2.5 px-3 sm:px-4 min-w-0 flex-shrink-0 transform hover:scale-105 transition-all duration-200 ${
                 currentPage === item.id 
                   ? "text-primary bg-primary/10" 
                   : "text-muted-foreground hover:text-foreground"
               }`}
               onClick={() => handleNavigation(item.href)}
             >
-              <item.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${currentPage === item.id ? 'text-primary' : ''}`} />
-              <span className="text-[10px] sm:text-xs font-medium truncate max-w-[60px] sm:max-w-none">{item.label}</span>
+              <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ${currentPage === item.id ? 'text-primary' : ''}`} />
+              <span className="text-xs sm:text-sm font-medium truncate max-w-[70px] sm:max-w-none leading-tight">{item.label}</span>
             </Button>
           ))}
         </div>

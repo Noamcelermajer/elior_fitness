@@ -904,7 +904,7 @@ const TrainingDayPage: React.FC = () => {
                     <CardTitle className="text-sm md:text-base font-semibold leading-tight truncate">
                       {exerciseName}
                     </CardTitle>
-                    <Badge variant="secondary" className="rounded-full h-5 w-5 md:h-6 md:w-6 p-0 flex items-center justify-center text-[10px] md:text-xs font-semibold shrink-0">
+                    <Badge variant="secondary" className="rounded-full h-6 w-6 md:h-7 md:w-7 p-0 flex items-center justify-center text-xs md:text-sm font-semibold shrink-0">
                       {badgeLabel}
                     </Badge>
                     {isExerciseComplete && (
@@ -919,7 +919,7 @@ const TrainingDayPage: React.FC = () => {
                       </Badge>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] md:text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:text-sm text-muted-foreground">
                     {exercise.target_sets != null && exercise.target_sets > 0 && (
                       <span>{t('training.sets')}: {exercise.target_sets}</span>
                     )}
@@ -940,10 +940,10 @@ const TrainingDayPage: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 p-0"
+                        className="h-10 w-10 sm:h-9 sm:w-9 p-0 touch-manipulation"
                         aria-label={t('training.history', 'היסטוריה')}
                       >
-                        <History className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                        <History className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground hover:text-foreground" />
                       </Button>
                     </DialogTrigger>
                     <ExerciseHistoryDialog exerciseId={exercise.id} exerciseName={exerciseName} />
@@ -952,13 +952,13 @@ const TrainingDayPage: React.FC = () => {
               </div>
 
               {detail?.instructions && (
-                <div className="text-[11px] md:text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                <div className="text-xs md:text-sm text-muted-foreground leading-relaxed line-clamp-2">
                   {detail.instructions}
                 </div>
               )}
 
               {exercise.notes && (
-                <div className="text-[11px] md:text-xs text-primary">{exercise.notes}</div>
+                <div className="text-xs md:text-sm text-primary">{exercise.notes}</div>
               )}
             </div>
           </div>
@@ -976,7 +976,7 @@ const TrainingDayPage: React.FC = () => {
                   key={`suggestion-${prevSet.id}`}
                   className="flex items-center gap-2 md:gap-3 rounded-lg border border-border/40 bg-muted/20 p-2.5 md:p-3"
                 >
-                  <span className="flex h-7 w-7 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-muted/50 text-[11px] md:text-xs font-semibold text-muted-foreground">
+                  <span className="flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-full bg-muted/50 text-xs md:text-sm font-semibold text-muted-foreground">
                     {prevSet.set_number.toString().padStart(2, '0')}
                   </span>
                   <div className="flex flex-1 items-center gap-3">
@@ -988,7 +988,7 @@ const TrainingDayPage: React.FC = () => {
                         {prevSet.reps_completed} {t('training.reps')}
                       </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground/60 ml-auto">
+                    <span className="text-xs text-muted-foreground/60 ml-auto">
                       {new Date(prevSet.completed_at).toLocaleDateString()}
                     </span>
                   </div>
@@ -1070,7 +1070,7 @@ const TrainingDayPage: React.FC = () => {
                     >
                       {t('training.delete', 'Delete')}
                     </div>
-                    <span className="flex h-7 w-7 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] md:text-xs font-semibold text-foreground">
+                    <span className="flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs md:text-sm font-semibold text-foreground">
                       {setNumber.toString().padStart(2, '0')}
                     </span>
 

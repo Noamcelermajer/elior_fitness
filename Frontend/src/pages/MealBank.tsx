@@ -567,18 +567,18 @@ const MealBank = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-10 w-10 sm:h-9 sm:w-9 touch-manipulation"
                               onClick={() => startEdit(item)}
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-5 w-5 sm:h-4 sm:w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              className="h-10 w-10 sm:h-9 sm:w-9 text-destructive hover:text-destructive touch-manipulation"
                               onClick={() => handleDelete(item.id)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
                             </Button>
                           </div>
                         </div>

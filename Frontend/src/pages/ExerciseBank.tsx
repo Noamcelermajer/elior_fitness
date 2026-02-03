@@ -959,18 +959,18 @@ const ExerciseBank = () => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => openEditDialog(group)}
-                                  className="h-8 w-8 p-0"
+                                  className="h-10 w-10 sm:h-9 sm:w-9 p-0 touch-manipulation"
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-5 h-5 sm:w-4 sm:h-4" />
                                 </Button>
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleDeleteMuscleGroup(group.id)}
-                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                  className="h-10 w-10 sm:h-9 sm:w-9 p-0 text-destructive hover:text-destructive touch-manipulation"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                                 </Button>
                               </div>
                             </div>

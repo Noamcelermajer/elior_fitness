@@ -807,7 +807,7 @@ const ProgressTrackingV2 = () => {
                                       </div>
                                     )}
                                     {photo && (
-                                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1 py-0.5 text-center">
+                                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-2 py-1 text-center">
                                         {type === 'front' ? (i18n.language === 'he' ? 'קדמי' : 'Front') :
                                          type === 'side' ? (i18n.language === 'he' ? 'צד' : 'Side') :
                                          (i18n.language === 'he' ? 'אחורי' : 'Back')}
