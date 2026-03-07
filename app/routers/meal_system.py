@@ -6,7 +6,7 @@ Trainers can create meal plans with 3 macros and food options
 from collections import defaultdict
 from datetime import datetime
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, UploadFile, File
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Dict, Any, Optional
 import io
@@ -1066,13 +1066,12 @@ def get_meal_completions(
     return statuses
 
 
-@router.post("/completions", response_model=None)
+@router.post("/completions", response_model=MealCompletionStatusResponse)
 def upsert_meal_completion(
     completion_data: MealCompletionStatusCreate,
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db),
-    background_tasks: BackgroundTasks = Depends(),
-) -> MealCompletionStatusResponse:
+):
     """
     Create or update a completion state for a specific meal slot/date.
     """
@@ -1110,6 +1109,7 @@ def upsert_meal_completion(
     )
 
     completed_at = datetime.utcnow() if completion_data.is_completed else None
+    background_tasks = BackgroundTasks()
 
     if existing_status:
         existing_status.is_completed = completion_data.is_completed
@@ -1130,7 +1130,8 @@ def upsert_meal_completion(
             )
             if created:
                 background_tasks.add_task(websocket_service.send_new_notification_hint, created.recipient_id)
-        return MealCompletionStatusResponse.model_validate(existing_status)
+        body = MealCompletionStatusResponse.model_validate(existing_status)
+        return JSONResponse(content=body.model_dump(mode="json"), background=background_tasks)
 
     new_status = MealCompletionStatus(
         client_id=target_client_id,
@@ -1156,7 +1157,8 @@ def upsert_meal_completion(
         )
         if created:
             background_tasks.add_task(websocket_service.send_new_notification_hint, created.recipient_id)
-    return MealCompletionStatusResponse.model_validate(new_status)
+    body = MealCompletionStatusResponse.model_validate(new_status)
+    return JSONResponse(content=body.model_dump(mode="json"), background=background_tasks)
 
 # ============ Meal Bank Endpoints ============
 
