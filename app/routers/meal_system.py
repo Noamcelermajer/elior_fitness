@@ -1066,13 +1066,13 @@ def get_meal_completions(
     return statuses
 
 
-@router.post("/completions", response_model=MealCompletionStatusResponse)
+@router.post("/completions", response_model=None)
 def upsert_meal_completion(
     completion_data: MealCompletionStatusCreate,
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = Depends(),
-):
+) -> MealCompletionStatusResponse:
     """
     Create or update a completion state for a specific meal slot/date.
     """
@@ -1130,7 +1130,7 @@ def upsert_meal_completion(
             )
             if created:
                 background_tasks.add_task(websocket_service.send_new_notification_hint, created.recipient_id)
-        return existing_status
+        return MealCompletionStatusResponse.model_validate(existing_status)
 
     new_status = MealCompletionStatus(
         client_id=target_client_id,
@@ -1156,7 +1156,7 @@ def upsert_meal_completion(
         )
         if created:
             background_tasks.add_task(websocket_service.send_new_notification_hint, created.recipient_id)
-    return new_status
+    return MealCompletionStatusResponse.model_validate(new_status)
 
 # ============ Meal Bank Endpoints ============
 
