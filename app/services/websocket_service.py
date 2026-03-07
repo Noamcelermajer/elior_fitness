@@ -58,6 +58,10 @@ class WebSocketService:
                 if user_id in self.user_subscriptions:
                     del self.user_subscriptions[user_id]
     
+    async def send_new_notification_hint(self, user_id: int) -> None:
+        """Notify a user (e.g. trainer) that a new notification exists so the client can refetch."""
+        await self.send_personal_message(user_id, {"type": "new_notification"})
+
     async def send_personal_message(self, user_id: int, message: dict):
         """Send message to a specific user."""
         if user_id in self.active_connections:

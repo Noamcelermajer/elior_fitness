@@ -18,16 +18,19 @@ router = APIRouter()
 
 class MuscleGroupCreate(BaseModel):
     name: str
+    name_he: str | None = None
 
 class MuscleGroupUpdate(BaseModel):
     name: str
+    name_he: str | None = None
 
 class MuscleGroupResponse(BaseModel):
     id: int
     name: str
+    name_he: str | None = None
     created_by: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -57,6 +60,7 @@ def create_muscle_group(
     
     muscle_group = MuscleGroup(
         name=muscle_group_data.name.strip(),
+        name_he=muscle_group_data.name_he.strip() if muscle_group_data.name_he else None,
         created_by=current_user.id
     )
     
@@ -110,6 +114,7 @@ def update_muscle_group(
         )
     
     muscle_group.name = muscle_group_data.name.strip()
+    muscle_group.name_he = muscle_group_data.name_he.strip() if muscle_group_data.name_he else None
     db.commit()
     db.refresh(muscle_group)
     

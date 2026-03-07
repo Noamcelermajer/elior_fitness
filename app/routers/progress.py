@@ -11,6 +11,8 @@ from app.models.progress import ProgressEntry
 from app.models.progress_photo import ProgressPhoto, PhotoType
 from app.services.file_service import FileService
 from app.services.notification_triggers import check_client_goals
+from app.services.trainer_notification_helper import notify_trainer_immediate
+from app.services.websocket_service import websocket_service
 
 router = APIRouter(tags=["progress"])
 
@@ -108,9 +110,22 @@ async def add_weight_entry(
     
     if saved_photos:
         db.commit()
-    
+
+    client = db.query(User).filter(User.id == target_client_id).first()
+    client_name = (client.full_name or client.username) if client else "Client"
+    created = notify_trainer_immediate(
+        db,
+        target_client_id,
+        title="Weight logged",
+        message=f"{client_name} logged weight: {weight} kg",
+        event_type="weight_change",
+        notification_type="info",
+    )
+    if created:
+        await websocket_service.send_new_notification_hint(created.recipient_id)
+
     # Check for goal achievements
-    check_client_goals(db, current_user.id)
+    check_client_goals(db, target_client_id)
     
     # Normalize photo_path to just filename
     photo_path = progress_entry.photo_path

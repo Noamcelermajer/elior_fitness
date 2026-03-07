@@ -5,17 +5,24 @@ from app.database import get_db
 from app.auth.utils import get_current_user
 from app.schemas.auth import UserResponse, UserRole
 from app.schemas.notification import (
-    NotificationCreate, 
-    NotificationResponse, 
+    NotificationCreate,
+    NotificationResponse,
     NotificationUpdate,
-    NotificationCount
+    NotificationCount,
+)
+from app.schemas.client_notification_setting import (
+    ClientNotificationSettingResponse,
+    ClientNotificationSettingUpdate,
+    ClientNotificationSettingWithClient,
 )
 from app.services.notification_service import notification_service
+from app.services.client_notification_setting_service import client_notification_setting_service
 from app.services.notification_triggers import (
-    NotificationTriggers, 
+    NotificationTriggers,
     run_weekly_notification_checks,
-    check_client_goals
+    check_client_goals,
 )
+from app.models.user import User
 
 router = APIRouter()
 
@@ -24,8 +31,9 @@ async def get_notifications(
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     unread_only: bool = Query(False),
+    client_id: Optional[int] = Query(None, description="Filter by client (trainee)"),
     db: Session = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user)
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get notifications for the current user"""
     notifications = notification_service.get_user_notifications(
@@ -33,7 +41,8 @@ async def get_notifications(
         user_id=current_user.id,
         limit=limit,
         offset=offset,
-        unread_only=unread_only
+        unread_only=unread_only,
+        client_id=client_id,
     )
     return notifications
 
@@ -120,6 +129,65 @@ async def delete_notification(
         )
     
     return {"message": "Notification deleted successfully"}
+
+
+# ---------- Client notification settings (trainer only) ----------
+@router.get("/settings", response_model=List[ClientNotificationSettingWithClient])
+async def list_notification_settings(
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+):
+    """List notification settings for all clients of the current trainer."""
+    if current_user.role not in (UserRole.TRAINER, UserRole.ADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers can view notification settings",
+        )
+    return client_notification_setting_service.list_by_trainer(db, current_user.id)
+
+
+@router.get("/settings/{client_id}", response_model=ClientNotificationSettingWithClient)
+async def get_notification_setting(
+    client_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+):
+    """Get notification setting for one client. 404 if no row (frontend treats as default)."""
+    if current_user.role not in (UserRole.TRAINER, UserRole.ADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers can view notification settings",
+        )
+    client = db.query(User).filter(User.id == client_id).first()
+    if not client or client.trainer_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+    setting = client_notification_setting_service.get_setting(db, current_user.id, client_id)
+    mode = setting.mode if setting else "WEEKLY_DIGEST"
+    return ClientNotificationSettingWithClient(
+        client_id=client_id,
+        client_name=client.full_name or f"Client {client_id}",
+        mode=mode,
+    )
+
+
+@router.put("/settings/{client_id}", response_model=ClientNotificationSettingResponse)
+async def update_notification_setting(
+    client_id: int,
+    body: ClientNotificationSettingUpdate,
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+):
+    """Create or update notification setting for a client (trainer only)."""
+    if current_user.role not in (UserRole.TRAINER, UserRole.ADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only trainers can update notification settings",
+        )
+    client = db.query(User).filter(User.id == client_id).first()
+    if not client or client.trainer_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+    return client_notification_setting_service.upsert(db, current_user.id, client_id, body.mode)
+
 
 @router.post("/system")
 async def create_system_notification(

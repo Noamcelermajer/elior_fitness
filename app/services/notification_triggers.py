@@ -6,7 +6,13 @@ from app.models.user import User
 from app.models.progress import ProgressEntry
 from app.models.workout import WorkoutExercise, ExerciseCompletion
 from app.models.nutrition import MealPlan, MealUpload
+from app.models.user import ClientProfile
+from app.models.client_notification_setting import ClientNotificationSetting
+from app.models.workout_system import WorkoutSessionV2 as NewWorkoutSession, WorkoutDay, WorkoutPlanV2 as NewWorkoutPlan
+from app.models.meal_system import MealCompletionStatus, MealPlanV2 as NewMealPlan, MealSlot
+from sqlalchemy import distinct
 from app.services.notification_service import notification_service
+from app.services.client_notification_setting_service import client_notification_setting_service
 from app.schemas.notification import NotificationCreate
 
 class NotificationTriggers:
@@ -35,34 +41,37 @@ class NotificationTriggers:
 
     @staticmethod
     def check_goal_achievements(db: Session, client_id: int):
-        """Check if client has reached their goals and notify trainer"""
-        # Get client's trainer
+        """Check if client has reached their goals and notify trainer."""
         client = db.query(User).filter(User.id == client_id).first()
         if not client or not client.trainer_id:
             return
-        
-        # Get latest progress entry
-        latest_progress = db.query(ProgressEntry).filter(
-            ProgressEntry.client_id == client_id
-        ).order_by(ProgressEntry.recorded_at.desc()).first()
-        
+        latest_progress = (
+            db.query(ProgressEntry)
+            .filter(ProgressEntry.client_id == client_id)
+            .order_by(ProgressEntry.created_at.desc())
+            .first()
+        )
         if not latest_progress:
             return
-        
-        # Check weight goal achievement
-        if latest_progress.target_weight and latest_progress.current_weight:
-            if latest_progress.current_weight <= latest_progress.target_weight:
-                notification_data = NotificationCreate(
-                    title="Goal Achievement! 🎉",
-                    message=f"Client {client.full_name} has reached their target weight goal!",
-                    type="success",
-                    recipient_id=client.trainer_id
-                )
-                notification_service.create_notification(
-                    db=db,
-                    notification_data=notification_data,
-                    sender_id=None  # System notification
-                )
+        profile = db.query(ClientProfile).filter(ClientProfile.user_id == client_id).first()
+        target_kg = None
+        if profile and profile.target_weight is not None:
+            target_kg = profile.target_weight / 1000.0
+        current_kg = latest_progress.weight
+        if target_kg is not None and current_kg is not None and current_kg <= target_kg:
+            notification_data = NotificationCreate(
+                title="Goal Achievement!",
+                message=f"Client {client.full_name or client.username} has reached their target weight goal!",
+                type="success",
+                recipient_id=client.trainer_id,
+                client_id=client_id,
+                event_type="goal_achievement",
+            )
+            notification_service.create_notification(
+                db=db,
+                notification_data=notification_data,
+                sender_id=None,
+            )
 
     @staticmethod
     def check_missed_exercises_weekly(db: Session):
@@ -220,15 +229,96 @@ class NotificationTriggers:
                 notification_type="info"
             )
 
+def run_weekly_digest_for_trainers(db: Session) -> None:
+    """
+    For each client with WEEKLY_DIGEST, build one notification per trainer-client:
+    e.g. "David missed 4 training sessions this week. David didn't log meals on 3 days."
+    """
+    from datetime import date as date_type
+    now = datetime.now()
+    week_start = now - timedelta(days=now.weekday())
+    week_end = week_start + timedelta(days=7)
+    week_start_dt = datetime.combine(week_start.date(), datetime.min.time())
+    week_end_dt = datetime.combine(week_end.date(), datetime.min.time())
+
+    digest_settings = (
+        db.query(ClientNotificationSetting)
+        .filter(ClientNotificationSetting.mode == "WEEKLY_DIGEST")
+        .all()
+    )
+    for row in digest_settings:
+        client_id = row.client_id
+        trainer_id = row.trainer_id
+        client = db.query(User).filter(User.id == client_id).first()
+        if not client or client.trainer_id != trainer_id:
+            continue
+        client_name = client.full_name or client.username or f"Client {client_id}"
+
+        # Expected training sessions from active plan
+        plan = (
+            db.query(NewWorkoutPlan)
+            .filter(
+                NewWorkoutPlan.client_id == client_id,
+                NewWorkoutPlan.is_active == True,
+            )
+            .first()
+        )
+        expected_sessions = plan.days_per_week if plan and plan.days_per_week else 0
+        completed_sessions = (
+            db.query(NewWorkoutSession)
+            .filter(
+                NewWorkoutSession.client_id == client_id,
+                NewWorkoutSession.started_at >= week_start_dt,
+                NewWorkoutSession.started_at < week_end_dt,
+                NewWorkoutSession.is_completed == True,
+            )
+            .count()
+        )
+        missed_sessions = max(0, expected_sessions - completed_sessions)
+
+        # Days with at least one meal completion this week
+        days_with_meals = (
+            db.query(func.count(distinct(MealCompletionStatus.date)))
+            .filter(
+                MealCompletionStatus.client_id == client_id,
+                MealCompletionStatus.date >= week_start_dt,
+                MealCompletionStatus.date < week_end_dt,
+                MealCompletionStatus.is_completed == True,
+            )
+            .scalar()
+        ) or 0
+        days_without_meals = max(0, 7 - days_with_meals)
+
+        parts = []
+        if missed_sessions > 0:
+            parts.append(f"{client_name} missed {missed_sessions} training session(s) this week.")
+        if days_without_meals > 0:
+            parts.append(f"{client_name} didn't log meals on {days_without_meals} day(s) this week.")
+        if not parts:
+            continue
+        message = " ".join(parts)
+        notification_data = NotificationCreate(
+            title="Weekly digest",
+            message=message,
+            type="info",
+            recipient_id=trainer_id,
+            client_id=client_id,
+            event_type="weekly_digest",
+        )
+        notification_service.create_notification(
+            db=db,
+            notification_data=notification_data,
+            sender_id=None,
+        )
+
+
 # Create a scheduler function that can be called periodically
 def run_weekly_notification_checks(db: Session):
-    """Run all weekly notification checks"""
+    """Run all weekly notification checks (legacy + new weekly digest)."""
     try:
-        NotificationTriggers.check_missed_exercises_weekly(db)
-        NotificationTriggers.check_missed_meals_weekly(db)
+        run_weekly_digest_for_trainers(db)
     except Exception as e:
-        # Log error but don't fail the entire process
-        print(f"Error in weekly notification checks: {e}")
+        print(f"Error in weekly digest: {e}")
 
 # Create a function to check goal achievements for a specific client
 def check_client_goals(db: Session, client_id: int):

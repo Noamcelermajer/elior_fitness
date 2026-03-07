@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +20,7 @@ import {
 import { 
   ArrowLeft, User, Target, Weight, Calendar, Clock, 
   Dumbbell, Utensils, TrendingUp, Plus, Edit, Camera,
-  Phone, Mail, MapPin, Activity, Heart, AlertTriangle, Trash2
+  Phone, Mail, MapPin, Activity, Heart, AlertTriangle, Trash2, Bell
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
@@ -173,6 +175,9 @@ const ClientProfile = () => {
   const [mealPlanToDelete, setMealPlanToDelete] = useState<MealPlan | null>(null);
   const [selectedCheckIn, setSelectedCheckIn] = useState<any>(null);
   const [checkInSummary, setCheckInSummary] = useState<any>(null);
+  const [notificationMode, setNotificationMode] = useState<'EVERYTHING' | 'WEEKLY_DIGEST'>('WEEKLY_DIGEST');
+  const [notificationSettingLoading, setNotificationSettingLoading] = useState(false);
+  const [notificationSettingSaving, setNotificationSettingSaving] = useState(false);
 
   // Get client from location state or fetch by ID
   const fetchClientData = async () => {
@@ -194,6 +199,22 @@ const ClientProfile = () => {
         if (response.ok) {
           const clientData = await response.json();
           setClient(clientData);
+        }
+      }
+
+      // Fetch notification setting for this client (trainer only)
+      if (clientId && (user?.role === 'TRAINER' || user?.role === 'ADMIN')) {
+        setNotificationSettingLoading(true);
+        try {
+          const notifRes = await fetch(`${API_BASE_URL}/notifications/settings/${clientId}`, { headers });
+          if (notifRes.ok) {
+            const notifData = await notifRes.json();
+            setNotificationMode(notifData.mode === 'EVERYTHING' ? 'EVERYTHING' : 'WEEKLY_DIGEST');
+          }
+        } catch {
+          // keep default
+        } finally {
+          setNotificationSettingLoading(false);
         }
       }
 
@@ -416,6 +437,27 @@ const ClientProfile = () => {
     setShowDeleteDialog(true);
   };
 
+  const handleNotificationModeChange = async (mode: 'EVERYTHING' | 'WEEKLY_DIGEST') => {
+    if (!clientId) return;
+    setNotificationSettingSaving(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/notifications/settings/${clientId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ mode }),
+      });
+      if (res.ok) {
+        setNotificationMode(mode);
+      }
+    } finally {
+      setNotificationSettingSaving(false);
+    }
+  };
+
   return (
     <Layout currentPage="dashboard">
       <div className="container mx-auto p-6 space-y-6 min-h-screen">
@@ -528,13 +570,16 @@ const ClientProfile = () => {
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="pt-4">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 gap-1 h-auto min-h-[3rem] p-2 min-w-0">
+            <TabsList className={`grid w-full gap-1 h-auto min-h-[3rem] p-2 min-w-0 ${(user?.role === 'TRAINER' || user?.role === 'ADMIN') ? 'grid-cols-2 sm:grid-cols-7' : 'grid-cols-2 sm:grid-cols-6'}`}>
               <TabsTrigger value="profile" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('clientProfile.profile', 'Profile')}</TabsTrigger>
               <TabsTrigger value="progress" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('clientProfile.weightProgress')}</TabsTrigger>
               <TabsTrigger value="workouts" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('clientProfile.workoutPlans')}</TabsTrigger>
               <TabsTrigger value="meals" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('clientProfile.mealPlans')}</TabsTrigger>
               <TabsTrigger value="nutrition" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('clientProfile.nutritionHistory')}</TabsTrigger>
               <TabsTrigger value="checkins" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('checkIn.trainer.tabTitle')}</TabsTrigger>
+              {(user?.role === 'TRAINER' || user?.role === 'ADMIN') && (
+                <TabsTrigger value="notifications" className="min-w-0 text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-3 !whitespace-normal break-words text-center">{t('notifications.tabTitle', 'Notifications')}</TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -932,6 +977,50 @@ const ClientProfile = () => {
               <ClientCheckInDetail checkIn={selectedCheckIn} />
             </div>
           </TabsContent>
+
+          {/* Notifications Tab (trainer only) */}
+          {(user?.role === 'TRAINER' || user?.role === 'ADMIN') && (
+            <TabsContent value="notifications" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    {t('notifications.notifyMeAboutClient', 'Notify me about this client')}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {t('notifications.notifyMeAboutClientDescription', 'Choose how you want to be notified when this client logs weight, completes meals, or completes training.')}
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>{t('notifications.notificationPreference', 'Notification preference')}</Label>
+                    {notificationSettingLoading ? (
+                      <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
+                    ) : (
+                      <Select
+                        value={notificationMode}
+                        onValueChange={(v) => handleNotificationModeChange(v as 'EVERYTHING' | 'WEEKLY_DIGEST')}
+                        disabled={notificationSettingSaving}
+                      >
+                        <SelectTrigger className="max-w-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EVERYTHING">{t('notifications.modeEverything', 'Everything')}</SelectItem>
+                          <SelectItem value="WEEKLY_DIGEST">{t('notifications.modeWeeklyDigest', 'Weekly digest')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {notificationMode === 'EVERYTHING'
+                        ? t('notifications.modeEverythingDescription', 'Get notified immediately when they log weight, complete a meal, or complete a workout.')
+                        : t('notifications.modeWeeklyDigestDescription', 'Get one weekly summary (e.g. missed training sessions, days without meal log).')}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           {/* Progress Tab */}
           <TabsContent value="progress" className="space-y-4">

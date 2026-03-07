@@ -5,7 +5,7 @@ Trainers can create meal plans with 3 macros and food options
 
 from collections import defaultdict
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Dict, Any, Optional
@@ -41,6 +41,9 @@ from app.schemas.meal_system import (
     MealBankUpdate,
     MealBankResponse,
 )
+from app.models.user import User
+from app.services.trainer_notification_helper import notify_trainer_immediate
+from app.services.websocket_service import websocket_service
 from app.models.meal_system import (
     MealPlanV2 as NewMealPlan,
     MealSlot,
@@ -1068,6 +1071,7 @@ def upsert_meal_completion(
     completion_data: MealCompletionStatusCreate,
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = Depends(),
 ):
     """
     Create or update a completion state for a specific meal slot/date.
@@ -1113,6 +1117,19 @@ def upsert_meal_completion(
         existing_status.completed_at = completed_at
         db.commit()
         db.refresh(existing_status)
+        if completion_data.is_completed:
+            client = db.query(User).filter(User.id == target_client_id).first()
+            client_name = (client.full_name or client.username) if client else "Client"
+            created = notify_trainer_immediate(
+                db,
+                target_client_id,
+                title="Meal completed",
+                message=f"{client_name} completed a meal",
+                event_type="meal_completion",
+                notification_type="success",
+            )
+            if created:
+                background_tasks.add_task(websocket_service.send_new_notification_hint, created.recipient_id)
         return existing_status
 
     new_status = MealCompletionStatus(
@@ -1126,6 +1143,19 @@ def upsert_meal_completion(
     db.add(new_status)
     db.commit()
     db.refresh(new_status)
+    if completion_data.is_completed:
+        client = db.query(User).filter(User.id == target_client_id).first()
+        client_name = (client.full_name or client.username) if client else "Client"
+        created = notify_trainer_immediate(
+            db,
+            target_client_id,
+            title="Meal completed",
+            message=f"{client_name} completed a meal",
+            event_type="meal_completion",
+            notification_type="success",
+        )
+        if created:
+            background_tasks.add_task(websocket_service.send_new_notification_hint, created.recipient_id)
     return new_status
 
 # ============ Meal Bank Endpoints ============

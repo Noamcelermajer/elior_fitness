@@ -1,7 +1,8 @@
 import React from 'react';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Notification } from '../contexts/NotificationContext';
-import { cn } from '@/lib';
+import { cn } from '@/lib/utils';
 
 interface NotificationToastProps {
   notification: Notification;
@@ -62,6 +63,7 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
   notification,
   onRemove
 }) => {
+  const { t } = useTranslation();
   const styles = getStyles(notification.type);
 
   return (
@@ -95,7 +97,7 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
           'flex-shrink-0 p-1 rounded-md transition-colors',
           styles.closeButton
         )}
-        aria-label="Close notification"
+        aria-label={t('notifications.close')}
       >
         <X className="w-4 h-4" />
       </button>

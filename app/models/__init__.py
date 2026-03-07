@@ -9,6 +9,7 @@ from app.models.nutrition import (
 from app.models.progress import ProgressEntry
 from app.models.progress_photo import ProgressPhoto, PhotoType
 from app.models.notification import Notification
+from app.models.client_notification_setting import ClientNotificationSetting
 from app.models.chat import ChatMessage
 from app.models.check_in import DailyCheckIn
 
@@ -58,6 +59,7 @@ __all__ = [
     "ProgressPhoto",
     "PhotoType",
     "Notification",
+    "ClientNotificationSetting",
     "ChatMessage",
     "DailyCheckIn",
     # New system models

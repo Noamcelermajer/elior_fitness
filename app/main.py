@@ -251,6 +251,11 @@ async def lifespan(app: FastAPI):
         from app.migrations.progress_photos_migration import run_progress_photos_migration
         run_progress_photos_migration()
         logger.info("✅ Progress photos migration completed")
+
+        logger.info("Running notification system migration...")
+        from app.migrations.notification_system_migration import run_notification_system_migrations
+        run_notification_system_migrations()
+        logger.info("✅ Notification system migration completed")
         
         logger.info("✅ All database migrations completed successfully")
     except Exception as migration_error:

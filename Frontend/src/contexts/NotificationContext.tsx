@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { API_BASE_URL } from '../config/api';
+import { notificationService } from '../services/notificationService';
 
 export interface Notification {
   id: string;
@@ -11,11 +12,28 @@ export interface Notification {
   timestamp: Date;
 }
 
+export interface ServerNotification {
+  id: number;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  is_read: boolean;
+  created_at: string;
+  read_at?: string;
+  client_id?: number;
+  event_type?: string;
+}
+
 interface NotificationContextType {
   notifications: Notification[];
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void;
   removeNotification: (id: string) => void;
   clearAll: () => void;
+  serverNotifications: ServerNotification[];
+  serverUnreadCount: number;
+  refetchServerNotifications: () => Promise<void>;
+  markAsRead: (id: number) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -34,9 +52,50 @@ interface NotificationProviderProps {
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [serverNotifications, setServerNotifications] = useState<ServerNotification[]>([]);
+  const [serverUnreadCount, setServerUnreadCount] = useState(0);
   const { user } = useAuth();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const refetchServerNotifications = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const [list, count] = await Promise.all([
+        notificationService.getNotifications(50, 0, false),
+        notificationService.getNotificationCount(),
+      ]);
+      setServerNotifications(list);
+      setServerUnreadCount(count.unread_count);
+    } catch {
+      // ignore
+    }
+  }, [user?.id]);
+
+  const markAsRead = useCallback(
+    async (id: number) => {
+      try {
+        await notificationService.markAsRead(id);
+        await refetchServerNotifications();
+      } catch {
+        // ignore
+      }
+    },
+    [refetchServerNotifications]
+  );
+
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await notificationService.markAllAsRead();
+      await refetchServerNotifications();
+    } catch {
+      // ignore
+    }
+  }, [refetchServerNotifications]);
+
+  useEffect(() => {
+    refetchServerNotifications();
+  }, [refetchServerNotifications]);
 
   const removeNotification = useCallback((id: string) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
@@ -98,6 +157,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               console.log('WebSocket connection established');
               return;
             }
+            if (data.type === 'new_notification') {
+              refetchServerNotifications();
+              return;
+            }
 
             // Map backend notification types to frontend types
             let notificationType: 'success' | 'error' | 'warning' | 'info' = 'info';
@@ -115,6 +178,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               message: data.message || data.data?.message || '',
               duration: 5000
             });
+            refetchServerNotifications();
           } catch (err) {
             console.error('Failed to parse WebSocket message:', err);
           }
@@ -155,13 +219,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         reconnectTimeoutRef.current = null;
       }
     };
-  }, [user?.id, addNotification]);
+  }, [user?.id, addNotification, refetchServerNotifications]);
 
   const value = {
     notifications,
     addNotification,
     removeNotification,
     clearAll,
+    serverNotifications,
+    serverUnreadCount,
+    refetchServerNotifications,
+    markAsRead,
+    markAllAsRead,
   };
 
   return (

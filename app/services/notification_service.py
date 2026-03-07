@@ -11,7 +11,7 @@ class NotificationService:
     def create_notification(
         db: Session,
         notification_data: NotificationCreate,
-        sender_id: int
+        sender_id: Optional[int] = None,
     ) -> Notification:
         """Create a new notification"""
         db_notification = Notification(
@@ -20,8 +20,10 @@ class NotificationService:
             type=notification_data.type,
             recipient_id=notification_data.recipient_id,
             sender_id=sender_id,
+            client_id=notification_data.client_id,
+            event_type=notification_data.event_type,
             is_read=False,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
         db.add(db_notification)
         db.commit()
@@ -34,14 +36,15 @@ class NotificationService:
         user_id: int,
         limit: int = 50,
         offset: int = 0,
-        unread_only: bool = False
+        unread_only: bool = False,
+        client_id: Optional[int] = None,
     ) -> List[Notification]:
-        """Get notifications for a specific user"""
+        """Get notifications for a specific user, optionally filtered by client_id."""
         query = db.query(Notification).filter(Notification.recipient_id == user_id)
-        
         if unread_only:
             query = query.filter(Notification.is_read == False)
-        
+        if client_id is not None:
+            query = query.filter(Notification.client_id == client_id)
         return query.order_by(Notification.created_at.desc()).offset(offset).limit(limit).all()
 
     @staticmethod
@@ -136,9 +139,11 @@ class NotificationService:
                 message=message,
                 type=notification_type,
                 recipient_id=recipient_id,
-                sender_id=None,  # System notification
+                sender_id=None,
+                client_id=None,
+                event_type="system",
                 is_read=False,
-                created_at=datetime.utcnow()
+                created_at=datetime.utcnow(),
             )
             db.add(notification)
             notifications.append(notification)

@@ -12,7 +12,8 @@ class MuscleGroup(Base):
     __tablename__ = "muscle_groups"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False, unique=True)  # e.g., "Chest", "Back", "Shoulders"
+    name = Column(String, nullable=False, unique=True)  # English display name
+    name_he = Column(String, nullable=True)  # Hebrew display name
     created_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=func.now())
     

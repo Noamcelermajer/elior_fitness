@@ -193,7 +193,18 @@ def run_workout_system_migrations() -> None:
             )
         except Exception as e:
             logger.warning(f"Could not add image_path to exercises: {e}")
-        
+
+        # Add name_he column to muscle_groups table (Hebrew display name)
+        try:
+            _ensure_columns(
+                "muscle_groups",
+                {
+                    "name_he": "TEXT",
+                },
+            )
+        except Exception as e:
+            logger.warning(f"Could not add name_he to muscle_groups: {e}")
+
         # Step 2: Make columns nullable to match model definitions
         logger.info("Step 2: Ensuring columns are nullable to match models...")
         

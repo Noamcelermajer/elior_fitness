@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, GripVertical } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, GripVertical, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -88,7 +88,18 @@ const CreateWorkoutPlanV2: React.FC = () => {
   const [newSplitDescription, setNewSplitDescription] = useState('');
   const [newSplitDaysPerWeek, setNewSplitDaysPerWeek] = useState<number | null>(null);
   const [showCreateSplitDialog, setShowCreateSplitDialog] = useState(false);
+  const [exerciseSearchQuery, setExerciseSearchQuery] = useState('');
   const hasHydratedExistingPlan = useRef(false);
+
+  const filteredExercisesForModal = useMemo(() => {
+    if (!exerciseSearchQuery.trim()) return exercises;
+    const q = exerciseSearchQuery.trim().toLowerCase();
+    return exercises.filter(
+      (ex) =>
+        (ex.name && ex.name.toLowerCase().includes(q)) ||
+        (ex.muscle_group && ex.muscle_group.toLowerCase().includes(q))
+    );
+  }, [exercises, exerciseSearchQuery]);
 
   // Role-based access control
   useEffect(() => {
@@ -841,18 +852,32 @@ const CreateWorkoutPlanV2: React.FC = () => {
                       {/* Exercise Selector Modal */}
                       {activeDayIndex === dayIndex && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                          <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+                          <Card className="w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
                             <CardHeader>
                               <CardTitle>{t('workoutCreation.selectExercise')}</CardTitle>
+                              <div className="relative mt-2">
+                                <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  type="search"
+                                  placeholder={t('workoutCreation.searchExercisePlaceholder', 'Search exercise or muscle group...')}
+                                  value={exerciseSearchQuery}
+                                  onChange={(e) => setExerciseSearchQuery(e.target.value)}
+                                  className="ps-9"
+                                  aria-label={t('workoutCreation.searchExercisePlaceholder', 'Search exercise or muscle group...')}
+                                />
+                              </div>
                             </CardHeader>
-                            <CardContent>
-                              <div className="space-y-2">
+                            <CardContent className="flex-1 overflow-y-auto space-y-2">
                                 {exercises.length === 0 ? (
                                   <p className="text-center text-muted-foreground py-4">
                                     {t('workoutCreation.noExercisesAvailable', 'אין תרגילים זמינים. אנא צור תרגילים תחילה.')}
                                   </p>
+                                ) : filteredExercisesForModal.length === 0 ? (
+                                  <p className="text-center text-muted-foreground py-4">
+                                    {t('workoutCreation.noExercisesMatchSearch', 'No exercises match your search.')}
+                                  </p>
                                 ) : (
-                                  exercises.map(exercise => (
+                                  filteredExercisesForModal.map(exercise => (
                                     <Card
                                       key={exercise.id}
                                       className="p-3 cursor-pointer hover:bg-accent"
@@ -861,17 +886,17 @@ const CreateWorkoutPlanV2: React.FC = () => {
                                       <div className="flex items-center justify-between">
                                         <div>
                                           <p className="font-semibold">{exercise.name || t('workoutCreation.unnamedExercise', 'תרגיל ללא שם')}</p>
-                                          <p className="text-sm text-muted-foreground capitalize">{exercise.muscle_group}</p>
+                                          <p className="text-sm text-muted-foreground">
+                                            {t(`exerciseBank.muscleGroups.${exercise.muscle_group}`, exercise.muscle_group)}
+                                          </p>
                                         </div>
-                                        <Plus className="h-5 w-5" />
+                                        <Plus className="h-5 w-5 flex-shrink-0" />
                                       </div>
                                     </Card>
                                   ))
                                 )}
-                              </div>
-
                               <div className="flex justify-end mt-4">
-                                <Button variant="outline" onClick={() => setActiveDayIndex(null)}>
+                                <Button variant="outline" onClick={() => { setActiveDayIndex(null); setExerciseSearchQuery(''); }}>
                                   {t('workoutCreation.cancel')}
                                 </Button>
                               </div>

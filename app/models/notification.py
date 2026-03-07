@@ -12,6 +12,8 @@ class Notification(Base):
     type = Column(String(50), default="info")  # info, success, warning, error
     recipient_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     sender_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # null for system notifications
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # which trainee this is about
+    event_type = Column(String(50), nullable=True)  # weight_change, meal_completion, training_completion, weekly_digest, goal_achievement, system
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     read_at = Column(DateTime(timezone=True), nullable=True)

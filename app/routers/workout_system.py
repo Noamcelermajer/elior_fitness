@@ -3,7 +3,7 @@ API endpoints for the new workout system
 Trainers can create workout plans with splits (Push/Pull/Legs) and detailed tracking
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
@@ -43,6 +43,8 @@ from app.models.workout_system import (
     WorkoutSplitType,
     DayType,
 )
+from app.services.trainer_notification_helper import notify_trainer_immediate
+from app.services.websocket_service import websocket_service
 from app.models.workout import Exercise
 
 router = APIRouter()
@@ -933,7 +935,8 @@ def update_workout_session(
     session_id: int,
     session_data: WorkoutSessionUpdate,
     current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = Depends(),
 ):
     """Update a workout session (client only)"""
     session = db.query(NewWorkoutSession).filter(NewWorkoutSession.id == session_id).first()
@@ -946,10 +949,24 @@ def update_workout_session(
     
     for field, value in session_data.dict(exclude_unset=True).items():
         setattr(session, field, value)
-    
+
     db.commit()
     db.refresh(session)
-    
+
+    if getattr(session_data, "is_completed", None) is True and session.is_completed:
+        client = db.query(User).filter(User.id == session.client_id).first()
+        client_name = (client.full_name or client.username) if client else "Client"
+        created = notify_trainer_immediate(
+            db,
+            session.client_id,
+            title="Training completed",
+            message=f"{client_name} completed a workout",
+            event_type="training_completion",
+            notification_type="success",
+        )
+        if created:
+            background_tasks.add_task(websocket_service.send_new_notification_hint, created.recipient_id)
+
     return session
 
 @router.get("/sessions", response_model=List[WorkoutSessionResponse])

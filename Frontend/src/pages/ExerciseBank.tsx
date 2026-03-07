@@ -48,7 +48,21 @@ const ExerciseBank = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  const getMuscleGroupDisplayName = (value: string): string => {
+    if (staticMuscleGroups.includes(value)) {
+      return t(`exerciseBank.muscleGroups.${value}`, value);
+    }
+    const dyn = dynamicMuscleGroups.find(
+      (mg) => mg.name.toLowerCase().replace(/\s+/g, '_') === value
+    );
+    if (dyn) {
+      return i18n.language === 'he' && dyn.name_he ? dyn.name_he : dyn.name;
+    }
+    return value;
+  };
+
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,10 +74,11 @@ const ExerciseBank = () => {
   const [imageRemoved, setImageRemoved] = useState(false); // Track if user clicked X to remove image
   const [mediaType, setMediaType] = useState<'video' | 'image'>('video');
   const [muscleGroups, setMuscleGroups] = useState<string[]>(staticMuscleGroups);
-  const [dynamicMuscleGroups, setDynamicMuscleGroups] = useState<Array<{id: number, name: string}>>([]);
+  const [dynamicMuscleGroups, setDynamicMuscleGroups] = useState<Array<{id: number, name: string, name_he?: string | null}>>([]);
   const [muscleGroupDialogOpen, setMuscleGroupDialogOpen] = useState(false);
-  const [editingMuscleGroup, setEditingMuscleGroup] = useState<{id: number, name: string} | null>(null);
+  const [editingMuscleGroup, setEditingMuscleGroup] = useState<{id: number, name: string, name_he?: string | null} | null>(null);
   const [newMuscleGroupName, setNewMuscleGroupName] = useState('');
+  const [newMuscleGroupNameHe, setNewMuscleGroupNameHe] = useState('');
   const [muscleGroupError, setMuscleGroupError] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -136,7 +151,7 @@ const ExerciseBank = () => {
         if (response.ok) {
           const data = await response.json();
           setDynamicMuscleGroups(data);
-          // Combine static and dynamic muscle groups
+          // Combine static and dynamic muscle groups (value = slug of English name for API compatibility)
           const dynamicGroupNames = data.map((mg: {id: number, name: string}) => mg.name.toLowerCase().replace(/\s+/g, '_'));
           const combined = [...staticMuscleGroups, ...dynamicGroupNames].filter((v, i, a) => a.indexOf(v) === i);
           setMuscleGroups(combined);
@@ -521,10 +536,9 @@ const ExerciseBank = () => {
 
   const handleCreateMuscleGroup = async () => {
     if (!newMuscleGroupName.trim()) {
-      setMuscleGroupError('Muscle group name is required');
+      setMuscleGroupError(t('exerciseBank.muscleGroupNameRequired'));
       return;
     }
-    
     setMuscleGroupError('');
     try {
       const token = localStorage.getItem('access_token');
@@ -534,36 +548,40 @@ const ExerciseBank = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name: newMuscleGroupName.trim() }),
+        body: JSON.stringify({
+          name: newMuscleGroupName.trim(),
+          name_he: newMuscleGroupNameHe.trim() || null,
+        }),
       });
-
       if (response.ok) {
         const newGroup = await response.json();
         setDynamicMuscleGroups([...dynamicMuscleGroups, newGroup]);
-        const dynamicGroupNames = [...dynamicMuscleGroups, newGroup].map(mg => mg.name.toLowerCase().replace(/\s+/g, '_'));
+        const dynamicGroupNames = [...dynamicMuscleGroups, newGroup].map((mg) =>
+          mg.name.toLowerCase().replace(/\s+/g, '_')
+        );
         const combined = [...staticMuscleGroups, ...dynamicGroupNames].filter((v, i, a) => a.indexOf(v) === i);
         setMuscleGroups(combined);
         setNewMuscleGroupName('');
+        setNewMuscleGroupNameHe('');
         setEditingMuscleGroup(null);
         toast({
           title: t('common.success'),
-          description: 'Muscle group created successfully'
+          description: t('exerciseBank.muscleGroupCreated'),
         });
       } else {
         const errorData = await response.json();
-        setMuscleGroupError(errorData.detail || 'Failed to create muscle group');
+        setMuscleGroupError(errorData.detail || t('exerciseBank.errorCreate'));
       }
-    } catch (error) {
-      setMuscleGroupError('Network error occurred');
+    } catch {
+      setMuscleGroupError(t('common.error'));
     }
   };
 
   const handleUpdateMuscleGroup = async () => {
     if (!editingMuscleGroup || !newMuscleGroupName.trim()) {
-      setMuscleGroupError('Muscle group name is required');
+      setMuscleGroupError(t('exerciseBank.muscleGroupNameRequired'));
       return;
     }
-    
     setMuscleGroupError('');
     try {
       const token = localStorage.getItem('access_token');
@@ -573,31 +591,34 @@ const ExerciseBank = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name: newMuscleGroupName.trim() }),
+        body: JSON.stringify({
+          name: newMuscleGroupName.trim(),
+          name_he: newMuscleGroupNameHe.trim() || null,
+        }),
       });
-
       if (response.ok) {
         const updatedGroup = await response.json();
-        setDynamicMuscleGroups(dynamicMuscleGroups.map(mg => mg.id === updatedGroup.id ? updatedGroup : mg));
-        const dynamicGroupNames = dynamicMuscleGroups.map(mg => 
-          mg.id === updatedGroup.id 
+        setDynamicMuscleGroups(dynamicMuscleGroups.map((mg) => (mg.id === updatedGroup.id ? updatedGroup : mg)));
+        const dynamicGroupNames = dynamicMuscleGroups.map((mg) =>
+          mg.id === updatedGroup.id
             ? updatedGroup.name.toLowerCase().replace(/\s+/g, '_')
             : mg.name.toLowerCase().replace(/\s+/g, '_')
         );
         const combined = [...staticMuscleGroups, ...dynamicGroupNames].filter((v, i, a) => a.indexOf(v) === i);
         setMuscleGroups(combined);
         setNewMuscleGroupName('');
+        setNewMuscleGroupNameHe('');
         setEditingMuscleGroup(null);
         toast({
           title: t('common.success'),
-          description: 'Muscle group updated successfully'
+          description: t('exerciseBank.muscleGroupUpdated'),
         });
       } else {
         const errorData = await response.json();
-        setMuscleGroupError(errorData.detail || 'Failed to update muscle group');
+        setMuscleGroupError(errorData.detail || t('exerciseBank.errorUpdate'));
       }
-    } catch (error) {
-      setMuscleGroupError('Network error occurred');
+    } catch {
+      setMuscleGroupError(t('common.error'));
     }
   };
 
@@ -623,10 +644,11 @@ const ExerciseBank = () => {
         if (editingMuscleGroup?.id === id) {
           setEditingMuscleGroup(null);
           setNewMuscleGroupName('');
+          setNewMuscleGroupNameHe('');
         }
         toast({
           title: t('common.success'),
-          description: 'Muscle group deleted successfully'
+          description: t('exerciseBank.muscleGroupDeleted'),
         });
       } else {
         const errorData = await response.json();
@@ -645,9 +667,10 @@ const ExerciseBank = () => {
     }
   };
 
-  const openEditDialog = (group: {id: number, name: string}) => {
+  const openEditDialog = (group: {id: number, name: string, name_he?: string | null}) => {
     setEditingMuscleGroup(group);
     setNewMuscleGroupName(group.name);
+    setNewMuscleGroupNameHe(group.name_he ?? '');
     setMuscleGroupError('');
   };
 
@@ -876,83 +899,103 @@ const ExerciseBank = () => {
                   <DialogHeader>
                     <DialogTitle>{t('exerciseBank.manageMuscleGroups')}</DialogTitle>
                     <DialogDescription>
-                      Create, edit, or delete muscle groups
+                      {t('exerciseBank.createNewMuscleGroup')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
-                    {/* Create/Edit Form */}
                     <div className="space-y-2">
                       <Label htmlFor="new_muscle_group_name">
-                        {editingMuscleGroup ? 'Edit Muscle Group' : 'Create New Muscle Group'}
+                        {editingMuscleGroup ? t('exerciseBank.editMuscleGroup') : t('exerciseBank.createNewMuscleGroup')}
                       </Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="new_muscle_group_name"
-                          value={newMuscleGroupName}
-                          onChange={(e) => {
-                            setNewMuscleGroupName(e.target.value);
-                            setMuscleGroupError('');
-                          }}
-                          placeholder="Enter muscle group name"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              if (editingMuscleGroup) {
-                                handleUpdateMuscleGroup();
-                              } else {
-                                handleCreateMuscleGroup();
+                      <div className="grid grid-cols-1 gap-2">
+                        <div>
+                          <Label htmlFor="new_muscle_group_name" className="text-xs text-muted-foreground">
+                            {t('exerciseBank.newMuscleGroupNameEn')}
+                          </Label>
+                          <Input
+                            id="new_muscle_group_name"
+                            value={newMuscleGroupName}
+                            onChange={(e) => {
+                              setNewMuscleGroupName(e.target.value);
+                              setMuscleGroupError('');
+                            }}
+                            placeholder={t('exerciseBank.newMuscleGroupNameEnPlaceholder')}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                if (editingMuscleGroup) handleUpdateMuscleGroup();
+                                else handleCreateMuscleGroup();
                               }
-                            }
-                          }}
-                        />
-                        {editingMuscleGroup ? (
-                          <>
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="new_muscle_group_name_he" className="text-xs text-muted-foreground">
+                            {t('exerciseBank.newMuscleGroupNameHe')}
+                          </Label>
+                          <Input
+                            id="new_muscle_group_name_he"
+                            value={newMuscleGroupNameHe}
+                            onChange={(e) => {
+                              setNewMuscleGroupNameHe(e.target.value);
+                              setMuscleGroupError('');
+                            }}
+                            placeholder={t('exerciseBank.newMuscleGroupNameHePlaceholder')}
+                            dir="rtl"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          {editingMuscleGroup ? (
+                            <>
+                              <Button
+                                type="button"
+                                onClick={handleUpdateMuscleGroup}
+                                disabled={!newMuscleGroupName.trim()}
+                              >
+                                <Save className="w-4 h-4 mr-1" />
+                                {t('common.save')}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingMuscleGroup(null);
+                                  setNewMuscleGroupName('');
+                                  setNewMuscleGroupNameHe('');
+                                  setMuscleGroupError('');
+                                }}
+                              >
+                                {t('workoutCreation.cancel')}
+                              </Button>
+                            </>
+                          ) : (
                             <Button
                               type="button"
-                              onClick={handleUpdateMuscleGroup}
+                              onClick={handleCreateMuscleGroup}
                               disabled={!newMuscleGroupName.trim()}
                             >
-                              <Save className="w-4 h-4 mr-1" />
-                              Save
+                              <Plus className="w-4 h-4 mr-1" />
+                              {t('workoutCreation.create')}
                             </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                setEditingMuscleGroup(null);
-                                setNewMuscleGroupName('');
-                                setMuscleGroupError('');
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </>
-                        ) : (
-                          <Button
-                            type="button"
-                            onClick={handleCreateMuscleGroup}
-                            disabled={!newMuscleGroupName.trim()}
-                          >
-                            <Plus className="w-4 h-4 mr-1" />
-                            Create
-                          </Button>
-                        )}
+                          )}
+                        </div>
                       </div>
                       {muscleGroupError && (
                         <p className="text-sm text-red-500">{muscleGroupError}</p>
                       )}
                     </div>
 
-                    {/* List of All Muscle Groups */}
                     {dynamicMuscleGroups.length > 0 && (
                       <div className="space-y-2">
-                        <Label>All Muscle Groups</Label>
+                        <Label>{t('exerciseBank.allMuscleGroups')}</Label>
                         <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
                           {dynamicMuscleGroups.map((group) => (
                             <div
                               key={group.id}
                               className="flex items-center justify-between p-3 hover:bg-muted/50"
                             >
-                              <span className="font-medium">{group.name}</span>
+                              <span className="font-medium">
+                                {i18n.language === 'he' && group.name_he ? group.name_he : group.name}
+                              </span>
                               <div className="flex gap-2">
                                 <Button
                                   type="button"
@@ -1044,15 +1087,9 @@ const ExerciseBank = () => {
                   <SelectTrigger className="h-10 w-full" />
                   <SelectContent>
                     <SelectItem value="all">{t('exerciseBank.allMuscleGroups')}</SelectItem>
-                    {muscleGroups.map(group => {
-                      // Try to translate, but if translation key doesn't exist, use the raw name
-                      const translationKey = `exerciseBank.muscleGroups.${group}`;
-                      const translated = t(translationKey);
-                      const displayName = translated === translationKey ? group : translated;
-                      return (
-                        <SelectItem key={group} value={group}>{displayName}</SelectItem>
-                      );
-                    })}
+                    {muscleGroups.map((group) => (
+                      <SelectItem key={group} value={group}>{getMuscleGroupDisplayName(group)}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -1081,19 +1118,11 @@ const ExerciseBank = () => {
               </CardContent>
             </Card>
           ) : (
-            Object.entries(groupedExercises).map(([muscleGroup, groupExercises]) => {
-              // Check if it's a static muscle group (has translation) or custom (display as-is)
-              // Try to translate, but if translation key doesn't exist, use the raw name
-              const translationKey = `exerciseBank.muscleGroups.${muscleGroup}`;
-              const translated = t(translationKey);
-              // If translation returns the key itself (meaning no translation found), use the raw name
-              const displayName = translated === translationKey ? muscleGroup : translated;
-              
-              return (
+            Object.entries(groupedExercises).map(([muscleGroup, groupExercises]) => (
               <div key={muscleGroup}>
                 <h2 className="text-xl font-semibold mb-3 flex items-center">
                   <Tag className="w-5 h-5 me-2" />
-                  {displayName}
+                  {getMuscleGroupDisplayName(muscleGroup)}
                   <Badge variant="secondary" className="ms-2">{groupExercises.length}</Badge>
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1151,8 +1180,7 @@ const ExerciseBank = () => {
                   ))}
                 </div>
               </div>
-              );
-            })
+            ))
           )}
         </div>
 
@@ -1219,17 +1247,11 @@ const ExerciseBank = () => {
                       <SelectValue placeholder={t('exerciseBank.selectMuscleGroup')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {muscleGroups.map(group => {
-                        // Try to translate, but if translation key doesn't exist, use the raw name
-                        const translationKey = `exerciseBank.muscleGroups.${group}`;
-                        const translated = t(translationKey);
-                        const displayName = translated === translationKey ? group : translated;
-                        return (
-                          <SelectItem key={group} value={group}>
-                            {displayName}
-                          </SelectItem>
-                        );
-                      })}
+                      {muscleGroups.map((group) => (
+                        <SelectItem key={group} value={group}>
+                          {getMuscleGroupDisplayName(group)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {fieldErrors.muscle_group && (

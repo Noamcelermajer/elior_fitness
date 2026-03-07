@@ -9,6 +9,8 @@ class NotificationBase(BaseModel):
 
 class NotificationCreate(NotificationBase):
     recipient_id: int
+    client_id: Optional[int] = None
+    event_type: Optional[str] = None
 
 class NotificationUpdate(BaseModel):
     is_read: Optional[bool] = None
@@ -17,6 +19,8 @@ class NotificationResponse(NotificationBase):
     id: int
     recipient_id: int
     sender_id: Optional[int] = None
+    client_id: Optional[int] = None
+    event_type: Optional[str] = None
     is_read: bool
     created_at: datetime
     read_at: Optional[datetime] = None
