@@ -936,7 +936,6 @@ def update_workout_session(
     session_data: WorkoutSessionUpdate,
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db),
-    background_tasks: BackgroundTasks = Depends(),
 ):
     """Update a workout session (client only)"""
     session = db.query(NewWorkoutSession).filter(NewWorkoutSession.id == session_id).first()
@@ -947,12 +946,13 @@ def update_workout_session(
     if current_user.role == UserRole.CLIENT and session.client_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    for field, value in session_data.dict(exclude_unset=True).items():
+    for field, value in session_data.model_dump(exclude_unset=True).items():
         setattr(session, field, value)
 
     db.commit()
     db.refresh(session)
 
+    background_tasks = BackgroundTasks()
     if getattr(session_data, "is_completed", None) is True and session.is_completed:
         client = db.query(User).filter(User.id == session.client_id).first()
         client_name = (client.full_name or client.username) if client else "Client"
@@ -967,7 +967,8 @@ def update_workout_session(
         if created:
             background_tasks.add_task(websocket_service.send_new_notification_hint, created.recipient_id)
 
-    return session
+    body = WorkoutSessionResponse.model_validate(session)
+    return JSONResponse(content=body.model_dump(mode="json"), background=background_tasks)
 
 @router.get("/sessions", response_model=List[WorkoutSessionResponse])
 def get_workout_sessions(
