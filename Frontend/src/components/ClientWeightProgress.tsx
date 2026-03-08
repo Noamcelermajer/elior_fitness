@@ -390,14 +390,14 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardContent className="flex items-center px-4 pb-4 pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+          <CardContent className="flex items-center px-4 pb-4 pt-6 min-w-0">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-12 h-12 shrink-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <Weight className="w-6 h-6 text-white" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-muted-foreground">{t('weightProgress.currentWeight')}</p>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-xl sm:text-2xl font-bold text-foreground truncate" title={latestEntry?.weight ? `${latestEntry.weight} ${t('weightProgress.kg')}` : t('weightProgress.na')}>
                   {latestEntry?.weight ? `${latestEntry.weight} ${t('weightProgress.kg')}` : t('weightProgress.na')}
                 </p>
               </div>
@@ -406,14 +406,14 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
         </Card>
 
         <Card>
-          <CardContent className="flex items-center px-4 pb-4 pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+          <CardContent className="flex items-center px-4 pb-4 pt-6 min-w-0">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-12 h-12 shrink-0 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-muted-foreground">{t('weightProgress.weightChange')}</p>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-xl sm:text-2xl font-bold text-foreground truncate" title={`${weightChange > 0 ? '+' : ''}${weightChange.toFixed(1)} ${t('weightProgress.kg')}`}>
                   {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} {t('weightProgress.kg')}
                 </p>
               </div>
@@ -422,14 +422,14 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
         </Card>
 
         <Card>
-          <CardContent className="flex items-center px-4 pb-4 pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+          <CardContent className="flex items-center px-4 pb-4 pt-6 min-w-0">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-12 h-12 shrink-0 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Activity className="w-6 h-6 text-white" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-muted-foreground">{t('weightProgress.totalEntries')}</p>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-xl sm:text-2xl font-bold text-foreground">
                   {sortedEntries.length}
                 </p>
               </div>

@@ -82,7 +82,7 @@ interface ProgressEntry {
 const TrainerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [stats, setStats] = useState({
     totalClients: 0,
     activeClients: 0,
@@ -314,7 +314,7 @@ const TrainerDashboard = () => {
         <Dialog open={progressModalOpen} onOpenChange={setProgressModalOpen}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>{t('trainerDashboard.weightProgress')} - {selectedClient?.full_name}</DialogTitle>
+                <DialogTitle dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>{t('trainerDashboard.weightProgress')} - {selectedClient?.full_name}</DialogTitle>
               </DialogHeader>
               {progressLoading ? (
                 <div className="p-8 text-center">{t('trainerDashboard.loading')}</div>

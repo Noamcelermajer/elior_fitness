@@ -372,8 +372,8 @@ const TrainingPlanV2: React.FC = () => {
                     <div className="flex items-center justify-between w-full gap-4">
                       <div className="flex items-start space-x-3 flex-1 min-w-0">
                         <div className="flex-1 min-w-0 space-y-1" dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-                          {/* Training Name - RTL for Hebrew */}
-                          <p className="font-semibold text-lg">
+                          {/* Training Name - RTL for Hebrew, centered */}
+                          <p className="font-semibold text-lg text-center">
                             {workoutPlan.name}
                           </p>
                           {/* Workouts List - only exercises with a real name (exclude empty and "תרגיל ללא שם") */}

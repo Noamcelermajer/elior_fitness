@@ -109,9 +109,9 @@ export const ClientCheckInHistory: React.FC<ClientCheckInHistoryProps> = ({
       </CardHeader>
       <CardContent>
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'calendar')}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="list">{t('checkIn.listView')}</TabsTrigger>
-            <TabsTrigger value="calendar">{t('checkIn.calendarView')}</TabsTrigger>
+          <TabsList className="mb-4 flex flex-wrap h-auto gap-1 p-1 min-w-0 w-full">
+            <TabsTrigger value="list" className="min-w-0 flex-1 sm:flex-initial text-xs sm:text-sm px-2 sm:px-3 py-2 whitespace-nowrap">{t('checkIn.listView')}</TabsTrigger>
+            <TabsTrigger value="calendar" className="min-w-0 flex-1 sm:flex-initial text-xs sm:text-sm px-2 sm:px-3 py-2 whitespace-nowrap">{t('checkIn.calendarView')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="list" className="space-y-4">

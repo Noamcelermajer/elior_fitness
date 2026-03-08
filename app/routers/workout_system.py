@@ -780,11 +780,12 @@ def get_workout_day(
             "exercise": exercise_dict,
         })
     
-    # Return as JSON to bypass response model validation issues
+    # Return as JSON to bypass response model validation issues (include plan name for day page header)
     day_dict = {
         "id": workout_day.id,
         "workout_plan_id": workout_day.workout_plan_id,
         "name": workout_day.name,
+        "workout_plan_name": workout_plan.name if workout_plan else None,
         "day_type": workout_day.day_type.value if workout_day.day_type and hasattr(workout_day.day_type, 'value') else (str(workout_day.day_type) if workout_day.day_type else None),
         "order_index": workout_day.order_index,
         "notes": workout_day.notes,

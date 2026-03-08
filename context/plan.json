@@ -83,6 +83,23 @@
       ]
     }
   },
+  "recentUiRefinements": {
+    "exerciseBank": {
+      "date": "2025-01-31",
+      "location": "Frontend/src/pages/ExerciseBank.tsx",
+      "changes": "Export/Import moved from header buttons to icon buttons left of search input in the Search & Filter card."
+    },
+    "clientProfile": {
+      "date": "2025-01-31",
+      "location": "Frontend/src/pages/ClientProfile.tsx, Frontend/src/components/ClientWeightProgress.tsx, Frontend/src/components/ClientCheckInSummary.tsx",
+      "changes": "Tab bar: labels wrap on scale-down (min-w-0, !whitespace-normal). Workout plan card: dir=rtl when Hebrew. Weight progress: real Recharts line chart (replaces placeholder). Check-in summary: return null when no summary (removed 'אין נתונים' card)."
+    },
+    "trainingPlanV2": {
+      "date": "2025-01-31",
+      "location": "Frontend/src/components/TrainingPlanV2.tsx",
+      "changes": "Workout list: filter out exercises whose name is empty or equals 'Unnamed Exercise' translation. Plan name block: dir=rtl when Hebrew for correct RTL layout."
+    }
+  },
   "implementationStatus": {
     "meal-manual-daily-targets": {
       "status": "completed",
