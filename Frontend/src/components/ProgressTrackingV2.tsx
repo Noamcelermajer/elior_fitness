@@ -703,10 +703,12 @@ const ProgressTrackingV2 = () => {
                 {progressData.length > 0 ? (
                   <div className="space-y-3">
                     {progressData.slice().reverse().map((entry) => (
-                      <div key={entry.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <div>
+                      <div key={entry.id} className="flex items-start justify-between gap-3 p-3 bg-muted rounded-lg">
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/15">
+                            <Calendar className="size-4 shrink-0 text-primary" aria-hidden />
+                          </div>
+                          <div className="min-w-0 flex-1">
                             <p className="font-medium">{entry.weight} kg</p>
                             <p className="text-sm text-muted-foreground">
                               {new Date(entry.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', { 
@@ -720,7 +722,7 @@ const ProgressTrackingV2 = () => {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex shrink-0 flex-wrap items-start justify-end gap-2">
                           {entry.photo_path && (
                             <button
                               onClick={() => handleViewPhoto(entry)}

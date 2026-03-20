@@ -529,12 +529,12 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
             {sortedEntries.map((entry) => {
               const measurementRows = getMeasurementRows(entry, t);
               return (
-              <div key={entry.id} className="flex items-center justify-between p-4 rounded-lg border hover:bg-secondary/50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-white" />
+              <div key={entry.id} className="flex items-start justify-between gap-4 p-4 rounded-lg border hover:bg-secondary/50 transition-colors">
+                <div className="flex min-w-0 flex-1 items-start gap-4">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-primary to-primary/80">
+                    <Calendar className="size-5 shrink-0 text-white" aria-hidden />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground">
                       {new Date(entry.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', {
                         month: 'long',
@@ -579,7 +579,7 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
                     ) : null}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-start gap-2 pt-0.5">
                   {((entry.photos && entry.photos.length > 0) || entry.photo_path) && (
                     <Button
                       size="icon"
