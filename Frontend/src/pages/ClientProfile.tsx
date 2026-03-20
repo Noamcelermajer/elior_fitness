@@ -363,6 +363,7 @@ const ClientProfile = () => {
     waist: entry.waist,
     hips: entry.hips,
     thighs: entry.thighs,
+    arms: entry.arms,
     right_arm: entry.right_arm,
     left_arm: entry.left_arm,
     created_at: entry.created_at || entry.recorded_at || '',

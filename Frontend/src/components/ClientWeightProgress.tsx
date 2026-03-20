@@ -13,6 +13,7 @@ import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { API_BASE_URL } from '../config/api';
 import { useToast } from '../hooks/use-toast';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 interface ProgressEntry {
   id: number;
@@ -34,6 +35,33 @@ interface ProgressEntry {
   right_arm?: number;
   left_arm?: number;
   created_at: string;
+}
+
+type MeasurementField = 'chest' | 'waist' | 'hips' | 'thighs' | 'arms' | 'right_arm' | 'left_arm';
+
+const MEASUREMENT_FIELD_CONFIG: ReadonlyArray<{ field: MeasurementField; labelKey: string }> = [
+  { field: 'chest', labelKey: 'progress.chest' },
+  { field: 'waist', labelKey: 'progress.waist' },
+  { field: 'hips', labelKey: 'progress.hips' },
+  { field: 'thighs', labelKey: 'progress.thighs' },
+  { field: 'arms', labelKey: 'progress.arms' },
+  { field: 'right_arm', labelKey: 'progress.rightArm' },
+  { field: 'left_arm', labelKey: 'progress.leftArm' },
+];
+
+function getMeasurementRows(
+  entry: ProgressEntry,
+  t: TFunction
+): Array<{ field: MeasurementField; label: string; value: number }> {
+  const rows: Array<{ field: MeasurementField; label: string; value: number }> = [];
+  for (const { field, labelKey } of MEASUREMENT_FIELD_CONFIG) {
+    const raw = entry[field];
+    if (raw == null) continue;
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    if (!Number.isFinite(n)) continue;
+    rows.push({ field, label: t(labelKey), value: n });
+  }
+  return rows;
 }
 
 interface ClientWeightProgressProps {
@@ -498,7 +526,9 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {sortedEntries.map((entry) => (
+            {sortedEntries.map((entry) => {
+              const measurementRows = getMeasurementRows(entry, t);
+              return (
               <div key={entry.id} className="flex items-center justify-between p-4 rounded-lg border hover:bg-secondary/50 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center">
@@ -515,6 +545,22 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span>{t('weightProgress.weight')}: {entry.weight} {t('weightProgress.kg')}</span>
                     </div>
+                    {measurementRows.length > 0 && (
+                        <div
+                          className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground"
+                          aria-label={t('progress.measurements')}
+                        >
+                          {measurementRows.map((row) => (
+                            <span key={row.field} className="break-words">
+                              {row.label}:{' '}
+                              <span className="tabular-nums font-medium text-foreground/90">
+                                {row.value}
+                              </span>{' '}
+                              {t('progress.cm')}
+                            </span>
+                          ))}
+                        </div>
+                    )}
                     {entry.notes && (
                       <p className="text-sm text-muted-foreground mt-1">{entry.notes}</p>
                     )}
@@ -567,7 +613,8 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -882,8 +929,25 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
               {viewingPhoto && `${t('weightProgress.weight')}: ${viewingPhoto.weight} ${t('weightProgress.kg')} - ${new Date(viewingPhoto.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US')}`}
             </DialogDescription>
           </DialogHeader>
-          {viewingPhoto && (
+          {viewingPhoto && (() => {
+            const viewingMeasurements = getMeasurementRows(viewingPhoto, t);
+            return (
             <div className="space-y-4">
+              {viewingMeasurements.length > 0 && (
+                <div className="rounded-lg border border-border bg-muted/30 p-3">
+                  <p className="text-sm font-medium text-foreground mb-2">{t('progress.measurements')}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                    {viewingMeasurements.map((row) => (
+                      <div key={row.field} className="min-w-0">
+                        <span className="text-muted-foreground">{row.label}</span>
+                        <span className="ms-1 tabular-nums font-medium text-foreground">
+                          {row.value} {t('progress.cm')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {/* Display all photos */}
               {viewingPhoto.photos && viewingPhoto.photos.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -940,7 +1004,8 @@ const ClientWeightProgress: React.FC<ClientWeightProgressProps> = ({
                 </div>
               )}
             </div>
-          )}
+            );
+          })()}
           </DialogContent>
       </Dialog>
 
