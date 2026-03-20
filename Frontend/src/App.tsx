@@ -260,22 +260,19 @@ const App = () => {
   const { i18n } = useTranslation();
 
   useEffect(() => {
-    // Set initial direction and language based on current language
-    // Check localStorage first, then i18n language, then default to Hebrew
-    const storedLang = typeof window !== 'undefined' ? localStorage.getItem('i18nextLng') : null;
-    const currentLang = storedLang && (storedLang === 'he' || storedLang === 'en')
-      ? storedLang
-      : (i18n.language || 'he');
-    document.documentElement.dir = currentLang === 'he' ? 'rtl' : 'ltr';
-    document.documentElement.lang = currentLang;
-    // Fallback language should match user preference so missing keys show in chosen language
+    const raw = i18n.language || 'he';
+    const normalized = raw.startsWith('he') ? 'he' : raw.startsWith('en') ? 'en' : raw;
+    document.documentElement.dir = normalized.startsWith('he') ? 'rtl' : 'ltr';
+    document.documentElement.lang = normalized;
     if (i18n.options) {
-      i18n.options.fallbackLng = currentLang;
+      i18n.options.fallbackLng = normalized;
     }
   }, [i18n.language]);
 
+  const appDir = (i18n.language || '').startsWith('he') ? 'rtl' : 'ltr';
+
   return (
-    <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+    <div dir={appDir}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
