@@ -62,8 +62,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
   ];
 
   // Reverse order for RTL (Hebrew) to display right-to-left
-  const isRtl = (i18n.language || '').startsWith('he');
-  const navigationItems = isRtl ? [...baseNavigationItems].reverse() : baseNavigationItems;
+  const navigationItems = i18n.language === 'he' ? [...baseNavigationItems].reverse() : baseNavigationItems;
 
   const handleNavigation = (href: string) => {
     navigate(href);
@@ -110,7 +109,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
         {mobileMenuOpen && (
           <div 
             className="absolute top-full left-0 right-0 bg-card/95 backdrop-blur-lg border-b border-border/50 animate-slide-up"
-            dir={isRtl ? 'rtl' : 'ltr'}
+            dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
           >
             <div className="px-4 py-3 space-y-1">
               {navigationItems.map((item) => (
@@ -183,8 +182,8 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
             {/* Center: 4 Navigation Tabs */}
             <div className="flex-1 min-w-0 flex items-center justify-center h-full">
               <nav 
-                className={`flex items-center gap-1 lg:gap-2 xl:gap-3 overflow-x-auto scrollbar-hide px-2 h-full ${isRtl ? 'flex-row-reverse' : ''}`}
-                dir={isRtl ? 'rtl' : 'ltr'}
+                className={`flex items-center gap-1 lg:gap-2 xl:gap-3 overflow-x-auto scrollbar-hide px-2 h-full ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`}
+                dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
               >
                 {navigationItems.map((item) => (
                   <Button
@@ -242,9 +241,9 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
       {/* Mobile Bottom Navigation - Alternative approach */}
       <div 
         className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border/50 lg:hidden shadow-2xl z-50 overflow-hidden"
-        dir={isRtl ? 'rtl' : 'ltr'}
+        dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
       >
-        <div className={`flex items-center justify-around px-2 sm:px-3 pt-3 pb-2 overflow-x-auto scrollbar-hide ${isRtl ? 'flex-row-reverse' : ''}`} style={{ paddingBottom: 'max(8px, calc(env(safe-area-inset-bottom) + 8px))' }}>
+        <div className={`flex items-center justify-around px-2 sm:px-3 pt-3 pb-2 overflow-x-auto scrollbar-hide ${i18n.language === 'he' ? 'flex-row-reverse' : ''}`} style={{ paddingBottom: 'max(8px, calc(env(safe-area-inset-bottom) + 8px))' }}>
           {navigationItems.map((item) => (
             <Button
               key={item.id}

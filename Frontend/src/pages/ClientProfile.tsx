@@ -319,7 +319,7 @@ const ClientProfile = () => {
     return (
       <Layout currentPage="dashboard">
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center space-x-2">
             <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
             <span className="text-muted-foreground">Loading client profile...</span>
           </div>
@@ -464,7 +464,7 @@ const ClientProfile = () => {
       <div className="container mx-auto p-6 space-y-6 min-h-screen">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={() => navigate('/')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               {t('clientProfile.back')}
@@ -593,24 +593,24 @@ const ClientProfile = () => {
                   <CardTitle>Client Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center space-x-3">
                     <Mail className="w-4 h-4 text-muted-foreground" />
                     <span className="text-foreground">{client.email}</span>
                   </div>
                   {client.profile?.phone && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-3">
                       <Phone className="w-4 h-4 text-muted-foreground" />
                       <span className="text-foreground">{client.profile.phone}</span>
                     </div>
                   )}
                   {client.profile?.address && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-3">
                       <MapPin className="w-4 h-4 text-muted-foreground" />
                       <span className="text-foreground">{client.profile.address}</span>
                     </div>
                   )}
                   {client.profile?.emergency_contact && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-3">
                       <Heart className="w-4 h-4 text-muted-foreground" />
                       <span className="text-foreground">{client.profile.emergency_contact}</span>
                     </div>
@@ -663,7 +663,7 @@ const ClientProfile = () => {
               <CardContent>
                 <div className="space-y-4">
                   {workoutPlans.slice(0, 3).map((plan) => (
-                    <div key={plan.id} className="flex items-center gap-3 p-3 rounded-lg border">
+                    <div key={plan.id} className="flex items-center space-x-3 p-3 rounded-lg border">
                       <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                         <Dumbbell className="w-4 h-4 text-white" />
                       </div>
@@ -679,7 +679,7 @@ const ClientProfile = () => {
                     </div>
                   ))}
                   {mealPlans.slice(0, 2).map((plan) => (
-                    <div key={plan.id} className="flex items-center gap-3 p-3 rounded-lg border">
+                    <div key={plan.id} className="flex items-center space-x-3 p-3 rounded-lg border">
                       <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
                         <Utensils className="w-4 h-4 text-white" />
                       </div>
@@ -1038,11 +1038,11 @@ const ClientProfile = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Client Details */}
               <Card>
-                <CardHeader className="text-start">
-                  <CardTitle className="text-start">{t('clientProfile.basicInformation', 'Basic Information')}</CardTitle>
+                <CardHeader>
+                  <CardTitle>{t('clientProfile.basicInformation', 'Basic Information')}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 text-start">
-                  <div className="flex items-center gap-3">
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-3">
                     <Mail className="w-4 h-4 text-muted-foreground" />
                     <span className="text-foreground">{client.email}</span>
                   </div>
@@ -1059,19 +1059,19 @@ const ClientProfile = () => {
                     <p className="text-foreground">{new Date(client.created_at).toLocaleDateString()}</p>
                   </div>
                   {client.profile?.phone && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-3">
                       <Phone className="w-4 h-4 text-muted-foreground" />
                       <span className="text-foreground">{client.profile.phone}</span>
                     </div>
                   )}
                   {client.profile?.address && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-3">
                       <MapPin className="w-4 h-4 text-muted-foreground" />
                       <span className="text-foreground">{client.profile.address}</span>
                     </div>
                   )}
                   {client.profile?.emergency_contact && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-3">
                       <Heart className="w-4 h-4 text-muted-foreground" />
                       <span className="text-foreground">{client.profile.emergency_contact}</span>
                     </div>
@@ -1081,10 +1081,10 @@ const ClientProfile = () => {
 
               {/* Physical Information */}
               <Card>
-                <CardHeader className="text-start">
-                  <CardTitle className="text-start">{t('clientProfile.physicalInformation', 'Physical Information')}</CardTitle>
+                <CardHeader>
+                  <CardTitle>{t('clientProfile.physicalInformation', 'Physical Information')}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 text-start">
+                <CardContent className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.currentWeight', 'Current Weight')}</label>
                     <p className="text-foreground">
@@ -1111,10 +1111,10 @@ const ClientProfile = () => {
 
             {/* Goals & Preferences */}
             <Card>
-              <CardHeader className="text-start">
-                <CardTitle className="text-start">{t('clientProfile.goalsAndPreferences', 'Goals & Preferences')}</CardTitle>
+              <CardHeader>
+                <CardTitle>{t('clientProfile.goalsAndPreferences', 'Goals & Preferences')}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 text-start">
+              <CardContent className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">{t('clientProfile.goals', 'Fitness Goals')}</label>
                   <p className="text-foreground whitespace-pre-wrap">{client.profile?.goals || t('clientProfile.notSpecified', 'Not specified')}</p>
