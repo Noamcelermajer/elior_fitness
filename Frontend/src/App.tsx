@@ -13,13 +13,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
-import MealsPage from "./pages/MealsPage";
 import TrainingPage from "./pages/TrainingPage";
 import TrainingDayPage from "./pages/TrainingDayPage";
 import ProgressPage from "./pages/ProgressPage";
-import CreateWorkoutPage from "./pages/CreateWorkoutPage";
-import CreateExercisePage from "./pages/CreateExercisePage";
-import CreateMealPlanPage from "./pages/CreateMealPlanPage";
 import WorkoutDetailPage from "./pages/WorkoutDetailPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
@@ -30,8 +26,6 @@ import ClientProfile from './pages/ClientProfile';
 import EditClient from './pages/EditClient';
 import CreateExercise from './pages/CreateExercise';
 import CreateWorkout from './pages/CreateWorkout';
-import CreateMealPlanV2 from './pages/CreateMealPlanV2';
-import CreateMealPlanV3 from './pages/CreateMealPlanV3';
 import ExerciseBank from './pages/ExerciseBank';
 import MealBank from './pages/MealBank';
 import SecretUsersPage from './pages/SecretUsersPage';
@@ -41,27 +35,7 @@ import MealsPageV3 from './pages/MealsPageV3';
 import SandboxMealsV3 from './pages/SandboxMealsV3';
 import TrainerWeeklyMealsPlannerV3 from './pages/TrainerWeeklyMealsPlannerV3';
 import './i18n/config';
-import { FeaturesProvider, useFeatures } from "./contexts/FeaturesContext";
-import Layout from "./components/Layout";
-
 const queryClient = new QueryClient();
-
-const MealsRouteSwitch = () => {
-  const { mealsV3Enabled, featuresLoaded } = useFeatures();
-  const { t } = useTranslation();
-
-  if (!featuresLoaded) {
-    return (
-      <Layout currentPage="meals">
-        <div className="flex min-h-[40vh] items-center justify-center px-4 text-sm text-muted-foreground">
-          {t("common.loading")}
-        </div>
-      </Layout>
-    );
-  }
-
-  return mealsV3Enabled ? <MealsPageV3 /> : <MealsPage />;
-};
 
 const AppRoutes = () => {
   return (
@@ -151,21 +125,21 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/create-meal-plan" 
+      <Route
+        path="/create-meal-plan"
         element={
           <ProtectedRoute requiredRole="TRAINER">
-            <CreateMealPlanV2 />
+            <Navigate to="/trainer-weekly-meals-v3" replace />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/create-meal-plan-v3" 
+      <Route
+        path="/create-meal-plan-v3"
         element={
           <ProtectedRoute requiredRole="TRAINER">
-            <CreateMealPlanV3 />
+            <Navigate to="/trainer-weekly-meals-v3" replace />
           </ProtectedRoute>
-        } 
+        }
       />
       <Route
         path="/trainer-weekly-meals-v3"
@@ -213,7 +187,7 @@ const AppRoutes = () => {
         path="/meals"
         element={
           <ProtectedRoute>
-            <MealsRouteSwitch />
+            <MealsPageV3 />
           </ProtectedRoute>
         }
       />
@@ -255,30 +229,6 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <ChatPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/create-workout-old" 
-        element={
-          <ProtectedRoute>
-            <CreateWorkoutPage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/create-exercise-old" 
-        element={
-          <ProtectedRoute>
-            <CreateExercisePage />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/create-meal-plan-old" 
-        element={
-          <ProtectedRoute>
-            <CreateMealPlanPage />
           </ProtectedRoute>
         } 
       />
@@ -331,12 +281,10 @@ const App = () => {
           <ThemeProvider>
             <AuthProvider>
               <NotificationProvider>
-                <FeaturesProvider>
-                  <BrowserRouter>
-                    <AppRoutes />
-                    <NotificationContainer />
-                  </BrowserRouter>
-                </FeaturesProvider>
+                <BrowserRouter>
+                  <AppRoutes />
+                  <NotificationContainer />
+                </BrowserRouter>
               </NotificationProvider>
             </AuthProvider>
           </ThemeProvider>

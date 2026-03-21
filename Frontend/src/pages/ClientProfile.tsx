@@ -23,7 +23,6 @@ import {
   Phone, Mail, MapPin, Activity, Heart, AlertTriangle, Trash2, Bell
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useFeatures } from '../contexts/FeaturesContext';
 import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
 import { useTranslation } from 'react-i18next';
@@ -164,7 +163,6 @@ const ClientProfile = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
-  const { mealsV3Enabled, featuresLoaded } = useFeatures();
   const [activeTab, setActiveTab] = useState('profile');
   
   // Data states
@@ -370,21 +368,10 @@ const ClientProfile = () => {
   const activeMealPlan = mealPlans.length > 0 ? mealPlans[0] : null;
   const activeWorkoutPlan = workoutPlans.length > 0 ? workoutPlans[0] : null;
 
-  /** Meal planner: v3 weekly flow when flag on (via /create-meal-plan-v3 → redirect), else legacy v2 form. */
   const openMealPlanEditor = () => {
     const planForEdit = activeMealPlan;
-    if (featuresLoaded && mealsV3Enabled) {
-      navigate("/create-meal-plan-v3", {
-        state: planForEdit ? { client, mealPlan: planForEdit } : { client },
-      });
-      return;
-    }
-    if (!planForEdit) {
-      navigate("/create-meal-plan", { state: { client } });
-      return;
-    }
-    navigate("/create-meal-plan", {
-      state: { client, mealPlan: planForEdit },
+    navigate("/trainer-weekly-meals-v3", {
+      state: planForEdit ? { client, mealPlan: planForEdit } : { client },
     });
   };
 
@@ -855,7 +842,6 @@ const ClientProfile = () => {
               <h3 className="text-lg font-semibold">{t('clientProfile.mealPlans')}</h3>
               <Button
                 onClick={openMealPlanEditor}
-                disabled={!featuresLoaded}
                 className="gradient-orange w-full sm:w-auto text-sm sm:text-base"
               >
                 {!activeMealPlan && <Plus className="w-4 h-4 me-2" />}
@@ -887,7 +873,6 @@ const ClientProfile = () => {
                           variant="ghost"
                           size="icon"
                           onClick={openMealPlanEditor}
-                          disabled={!featuresLoaded}
                           aria-label={t('clientProfile.updateMealPlan')}
                         >
                           <Edit className="h-4 w-4" />
@@ -964,7 +949,6 @@ const ClientProfile = () => {
               <Button
                 variant="outline"
                 onClick={openMealPlanEditor}
-                disabled={!featuresLoaded}
                 className="w-full sm:w-auto text-sm sm:text-base"
               >
                 <Utensils className="w-4 h-4 me-2" />

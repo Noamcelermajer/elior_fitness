@@ -26,7 +26,7 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
   const roundedConsumed = Math.round(consumed);
   const roundedTarget = Math.round(target);
   
-  // SVG circle parameters (same as MacroCircle component)
+  // SVG ring progress
   const radius = 50;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
