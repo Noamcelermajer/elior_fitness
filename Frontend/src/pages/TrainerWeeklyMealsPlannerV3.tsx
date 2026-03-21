@@ -640,7 +640,7 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
   const isMobileBlockerText = t("weeklyMeals.mobileBlocker", "This page must be accessed via computer due to complexity.");
 
   return (
-    <Layout currentPage="trainer-weekly-meals-v3">
+    <Layout currentPage="dashboard">
       {/* Mobile-first: hard block editing on phone */}
       <div className="lg:hidden p-4">
         <Card className="rounded-xl border-border/60 bg-muted/30">

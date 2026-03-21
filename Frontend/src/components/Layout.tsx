@@ -54,7 +54,6 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
     { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/trainer-dashboard' },
     { id: 'exercises', label: t('navigation.exercises'), icon: Dumbbell, href: '/exercises' },
     { id: 'meal-bank', label: t('foodBank.title'), icon: Utensils, href: '/meal-bank' },
-    { id: 'trainer-weekly-meals-v3', label: t('weeklyMeals.title', 'Weekly Meal Planner (v3)'), icon: Utensils, href: '/trainer-weekly-meals-v3' },
     { id: 'chat', label: t('navigation.chat'), icon: MessageSquare, href: '/chat' }
   ] : [
     { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/' },

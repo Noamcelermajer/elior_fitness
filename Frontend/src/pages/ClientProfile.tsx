@@ -23,6 +23,7 @@ import {
   Phone, Mail, MapPin, Activity, Heart, AlertTriangle, Trash2, Bell
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeatures } from '../contexts/FeaturesContext';
 import { API_BASE_URL } from '../config/api';
 import ClientWeightProgress from '../components/ClientWeightProgress';
 import { useTranslation } from 'react-i18next';
@@ -163,6 +164,7 @@ const ClientProfile = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
+  const { mealsV3Enabled, featuresLoaded } = useFeatures();
   const [activeTab, setActiveTab] = useState('profile');
   
   // Data states
@@ -303,14 +305,6 @@ const ClientProfile = () => {
     navigate('/create-workout-plan-v2', { state: { client } });
   };
 
-  const handleCreateMealPlan = () => {
-    navigate('/create-meal-plan', { state: { client } });
-  };
-
-  const handleCreateMealPlanV3 = () => {
-    navigate('/create-meal-plan-v3', { state: { client } });
-  };
-
   const handleViewProgress = () => {
     setActiveTab('progress');
   };
@@ -376,6 +370,24 @@ const ClientProfile = () => {
   const activeMealPlan = mealPlans.length > 0 ? mealPlans[0] : null;
   const activeWorkoutPlan = workoutPlans.length > 0 ? workoutPlans[0] : null;
 
+  /** Meal planner: v3 weekly flow when flag on (via /create-meal-plan-v3 → redirect), else legacy v2 form. */
+  const openMealPlanEditor = () => {
+    const planForEdit = activeMealPlan;
+    if (featuresLoaded && mealsV3Enabled) {
+      navigate("/create-meal-plan-v3", {
+        state: planForEdit ? { client, mealPlan: planForEdit } : { client },
+      });
+      return;
+    }
+    if (!planForEdit) {
+      navigate("/create-meal-plan", { state: { client } });
+      return;
+    }
+    navigate("/create-meal-plan", {
+      state: { client, mealPlan: planForEdit },
+    });
+  };
+
   const handleEditWorkoutPlan = () => {
     if (!activeWorkoutPlan) {
       handleCreateWorkout();
@@ -386,36 +398,6 @@ const ClientProfile = () => {
       state: {
         client,
         workoutPlan: activeWorkoutPlan,
-      },
-    });
-  };
-
-  const handleEditMealPlan = () => {
-    const planForEdit = activeMealPlan || mealPlans[0];
-    if (!planForEdit) {
-      handleCreateMealPlan();
-      return;
-    }
-
-    navigate('/create-meal-plan', {
-      state: {
-        client,
-        mealPlan: planForEdit,
-      },
-    });
-  };
-
-  const handleEditMealPlanV3 = () => {
-    const planForEdit = activeMealPlan || mealPlans[0];
-    if (!planForEdit) {
-      handleCreateMealPlanV3();
-      return;
-    }
-
-    navigate('/create-meal-plan-v3', {
-      state: {
-        client,
-        mealPlan: planForEdit,
       },
     });
   };
@@ -871,28 +853,16 @@ const ClientProfile = () => {
           <TabsContent value="meals" className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <h3 className="text-lg font-semibold">{t('clientProfile.mealPlans')}</h3>
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button
-                  onClick={activeMealPlan ? handleEditMealPlan : handleCreateMealPlan}
-                  className="gradient-orange w-full sm:w-auto text-sm sm:text-base"
-                >
-                  {!activeMealPlan && <Plus className="w-4 h-4 mr-2" />}
-                  <span className="whitespace-normal break-words">{activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}</span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={activeMealPlan ? handleEditMealPlanV3 : handleCreateMealPlanV3}
-                  className="w-full sm:w-auto text-sm sm:text-base"
-                >
-                  {!activeMealPlan && <Plus className="w-4 h-4 mr-2" />}
-                  <span className="whitespace-normal break-words">
-                    {activeMealPlan
-                      ? t('clientProfile.updateMealPlanV3', 'Update meal plan (V3)')
-                      : t('clientProfile.createNewMealPlanV3', 'Create new meal plan (V3)')}
-                  </span>
-                </Button>
-              </div>
+              <Button
+                onClick={openMealPlanEditor}
+                disabled={!featuresLoaded}
+                className="gradient-orange w-full sm:w-auto text-sm sm:text-base"
+              >
+                {!activeMealPlan && <Plus className="w-4 h-4 me-2" />}
+                <span className="whitespace-normal break-words">
+                  {activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}
+                </span>
+              </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -916,7 +886,8 @@ const ClientProfile = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={handleEditMealPlan}
+                          onClick={openMealPlanEditor}
+                          disabled={!featuresLoaded}
                           aria-label={t('clientProfile.updateMealPlan')}
                         >
                           <Edit className="h-4 w-4" />
@@ -990,9 +961,16 @@ const ClientProfile = () => {
           <TabsContent value="nutrition" className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <h3 className="text-lg font-semibold">{t('clientProfile.nutritionHistory')}</h3>
-              <Button variant="outline" onClick={handleCreateMealPlan} className="w-full sm:w-auto text-sm sm:text-base">
-                <Utensils className="w-4 h-4 mr-2" />
-                <span className="whitespace-normal break-words">{activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}</span>
+              <Button
+                variant="outline"
+                onClick={openMealPlanEditor}
+                disabled={!featuresLoaded}
+                className="w-full sm:w-auto text-sm sm:text-base"
+              >
+                <Utensils className="w-4 h-4 me-2" />
+                <span className="whitespace-normal break-words">
+                  {activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}
+                </span>
               </Button>
             </div>
             <MealHistory clientId={client.id} />
