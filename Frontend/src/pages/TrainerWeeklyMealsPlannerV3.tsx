@@ -9,26 +9,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { API_BASE_URL } from "../config/api";
-import { Trash2, Plus, Search, Save, ChevronDown } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Trash2, Plus, Search, Save } from "lucide-react";
 import type { MacroType, MeasurementType, V3DayViewResponse, V3FoodOption, V3DailyMacrosResponse, V3MealSlotView } from "../types/meals-v3";
-import { formatDateForAPI, getWeekDays, getWeekRange } from "../utils/dashboard";
+import { formatDateForAPI } from "../utils/dashboard";
+import type { TFunction } from "i18next";
 
-type MealCompletionStatus = {
-  id: number;
-  client_id: number;
-  meal_slot_id: number;
-  date: string;
-  is_completed: boolean;
-  completion_method?: string | null;
-};
+type QuantityMode = "per_100g" | "per_portion";
 
 type MacroCategoryPlan = {
-  // Quantity eaten for this macro category (e.g. "150g" or "1 serving").
-  // This becomes the `quantity_instruction` in the v3 plan and is fixed for all swaps.
+  /** How the trainer entered quantity (grams vs portions); drives preview scaling. */
+  quantityMode: QuantityMode;
+  gramsAmount: number;
+  portionAmount: number;
+  /** Serialized for API `quantity_instruction` / `serving_size` hints. */
   quantityInstruction: string;
   recommendedFoodOptionId: number | null;
-  // Allowed swaps (order matters; trainer can manage by list order).
   allowedSwapFoodOptionIds: number[];
 };
 
@@ -86,13 +81,84 @@ type V3CompleteMealPlanCreate = {
   meal_slots: V3CompleteMealSlotCreate[];
 };
 
-const dayLabel = (dateStr: string, isRtlHe: boolean): string => {
-  const d = new Date(`${dateStr}T12:00:00`);
-  const locale = isRtlHe ? "he-IL" : "en-GB";
-  return d.toLocaleDateString(locale, { weekday: "short" }).toUpperCase();
+const roundQuantity = (x: number): number => Math.round(Math.max(0, x) * 100) / 100;
+
+const parseServingGrams = (serving?: string | null): number | null => {
+  if (!serving) return null;
+  const m = serving.match(/(\d+(?:\.\d+)?)\s*g(?:ram)?s?\b/i);
+  if (m) return parseFloat(m[1]);
+  return null;
+};
+
+const quantityFieldsFromInstructionAndFood = (
+  quantityInstruction: string,
+  recommendedFood: V3FoodOption | null | undefined
+): Pick<MacroCategoryPlan, "quantityInstruction" | "quantityMode" | "gramsAmount" | "portionAmount"> => {
+  const qi = (quantityInstruction || "").trim();
+  const gramMatch = qi.match(/^(\d+(?:\.\d+)?)\s*g$/i);
+  if (gramMatch) {
+    const gramsAmount = Math.max(0.01, parseFloat(gramMatch[1]));
+    return { quantityInstruction: `${gramsAmount}g`, quantityMode: "per_100g", gramsAmount, portionAmount: 1 };
+  }
+  const numMatch = qi.match(/^(\d+(?:\.\d+)?)\b/);
+  const catalogMode: QuantityMode = recommendedFood?.measurement_type === "per_portion" ? "per_portion" : "per_100g";
+  if (numMatch && catalogMode === "per_portion") {
+    const portionAmount = Math.max(0.01, parseFloat(numMatch[1]));
+    return { quantityInstruction: qi, quantityMode: "per_portion", gramsAmount: 100, portionAmount };
+  }
+  if (catalogMode === "per_portion") {
+    return { quantityInstruction: qi || "1", quantityMode: "per_portion", gramsAmount: 100, portionAmount: 1 };
+  }
+  return { quantityInstruction: qi || "100g", quantityMode: "per_100g", gramsAmount: 100, portionAmount: 1 };
+};
+
+const instructionFromMacroPlan = (plan: MacroCategoryPlan, t: TFunction): string => {
+  if (plan.quantityMode === "per_100g") {
+    return `${roundQuantity(plan.gramsAmount)}g`;
+  }
+  const n = roundQuantity(plan.portionAmount);
+  const unit =
+    n === 1
+      ? t("meals.weeklyMeals.portionSingular", "portion")
+      : t("meals.weeklyMeals.portionPlural", "portions");
+  return `${n} ${unit}`;
+};
+
+const scaledNutritionForPlanner = (
+  food: V3FoodOption,
+  mode: QuantityMode,
+  gramsAmount: number,
+  portionAmount: number
+): { cal: number; p: number; c: number; f: number } => {
+  const baseCal = food.calories ?? 0;
+  const baseP = food.protein ?? 0;
+  const baseC = food.carbs ?? 0;
+  const baseF = food.fat ?? 0;
+  const mt = food.measurement_type ?? "per_100g";
+
+  if (mode === "per_100g") {
+    const g = Math.max(0, gramsAmount);
+    if (mt === "per_100g") {
+      const mult = g / 100;
+      return { cal: baseCal * mult, p: baseP * mult, c: baseC * mult, f: baseF * mult };
+    }
+    const gPerPortion = parseServingGrams(food.serving_size) ?? 100;
+    const portions = gPerPortion > 0 ? g / gPerPortion : 0;
+    return { cal: baseCal * portions, p: baseP * portions, c: baseC * portions, f: baseF * portions };
+  }
+
+  const portions = Math.max(0, portionAmount);
+  if (mt === "per_portion") {
+    return { cal: baseCal * portions, p: baseP * portions, c: baseC * portions, f: baseF * portions };
+  }
+  const mult = (portions * 100) / 100;
+  return { cal: baseCal * mult, p: baseP * mult, c: baseC * mult, f: baseF * mult };
 };
 
 const createDefaultMacroCategoryPlan = (): MacroCategoryPlan => ({
+  quantityMode: "per_100g",
+  gramsAmount: 100,
+  portionAmount: 1,
   quantityInstruction: "100g",
   recommendedFoodOptionId: null,
   allowedSwapFoodOptionIds: [],
@@ -154,28 +220,11 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
   const [clientDisplayName, setClientDisplayName] = useState<string | null>(null);
   /** Date used only to load the client's repeating plan template from `/day` (same structure every day). */
   const [planLoadDate, setPlanLoadDate] = useState<string>(() => formatDateForAPI(new Date()));
-  /** Week anchor for optional trainee completion overview (not for editing per-day meals). */
-  const [completionWeekStart, setCompletionWeekStart] = useState<string>(() => {
-    const { start } = getWeekRange(new Date());
-    return formatDateForAPI(start);
-  });
-
   const [draftSlots, setDraftSlots] = useState<V3MealSlotView[]>([]);
   const [removedSlotIds, setRemovedSlotIds] = useState<Set<number>>(() => new Set());
   const [slotCustomNames, setSlotCustomNames] = useState<Record<number, string>>({});
   const nextTempSlotIdRef = useRef(-1);
   const seededEmptyPlanRef = useRef(false);
-
-  const completionWeekDays = useMemo(
-    () => getWeekDays(new Date(`${completionWeekStart}T12:00:00`)).map(formatDateForAPI),
-    [completionWeekStart]
-  );
-  const completionWeekEndDate = useMemo(
-    () => completionWeekDays[completionWeekDays.length - 1] ?? completionWeekStart,
-    [completionWeekDays, completionWeekStart]
-  );
-
-  const [completionsByDay, setCompletionsByDay] = useState<Record<string, Record<number, boolean>>>({});
 
   const [dayView, setDayView] = useState<V3DayViewResponse | null>(null);
   const [daySummary, setDaySummary] = useState<V3DailyMacrosResponse | null>(null);
@@ -267,29 +316,6 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
     setFatCatalog(fat);
   }, [fetchCatalog]);
 
-  const fetchCompletionsWeek = useCallback(async () => {
-    if (useV3MockBackend) {
-      setCompletionsByDay({});
-      return;
-    }
-    if (!token || !clientId) return;
-    const byDay: Record<string, Record<number, boolean>> = {};
-    await Promise.all(
-      completionWeekDays.map(async (day) => {
-        const res = await fetch(`${API_BASE_URL}/v2/meals/completions?date=${day}&client_id=${clientId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const data = (await res.json()) as MealCompletionStatus[];
-        byDay[day] = data.reduce((acc, row) => {
-          acc[row.meal_slot_id] = Boolean(row.is_completed);
-          return acc;
-        }, {} as Record<number, boolean>);
-      })
-    );
-    setCompletionsByDay(byDay);
-  }, [clientId, token, useV3MockBackend, completionWeekDays]);
-
   const initializeMealSlotPlansFromDayView = useCallback(
     (view: V3DayViewResponse) => {
       setMealSlotPlansById((prev) => {
@@ -321,19 +347,23 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
           const carbQuantity = carbCat?.quantity_instruction ?? carbRecommended?.serving_size ?? "100g";
           const fatQuantity = fatCat?.quantity_instruction ?? fatRecommended?.serving_size ?? "100g";
 
+          const proteinQ = quantityFieldsFromInstructionAndFood(proteinQuantity, proteinRecommended);
+          const carbQ = quantityFieldsFromInstructionAndFood(carbQuantity, carbRecommended);
+          const fatQ = quantityFieldsFromInstructionAndFood(fatQuantity, fatRecommended);
+
           apiDerived[slot.meal_slot_id] = {
             protein: {
-              quantityInstruction: proteinQuantity,
+              ...proteinQ,
               recommendedFoodOptionId: proteinRecommended?.id ?? null,
               allowedSwapFoodOptionIds: toAllowedIds(proteinCat?.recommended_foods ?? []),
             },
             carb: {
-              quantityInstruction: carbQuantity,
+              ...carbQ,
               recommendedFoodOptionId: carbRecommended?.id ?? null,
               allowedSwapFoodOptionIds: toAllowedIds(carbCat?.recommended_foods ?? []),
             },
             fat: {
-              quantityInstruction: fatQuantity,
+              ...fatQ,
               recommendedFoodOptionId: fatRecommended?.id ?? null,
               allowedSwapFoodOptionIds: toAllowedIds(fatCat?.recommended_foods ?? []),
             },
@@ -403,11 +433,6 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
     // Bootstrap catalog once, independent of week/client.
     fetchAllCatalog().catch(() => null);
   }, [fetchAllCatalog]);
-
-  useEffect(() => {
-    if (!clientId) return;
-    fetchCompletionsWeek().catch(() => null);
-  }, [clientId, fetchCompletionsWeek]);
 
   useEffect(() => {
     if (!clientId) return;
@@ -494,20 +519,52 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
 
   const setRecommendedFood = useCallback(
     (mealSlotId: number, macroType: MacroType, foodOptionId: number | null) => {
-      updateMacroCategoryPlan(mealSlotId, macroType, (p) => ({
-        ...p,
-        recommendedFoodOptionId: foodOptionId,
-        allowedSwapFoodOptionIds: foodOptionId ? p.allowedSwapFoodOptionIds.filter((id) => id !== foodOptionId) : p.allowedSwapFoodOptionIds,
-      }));
+      updateMacroCategoryPlan(mealSlotId, macroType, (p) => {
+        if (typeof foodOptionId !== "number") {
+          return { ...p, recommendedFoodOptionId: null };
+        }
+        const food = catalogByMacro[macroType][foodOptionId];
+        const defaultQi = food?.measurement_type === "per_portion" ? "1" : "100g";
+        const q = quantityFieldsFromInstructionAndFood(defaultQi, food);
+        return {
+          ...p,
+          recommendedFoodOptionId: foodOptionId,
+          allowedSwapFoodOptionIds: p.allowedSwapFoodOptionIds.filter((id) => id !== foodOptionId),
+          ...q,
+        };
+      });
     },
-    [updateMacroCategoryPlan]
+    [catalogByMacro, updateMacroCategoryPlan]
   );
 
-  const setQuantityInstruction = useCallback(
-    (mealSlotId: number, macroType: MacroType, quantityInstruction: string) => {
-      updateMacroCategoryPlan(mealSlotId, macroType, (p) => ({ ...p, quantityInstruction }));
+  const setMacroQuantityMode = useCallback(
+    (mealSlotId: number, macroType: MacroType, quantityMode: QuantityMode) => {
+      updateMacroCategoryPlan(mealSlotId, macroType, (p) => {
+        const next: MacroCategoryPlan = { ...p, quantityMode };
+        return { ...next, quantityInstruction: instructionFromMacroPlan(next, t) };
+      });
     },
-    [updateMacroCategoryPlan]
+    [t, updateMacroCategoryPlan]
+  );
+
+  const setMacroGramsAmount = useCallback(
+    (mealSlotId: number, macroType: MacroType, gramsAmount: number) => {
+      updateMacroCategoryPlan(mealSlotId, macroType, (p) => {
+        const next: MacroCategoryPlan = { ...p, gramsAmount: Math.max(0.01, gramsAmount) };
+        return { ...next, quantityInstruction: instructionFromMacroPlan(next, t) };
+      });
+    },
+    [t, updateMacroCategoryPlan]
+  );
+
+  const setMacroPortionAmount = useCallback(
+    (mealSlotId: number, macroType: MacroType, portionAmount: number) => {
+      updateMacroCategoryPlan(mealSlotId, macroType, (p) => {
+        const next: MacroCategoryPlan = { ...p, portionAmount: Math.max(0.01, portionAmount) };
+        return { ...next, quantityInstruction: instructionFromMacroPlan(next, t) };
+      });
+    },
+    [t, updateMacroCategoryPlan]
   );
 
   const addAllowedSwapFood = useCallback(
@@ -617,7 +674,7 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
             const macroKey = macroType as keyof MealSlotPlanState;
             const plan = slotPlan[macroKey];
             const recommendedId = plan.recommendedFoodOptionId;
-            const quantityInstruction = plan.quantityInstruction || "100g";
+            const quantityInstruction = instructionFromMacroPlan(plan, t);
 
             if (typeof recommendedId !== "number") {
               throw new Error(`Missing recommended food for ${macroType} in slot ${slot.meal_slot_id}`);
@@ -713,7 +770,6 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
 
       // Refresh day view so UI reflects the published plan structure.
       await fetchDayForWeek();
-      await fetchCompletionsWeek();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to publish week plan");
     } finally {
@@ -723,7 +779,6 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
     API_BASE_URL,
     clientId,
     daySummary,
-    fetchCompletionsWeek,
     fetchDayForWeek,
     slotsForEditor,
     slotCustomNames,
@@ -735,19 +790,6 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
     useV3MockBackend,
     planLoadDate,
   ]);
-
-  const completionSlotMealIds = useMemo(() => apiSlotsEffective.map((s) => s.meal_slot_id), [apiSlotsEffective]);
-
-  const completenessForDay = useCallback(
-    (dayStr: string) => {
-      const completionMap = completionsByDay[dayStr] ?? {};
-      const total = completionSlotMealIds.length;
-      if (total === 0) return { completed: 0, total: 0 };
-      const completed = completionSlotMealIds.reduce((sum, slotId) => sum + (completionMap[slotId] ? 1 : 0), 0);
-      return { completed, total };
-    },
-    [completionsByDay, completionSlotMealIds]
-  );
 
   const isMobileBlockerText = t("meals.weeklyMeals.mobileBlocker", "This page must be accessed via computer due to complexity.");
 
@@ -894,9 +936,9 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
                             <div className="mt-4 space-y-3">
                               {(
                                 [
-                                  { macro: "protein" as const, label: t("meals.protein", "Protein") },
-                                  { macro: "carb" as const, label: t("meals.carbs", "Carbs") },
-                                  { macro: "fat" as const, label: t("meals.fats", "Fats") },
+                                  { macro: "protein" as const, labelKey: "meals.weeklyMeals.plannerMacroProtein" },
+                                  { macro: "carb" as const, labelKey: "meals.weeklyMeals.plannerMacroCarb" },
+                                  { macro: "fat" as const, labelKey: "meals.weeklyMeals.plannerMacroFat" },
                                 ] as const
                               ).map((m) => {
                                 const macroKey = m.macro;
@@ -909,14 +951,26 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
                                   .map((id) => catalogByMacro[macroKey][id])
                                   .filter((f): f is V3FoodOption => Boolean(f && typeof f.id === "number"));
 
+                                const preview =
+                                  recommendedFood && macroPlan
+                                    ? scaledNutritionForPlanner(
+                                        recommendedFood,
+                                        macroPlan.quantityMode,
+                                        macroPlan.gramsAmount,
+                                        macroPlan.portionAmount
+                                      )
+                                    : null;
+
                                 return (
                                   <div key={`${slot.meal_slot_id}_${macroKey}`} className="rounded-lg border bg-background/60 p-3 space-y-3">
                                     <div className="flex items-start justify-between gap-3">
                                       <div className="min-w-0 flex-1">
-                                        <div className="text-xs text-muted-foreground mb-1">{m.label}</div>
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          {t(m.labelKey, m.macro === "protein" ? "🍗 Protein" : m.macro === "carb" ? "🍞 Carbs" : "🥑 Fats")}
+                                        </div>
                                         <Button
-                                          variant="outline"
-                                          className="w-full justify-start"
+                                          type="button"
+                                          className="w-full justify-start gradient-orange text-background hover:opacity-90"
                                           onClick={() => openFoodDialog(macroKey, slot.meal_slot_id, "recommended")}
                                         >
                                           <Search className="h-4 w-4 me-2" />
@@ -929,28 +983,84 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
                                       </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-start">
-                                      <div className="md:col-span-4">
-                                        <div className="text-xs text-muted-foreground mb-1">{t("meals.weeklyMeals.quantity", "Fixed quantity")}</div>
-                                        <Input
-                                          value={macroPlan?.quantityInstruction ?? "100g"}
-                                          onChange={(e) => setQuantityInstruction(slot.meal_slot_id, macroKey, e.target.value)}
-                                          placeholder="100g"
-                                          dir="ltr"
-                                        />
+                                    <div className="space-y-2">
+                                      <div className="text-xs text-muted-foreground">{t("meals.weeklyMeals.quantity", "Fixed quantity")}</div>
+                                      <div className="flex flex-wrap gap-2">
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant={macroPlan?.quantityMode === "per_100g" ? "default" : "outline"}
+                                          className={macroPlan?.quantityMode === "per_100g" ? "gradient-orange text-background hover:opacity-90" : ""}
+                                          onClick={() => setMacroQuantityMode(slot.meal_slot_id, macroKey, "per_100g")}
+                                          disabled={!macroPlan}
+                                        >
+                                          {t("meals.weeklyMeals.quantityModePer100g", "Per 100g")}
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant={macroPlan?.quantityMode === "per_portion" ? "default" : "outline"}
+                                          className={macroPlan?.quantityMode === "per_portion" ? "gradient-orange text-background hover:opacity-90" : ""}
+                                          onClick={() => setMacroQuantityMode(slot.meal_slot_id, macroKey, "per_portion")}
+                                          disabled={!macroPlan}
+                                        >
+                                          {t("meals.weeklyMeals.quantityModePerPortion", "Per portion")}
+                                        </Button>
                                       </div>
-                                      <div className="md:col-span-8">
+                                      {macroPlan?.quantityMode === "per_100g" ? (
+                                        <div className="space-y-1">
+                                          <label className="text-xs text-muted-foreground" htmlFor={`grams-${slot.meal_slot_id}-${macroKey}`}>
+                                            {t("meals.weeklyMeals.gramsAmountLabel", "Grams")}
+                                          </label>
+                                          <Input
+                                            id={`grams-${slot.meal_slot_id}-${macroKey}`}
+                                            type="number"
+                                            min={0.01}
+                                            step={0.1}
+                                            value={macroPlan.gramsAmount}
+                                            onChange={(e) => {
+                                              const v = parseFloat(e.target.value);
+                                              if (!Number.isNaN(v)) setMacroGramsAmount(slot.meal_slot_id, macroKey, v);
+                                            }}
+                                            dir="ltr"
+                                            className="max-w-[140px]"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-1">
+                                          <label className="text-xs text-muted-foreground" htmlFor={`portions-${slot.meal_slot_id}-${macroKey}`}>
+                                            {t("meals.weeklyMeals.portionsAmountLabel", "Portions")}
+                                          </label>
+                                          <Input
+                                            id={`portions-${slot.meal_slot_id}-${macroKey}`}
+                                            type="number"
+                                            min={0.01}
+                                            step={0.5}
+                                            value={macroPlan?.portionAmount ?? 1}
+                                            onChange={(e) => {
+                                              const v = parseFloat(e.target.value);
+                                              if (!Number.isNaN(v)) setMacroPortionAmount(slot.meal_slot_id, macroKey, v);
+                                            }}
+                                            dir="ltr"
+                                            className="max-w-[140px]"
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-2 items-start">
+                                      <div>
                                         <div className="text-xs text-muted-foreground mb-1">{t("meals.weeklyMeals.macroPreview", "Preview")}</div>
                                         <div className="rounded-md border bg-background/50 p-2 text-sm">
-                                          {recommendedFood ? (
+                                          {recommendedFood && preview ? (
                                             <div className="flex flex-col gap-1">
                                               <div className="tabular-nums">
-                                                {t("meals.calories", "Calories")}: {recommendedFood.calories ?? 0}
+                                                {t("meals.calories", "Calories")}: {Math.round(preview.cal)}
                                               </div>
                                               <div className="tabular-nums text-muted-foreground">
-                                                {t("meals.protein", "Protein")}: {recommendedFood.protein ?? 0}g ·{" "}
-                                                {t("meals.carbs", "Carbs")}: {recommendedFood.carbs ?? 0}g ·{" "}
-                                                {t("meals.fats", "Fats")}: {recommendedFood.fat ?? 0}g
+                                                {t("meals.weeklyMeals.previewProteinShort", "P")}: {roundQuantity(preview.p)}g ·{" "}
+                                                {t("meals.weeklyMeals.previewCarbsShort", "C")}: {roundQuantity(preview.c)}g ·{" "}
+                                                {t("meals.weeklyMeals.previewFatShort", "F")}: {roundQuantity(preview.f)}g
                                               </div>
                                             </div>
                                           ) : (
@@ -1009,51 +1119,6 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
             </div>
 
             <div className="col-span-12 xl:col-span-4 space-y-3 order-1 xl:order-2">
-              <Collapsible defaultOpen={false} className="rounded-xl border bg-card text-card-foreground shadow-sm">
-                <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 rounded-xl px-4 py-3 text-start text-sm font-semibold hover:bg-muted/50">
-                  <span>{t("meals.weeklyMeals.completionSection", "Client progress this week")}</span>
-                  <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-4 pb-4">
-                  <div className="mb-3 space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">{t("meals.weeklyMeals.weekStart", "Week start (Mon)")}</label>
-                    <Input
-                      type="date"
-                      value={completionWeekStart}
-                      onChange={(e) => setCompletionWeekStart(e.target.value)}
-                      dir={isRtlHe ? "rtl" : "ltr"}
-                      className="text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground break-words">
-                      {t("meals.weeklyMeals.completionWeekRange", {
-                        defaultValue: "{{start}} – {{end}}",
-                        start: completionWeekStart,
-                        end: completionWeekEndDate,
-                      })}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    {completionWeekDays.map((dayStr) => {
-                      const { completed, total } = completenessForDay(dayStr);
-                      return (
-                        <div
-                          key={dayStr}
-                          className="flex items-center justify-between gap-3 rounded-lg border bg-background/50 p-3"
-                        >
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold tabular-nums">{dayLabel(dayStr, isRtlHe)}</div>
-                            <div className="text-xs text-muted-foreground break-words">{dayStr}</div>
-                          </div>
-                          <Badge variant={total > 0 && completed === total ? "default" : "secondary"}>
-                            {completed}/{total}
-                          </Badge>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-
               {daySummary ? (
                 <Card className="rounded-xl">
                   <CardHeader className="pb-3">
