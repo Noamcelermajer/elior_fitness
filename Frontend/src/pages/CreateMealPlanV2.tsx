@@ -126,7 +126,11 @@ const normalizeMealBankItem = (
   macro_type: normalizeMacroType(item.macro_type),
 });
 
-const CreateMealPlanV2: React.FC = () => {
+type CreateMealPlanProps = {
+  apiVersion?: "v2" | "v3";
+};
+
+const CreateMealPlanV2: React.FC<CreateMealPlanProps> = ({ apiVersion = "v2" }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -134,6 +138,13 @@ const CreateMealPlanV2: React.FC = () => {
   const existingMealPlan: any = location.state?.mealPlan;
   const client: any = location.state?.client;
   const initialClientId = client?.id ?? existingMealPlan?.client_id ?? 0;
+
+  // Legacy v3 form (fallback when MEALS_V3 flag is off): real `/v3/meals` unless `?mock=1`.
+  const useV3MockBackend =
+    apiVersion === "v3" &&
+    (new URLSearchParams(location.search).get("mock") === "1" ||
+      new URLSearchParams(location.search).get("mock") === "true");
+  const v3MealsBase = useV3MockBackend ? `${API_BASE_URL}/v3/meals-mock` : `${API_BASE_URL}/v3/meals`;
 
   const [isEditing, setIsEditing] = useState<boolean>(Boolean(existingMealPlan));
 
@@ -384,7 +395,12 @@ const CreateMealPlanV2: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const macroTypeParam = mealBankFilter !== 'all' ? `&macro_type=${mealBankFilter}` : '';
-      const response = await fetch(`${API_BASE_URL}/v2/meals/meal-bank?include_public=true${macroTypeParam}`, {
+      const mealBankEndpoint =
+        apiVersion === 'v3'
+          ? `${v3MealsBase}/catalog?include_public=true${macroTypeParam}`
+          : `${API_BASE_URL}/v2/meals/meal-bank?include_public=true${macroTypeParam}`;
+
+      const response = await fetch(mealBankEndpoint, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -501,6 +517,11 @@ const CreateMealPlanV2: React.FC = () => {
   const handleAddFoodToBank = async () => {
     const trimmedName = newFoodItem.name.trim();
     const trimmedHebrewName = newFoodItem.name_hebrew.trim();
+
+    if (apiVersion === "v3" && useV3MockBackend) {
+      alert(t("mealCreation.mockAddFoodNotSupported", "Mock mode: adding foods is disabled."));
+      return;
+    }
 
     if (!trimmedName && !trimmedHebrewName) {
       alert(t('foodBank.nameRequired'));
@@ -667,7 +688,12 @@ const CreateMealPlanV2: React.FC = () => {
 
       const token = localStorage.getItem('access_token');
       const fallbackError = isEditing ? t('mealCreation.errorUpdating') : t('mealCreation.errorCreating');
-      const response = await fetch(`${API_BASE_URL}/v2/meals/plans/complete`, {
+      const planEndpoint =
+        apiVersion === 'v3'
+          ? `${v3MealsBase}/plans`
+          : `${API_BASE_URL}/v2/meals/plans/complete`;
+
+      const response = await fetch(planEndpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1421,23 +1447,25 @@ const CreateMealPlanV2: React.FC = () => {
 
       {/* Action Buttons */}
       <div className="flex justify-between items-center">
-        <div>
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            id="excel-import"
-            className="hidden"
-            onChange={handleExcelImport}
-          />
-          <Button
-            variant="outline"
-            onClick={() => document.getElementById('excel-import')?.click()}
-            disabled={loading}
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            {t('mealCreation.importExcel', 'Import from Excel')}
-          </Button>
-        </div>
+        {apiVersion === 'v2' && (
+          <div>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              id="excel-import"
+              className="hidden"
+              onChange={handleExcelImport}
+            />
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('excel-import')?.click()}
+              disabled={loading}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {t('mealCreation.importExcel', 'Import from Excel')}
+            </Button>
+          </div>
+        )}
         <div className="flex justify-end space-x-4">
           <Button variant="outline" onClick={() => navigate(-1)}>
             {t('common.cancel')}

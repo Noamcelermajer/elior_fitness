@@ -31,16 +31,23 @@ import EditClient from './pages/EditClient';
 import CreateExercise from './pages/CreateExercise';
 import CreateWorkout from './pages/CreateWorkout';
 import CreateMealPlanV2 from './pages/CreateMealPlanV2';
+import CreateMealPlanV3 from './pages/CreateMealPlanV3';
 import ExerciseBank from './pages/ExerciseBank';
 import MealBank from './pages/MealBank';
 import SecretUsersPage from './pages/SecretUsersPage';
 import CreateWorkoutPlanV2 from './pages/CreateWorkoutPlanV2';
 import ChatPage from './pages/ChatPage';
+import MealsPageV3 from './pages/MealsPageV3';
+import SandboxMealsV3 from './pages/SandboxMealsV3';
+import TrainerWeeklyMealsPlannerV3 from './pages/TrainerWeeklyMealsPlannerV3';
 import './i18n/config';
+import { FeaturesProvider, useFeatures } from "./contexts/FeaturesContext";
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
+  const { mealsV3Enabled } = useFeatures();
+
   return (
     <Routes>
       {/* Public route - Login page */}
@@ -137,6 +144,22 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/create-meal-plan-v3" 
+        element={
+          <ProtectedRoute requiredRole="TRAINER">
+            <CreateMealPlanV3 />
+          </ProtectedRoute>
+        } 
+      />
+      <Route
+        path="/trainer-weekly-meals-v3"
+        element={
+          <ProtectedRoute requiredRole="TRAINER">
+            <TrainerWeeklyMealsPlannerV3 />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
         path="/create-workout-plan-v2" 
         element={
           <ProtectedRoute requiredRole="TRAINER">
@@ -174,9 +197,25 @@ const AppRoutes = () => {
         path="/meals" 
         element={
           <ProtectedRoute>
-            <MealsPage />
+            {mealsV3Enabled ? <MealsPageV3 /> : <MealsPage />}
           </ProtectedRoute>
         } 
+      />
+      <Route
+        path="/meals-v3"
+        element={
+          <ProtectedRoute requiredRole="CLIENT">
+            <MealsPageV3 />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sandbox/meals-v3"
+        element={
+          <ProtectedRoute requiredRole="CLIENT">
+            <SandboxMealsV3 />
+          </ProtectedRoute>
+        }
       />
       <Route 
         path="/training" 
@@ -284,7 +323,7 @@ const App = () => {
             <AuthProvider>
               <NotificationProvider>
                 <BrowserRouter>
-                  <AppRoutes />
+                  <AppRoutes mealsV3Enabled={mealsV3Enabled} />
                   <NotificationContainer />
                 </BrowserRouter>
               </NotificationProvider>

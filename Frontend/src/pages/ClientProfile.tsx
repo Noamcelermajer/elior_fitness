@@ -307,6 +307,10 @@ const ClientProfile = () => {
     navigate('/create-meal-plan', { state: { client } });
   };
 
+  const handleCreateMealPlanV3 = () => {
+    navigate('/create-meal-plan-v3', { state: { client } });
+  };
+
   const handleViewProgress = () => {
     setActiveTab('progress');
   };
@@ -394,6 +398,21 @@ const ClientProfile = () => {
     }
 
     navigate('/create-meal-plan', {
+      state: {
+        client,
+        mealPlan: planForEdit,
+      },
+    });
+  };
+
+  const handleEditMealPlanV3 = () => {
+    const planForEdit = activeMealPlan || mealPlans[0];
+    if (!planForEdit) {
+      handleCreateMealPlanV3();
+      return;
+    }
+
+    navigate('/create-meal-plan-v3', {
       state: {
         client,
         mealPlan: planForEdit,
@@ -852,13 +871,28 @@ const ClientProfile = () => {
           <TabsContent value="meals" className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <h3 className="text-lg font-semibold">{t('clientProfile.mealPlans')}</h3>
-              <Button
-                onClick={activeMealPlan ? handleEditMealPlan : handleCreateMealPlan}
-                className="gradient-orange w-full sm:w-auto text-sm sm:text-base"
-              >
-                {!activeMealPlan && <Plus className="w-4 h-4 mr-2" />}
-                <span className="whitespace-normal break-words">{activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}</span>
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  onClick={activeMealPlan ? handleEditMealPlan : handleCreateMealPlan}
+                  className="gradient-orange w-full sm:w-auto text-sm sm:text-base"
+                >
+                  {!activeMealPlan && <Plus className="w-4 h-4 mr-2" />}
+                  <span className="whitespace-normal break-words">{activeMealPlan ? t('clientProfile.updateMealPlan') : t('clientProfile.createNewMealPlan')}</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={activeMealPlan ? handleEditMealPlanV3 : handleCreateMealPlanV3}
+                  className="w-full sm:w-auto text-sm sm:text-base"
+                >
+                  {!activeMealPlan && <Plus className="w-4 h-4 mr-2" />}
+                  <span className="whitespace-normal break-words">
+                    {activeMealPlan
+                      ? t('clientProfile.updateMealPlanV3', 'Update meal plan (V3)')
+                      : t('clientProfile.createNewMealPlanV3', 'Create new meal plan (V3)')}
+                  </span>
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

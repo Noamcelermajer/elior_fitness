@@ -67,6 +67,20 @@ async def get_system_logs(
     
     return system_service.get_recent_logs(limit=50)
 
+@router.get("/features")
+async def get_system_features():
+    """
+    Public feature flags for the frontend.
+
+    Notes:
+    - This endpoint is intentionally unauthenticated so the UI can decide routes
+      before a user session is established.
+    - Controlled by environment variable `MEALS_V3_ENABLED`.
+    """
+    raw = (os.getenv("MEALS_V3_ENABLED") or "false").strip().lower()
+    meals_v3_enabled = raw in {"1", "true", "yes", "on"}
+    return {"meals_v3_enabled": meals_v3_enabled}
+
 @router.post("/maintenance")
 async def toggle_maintenance_mode(
     enabled: bool,
