@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { API_BASE_URL } from "../config/api";
-import { Trash2, Plus, Search } from "lucide-react";
+import { Trash2, Plus, Search, Save, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { MacroType, MeasurementType, V3DayViewResponse, V3FoodOption, V3DailyMacrosResponse, V3MealSlotView } from "../types/meals-v3";
 import { formatDateForAPI, getWeekDays, getWeekRange } from "../utils/dashboard";
 
@@ -80,6 +81,8 @@ type V3CompleteMealPlanCreate = {
   protein_target?: number | null;
   carb_target?: number | null;
   fat_target?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
   meal_slots: V3CompleteMealSlotCreate[];
 };
 
@@ -93,6 +96,15 @@ const createDefaultMacroCategoryPlan = (): MacroCategoryPlan => ({
   quantityInstruction: "100g",
   recommendedFoodOptionId: null,
   allowedSwapFoodOptionIds: [],
+});
+
+const createDraftMealSlotView = (tempId: number, orderIndex: number, name: string): V3MealSlotView => ({
+  meal_slot_id: tempId,
+  name,
+  time_suggestion: null,
+  notes: null,
+  order_index: orderIndex,
+  categories: [],
 });
 
 const TrainerWeeklyMealsPlannerV3: React.FC = () => {
@@ -140,13 +152,28 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
 
   const [clientId, setClientId] = useState<number | null>(null);
   const [clientDisplayName, setClientDisplayName] = useState<string | null>(null);
-  const [weekStartDate, setWeekStartDate] = useState<string>(() => {
+  /** Date used only to load the client's repeating plan template from `/day` (same structure every day). */
+  const [planLoadDate, setPlanLoadDate] = useState<string>(() => formatDateForAPI(new Date()));
+  /** Week anchor for optional trainee completion overview (not for editing per-day meals). */
+  const [completionWeekStart, setCompletionWeekStart] = useState<string>(() => {
     const { start } = getWeekRange(new Date());
     return formatDateForAPI(start);
   });
 
-  const weekDays = useMemo(() => getWeekDays(new Date(`${weekStartDate}T12:00:00`)).map(formatDateForAPI), [weekStartDate]);
-  const weekEndDate = useMemo(() => weekDays[weekDays.length - 1] ?? weekStartDate, [weekDays, weekStartDate]);
+  const [draftSlots, setDraftSlots] = useState<V3MealSlotView[]>([]);
+  const [removedSlotIds, setRemovedSlotIds] = useState<Set<number>>(() => new Set());
+  const [slotCustomNames, setSlotCustomNames] = useState<Record<number, string>>({});
+  const nextTempSlotIdRef = useRef(-1);
+  const seededEmptyPlanRef = useRef(false);
+
+  const completionWeekDays = useMemo(
+    () => getWeekDays(new Date(`${completionWeekStart}T12:00:00`)).map(formatDateForAPI),
+    [completionWeekStart]
+  );
+  const completionWeekEndDate = useMemo(
+    () => completionWeekDays[completionWeekDays.length - 1] ?? completionWeekStart,
+    [completionWeekDays, completionWeekStart]
+  );
 
   const [completionsByDay, setCompletionsByDay] = useState<Record<string, Record<number, boolean>>>({});
 
@@ -171,6 +198,18 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
   }, [proteinCatalog, carbCatalog, fatCatalog]);
 
   const [mealSlotPlansById, setMealSlotPlansById] = useState<Record<number, MealSlotPlanState>>({});
+
+  useEffect(() => {
+    if (!clientId) return;
+    setPlanLoadDate(formatDateForAPI(new Date()));
+    setDraftSlots([]);
+    setRemovedSlotIds(new Set());
+    setSlotCustomNames({});
+    nextTempSlotIdRef.current = -1;
+    seededEmptyPlanRef.current = false;
+    setDayView(null);
+    setDaySummary(null);
+  }, [clientId]);
 
   const fetchClients = useCallback(async () => {
     if (!token) return;
@@ -236,7 +275,7 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
     if (!token || !clientId) return;
     const byDay: Record<string, Record<number, boolean>> = {};
     await Promise.all(
-      weekDays.map(async (day) => {
+      completionWeekDays.map(async (day) => {
         const res = await fetch(`${API_BASE_URL}/v2/meals/completions?date=${day}&client_id=${clientId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -249,60 +288,71 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
       })
     );
     setCompletionsByDay(byDay);
-  }, [clientId, token, useV3MockBackend, weekDays]);
+  }, [clientId, token, useV3MockBackend, completionWeekDays]);
 
   const initializeMealSlotPlansFromDayView = useCallback(
     (view: V3DayViewResponse) => {
-      const next: Record<number, MealSlotPlanState> = {};
+      setMealSlotPlansById((prev) => {
+        const apiDerived: Record<number, MealSlotPlanState> = {};
 
-      for (const slot of view.slots) {
-        const proteinCat = slot.categories.find((c) => c.macro_type === "protein");
-        const carbCat = slot.categories.find((c) => c.macro_type === "carb");
-        const fatCat = slot.categories.find((c) => c.macro_type === "fat");
+        for (const slot of view.slots) {
+          const proteinCat = slot.categories.find((c) => c.macro_type === "protein");
+          const carbCat = slot.categories.find((c) => c.macro_type === "carb");
+          const fatCat = slot.categories.find((c) => c.macro_type === "fat");
 
-        const recommendedOrNull = (food: V3FoodOption | undefined | null) => (typeof food?.id === "number" ? food : null);
+          const recommendedOrNull = (food: V3FoodOption | undefined | null) => (typeof food?.id === "number" ? food : null);
 
-        const proteinRecommended = recommendedOrNull(proteinCat?.recommended_foods?.[0] ?? null);
-        const carbRecommended = recommendedOrNull(carbCat?.recommended_foods?.[0] ?? null);
-        const fatRecommended = recommendedOrNull(fatCat?.recommended_foods?.[0] ?? null);
+          const proteinRecommended = recommendedOrNull(proteinCat?.recommended_foods?.[0] ?? null);
+          const carbRecommended = recommendedOrNull(carbCat?.recommended_foods?.[0] ?? null);
+          const fatRecommended = recommendedOrNull(fatCat?.recommended_foods?.[0] ?? null);
 
-        const mockAllowed: boolean = useV3MockBackend;
+          const mockAllowed: boolean = useV3MockBackend;
 
-        const toAllowedIds = (foods: V3FoodOption[] | undefined | null): number[] => {
-          if (!foods || foods.length === 0) return [];
-          if (mockAllowed) return [];
-          return foods
-            .slice(1)
-            .map((f) => (typeof f.id === "number" ? f.id : null))
-            .filter((id): id is number => typeof id === "number");
-        };
+          const toAllowedIds = (foods: V3FoodOption[] | undefined | null): number[] => {
+            if (!foods || foods.length === 0) return [];
+            if (mockAllowed) return [];
+            return foods
+              .slice(1)
+              .map((f) => (typeof f.id === "number" ? f.id : null))
+              .filter((id): id is number => typeof id === "number");
+          };
 
-        const proteinQuantity = proteinCat?.quantity_instruction ?? proteinRecommended?.serving_size ?? "100g";
-        const carbQuantity = carbCat?.quantity_instruction ?? carbRecommended?.serving_size ?? "100g";
-        const fatQuantity = fatCat?.quantity_instruction ?? fatRecommended?.serving_size ?? "100g";
+          const proteinQuantity = proteinCat?.quantity_instruction ?? proteinRecommended?.serving_size ?? "100g";
+          const carbQuantity = carbCat?.quantity_instruction ?? carbRecommended?.serving_size ?? "100g";
+          const fatQuantity = fatCat?.quantity_instruction ?? fatRecommended?.serving_size ?? "100g";
 
-        next[slot.meal_slot_id] = {
-          protein: {
-            quantityInstruction: proteinQuantity,
-            recommendedFoodOptionId: proteinRecommended?.id ?? null,
-            allowedSwapFoodOptionIds: toAllowedIds(proteinCat?.recommended_foods ?? []),
-          },
-          carb: {
-            quantityInstruction: carbQuantity,
-            recommendedFoodOptionId: carbRecommended?.id ?? null,
-            allowedSwapFoodOptionIds: toAllowedIds(carbCat?.recommended_foods ?? []),
-          },
-          fat: {
-            quantityInstruction: fatQuantity,
-            recommendedFoodOptionId: fatRecommended?.id ?? null,
-            allowedSwapFoodOptionIds: toAllowedIds(fatCat?.recommended_foods ?? []),
-          },
-        };
-      }
+          apiDerived[slot.meal_slot_id] = {
+            protein: {
+              quantityInstruction: proteinQuantity,
+              recommendedFoodOptionId: proteinRecommended?.id ?? null,
+              allowedSwapFoodOptionIds: toAllowedIds(proteinCat?.recommended_foods ?? []),
+            },
+            carb: {
+              quantityInstruction: carbQuantity,
+              recommendedFoodOptionId: carbRecommended?.id ?? null,
+              allowedSwapFoodOptionIds: toAllowedIds(carbCat?.recommended_foods ?? []),
+            },
+            fat: {
+              quantityInstruction: fatQuantity,
+              recommendedFoodOptionId: fatRecommended?.id ?? null,
+              allowedSwapFoodOptionIds: toAllowedIds(fatCat?.recommended_foods ?? []),
+            },
+          };
+        }
 
-      setMealSlotPlansById(next);
+        if (view.slots.length > 0) {
+          return apiDerived;
+        }
+
+        const merged: Record<number, MealSlotPlanState> = { ...apiDerived };
+        for (const [k, v] of Object.entries(prev)) {
+          const id = Number(k);
+          if (id < 0) merged[id] = v;
+        }
+        return merged;
+      });
     },
-    [setMealSlotPlansById, useV3MockBackend]
+    [useV3MockBackend]
   );
 
   const fetchDayForWeek = useCallback(async () => {
@@ -313,14 +363,14 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
     try {
       const [viewRes, summaryRes] = useV3MockBackend
         ? [
-            fetch(`${API_BASE_URL}/v3/meals-mock/day?date=${weekStartDate}`),
-            fetch(`${API_BASE_URL}/v3/meals-mock/day/summary?date=${weekStartDate}`),
+            fetch(`${API_BASE_URL}/v3/meals-mock/day?date=${planLoadDate}`),
+            fetch(`${API_BASE_URL}/v3/meals-mock/day/summary?date=${planLoadDate}`),
           ]
         : [
-            fetch(`${API_BASE_URL}/v3/meals/day?date=${weekStartDate}&client_id=${clientId}`, {
+            fetch(`${API_BASE_URL}/v3/meals/day?date=${planLoadDate}&client_id=${clientId}`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
-            fetch(`${API_BASE_URL}/v3/meals/day/summary?date=${weekStartDate}&client_id=${clientId}`, {
+            fetch(`${API_BASE_URL}/v3/meals/day/summary?date=${planLoadDate}&client_id=${clientId}`, {
               headers: { Authorization: `Bearer ${token}` },
             }),
           ];
@@ -341,7 +391,7 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [clientId, initializeMealSlotPlansFromDayView, token, useV3MockBackend, weekStartDate]);
+  }, [clientId, initializeMealSlotPlansFromDayView, token, useV3MockBackend, planLoadDate]);
 
   useEffect(() => {
     if (!user || user.role !== "TRAINER") return;
@@ -365,6 +415,58 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
   }, [clientId, fetchDayForWeek]);
 
   const mealSlots = useMemo(() => dayView?.slots ?? [], [dayView]);
+
+  const apiSlotsEffective = useMemo(
+    () => mealSlots.filter((s) => !removedSlotIds.has(s.meal_slot_id)),
+    [mealSlots, removedSlotIds]
+  );
+
+  const slotsForEditor = useMemo(
+    () => [...apiSlotsEffective, ...draftSlots].sort((a, b) => a.order_index - b.order_index),
+    [apiSlotsEffective, draftSlots]
+  );
+
+  useEffect(() => {
+    if (!clientId || !dayView || loading) return;
+    const apiSlots = dayView.slots ?? [];
+    if (apiSlots.length > 0) return;
+    if (draftSlots.length > 0) return;
+    if (seededEmptyPlanRef.current) return;
+    seededEmptyPlanRef.current = true;
+    const id = nextTempSlotIdRef.current--;
+    setDraftSlots([createDraftMealSlotView(id, 0, t("meals.weeklyMeals.defaultMealName", "Meal 1"))]);
+  }, [clientId, dayView, loading, draftSlots.length, t]);
+
+  const addMealSlot = useCallback(() => {
+    const maxOrder = slotsForEditor.reduce((m, s) => Math.max(m, s.order_index), -1);
+    const id = nextTempSlotIdRef.current--;
+    setDraftSlots((d) => [
+      ...d,
+      createDraftMealSlotView(
+        id,
+        maxOrder + 1,
+        t("meals.weeklyMeals.newMealSlot", "Meal {{n}}", { n: slotsForEditor.length + 1 })
+      ),
+    ]);
+  }, [slotsForEditor, t]);
+
+  const removeSlot = useCallback((slotId: number) => {
+    if (slotId < 0) {
+      setDraftSlots((d) => d.filter((s) => s.meal_slot_id !== slotId));
+    } else {
+      setRemovedSlotIds((prev) => new Set(prev).add(slotId));
+    }
+    setSlotCustomNames((prev) => {
+      const next = { ...prev };
+      delete next[slotId];
+      return next;
+    });
+    setMealSlotPlansById((prev) => {
+      const next = { ...prev };
+      delete next[slotId];
+      return next;
+    });
+  }, []);
 
   const updateMacroCategoryPlan = useCallback(
     (mealSlotId: number, macroType: MacroType, updater: (p: MacroCategoryPlan) => MacroCategoryPlan) => {
@@ -491,8 +593,8 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
 
   const publishWeekPlan = useCallback(async () => {
     if (!clientId) return;
-    if (mealSlots.length === 0) {
-      setError(t("weeklyMeals.noPlanToEdit", "No meal plan exists for this client. Create one first."));
+    if (slotsForEditor.length === 0) {
+      setError(t("meals.weeklyMeals.minOneSlot", "Add at least one meal slot."));
       return;
     }
 
@@ -502,7 +604,7 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
       if (!daySummary) return;
       if (!useV3MockBackend && !token) return;
 
-      const plansPayloadSlots: V3CompleteMealSlotCreate[] = mealSlots
+      const plansPayloadSlots: V3CompleteMealSlotCreate[] = slotsForEditor
         .slice()
         .sort((a, b) => a.order_index - b.order_index)
         .map((slot) => {
@@ -563,8 +665,9 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
             };
           };
 
+          const displayName = (slotCustomNames[slot.meal_slot_id] ?? slot.name).trim();
           return {
-            name: slot.name,
+            name: displayName || t("meals.weeklyMeals.unnamedMeal", "Meal"),
             time_suggestion: slot.time_suggestion ?? null,
             notes: slot.notes ?? null,
             target_calories: null,
@@ -577,13 +680,15 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
 
       const payload: V3CompleteMealPlanCreate = {
         client_id: clientId,
-        name: t("weeklyMeals.planName", "Weekly Meal Plan"),
+        name: t("meals.weeklyMeals.planName", "Client meal plan"),
         description: null,
-        number_of_meals: mealSlots.length,
+        number_of_meals: slotsForEditor.length,
         total_calories: Math.round(daySummary.targets.calories),
         protein_target: Math.round(daySummary.targets.protein),
         carb_target: Math.round(daySummary.targets.carbs),
         fat_target: Math.round(daySummary.targets.fat),
+        start_date: `${planLoadDate}T00:00:00`,
+        end_date: null,
         meal_slots: plansPayloadSlots,
       };
 
@@ -602,6 +707,10 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
         throw new Error(detail?.detail || `HTTP ${res.status}`);
       }
 
+      setDraftSlots([]);
+      setRemovedSlotIds(new Set());
+      seededEmptyPlanRef.current = false;
+
       // Refresh day view so UI reflects the published plan structure.
       await fetchDayForWeek();
       await fetchCompletionsWeek();
@@ -616,28 +725,31 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
     daySummary,
     fetchCompletionsWeek,
     fetchDayForWeek,
-    mealSlots,
+    slotsForEditor,
+    slotCustomNames,
     setError,
     t,
     token,
     mealSlotPlansById,
     catalogByMacro,
     useV3MockBackend,
-    weekStartDate,
+    planLoadDate,
   ]);
+
+  const completionSlotMealIds = useMemo(() => apiSlotsEffective.map((s) => s.meal_slot_id), [apiSlotsEffective]);
 
   const completenessForDay = useCallback(
     (dayStr: string) => {
       const completionMap = completionsByDay[dayStr] ?? {};
-      const total = mealSlots.length;
+      const total = completionSlotMealIds.length;
       if (total === 0) return { completed: 0, total: 0 };
-      const completed = mealSlots.reduce((sum, slot) => sum + (completionMap[slot.meal_slot_id] ? 1 : 0), 0);
+      const completed = completionSlotMealIds.reduce((sum, slotId) => sum + (completionMap[slotId] ? 1 : 0), 0);
       return { completed, total };
     },
-    [completionsByDay, mealSlots]
+    [completionsByDay, completionSlotMealIds]
   );
 
-  const isMobileBlockerText = t("weeklyMeals.mobileBlocker", "This page must be accessed via computer due to complexity.");
+  const isMobileBlockerText = t("meals.weeklyMeals.mobileBlocker", "This page must be accessed via computer due to complexity.");
 
   return (
     <Layout currentPage="dashboard">
@@ -645,7 +757,7 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
       <div className="lg:hidden p-4">
         <Card className="rounded-xl border-border/60 bg-muted/30">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">{t("weeklyMeals.mobileTitle", "Desktop only")}</CardTitle>
+            <CardTitle className="text-base">{t("meals.weeklyMeals.mobileTitle", "Desktop only")}</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">{isMobileBlockerText}</CardContent>
         </Card>
@@ -655,29 +767,32 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6 space-y-6">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1 min-w-0">
-              <h1 className="text-2xl lg:text-3xl font-bold">{t("weeklyMeals.title", "Weekly Meal Planner (v3)")}</h1>
+              <h1 className="text-2xl lg:text-3xl font-bold">{t("meals.weeklyMeals.title", "Meal plan")}</h1>
               <p className="text-muted-foreground text-sm break-words">
-                {t("weeklyMeals.subtitle", { start: weekStartDate, end: weekEndDate })}
+                {t("meals.weeklyMeals.subtitle", {
+                  defaultValue:
+                    "One template for every day: add or remove meal slots, pick foods and allowed swaps, then save. This is not a different menu per weekday.",
+                })}
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
               {clientId ? (
                 <div className="min-w-[220px]">
-                  <label className="text-sm font-medium">{t("weeklyMeals.client", "Client")}</label>
+                  <label className="text-sm font-medium">{t("meals.weeklyMeals.client", "Client")}</label>
                   <div className="w-full mt-1 px-3 py-2 border border-input rounded-lg bg-background text-sm break-words">
                     {clientDisplayName ?? `Client ${clientId}`}
                   </div>
                 </div>
               ) : (
                 <div className="min-w-[220px]">
-                  <label className="text-sm font-medium">{t("weeklyMeals.client", "Client")}</label>
+                  <label className="text-sm font-medium">{t("meals.weeklyMeals.client", "Client")}</label>
                   <select
                     className="w-full mt-1 px-3 py-2 border border-input rounded-lg bg-background"
                     value={clientId ?? ""}
                     onChange={(e) => setClientId(e.target.value ? Number(e.target.value) : null)}
                   >
-                    <option value="">{t("weeklyMeals.selectClient", "Select client...")}</option>
+                    <option value="">{t("meals.weeklyMeals.selectClient", "Select client...")}</option>
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.full_name}
@@ -686,17 +801,6 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
                   </select>
                 </div>
               )}
-
-              <div className="min-w-[220px]">
-                <label className="text-sm font-medium">{t("weeklyMeals.weekStart", "Week start (Mon)")}</label>
-                <Input
-                  type="date"
-                  className="mt-1"
-                  value={weekStartDate}
-                  onChange={(e) => setWeekStartDate(e.target.value)}
-                  dir={isRtlHe ? "rtl" : "ltr"}
-                />
-              </div>
             </div>
           </div>
 
@@ -712,112 +816,79 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
             </Card>
           )}
 
-          {/* Completion overview + editor */}
+          {/* Meal editor (primary) + summary sidebar */}
           <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 xl:col-span-4 space-y-3">
+            <div className="col-span-12 xl:col-span-8 space-y-3 order-2 xl:order-1">
               <Card className="rounded-xl">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">{t("weeklyMeals.completion", "Meal completion")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {weekDays.map((dayStr) => {
-                      const { completed, total } = completenessForDay(dayStr);
-                      return (
-                        <div
-                          key={dayStr}
-                          className="flex items-center justify-between gap-3 rounded-lg border bg-background/50 p-3"
-                        >
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold tabular-nums">{dayLabel(dayStr, isRtlHe)}</div>
-                            <div className="text-xs text-muted-foreground break-words">{dayStr}</div>
-                          </div>
-                          <Badge variant={total > 0 && completed === total ? "default" : "secondary"}>
-                            {completed}/{total}
-                          </Badge>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {daySummary ? (
-                <Card className="rounded-xl">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">{t("weeklyMeals.dailyTargets", "Daily targets")}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{t("meals.calories", "Calories")}</span>
-                      <span className="font-semibold tabular-nums">{Math.round(daySummary.targets.calories)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{t("meals.protein", "Protein")}</span>
-                      <span className="font-semibold tabular-nums">{Math.round(daySummary.targets.protein)}g</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{t("meals.carbs", "Carbs")}</span>
-                      <span className="font-semibold tabular-nums">{Math.round(daySummary.targets.carbs)}g</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{t("meals.fats", "Fats")}</span>
-                      <span className="font-semibold tabular-nums">{Math.round(daySummary.targets.fat)}g</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : null}
-
-              <Button
-                type="button"
-                className="w-full gradient-orange text-background"
-                onClick={publishWeekPlan}
-                disabled={loading || !clientId}
-              >
-                <Plus className="h-4 w-4 ms-0 me-2" />
-                {t("weeklyMeals.publish", "Publish week plan")}
-              </Button>
-            </div>
-
-            <div className="col-span-12 xl:col-span-8 space-y-3">
-              <Card className="rounded-xl">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">{t("weeklyMeals.mealSlots", "Meal slots")}</CardTitle>
+                <CardHeader className="pb-3 flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+                  <CardTitle className="text-base">{t("meals.weeklyMeals.mealSlots", "Meal slots")}</CardTitle>
+                  <Button type="button" variant="outline" size="sm" onClick={addMealSlot} disabled={loading || !clientId}>
+                    <Plus className="h-4 w-4 me-2" />
+                    {t("meals.weeklyMeals.addMealSlot", "Add meal slot")}
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mealSlots.length === 0 ? (
+                  {slotsForEditor.length === 0 ? (
                     <div className="text-muted-foreground text-sm">
-                      {t("weeklyMeals.noMeals", "No meal slots found for this client. Create a v3 meal plan first.")}
+                      {t("meals.weeklyMeals.noMeals", 'No meal slots yet. Use "Add meal slot" to start building the plan.')}
                     </div>
                   ) : (
-                    mealSlots
-                      .slice()
-                      .sort((a, b) => a.order_index - b.order_index)
-                      .map((slot) => {
+                    slotsForEditor.map((slot) => {
                         const slotPlan = mealSlotPlansById[slot.meal_slot_id] ?? null;
                         const allowedTotal = slotPlan
                           ? slotPlan.protein.allowedSwapFoodOptionIds.length +
                             slotPlan.carb.allowedSwapFoodOptionIds.length +
                             slotPlan.fat.allowedSwapFoodOptionIds.length
                           : 0;
+                        const displayName = slotCustomNames[slot.meal_slot_id] ?? slot.name;
 
                         return (
                           <div key={slot.meal_slot_id} className="rounded-lg border bg-background/40 p-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="space-y-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <div className="text-base font-semibold truncate">{slot.name}</div>
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                              <div className="space-y-2 min-w-0 flex-1">
+                                <div className="space-y-1">
+                                  <label className="text-xs text-muted-foreground" htmlFor={`slot-name-${slot.meal_slot_id}`}>
+                                    {t("meals.weeklyMeals.slotName", "Meal name")}
+                                  </label>
+                                  <Input
+                                    id={`slot-name-${slot.meal_slot_id}`}
+                                    value={displayName}
+                                    onChange={(e) =>
+                                      setSlotCustomNames((prev) => ({
+                                        ...prev,
+                                        [slot.meal_slot_id]: e.target.value,
+                                      }))
+                                    }
+                                    className="font-semibold"
+                                    dir={isRtlHe ? "rtl" : "ltr"}
+                                  />
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
                                   {slot.time_suggestion ? (
                                     <Badge variant="outline" className="shrink-0">
                                       {slot.time_suggestion}
                                     </Badge>
                                   ) : null}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {t("weeklyMeals.allowedSwapsCount", { count: allowedTotal }, "Allowed swaps")}:{" "}
-                                  <span className="tabular-nums">{allowedTotal}</span>
+                                  <div className="text-xs text-muted-foreground">
+                                    {t("meals.weeklyMeals.allowedSwapsCount", {
+                                      count: allowedTotal,
+                                      defaultValue: "Allowed swaps",
+                                    })}
+                                    : <span className="tabular-nums">{allowedTotal}</span>
+                                  </div>
                                 </div>
                               </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="shrink-0"
+                                onClick={() => removeSlot(slot.meal_slot_id)}
+                                disabled={loading}
+                              >
+                                <Trash2 className="h-4 w-4 me-2" />
+                                {t("meals.weeklyMeals.removeMealSlot", "Remove")}
+                              </Button>
                             </div>
 
                             <div className="mt-4 space-y-3">
@@ -853,14 +924,14 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
                                             ? isRtlHe
                                               ? recommendedFood.name_hebrew ?? recommendedFood.name
                                               : recommendedFood.name
-                                            : t("weeklyMeals.pickFood", "Pick food")}
+                                            : t("meals.weeklyMeals.pickFood", "Pick food")}
                                         </Button>
                                       </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-start">
                                       <div className="md:col-span-4">
-                                        <div className="text-xs text-muted-foreground mb-1">{t("weeklyMeals.quantity", "Fixed quantity")}</div>
+                                        <div className="text-xs text-muted-foreground mb-1">{t("meals.weeklyMeals.quantity", "Fixed quantity")}</div>
                                         <Input
                                           value={macroPlan?.quantityInstruction ?? "100g"}
                                           onChange={(e) => setQuantityInstruction(slot.meal_slot_id, macroKey, e.target.value)}
@@ -869,7 +940,7 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
                                         />
                                       </div>
                                       <div className="md:col-span-8">
-                                        <div className="text-xs text-muted-foreground mb-1">{t("weeklyMeals.macroPreview", "Preview")}</div>
+                                        <div className="text-xs text-muted-foreground mb-1">{t("meals.weeklyMeals.macroPreview", "Preview")}</div>
                                         <div className="rounded-md border bg-background/50 p-2 text-sm">
                                           {recommendedFood ? (
                                             <div className="flex flex-col gap-1">
@@ -883,16 +954,16 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
                                               </div>
                                             </div>
                                           ) : (
-                                            <div className="text-muted-foreground">{t("weeklyMeals.noFoodSelected", "No food selected")}</div>
+                                            <div className="text-muted-foreground">{t("meals.weeklyMeals.noFoodSelected", "No food selected")}</div>
                                           )}
                                         </div>
                                       </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                      <div className="text-xs text-muted-foreground">{t("weeklyMeals.allowedSwaps", "Allowed swaps")}</div>
+                                      <div className="text-xs text-muted-foreground">{t("meals.weeklyMeals.allowedSwaps", "Allowed swaps")}</div>
                                       {allowedFoods.length === 0 ? (
-                                        <div className="text-sm text-muted-foreground">{t("weeklyMeals.noAllowedSwaps", "No allowed swaps selected.")}</div>
+                                        <div className="text-sm text-muted-foreground">{t("meals.weeklyMeals.noAllowedSwaps", "No allowed swaps selected.")}</div>
                                       ) : (
                                         <div className="flex flex-wrap items-center gap-2">
                                           {allowedFoods.map((f) => {
@@ -922,7 +993,7 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
                                         onClick={() => openFoodDialog(macroKey, slot.meal_slot_id, "allowed")}
                                       >
                                         <Plus className="h-4 w-4 me-2" />
-                                        {t("weeklyMeals.addAllowedFood", "Add allowed food")}
+                                        {t("meals.weeklyMeals.addAllowedFood", "Add allowed food")}
                                       </Button>
                                     </div>
                                   </div>
@@ -936,6 +1007,89 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
+
+            <div className="col-span-12 xl:col-span-4 space-y-3 order-1 xl:order-2">
+              <Collapsible defaultOpen={false} className="rounded-xl border bg-card text-card-foreground shadow-sm">
+                <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 rounded-xl px-4 py-3 text-start text-sm font-semibold hover:bg-muted/50">
+                  <span>{t("meals.weeklyMeals.completionSection", "Client progress this week")}</span>
+                  <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="px-4 pb-4">
+                  <div className="mb-3 space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">{t("meals.weeklyMeals.weekStart", "Week start (Mon)")}</label>
+                    <Input
+                      type="date"
+                      value={completionWeekStart}
+                      onChange={(e) => setCompletionWeekStart(e.target.value)}
+                      dir={isRtlHe ? "rtl" : "ltr"}
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground break-words">
+                      {t("meals.weeklyMeals.completionWeekRange", {
+                        defaultValue: "{{start}} – {{end}}",
+                        start: completionWeekStart,
+                        end: completionWeekEndDate,
+                      })}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    {completionWeekDays.map((dayStr) => {
+                      const { completed, total } = completenessForDay(dayStr);
+                      return (
+                        <div
+                          key={dayStr}
+                          className="flex items-center justify-between gap-3 rounded-lg border bg-background/50 p-3"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold tabular-nums">{dayLabel(dayStr, isRtlHe)}</div>
+                            <div className="text-xs text-muted-foreground break-words">{dayStr}</div>
+                          </div>
+                          <Badge variant={total > 0 && completed === total ? "default" : "secondary"}>
+                            {completed}/{total}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {daySummary ? (
+                <Card className="rounded-xl">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{t("meals.weeklyMeals.dailyTargets", "Daily targets")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">{t("meals.calories", "Calories")}</span>
+                      <span className="font-semibold tabular-nums">{Math.round(daySummary.targets.calories)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">{t("meals.protein", "Protein")}</span>
+                      <span className="font-semibold tabular-nums">{Math.round(daySummary.targets.protein)}g</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">{t("meals.carbs", "Carbs")}</span>
+                      <span className="font-semibold tabular-nums">{Math.round(daySummary.targets.carbs)}g</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">{t("meals.fats", "Fats")}</span>
+                      <span className="font-semibold tabular-nums">{Math.round(daySummary.targets.fat)}g</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              <Button
+                type="button"
+                className="w-full gradient-orange text-background"
+                onClick={publishWeekPlan}
+                disabled={loading || !clientId}
+              >
+                <Save className="h-4 w-4 ms-0 me-2" />
+                {t("meals.weeklyMeals.savePlan", "Save meal plan")}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -943,24 +1097,24 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
       <Dialog open={foodDialogOpen} onOpenChange={(open) => setFoodDialogOpen(open)}>
         <DialogContent className="sm:max-w-md w-full max-w-md mx-auto rounded-xl overflow-hidden">
           <DialogHeader>
-            <DialogTitle>{t("weeklyMeals.selectFood", "Select food")}</DialogTitle>
+            <DialogTitle>{t("meals.weeklyMeals.selectFood", "Select food")}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">{t("weeklyMeals.search", "Search")}</label>
+              <label className="text-sm font-medium text-muted-foreground">{t("meals.weeklyMeals.search", "Search")}</label>
               <Input
                 ref={foodDialogInputRef}
                 value={foodDialogQuery}
                 onChange={(e) => setFoodDialogQuery(e.target.value)}
-                placeholder={t("weeklyMeals.searchPlaceholder", "Type to search...")}
+                placeholder={t("meals.weeklyMeals.searchPlaceholder", "Type to search...")}
                 dir={isRtlHe ? "rtl" : "ltr"}
               />
             </div>
 
             <div className="max-h-[50vh] overflow-auto rounded-lg border bg-background/60">
               {filteredCatalogItems.length === 0 ? (
-                <div className="p-3 text-sm text-muted-foreground">{t("weeklyMeals.noResults", "No results")}</div>
+                <div className="p-3 text-sm text-muted-foreground">{t("meals.weeklyMeals.noResults", "No results")}</div>
               ) : (
                 <div className="flex flex-col divide-y">
                   {filteredCatalogItems.map((item) => {
@@ -985,7 +1139,7 @@ const TrainerWeeklyMealsPlannerV3: React.FC = () => {
                         <div className="flex flex-col w-full items-start">
                           <div className="flex items-center justify-between gap-2 w-full">
                             <span className="truncate text-sm font-semibold">{name}</span>
-                            {selected ? <Badge variant="outline">{t("weeklyMeals.selected", "Selected")}</Badge> : null}
+                            {selected ? <Badge variant="outline">{t("meals.weeklyMeals.selected", "Selected")}</Badge> : null}
                           </div>
                           <div className="text-xs text-muted-foreground tabular-nums">
                             {t("meals.calories", "Calories")}: {item.calories ?? 0} ·{" "}
