@@ -891,7 +891,11 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
                 <h1 className="text-2xl lg:text-3xl font-bold text-gradient">{t("meals.myMealPlan", "My Meal Plan")}</h1>
                 <p className="text-muted-foreground mt-1">{t("meals.trackNutrition", "Track your nutrition and meals")}</p>
               </div>
-              <div className="flex items-center gap-2 justify-between sm:justify-end">
+              {/* dir=ltr: chevrons stay “earlier left / later right” under page RTL; date uses dir=auto for Hebrew label */}
+              <div
+                className="flex items-center gap-2 justify-between sm:justify-end"
+                dir="ltr"
+              >
                 <Button
                   variant="outline"
                   size="sm"
@@ -904,7 +908,9 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="text-sm font-medium min-w-[120px] text-center">{dateLabel}</span>
+                <span dir="auto" className="text-sm font-medium min-w-[120px] text-center">
+                  {dateLabel}
+                </span>
                 <Button
                   variant="outline"
                   size="sm"
