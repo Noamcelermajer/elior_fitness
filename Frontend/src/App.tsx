@@ -322,10 +322,12 @@ const App = () => {
           <ThemeProvider>
             <AuthProvider>
               <NotificationProvider>
-                <BrowserRouter>
-                  <AppRoutes mealsV3Enabled={mealsV3Enabled} />
-                  <NotificationContainer />
-                </BrowserRouter>
+                <FeaturesProvider>
+                  <BrowserRouter>
+                    <AppRoutes />
+                    <NotificationContainer />
+                  </BrowserRouter>
+                </FeaturesProvider>
               </NotificationProvider>
             </AuthProvider>
           </ThemeProvider>
