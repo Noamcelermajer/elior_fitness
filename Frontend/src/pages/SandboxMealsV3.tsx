@@ -12,7 +12,15 @@ import { ArrowLeftRight, Check, ChevronLeft, ChevronRight, MessageSquare, Plus, 
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import type { MacroType, V3DayViewResponse, V3FoodOption, V3MealCompletionStatusResponse, V3MealLogCreateRequest, V3MealSlotView } from "../types/meals-v3";
+import type {
+  MacroType,
+  V3ClientMealChoiceResponse,
+  V3DayViewResponse,
+  V3FoodOption,
+  V3MealCompletionStatusResponse,
+  V3MealLogCreateRequest,
+  V3MealSlotView,
+} from "../types/meals-v3";
 
 const parseGrams = (value: string): number => {
   const match = value.match(/(\d+(?:\.\d+)?)/);
@@ -45,6 +53,62 @@ const macroLabel = (t: ReturnType<typeof useTranslation>["t"], macroType: MacroT
       return macroType;
   }
 };
+
+/** Row-tagged swaps encode plan-row + target so MealBank ids never collide with FoodOption ids. */
+const V3_ROW_SWAP_PREFIX = "__V3MROW_";
+
+type ParsedRowSwap =
+  | { kind: "plan"; rowId: number; targetPlanFoodId: number; displayName: string }
+  | { kind: "bank"; rowId: number; bankId: number; displayName: string };
+
+const safeSwapDisplayName = (name: string): string => name.replace(/__/g, " ").trim() || "Food";
+
+const encodeRowPlanSwap = (rowId: number, targetPlanFoodId: number, displayName: string): string =>
+  `${V3_ROW_SWAP_PREFIX}${rowId}__P_${targetPlanFoodId}__${displayName}`;
+
+const encodeRowBankSwap = (rowId: number, bankId: number, displayName: string): string =>
+  `${V3_ROW_SWAP_PREFIX}${rowId}__B_${bankId}__${displayName}`;
+
+const parseRowSwapCustom = (customName: string | null | undefined): ParsedRowSwap | null => {
+  if (!customName?.startsWith(V3_ROW_SWAP_PREFIX)) return null;
+  const rest = customName.slice(V3_ROW_SWAP_PREFIX.length);
+  const planM = rest.match(/^(\d+)__P_(\d+)__(.+)$/);
+  if (planM) {
+    return {
+      kind: "plan",
+      rowId: Number(planM[1]),
+      targetPlanFoodId: Number(planM[2]),
+      displayName: planM[3],
+    };
+  }
+  const bankM = rest.match(/^(\d+)__B_(\d+)__(.+)$/);
+  if (bankM) {
+    return {
+      kind: "bank",
+      rowId: Number(bankM[1]),
+      bankId: Number(bankM[2]),
+      displayName: bankM[3],
+    };
+  }
+  return null;
+};
+
+const isOverallSlotCustomFoodName = (customName: string | null | undefined): boolean => {
+  if (!customName?.trim()) return false;
+  return parseRowSwapCustom(customName) === null;
+};
+
+const findChoiceForPlanFoodRow = (
+  choices: V3ClientMealChoiceResponse[] | undefined,
+  mealSlotId: number,
+  planRowFoodId: number
+): V3ClientMealChoiceResponse | undefined =>
+  choices?.find((c) => {
+    if (c.meal_slot_id !== mealSlotId) return false;
+    if (c.food_option_id === planRowFoodId) return true;
+    const p = parseRowSwapCustom(c.custom_food_name);
+    return p?.rowId === planRowFoodId;
+  });
 
 export type MealMenuV3Mode = "mock" | "real";
 
@@ -96,9 +160,10 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
   const [swapMacroType, setSwapMacroType] = useState<MacroType>("protein");
   const [swapQuery, setSwapQuery] = useState("");
   const [swapSaving, setSwapSaving] = useState(false);
-  const [swapSelectedFoodId, setSwapSelectedFoodId] = useState<number | null>(null);
+  const [swapSelectedEntryKey, setSwapSelectedEntryKey] = useState<string | null>(null);
   const [swapCatalogFoods, setSwapCatalogFoods] = useState<V3FoodOption[]>([]);
   const [swapCatalogLoading, setSwapCatalogLoading] = useState(false);
+  const [swapRowPlanFoodId, setSwapRowPlanFoodId] = useState<number | null>(null);
   const swapSearchInputRef = useRef<HTMLInputElement | null>(null);
 
   const isRtlHe = (i18n.language || "").toLowerCase().startsWith("he");
@@ -262,9 +327,105 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
     [accessToken, fetchDayView, mode, selectedDate, v3MealsBase]
   );
 
-  const deleteMealLog = useCallback(
-    async (mealSlotId: number, macroType: MacroType) => {
+  const logRowEncodedSwap = useCallback(
+    async (
+      slot: V3MealSlotView,
+      macroType: MacroType,
+      customFoodName: string,
+      quantity: string,
+      macros: { calories: number; protein: number; carbs: number; fat: number }
+    ) => {
+      const key = `${slot.meal_slot_id}:${macroType}`;
+      setLogInProgressKey(key);
       try {
+        const payload: V3MealLogCreateRequest = {
+          date: selectedDate,
+          meal_slot_id: slot.meal_slot_id,
+          macro_type: macroType,
+          food_option_id: null,
+          quantity,
+          custom_food_name: customFoodName,
+          custom_calories: macros.calories,
+          custom_protein: macros.protein,
+          custom_carbs: macros.carbs,
+          custom_fat: macros.fat,
+        };
+
+        const res = await fetch(`${v3MealsBase}/logs`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(mode === "real" && accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const detail = await res.json().catch(() => null);
+          throw new Error(detail?.detail || `HTTP ${res.status}`);
+        }
+
+        await fetchDayView();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to save log");
+      } finally {
+        setLogInProgressKey(null);
+      }
+    },
+    [accessToken, fetchDayView, mode, selectedDate, v3MealsBase]
+  );
+
+  const deleteMealLog = useCallback(
+    async (mealSlotId: number, macroType: MacroType, planRowFoodId?: number | null) => {
+      try {
+        if (typeof planRowFoodId === "number") {
+          const rowChoice = findChoiceForPlanFoodRow(dayView?.choices, mealSlotId, planRowFoodId);
+          if (!rowChoice) return;
+
+          if (mode === "mock") {
+            const payload: V3MealLogCreateRequest = {
+              date: selectedDate,
+              meal_slot_id: mealSlotId,
+              macro_type: macroType,
+              food_option_id: rowChoice.food_option_id,
+              quantity: rowChoice.quantity,
+              custom_food_name: rowChoice.custom_food_name,
+              custom_calories: rowChoice.custom_calories,
+              custom_protein: rowChoice.custom_protein,
+              custom_carbs: rowChoice.custom_carbs,
+              custom_fat: rowChoice.custom_fat,
+            };
+
+            const res = await fetch(`${v3MealsBase}/logs`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+              const detail = await res.json().catch(() => null);
+              throw new Error(detail?.detail || `HTTP ${res.status}`);
+            }
+
+            await fetchDayView();
+            return;
+          }
+
+          if (!accessToken) return;
+
+          const res = await fetch(`${API_BASE_URL}/v3/meals/logs/${rowChoice.id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+
+          if (!res.ok) {
+            const detail = await res.json().catch(() => null);
+            throw new Error(detail?.detail || `HTTP ${res.status}`);
+          }
+
+          await fetchDayView();
+          return;
+        }
+
         if (mode === "mock") {
           const payload: V3MealLogCreateRequest = {
             date: selectedDate,
@@ -291,13 +452,12 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
 
         if (!dayView || !accessToken) return;
 
-        // Real backend: delete by choice_id path.
-        // Custom food is stored as a choice with `food_option_id == null`.
         const customChoice = dayView.choices.find(
           (c) =>
             c.meal_slot_id === mealSlotId &&
             c.food_option_id == null &&
-            Boolean((c.custom_food_name ?? "").trim())
+            Boolean((c.custom_food_name ?? "").trim()) &&
+            isOverallSlotCustomFoodName(c.custom_food_name)
         );
 
         if (customChoice) {
@@ -340,24 +500,37 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
         setError(e instanceof Error ? e.message : "Failed to delete log");
       }
     },
-    [accessToken, dayView, fetchDayView, mode, selectedDate]
+    [accessToken, dayView, fetchDayView, mode, selectedDate, v3MealsBase]
   );
 
   const applyMealCompletion = useCallback(
     async (slot: V3MealSlotView) => {
       const mealSlotHasCustomOverall =
         mode === "mock"
-          ? slot.categories.some((c) => {
-              const ch = c.chosen_food;
-              if (!ch) return false;
-              return ch.food_option_id == null && Boolean((ch.custom_food_name ?? "").trim());
-            })
+          ? (dayView?.choices?.length
+              ? dayView!.choices.some(
+                  (c) =>
+                    c.meal_slot_id === slot.meal_slot_id &&
+                    c.food_option_id == null &&
+                    Boolean((c.custom_food_name ?? "").trim()) &&
+                    isOverallSlotCustomFoodName(c.custom_food_name)
+                )
+              : slot.categories.some((c) => {
+                  const ch = c.chosen_food;
+                  if (!ch) return false;
+                  return (
+                    ch.food_option_id == null &&
+                    Boolean((ch.custom_food_name ?? "").trim()) &&
+                    isOverallSlotCustomFoodName(ch.custom_food_name)
+                  );
+                }))
           : Boolean(
               dayView?.choices.some(
                 (c) =>
                   c.meal_slot_id === slot.meal_slot_id &&
                   c.food_option_id == null &&
-                  Boolean((c.custom_food_name ?? "").trim())
+                  Boolean((c.custom_food_name ?? "").trim()) &&
+                  isOverallSlotCustomFoodName(c.custom_food_name)
               )
             );
 
@@ -393,18 +566,20 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
       const logsToCreate: Array<Pick<V3MealLogCreateRequest, "macro_type" | "food_option_id" | "quantity">> = [];
 
       for (const cat of slot.categories) {
-        const deselectionKey = `${selectedDate}:${slot.meal_slot_id}:${cat.macro_type}`;
-        if (deselectedMealCategoryKeys[deselectionKey]) continue;
-        if (cat.chosen_food) continue; // already logged (via swap / earlier completion)
+        const sortedFoods = [...(cat.recommended_foods ?? [])].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+        for (const planFood of sortedFoods) {
+          if (typeof planFood.id !== "number") continue;
+          const rowDeselect = `${selectedDate}:${slot.meal_slot_id}:${cat.macro_type}:${planFood.id}`;
+          if (deselectedMealCategoryKeys[rowDeselect]) continue;
+          const existing = findChoiceForPlanFoodRow(dayView?.choices, slot.meal_slot_id, planFood.id);
+          if (existing) continue;
 
-        const defaultFood = cat.recommended_foods[0];
-        if (!defaultFood || typeof defaultFood.id !== "number") continue;
-
-        logsToCreate.push({
-          macro_type: cat.macro_type,
-          food_option_id: defaultFood.id,
-          quantity: normalizeQuantityInstruction(cat.quantity_instruction),
-        });
+          logsToCreate.push({
+            macro_type: cat.macro_type,
+            food_option_id: planFood.id,
+            quantity: normalizeQuantityInstruction(cat.quantity_instruction),
+          });
+        }
       }
 
       try {
@@ -640,34 +815,64 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
     user,
   ]);
 
-  const openSwapDialog = useCallback((slot: V3MealSlotView) => {
-    const firstCat = slot.categories[0];
-    setSwapSlot(slot);
-    setSwapMacroType(firstCat?.macro_type ?? "protein");
-    const cat = firstCat ?? slot.categories[0];
-    const chosen = cat?.chosen_food ?? null;
-    const chosenId =
-      chosen?.source === "plan_food" && typeof chosen.food_option_id === "number" ? chosen.food_option_id : null;
-    setSwapSelectedFoodId(chosenId);
-    setSwapQuery("");
-    setSwapOpen(true);
-  }, []);
+  type SwapPickSource = "plan" | "bank";
 
-  const submitSwapFood = useCallback(
-    async (foodOptionId: number, quantityInstruction?: string | null) => {
-      if (!swapSlot) return;
+  const submitSwapPick = useCallback(
+    async (source: SwapPickSource, food: V3FoodOption, quantityInstruction?: string | null) => {
+      if (!swapSlot || typeof swapRowPlanFoodId !== "number" || typeof food.id !== "number") return;
+      const rowId = swapRowPlanFoodId;
+      const qty = normalizeQuantityInstruction(quantityInstruction);
       setSwapSaving(true);
       try {
-        await logPlanFood(swapSlot, swapMacroType, foodOptionId, quantityInstruction);
+        const existingRow = findChoiceForPlanFoodRow(dayView?.choices, swapSlot.meal_slot_id, rowId);
+        if (existingRow) {
+          await deleteMealLog(swapSlot.meal_slot_id, swapMacroType, rowId);
+        }
+
+        if (source === "plan") {
+          if (food.id === rowId) {
+            await logPlanFood(swapSlot, swapMacroType, food.id, qty);
+          } else {
+            const display = safeSwapDisplayName(getLocalizedFoodName(food));
+            const m = computeRecommendedDisplayMacros(food, qty);
+            await logRowEncodedSwap(swapSlot, swapMacroType, encodeRowPlanSwap(rowId, food.id, display), qty, {
+              calories: m.calories,
+              protein: m.protein,
+              carbs: m.carbs,
+              fat: m.fat,
+            });
+          }
+        } else {
+          const display = safeSwapDisplayName(getLocalizedFoodName(food));
+          const m = computeRecommendedDisplayMacros(food, qty);
+          await logRowEncodedSwap(swapSlot, swapMacroType, encodeRowBankSwap(rowId, food.id, display), qty, {
+            calories: m.calories,
+            protein: m.protein,
+            carbs: m.carbs,
+            fat: m.fat,
+          });
+        }
+
         setSwapOpen(false);
         setSwapSlot(null);
+        setSwapRowPlanFoodId(null);
         setSwapQuery("");
-        setSwapSelectedFoodId(null);
+        setSwapSelectedEntryKey(null);
       } finally {
         setSwapSaving(false);
       }
     },
-    [logPlanFood, swapMacroType, swapSlot]
+    [
+      computeRecommendedDisplayMacros,
+      deleteMealLog,
+      getLocalizedFoodName,
+      logPlanFood,
+      logRowEncodedSwap,
+      dayView?.choices,
+      swapMacroType,
+      swapRowPlanFoodId,
+      swapSlot,
+    ]
   );
 
   const totals = useMemo(() => dayView?.daily_macros, [dayView]);
@@ -807,227 +1012,289 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
                     <CardContent className="space-y-4">
                       <div className="space-y-4">
                         {(() => {
-                          const mealSlotCustomOverall =
-                            slot.categories.find((c) => {
-                              const ch = c.chosen_food;
-                              if (!ch) return false;
-                              return ch.food_option_id == null && Boolean((ch.custom_food_name ?? "").trim());
-                            })?.chosen_food ?? null;
+                          const overallCustomChoice = dayView?.choices.find(
+                            (c) =>
+                              c.meal_slot_id === slot.meal_slot_id &&
+                              c.food_option_id == null &&
+                              Boolean((c.custom_food_name ?? "").trim()) &&
+                              isOverallSlotCustomFoodName(c.custom_food_name)
+                          );
 
-                          const mealSlotCustomOverallMacroType =
-                            slot.categories.find((c) => {
-                              const ch = c.chosen_food;
-                              if (!ch) return false;
-                              return ch.food_option_id == null && Boolean((ch.custom_food_name ?? "").trim());
-                            })?.macro_type ?? null;
+                          const swapEntryKeyForRow = (
+                            planFood: V3FoodOption,
+                            rowChoice: V3ClientMealChoiceResponse | undefined
+                          ): string => {
+                            if (!rowChoice) return `p-${planFood.id}`;
+                            if (rowChoice.food_option_id === planFood.id) return `p-${planFood.id}`;
+                            const sw = parseRowSwapCustom(rowChoice.custom_food_name);
+                            if (sw?.kind === "plan") return `p-${sw.targetPlanFoodId}`;
+                            if (sw?.kind === "bank") return `b-${sw.bankId}`;
+                            return `p-${planFood.id}`;
+                          };
 
                           return slot.categories.map((cat) => {
-                            const deselectionKey = `${selectedDate}:${slot.meal_slot_id}:${cat.macro_type}`;
-                            const isDeselected = Boolean(deselectedMealCategoryKeys[deselectionKey]);
-                            const ownChosen = cat.chosen_food ?? null;
-                            const chosen = ownChosen ?? mealSlotCustomOverall;
-                            const isCustomChosen = Boolean(chosen && chosen.food_option_id == null);
+                            const planFoods = [...(cat.recommended_foods ?? [])].filter(
+                              (f): f is V3FoodOption & { id: number } => typeof f.id === "number"
+                            );
+                            planFoods.sort((a, b) => a.id - b.id);
 
-                            const quantityText = (() => {
-                            if (isCustomChosen && chosen?.quantity) return normalizeQuantityInstruction(chosen.quantity);
-                              if (mealSlotCustomOverall?.quantity) return normalizeQuantityInstruction(mealSlotCustomOverall.quantity);
-                              return normalizeQuantityInstruction(cat.quantity_instruction);
-                            })();
+                            const quantityText = normalizeQuantityInstruction(cat.quantity_instruction);
 
-                          const selectedPlanFood =
-                            ownChosen?.source === "plan_food" && typeof ownChosen.food_option_id === "number"
-                              ? cat.recommended_foods.find((f) => f.id === ownChosen.food_option_id) ?? cat.recommended_foods[0] ?? null
-                              : cat.recommended_foods[0] ?? null;
+                            const rowSummaries = planFoods.map((planFood) => {
+                              const rowChoice = findChoiceForPlanFoodRow(
+                                dayView?.choices,
+                                slot.meal_slot_id,
+                                planFood.id
+                              );
+                              const rowDeselectionKey = `${selectedDate}:${slot.meal_slot_id}:${cat.macro_type}:${planFood.id}`;
+                              const isDeselected = Boolean(deselectedMealCategoryKeys[rowDeselectionKey]);
 
-                          const displayMacros = (() => {
-                            if (chosen) {
-                              return {
-                                calories: chosen.display_calories ?? 0,
-                                protein: chosen.display_protein ?? 0,
-                                carbs: chosen.display_carbs ?? 0,
-                                fat: chosen.display_fat ?? 0,
+                              let displayName = getLocalizedFoodName(planFood);
+                              let displayMacros = {
+                                calories: 0,
+                                protein: 0,
+                                carbs: 0,
+                                fat: 0,
                               };
-                            }
-                              if (isDeselected) {
-                                return { calories: 0, protein: 0, carbs: 0, fat: 0 };
-                              }
-                            if (!selectedPlanFood) {
-                              return { calories: 0, protein: 0, carbs: 0, fat: 0 };
-                            }
-                            return computeRecommendedDisplayMacros(selectedPlanFood, quantityText);
-                          })();
 
-                          return (
-                            <div
-                              key={cat.macro_type}
-                              className="space-y-3 rounded-lg border bg-background/50 p-3"
-                              onTouchStart={(e) => {
-                                if (Boolean(completedMealSlotIds[slot.meal_slot_id])) return;
-                                if (e.touches.length !== 1) return;
-                                touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                                swipeDeletingRef.current = false;
-                              }}
-                              onTouchEnd={(e) => {
-                                if (Boolean(completedMealSlotIds[slot.meal_slot_id])) return;
-                                const start = touchStartRef.current;
-                                if (!start || swipeDeletingRef.current) return;
-                                if (e.changedTouches.length !== 1) return;
-
-                                const dx = e.changedTouches[0].clientX - start.x;
-                                const dy = e.changedTouches[0].clientY - start.y;
-
-                                const absDx = Math.abs(dx);
-                                const absDy = Math.abs(dy);
-
-                                // Horizontal swipe: mark as delete (mobile-first).
-                                if (absDx > 70 && absDy < 60) {
-                                  swipeDeletingRef.current = true;
-
-                                  const visibleIsCustom = Boolean(chosen && chosen.food_option_id == null);
-                                  if (visibleIsCustom) {
-                                    // Custom is treated as "overall", so deselect all macro categories for this meal slot.
-                                    if (mealSlotCustomOverallMacroType) {
-                                      void deleteMealLog(slot.meal_slot_id, mealSlotCustomOverallMacroType);
-                                    }
-                                    setDeselectedMealCategoryKeys((prev) => ({
-                                      ...prev,
-                                      [`${selectedDate}:${slot.meal_slot_id}:protein`]: true,
-                                      [`${selectedDate}:${slot.meal_slot_id}:carb`]: true,
-                                      [`${selectedDate}:${slot.meal_slot_id}:fat`]: true,
-                                    }));
-                                  } else {
-                                    // If nothing is logged yet, swipe should still remove the default selection for completion.
-                                    const macroTypeToDelete = cat.macro_type;
-                                    if (chosen) {
-                                      void deleteMealLog(slot.meal_slot_id, macroTypeToDelete);
-                                      setDeselectedMealCategoryKeys((prev) => ({ ...prev, [deselectionKey]: true }));
-                                    } else {
-                                      setDeselectedMealCategoryKeys((prev) => ({ ...prev, [deselectionKey]: true }));
-                                    }
-                                  }
+                              if (rowChoice) {
+                                const encoded = parseRowSwapCustom(rowChoice.custom_food_name);
+                                if (encoded) {
+                                  displayName = encoded.displayName;
+                                  displayMacros = {
+                                    calories: rowChoice.custom_calories ?? 0,
+                                    protein: rowChoice.custom_protein ?? 0,
+                                    carbs: rowChoice.custom_carbs ?? 0,
+                                    fat: rowChoice.custom_fat ?? 0,
+                                  };
+                                } else if (typeof rowChoice.food_option_id === "number") {
+                                  const targetFood =
+                                    cat.recommended_foods.find((f) => f.id === rowChoice.food_option_id) ?? planFood;
+                                  displayName =
+                                    rowChoice.food_option_id === planFood.id
+                                      ? getLocalizedFoodName(planFood)
+                                      : getLocalizedFoodName(targetFood);
+                                  displayMacros = computeRecommendedDisplayMacros(
+                                    targetFood,
+                                    rowChoice.quantity ?? quantityText
+                                  );
                                 }
+                              } else if (!isDeselected) {
+                                displayMacros = computeRecommendedDisplayMacros(planFood, quantityText);
+                              }
 
-                                touchStartRef.current = null;
-                                swipeDeletingRef.current = false;
-                              }}
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <h3 className="text-sm font-semibold">{macroLabel(t, cat.macro_type)}</h3>
-                                  <div className="mt-1 text-sm text-muted-foreground">
-                                    <span className="me-1">{t("meals.qty", "Qty")}:</span>
-                                    <span className="tabular-nums">{quantityText}</span>
+                              const hasLog = Boolean(rowChoice);
+
+                              return {
+                                planFood,
+                                rowChoice,
+                                rowDeselectionKey,
+                                isDeselected,
+                                displayName,
+                                displayMacros,
+                                hasLog,
+                              };
+                            });
+
+                            const categoryTotals = rowSummaries.reduce(
+                              (acc, r) => ({
+                                calories: acc.calories + r.displayMacros.calories,
+                                protein: acc.protein + r.displayMacros.protein,
+                                carbs: acc.carbs + r.displayMacros.carbs,
+                                fat: acc.fat + r.displayMacros.fat,
+                              }),
+                              { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                            );
+
+                            return (
+                              <div key={cat.macro_type} className="space-y-3 rounded-lg border bg-background/50 p-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <h3 className="text-sm font-semibold">{macroLabel(t, cat.macro_type)}</h3>
+                                    <div className="mt-1 text-sm text-muted-foreground">
+                                      <span className="me-1">{t("meals.qty", "Qty")}:</span>
+                                      <span className="tabular-nums">{quantityText}</span>
+                                    </div>
                                   </div>
+                                  <Badge variant="outline" className="shrink-0 tabular-nums">
+                                    {t("meals.plannedFoodsCount", "{{count}} foods", { count: planFoods.length })}
+                                  </Badge>
                                 </div>
 
-                                {chosen ? (
-                                  <Badge variant="default" className="shrink-0">
-                                    {isCustomChosen ? t("meals.custom", "Custom") : t("meals.eaten", "Eaten")}
-                                    <span className="ms-1 tabular-nums">
-                                      {chosen.quantity ? parseGrams(chosen.quantity).toFixed(0) : 0}g
-                                    </span>
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="secondary" className="shrink-0">
-                                    {t("meals.remaining", "Remaining")}
-                                  </Badge>
+                                {rowSummaries.map(
+                                  ({ planFood, rowChoice, rowDeselectionKey, isDeselected, displayName, displayMacros, hasLog }) => (
+                                    <div
+                                      key={planFood.id}
+                                      className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3"
+                                      onTouchStart={(e) => {
+                                        if (Boolean(completedMealSlotIds[slot.meal_slot_id])) return;
+                                        if (e.touches.length !== 1) return;
+                                        touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                                        swipeDeletingRef.current = false;
+                                      }}
+                                      onTouchEnd={(e) => {
+                                        if (Boolean(completedMealSlotIds[slot.meal_slot_id])) return;
+                                        const start = touchStartRef.current;
+                                        if (!start || swipeDeletingRef.current) return;
+                                        if (e.changedTouches.length !== 1) return;
+
+                                        const dx = e.changedTouches[0].clientX - start.x;
+                                        const dy = e.changedTouches[0].clientY - start.y;
+                                        const absDx = Math.abs(dx);
+                                        const absDy = Math.abs(dy);
+
+                                        if (absDx > 70 && absDy < 60) {
+                                          swipeDeletingRef.current = true;
+
+                                          if (overallCustomChoice) {
+                                            void deleteMealLog(slot.meal_slot_id, "protein");
+                                            setDeselectedMealCategoryKeys((prev) => {
+                                              const next = { ...prev };
+                                              const prefix = `${selectedDate}:${slot.meal_slot_id}:`;
+                                              Object.keys(next).forEach((k) => {
+                                                if (k.startsWith(prefix)) delete next[k];
+                                              });
+                                              return next;
+                                            });
+                                          } else if (hasLog) {
+                                            void deleteMealLog(slot.meal_slot_id, cat.macro_type, planFood.id);
+                                            setDeselectedMealCategoryKeys((prev) => ({
+                                              ...prev,
+                                              [rowDeselectionKey]: true,
+                                            }));
+                                          } else {
+                                            setDeselectedMealCategoryKeys((prev) => ({
+                                              ...prev,
+                                              [rowDeselectionKey]: true,
+                                            }));
+                                          }
+                                        }
+
+                                        touchStartRef.current = null;
+                                        swipeDeletingRef.current = false;
+                                      }}
+                                    >
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                          <div className="break-words text-base font-semibold leading-snug">
+                                            {isDeselected ? "" : hasLog ? displayName : getLocalizedFoodName(planFood)}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          {hasLog ? (
+                                            <Badge variant="default" className="shrink-0">
+                                              {t("meals.eaten", "Eaten")}
+                                              <span className="ms-1 tabular-nums">
+                                                {(rowChoice?.quantity
+                                                  ? parseGrams(rowChoice.quantity)
+                                                  : parseGrams(quantityText)
+                                                ).toFixed(0)}
+                                                g
+                                              </span>
+                                            </Badge>
+                                          ) : isDeselected ? null : (
+                                            <Badge variant="secondary" className="shrink-0">
+                                              {t("meals.remaining", "Remaining")}
+                                            </Badge>
+                                          )}
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 shrink-0"
+                                            aria-label={t("meals.swapFood", "Swap food")}
+                                            disabled={loading || Boolean(completedMealSlotIds[slot.meal_slot_id])}
+                                            onClick={() => {
+                                              if (Boolean(completedMealSlotIds[slot.meal_slot_id])) return;
+                                              setSwapSlot(slot);
+                                              setSwapMacroType(cat.macro_type);
+                                              setSwapRowPlanFoodId(planFood.id);
+                                              setSwapSelectedEntryKey(swapEntryKeyForRow(planFood, rowChoice));
+                                              setSwapQuery("");
+                                              setSwapOpen(true);
+                                            }}
+                                          >
+                                            <ArrowLeftRight className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                                        <div>
+                                          <span className="text-muted-foreground">{t("meals.calories", "Calories")}</span>{" "}
+                                          <span className="font-semibold tabular-nums">{Math.round(displayMacros.calories)}</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-muted-foreground">{t("meals.protein", "Protein")}</span>{" "}
+                                          <span className="font-semibold tabular-nums">{Math.round(displayMacros.protein)}g</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-muted-foreground">{t("meals.carbs", "Carbs")}</span>{" "}
+                                          <span className="font-semibold tabular-nums">{Math.round(displayMacros.carbs)}g</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-muted-foreground">{t("meals.fats", "Fats")}</span>{" "}
+                                          <span className="font-semibold tabular-nums">{Math.round(displayMacros.fat)}g</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
                                 )}
-                              </div>
 
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="break-words text-base font-semibold leading-snug">
-                                  {chosen
-                                    ? isCustomChosen
-                                      ? chosen.custom_food_name || t("meals.custom", "Custom")
-                                      : selectedPlanFood
-                                      ? getLocalizedFoodName(selectedPlanFood)
-                                      : ""
-                                      : isDeselected
-                                      ? ""
-                                      : selectedPlanFood
-                                      ? getLocalizedFoodName(selectedPlanFood)
-                                      : ""}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-border/40">
+                                  {(
+                                    [
+                                      {
+                                        label: t("meals.calories", "Calories"),
+                                        value: categoryTotals.calories,
+                                        color: "bg-blue-500",
+                                        percent: totals
+                                          ? clampToPercent((categoryTotals.calories / (totals.targets.calories || 1)) * 100)
+                                          : 0,
+                                        unit: "",
+                                      },
+                                      {
+                                        label: t("meals.protein", "Protein"),
+                                        value: categoryTotals.protein,
+                                        color: "bg-emerald-500",
+                                        percent: totals
+                                          ? clampToPercent((categoryTotals.protein / (totals.targets.protein || 1)) * 100)
+                                          : 0,
+                                        unit: "g",
+                                      },
+                                      {
+                                        label: t("meals.carbs", "Carbs"),
+                                        value: categoryTotals.carbs,
+                                        color: "bg-red-500",
+                                        percent: totals
+                                          ? clampToPercent((categoryTotals.carbs / (totals.targets.carbs || 1)) * 100)
+                                          : 0,
+                                        unit: "g",
+                                      },
+                                      {
+                                        label: t("meals.fats", "Fats"),
+                                        value: categoryTotals.fat,
+                                        color: "bg-fuchsia-500",
+                                        percent: totals
+                                          ? clampToPercent((categoryTotals.fat / (totals.targets.fat || 1)) * 100)
+                                          : 0,
+                                        unit: "g",
+                                      },
+                                    ] as const
+                                  ).map((m) => (
+                                    <div key={m.label} className="rounded-md bg-background/60 p-2">
+                                      <div className="text-xs text-muted-foreground">{m.label}</div>
+                                      <div className="text-lg font-semibold tabular-nums leading-tight">
+                                        {Math.round(m.value)}
+                                        {m.unit}
+                                      </div>
+                                      <div className="mt-1 h-2 rounded bg-muted">
+                                        <div className={`${m.color} h-2 rounded`} style={{ width: `${m.percent}%` }} />
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 shrink-0"
-                                  aria-label={t("meals.swapFood", "Swap food")}
-                                  disabled={loading || Boolean(completedMealSlotIds[slot.meal_slot_id])}
-                                  onClick={() => {
-                                    if (Boolean(completedMealSlotIds[slot.meal_slot_id])) return;
-                                    setSwapSlot(slot);
-                                    setSwapMacroType(cat.macro_type);
-                                    const chosenForMacro = cat.chosen_food;
-                                    const chosenId =
-                                      typeof chosenForMacro?.food_option_id === "number"
-                                        ? chosenForMacro.food_option_id
-                                        : null;
-                                    setSwapSelectedFoodId(chosenId);
-                                    setSwapQuery("");
-                                    setSwapOpen(true);
-                                  }}
-                                >
-                                  <ArrowLeftRight className="h-4 w-4" />
-                                </Button>
                               </div>
-
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                {(
-                                  [
-                                    {
-                                      label: t("meals.calories", "Calories"),
-                                      value: displayMacros.calories,
-                                      color: "bg-blue-500",
-                                      percent: totals
-                                        ? clampToPercent((displayMacros.calories / (totals.targets.calories || 1)) * 100)
-                                        : 0,
-                                      unit: "",
-                                    },
-                                    {
-                                      label: t("meals.protein", "Protein"),
-                                      value: displayMacros.protein,
-                                      color: "bg-emerald-500",
-                                      percent: totals
-                                        ? clampToPercent((displayMacros.protein / (totals.targets.protein || 1)) * 100)
-                                        : 0,
-                                      unit: "g",
-                                    },
-                                    {
-                                      label: t("meals.carbs", "Carbs"),
-                                      value: displayMacros.carbs,
-                                      color: "bg-red-500",
-                                      percent: totals
-                                        ? clampToPercent((displayMacros.carbs / (totals.targets.carbs || 1)) * 100)
-                                        : 0,
-                                      unit: "g",
-                                    },
-                                    {
-                                      label: t("meals.fats", "Fats"),
-                                      value: displayMacros.fat,
-                                      color: "bg-fuchsia-500",
-                                      percent: totals ? clampToPercent((displayMacros.fat / (totals.targets.fat || 1)) * 100) : 0,
-                                      unit: "g",
-                                    },
-                                  ] as const
-                                ).map((m) => (
-                                  <div key={m.label} className="rounded-md bg-background/60 p-2">
-                                    <div className="text-xs text-muted-foreground">{m.label}</div>
-                                    <div className="text-lg font-semibold tabular-nums leading-tight">
-                                      {Math.round(m.value)}
-                                      {m.unit}
-                                    </div>
-                                    <div className="mt-1 h-2 rounded bg-muted">
-                                      <div className={`${m.color} h-2 rounded`} style={{ width: `${m.percent}%` }} />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-
-                              {/* Compact UI: switching foods happens via the meal-slot "Swap food" dialog. */}
-                            </div>
-                          );
+                            );
                           });
                         })()}
                       </div>
@@ -1196,7 +1463,16 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
             </DialogContent>
           </Dialog>
 
-          <Dialog open={swapOpen} onOpenChange={setSwapOpen}>
+          <Dialog
+            open={swapOpen}
+            onOpenChange={(open) => {
+              setSwapOpen(open);
+              if (!open) {
+                setSwapRowPlanFoodId(null);
+                setSwapSelectedEntryKey(null);
+              }
+            }}
+          >
             <DialogContent className="sm:max-w-md w-full max-w-md mx-auto rounded-xl overflow-hidden">
               <DialogHeader>
                 <DialogTitle>{t("meals.foodBank", "Food bank")}</DialogTitle>
@@ -1209,19 +1485,14 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
                 </div>
 
                 {(() => {
-                  if (!swapSlot) return null;
+                  if (!swapSlot || typeof swapRowPlanFoodId !== "number") return null;
                   const slotCompleted = Boolean(completedMealSlotIds[swapSlot.meal_slot_id]);
-                  const planChosen = swapSlot.categories.find((c) => c.macro_type === swapMacroType)?.chosen_food ?? null;
-                  const customChosenMacroType =
-                    swapSlot.categories.find((c) => {
-                      const ch = c.chosen_food;
-                      if (!ch) return false;
-                      return ch.food_option_id == null && Boolean((ch.custom_food_name ?? "").trim());
-                    })?.macro_type ?? null;
-
-                  const deletionMacroType = typeof planChosen?.food_option_id === "number" ? swapMacroType : customChosenMacroType;
-
-                  if (!deletionMacroType) return null;
+                  const rowChoice = findChoiceForPlanFoodRow(
+                    dayView?.choices,
+                    swapSlot.meal_slot_id,
+                    swapRowPlanFoodId
+                  );
+                  if (!rowChoice) return null;
 
                   return (
                     <Button
@@ -1230,20 +1501,7 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
                       disabled={swapSaving || slotCompleted}
                       onClick={async () => {
                         if (slotCompleted) return;
-                        if (typeof planChosen?.food_option_id === "number") {
-                          setDeselectedMealCategoryKeys((prev) => ({
-                            ...prev,
-                            [`${selectedDate}:${swapSlot.meal_slot_id}:${swapMacroType}`]: true,
-                          }));
-                        } else {
-                          setDeselectedMealCategoryKeys((prev) => ({
-                            ...prev,
-                            [`${selectedDate}:${swapSlot.meal_slot_id}:protein`]: true,
-                            [`${selectedDate}:${swapSlot.meal_slot_id}:carb`]: true,
-                            [`${selectedDate}:${swapSlot.meal_slot_id}:fat`]: true,
-                          }));
-                        }
-                        await deleteMealLog(swapSlot.meal_slot_id, deletionMacroType);
+                        await deleteMealLog(swapSlot.meal_slot_id, swapMacroType, swapRowPlanFoodId);
                         setSwapOpen(false);
                       }}
                     >
@@ -1270,42 +1528,56 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
                 <div className="max-h-[45vh] overflow-auto rounded-lg border bg-background/60">
                   {(() => {
                     const category = swapSlot?.categories.find((c) => c.macro_type === swapMacroType) ?? null;
-                    const planFoods = category?.recommended_foods ?? [];
-                    const foodsSource =
-                      swapCatalogFoods.length > 0 ? swapCatalogFoods : planFoods;
-                    const foods = [...foodsSource].sort((a, b) =>
-                      getLocalizedFoodName(a).localeCompare(getLocalizedFoodName(b), isRtlHe ? "he" : "en", {
+                    const planFoods =
+                      category?.recommended_foods?.filter((f): f is V3FoodOption & { id: number } => typeof f.id === "number") ??
+                      [];
+                    type SwapListEntry = { key: string; source: SwapPickSource; food: V3FoodOption & { id: number } };
+                    const planEntries: SwapListEntry[] = planFoods.map((f) => ({
+                      key: `p-${f.id}`,
+                      source: "plan",
+                      food: f,
+                    }));
+                    const bankEntries: SwapListEntry[] = swapCatalogFoods
+                      .filter((f): f is V3FoodOption & { id: number } => typeof f.id === "number")
+                      .map((f) => ({ key: `b-${f.id}`, source: "bank", food: f }));
+                    const merged = [...planEntries, ...bankEntries].sort((a, b) =>
+                      getLocalizedFoodName(a.food).localeCompare(getLocalizedFoodName(b.food), isRtlHe ? "he" : "en", {
                         sensitivity: "base",
                       })
                     );
                     const quantityInstruction = category?.quantity_instruction ?? null;
                     const q = swapQuery.trim().toLowerCase();
 
-                    if (swapCatalogLoading) {
-                      return (
-                        <div className="p-4 text-sm text-muted-foreground text-center">{t("common.loading")}</div>
-                      );
-                    }
+                    const filtered = !q
+                      ? merged
+                      : merged.filter((entry) => {
+                          const label =
+                            (isRtlHe ? entry.food.name_hebrew ?? entry.food.name : entry.food.name ?? "") ?? "";
+                          return label.toLowerCase().includes(q);
+                        });
 
-                    const filtered =
-                      !q
-                        ? foods
-                        : foods.filter((f) => {
-                            const label = (isRtlHe ? f.name_hebrew ?? f.name : f.name ?? "") ?? "";
-                            return label.toLowerCase().includes(q);
-                          });
-
-                    if (filtered.length === 0) {
+                    if (filtered.length === 0 && !swapCatalogLoading) {
                       return (
                         <div className="p-3 text-sm text-muted-foreground">{t("meals.noResults", "No results")}</div>
                       );
                     }
 
+                    if (filtered.length === 0 && swapCatalogLoading) {
+                      return (
+                        <div className="p-4 text-sm text-muted-foreground text-center">{t("common.loading")}</div>
+                      );
+                    }
+
                     return (
                       <div className="flex flex-col p-1 gap-1">
-                        {filtered.map((food) => {
-                          if (typeof food.id !== "number") return null;
-                          const isSelected = swapSelectedFoodId === food.id;
+                        {swapCatalogLoading ? (
+                          <div className="px-2 py-1 text-xs text-muted-foreground text-center">
+                            {t("meals.loadingMealBank", "Loading full meal bank…")}
+                          </div>
+                        ) : null}
+                        {filtered.map((entry) => {
+                          const { food, key, source } = entry;
+                          const isSelected = swapSelectedEntryKey === key;
                           const display = computeRecommendedDisplayMacros(food, quantityInstruction);
                           const macroValue =
                             swapMacroType === "protein"
@@ -1316,16 +1588,23 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
 
                           return (
                             <Button
-                              key={food.id}
+                              key={key}
                               type="button"
                               variant={isSelected ? "default" : "ghost"}
                               className="justify-start rounded-lg px-3 h-auto py-2 w-full"
-                              onClick={() => submitSwapFood(food.id, quantityInstruction)}
+                              onClick={() => void submitSwapPick(source, food, quantityInstruction)}
                               disabled={swapSaving || Boolean(completedMealSlotIds[swapSlot?.meal_slot_id ?? -1])}
                             >
                               <div className="flex flex-col w-full items-start gap-1">
                                 <div className="w-full flex items-center justify-between gap-2">
-                                  <span className="truncate">{getLocalizedFoodName(food)}</span>
+                                  <span className="truncate">
+                                    {source === "bank" ? (
+                                      <span className="me-1 text-xs text-muted-foreground font-normal">
+                                        {t("meals.bank", "Bank")}
+                                      </span>
+                                    ) : null}
+                                    {getLocalizedFoodName(food)}
+                                  </span>
                                   {isSelected ? <Check className="h-4 w-4 shrink-0" /> : null}
                                 </div>
                                 <div className="text-xs text-muted-foreground w-full">

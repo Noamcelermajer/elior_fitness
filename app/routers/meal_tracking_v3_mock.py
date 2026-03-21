@@ -9,10 +9,12 @@ Purpose:
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter
 
+from app.schemas.meal_system import ClientMealChoiceResponse
 from app.schemas.meal_tracking_v3 import (
     V3FoodCatalogItemResponse,
     V3CompleteMealPlanCreate,
@@ -243,6 +245,18 @@ def _category_key(meal_slot_id: int, macro_type: MacroType) -> str:
     return f"{meal_slot_id}:{macro_type}"
 
 
+def _mock_log_storage_key(payload: V3MealLogCreateRequest) -> str:
+    """
+    One log per (slot, macro, plan food or custom payload) so multiple plan foods per category work.
+    """
+    slot_id = payload.meal_slot_id
+    macro = payload.macro_type
+    if payload.food_option_id is not None:
+        return f"{slot_id}:{macro}:f:{payload.food_option_id}"
+    custom = (payload.custom_food_name or "").strip()
+    return f"{slot_id}:{macro}:c:{custom}"
+
+
 @router.get("/catalog", response_model=List[V3FoodCatalogItemResponse])
 def get_mock_catalog(
     macro_type: Optional[MacroType] = None,
@@ -336,24 +350,56 @@ def get_mock_day_view(date: str):
     ]
 
     slots: list = []
+    logs_for_date = _MOCK_LOGS_BY_DATE.get(date_str, {})
+
+    choices_payload: List[ClientMealChoiceResponse] = []
+    for idx, (_k, log) in enumerate(logs_for_date.items(), start=1):
+        dt = datetime.fromisoformat(str(log.date).replace("Z", "+00:00"))
+        if dt.tzinfo is not None:
+            dt = dt.replace(tzinfo=None)
+        choices_payload.append(
+            ClientMealChoiceResponse(
+                id=idx,
+                client_id=1,
+                food_option_id=log.food_option_id,
+                meal_slot_id=log.meal_slot_id,
+                date=dt,
+                quantity=log.quantity,
+                photo_path=log.photo_path,
+                is_approved=None,
+                trainer_comment=None,
+                created_at=datetime.utcnow(),
+                custom_food_name=log.custom_food_name,
+                custom_calories=log.custom_calories,
+                custom_protein=log.custom_protein,
+                custom_carbs=log.custom_carbs,
+                custom_fat=log.custom_fat,
+            )
+        )
+
     for slot in slot_defs:
         slot_id = slot["id"]
         categories: list = []
         for macro_type in [MacroType.PROTEIN, MacroType.CARB, MacroType.FAT]:
             recommended_foods = [f for f in _MOCK_CATALOG if f.macro_type == macro_type]
 
-            key = _category_key(slot_id, macro_type)
+            prefix = f"{slot_id}:{macro_type}:"
+            first_log = None
+            for k, lg in logs_for_date.items():
+                if k.startswith(prefix):
+                    first_log = lg
+                    break
+
             chosen_food: V3ChosenFood | None = None
-            log = _MOCK_LOGS_BY_DATE.get(date_str, {}).get(key)
-            if log:
-                macros = _compute_choice_macros(log)
+            if first_log:
+                macros = _compute_choice_macros(first_log)
                 chosen_food = V3ChosenFood(
                     source="plan_food",
-                    meal_slot_id=log.meal_slot_id,
-                    macro_type=log.macro_type,
-                    food_option_id=log.food_option_id,
-                    custom_food_name=log.custom_food_name,
-                    quantity=log.quantity,
+                    meal_slot_id=first_log.meal_slot_id,
+                    macro_type=first_log.macro_type,
+                    food_option_id=first_log.food_option_id,
+                    custom_food_name=first_log.custom_food_name,
+                    quantity=first_log.quantity,
                     display_calories=round(macros[0], 1),
                     display_protein=round(macros[1], 1),
                     display_carbs=round(macros[2], 1),
@@ -387,7 +433,7 @@ def get_mock_day_view(date: str):
         meal_plan=None,
         slots=slots,
         daily_macros=daily_macros,
-        choices=[],
+        choices=choices_payload,
     )
 
 
@@ -402,7 +448,7 @@ def create_mock_log(payload: V3MealLogCreateRequest):
     if date_str not in _MOCK_LOGS_BY_DATE:
         _MOCK_LOGS_BY_DATE[date_str] = {}
 
-    key = _category_key(payload.meal_slot_id, payload.macro_type)
+    key = _mock_log_storage_key(payload)
     _MOCK_LOGS_BY_DATE[date_str][key] = payload
 
     # Stateless response; UI will refetch `/day` for totals.
@@ -420,7 +466,15 @@ def delete_mock_log(payload: V3MealLogCreateRequest):
     if not logs_for_date:
         return {"ok": True}
 
-    key = _category_key(payload.meal_slot_id, payload.macro_type)
+    # Legacy category-wide clear (no specific food/custom key in payload).
+    if payload.food_option_id is None and not (payload.custom_food_name or "").strip():
+        prefix = f"{payload.meal_slot_id}:{payload.macro_type}:"
+        for k in list(logs_for_date.keys()):
+            if k.startswith(prefix):
+                logs_for_date.pop(k, None)
+        return {"ok": True}
+
+    key = _mock_log_storage_key(payload)
     logs_for_date.pop(key, None)
     return {"ok": True}
 

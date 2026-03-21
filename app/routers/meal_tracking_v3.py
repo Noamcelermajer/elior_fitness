@@ -112,6 +112,20 @@ def get_food_catalog(
 
     if current_user.role in {UserRole.TRAINER, UserRole.ADMIN} and include_public:
         query = query.filter((MealBank.is_public == True) | (MealBank.created_by == current_user.id))  # noqa
+    elif current_user.role == UserRole.CLIENT and include_public:
+        # Trainees see public bank items plus their trainer's private meal-bank entries.
+        trainer_id: Optional[int] = None
+        active_plan = (
+            db.query(MealPlanV2)
+            .filter(MealPlanV2.client_id == current_user.id, MealPlanV2.is_active == True)
+            .first()
+        )
+        if active_plan:
+            trainer_id = active_plan.trainer_id
+        if trainer_id is not None:
+            query = query.filter((MealBank.is_public == True) | (MealBank.created_by == trainer_id))  # noqa
+        else:
+            query = query.filter(MealBank.is_public == True)
     elif include_public:
         query = query.filter(MealBank.is_public == True)
 
