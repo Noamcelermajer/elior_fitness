@@ -1,9 +1,12 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Layout from "../components/Layout";
 import { MealMenuV3 } from "./SandboxMealsV3";
 import { useAuth } from "../contexts/AuthContext";
 
+/**
+ * Production trainee meals: same component tree as `/sandbox/meals-v3` (real API).
+ * `MealMenuV3` wraps itself in `Layout` — do not add a second Layout here.
+ */
 const MealsPageV3 = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -22,11 +25,7 @@ const MealsPageV3 = () => {
     return null;
   }
 
-  return (
-    <Layout currentPage="meals">
-      <MealMenuV3 mode="real" embedded />
-    </Layout>
-  );
+  return <MealMenuV3 mode="real" />;
 };
 
 export default MealsPageV3;

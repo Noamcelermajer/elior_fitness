@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Layout from "../components/Layout";
 import { API_BASE_URL } from "../config/api";
-import { ArrowLeftRight, ChevronLeft, ChevronRight, MessageSquare, Plus, Trash2 } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronLeft, ChevronRight, MessageSquare, Plus, Trash2 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -1199,73 +1199,75 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
           <Dialog open={swapOpen} onOpenChange={setSwapOpen}>
             <DialogContent className="sm:max-w-md w-full max-w-md mx-auto rounded-xl overflow-hidden">
               <DialogHeader>
-                <DialogTitle>{t("weeklyMeals.selectFood", "Select food")}</DialogTitle>
-                <DialogDescription className="text-start">
-                  {t("meals.chooseCategory", "Category")}: {macroLabel(t, swapMacroType)}
-                </DialogDescription>
+                <DialogTitle>{t("meals.foodBank", "Food bank")}</DialogTitle>
               </DialogHeader>
 
-              {(() => {
-                if (!swapSlot) return null;
-                const slotCompleted = Boolean(completedMealSlotIds[swapSlot.meal_slot_id]);
-                const planChosen = swapSlot.categories.find((c) => c.macro_type === swapMacroType)?.chosen_food ?? null;
-                const customChosenMacroType =
-                  swapSlot.categories.find((c) => {
-                    const ch = c.chosen_food;
-                    if (!ch) return false;
-                    return ch.food_option_id == null && Boolean((ch.custom_food_name ?? "").trim());
-                  })?.macro_type ?? null;
+              <div className="space-y-4">
+                <div className="rounded-md border bg-background/60 p-3">
+                  <div className="text-sm text-muted-foreground">{t("meals.chooseCategory", "Category")}</div>
+                  <div className="text-base font-semibold mt-1">{macroLabel(t, swapMacroType)}</div>
+                </div>
 
-                const deletionMacroType = typeof planChosen?.food_option_id === "number" ? swapMacroType : customChosenMacroType;
+                {(() => {
+                  if (!swapSlot) return null;
+                  const slotCompleted = Boolean(completedMealSlotIds[swapSlot.meal_slot_id]);
+                  const planChosen = swapSlot.categories.find((c) => c.macro_type === swapMacroType)?.chosen_food ?? null;
+                  const customChosenMacroType =
+                    swapSlot.categories.find((c) => {
+                      const ch = c.chosen_food;
+                      if (!ch) return false;
+                      return ch.food_option_id == null && Boolean((ch.custom_food_name ?? "").trim());
+                    })?.macro_type ?? null;
 
-                if (!deletionMacroType) return null;
+                  const deletionMacroType = typeof planChosen?.food_option_id === "number" ? swapMacroType : customChosenMacroType;
 
-                return (
-                  <Button
-                    variant="destructive"
-                    className="w-full"
-                    disabled={swapSaving || slotCompleted}
-                    onClick={async () => {
-                      if (slotCompleted) return;
-                      if (typeof planChosen?.food_option_id === "number") {
-                        setDeselectedMealCategoryKeys((prev) => ({
-                          ...prev,
-                          [`${selectedDate}:${swapSlot.meal_slot_id}:${swapMacroType}`]: true,
-                        }));
-                      } else {
-                        setDeselectedMealCategoryKeys((prev) => ({
-                          ...prev,
-                          [`${selectedDate}:${swapSlot.meal_slot_id}:protein`]: true,
-                          [`${selectedDate}:${swapSlot.meal_slot_id}:carb`]: true,
-                          [`${selectedDate}:${swapSlot.meal_slot_id}:fat`]: true,
-                        }));
-                      }
-                      await deleteMealLog(swapSlot.meal_slot_id, deletionMacroType);
-                      setSwapOpen(false);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 me-2" />
-                    {t("common.delete", "Delete")}
-                  </Button>
-                );
-              })()}
+                  if (!deletionMacroType) return null;
 
-              <div className="space-y-3">
+                  return (
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      disabled={swapSaving || slotCompleted}
+                      onClick={async () => {
+                        if (slotCompleted) return;
+                        if (typeof planChosen?.food_option_id === "number") {
+                          setDeselectedMealCategoryKeys((prev) => ({
+                            ...prev,
+                            [`${selectedDate}:${swapSlot.meal_slot_id}:${swapMacroType}`]: true,
+                          }));
+                        } else {
+                          setDeselectedMealCategoryKeys((prev) => ({
+                            ...prev,
+                            [`${selectedDate}:${swapSlot.meal_slot_id}:protein`]: true,
+                            [`${selectedDate}:${swapSlot.meal_slot_id}:carb`]: true,
+                            [`${selectedDate}:${swapSlot.meal_slot_id}:fat`]: true,
+                          }));
+                        }
+                        await deleteMealLog(swapSlot.meal_slot_id, deletionMacroType);
+                        setSwapOpen(false);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 me-2" />
+                      {t("common.delete", "Delete")}
+                    </Button>
+                  );
+                })()}
+
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground" htmlFor="swapSearch">
-                    {t("weeklyMeals.search", "Search")}
+                  <label className="text-sm font-medium" htmlFor="swapSearch">
+                    {t("meals.searchFood", "Search food")}
                   </label>
                   <Input
                     ref={swapSearchInputRef}
                     id="swapSearch"
                     value={swapQuery}
                     onChange={(e) => setSwapQuery(e.target.value)}
-                    placeholder={t("weeklyMeals.searchPlaceholder", "Type to search...")}
+                    placeholder={t("meals.searchPlaceholder", "Type to search...")}
                     dir={isRtlHe ? "rtl" : "ltr"}
                   />
                 </div>
 
-                <div className="max-h-[50vh] overflow-auto rounded-lg border bg-background/60">
+                <div className="max-h-[45vh] overflow-auto rounded-lg border bg-background/60">
                   {(() => {
                     const category = swapSlot?.categories.find((c) => c.macro_type === swapMacroType) ?? null;
                     const planFoods = category?.recommended_foods ?? [];
@@ -1295,39 +1297,40 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
 
                     if (filtered.length === 0) {
                       return (
-                        <div className="p-3 text-sm text-muted-foreground">
-                          {t("weeklyMeals.noResults", "No results")}
-                        </div>
+                        <div className="p-3 text-sm text-muted-foreground">{t("meals.noResults", "No results")}</div>
                       );
                     }
 
                     return (
-                      <div className="flex flex-col divide-y">
+                      <div className="flex flex-col p-1 gap-1">
                         {filtered.map((food) => {
                           if (typeof food.id !== "number") return null;
                           const isSelected = swapSelectedFoodId === food.id;
-                          const name = isRtlHe ? food.name_hebrew ?? food.name : food.name;
+                          const display = computeRecommendedDisplayMacros(food, quantityInstruction);
+                          const macroValue =
+                            swapMacroType === "protein"
+                              ? display.protein
+                              : swapMacroType === "carb"
+                                ? display.carbs
+                                : display.fat;
+
                           return (
                             <Button
                               key={food.id}
                               type="button"
                               variant={isSelected ? "default" : "ghost"}
-                              className="justify-start rounded-none px-3 py-2 w-full h-auto"
+                              className="justify-start rounded-lg px-3 h-auto py-2 w-full"
                               onClick={() => submitSwapFood(food.id, quantityInstruction)}
                               disabled={swapSaving || Boolean(completedMealSlotIds[swapSlot?.meal_slot_id ?? -1])}
                             >
-                              <div className="flex flex-col w-full items-start">
-                                <div className="flex items-center justify-between gap-2 w-full">
-                                  <span className="truncate text-sm font-semibold">{name}</span>
-                                  {isSelected ? (
-                                    <Badge variant="outline">{t("weeklyMeals.selected", "Selected")}</Badge>
-                                  ) : null}
+                              <div className="flex flex-col w-full items-start gap-1">
+                                <div className="w-full flex items-center justify-between gap-2">
+                                  <span className="truncate">{getLocalizedFoodName(food)}</span>
+                                  {isSelected ? <Check className="h-4 w-4 shrink-0" /> : null}
                                 </div>
-                                <div className="text-xs text-muted-foreground tabular-nums">
-                                  {t("meals.calories", "Calories")}: {food.calories ?? 0} ·{" "}
-                                  {t("meals.protein", "Protein")}: {food.protein ?? 0}g ·{" "}
-                                  {t("meals.carbs", "Carbs")}: {food.carbs ?? 0}g ·{" "}
-                                  {t("meals.fats", "Fats")}: {food.fat ?? 0}g
+                                <div className="text-xs text-muted-foreground w-full">
+                                  {t("meals.calories", "Calories")}: {Math.round(display.calories)} ·{" "}
+                                  {macroLabel(t, swapMacroType)}: {Math.round(macroValue)}g
                                 </div>
                               </div>
                             </Button>
@@ -1338,16 +1341,9 @@ export const MealMenuV3: React.FC<MealMenuV3Props> = ({ mode = "real", embedded 
                   })()}
                 </div>
 
-                <div className="flex justify-end">
-                  <Button
-                    variant="outline"
-                    onClick={() => setSwapOpen(false)}
-                    disabled={swapSaving}
-                    className="w-full sm:w-auto"
-                  >
-                    {t("common.cancel", "Cancel")}
-                  </Button>
-                </div>
+                <Button variant="outline" className="w-full" onClick={() => setSwapOpen(false)} disabled={swapSaving}>
+                  {t("common.cancel", "Cancel")}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
