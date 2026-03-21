@@ -5,7 +5,6 @@ import { NotificationBell } from './NotificationBell';
 import LanguageSelector from './LanguageSelector';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
-import { useFeatures } from '../contexts/FeaturesContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -39,7 +38,6 @@ const LogoBadge = ({ variant }: { variant: 'mobile' | 'desktop' }) => {
 const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const { user, logout } = useAuth();
-  const { mealsV3Enabled, featuresLoaded } = useFeatures();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
@@ -58,18 +56,13 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
   ] : [
     { id: 'dashboard', label: t('navigation.dashboard'), icon: Home, href: '/' },
     { id: 'meals', label: t('navigation.meals'), icon: Utensils, href: '/meals' },
-    { id: 'meals-v3', label: t('navigation.mealsV3', 'Meals V3'), icon: Utensils, href: '/meals-v3' },
     { id: 'training', label: t('navigation.training'), icon: Target, href: '/training' }, 
     { id: 'progress', label: t('navigation.progress'), icon: TrendingUp, href: '/progress' },
     { id: 'chat', label: t('navigation.chat'), icon: MessageSquare, href: '/chat' }
   ];
 
-  let itemsForNav = baseNavigationItems;
-  if (!isAdmin && !isTrainer && featuresLoaded && mealsV3Enabled) {
-    itemsForNav = itemsForNav.filter((item) => item.id !== "meals-v3");
-  }
   const navigationItems =
-    i18n.language === "he" ? [...itemsForNav].reverse() : itemsForNav;
+    i18n.language === "he" ? [...baseNavigationItems].reverse() : baseNavigationItems;
 
   const handleNavigation = (href: string) => {
     navigate(href);

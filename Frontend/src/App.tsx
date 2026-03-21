@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -42,12 +42,28 @@ import SandboxMealsV3 from './pages/SandboxMealsV3';
 import TrainerWeeklyMealsPlannerV3 from './pages/TrainerWeeklyMealsPlannerV3';
 import './i18n/config';
 import { FeaturesProvider, useFeatures } from "./contexts/FeaturesContext";
+import Layout from "./components/Layout";
 
 const queryClient = new QueryClient();
 
-const AppRoutes = () => {
-  const { mealsV3Enabled } = useFeatures();
+const MealsRouteSwitch = () => {
+  const { mealsV3Enabled, featuresLoaded } = useFeatures();
+  const { t } = useTranslation();
 
+  if (!featuresLoaded) {
+    return (
+      <Layout currentPage="meals">
+        <div className="flex min-h-[40vh] items-center justify-center px-4 text-sm text-muted-foreground">
+          {t("common.loading")}
+        </div>
+      </Layout>
+    );
+  }
+
+  return mealsV3Enabled ? <MealsPageV3 /> : <MealsPage />;
+};
+
+const AppRoutes = () => {
   return (
     <Routes>
       {/* Public route - Login page */}
@@ -193,22 +209,15 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/meals" 
+      <Route
+        path="/meals"
         element={
           <ProtectedRoute>
-            {mealsV3Enabled ? <MealsPageV3 /> : <MealsPage />}
-          </ProtectedRoute>
-        } 
-      />
-      <Route
-        path="/meals-v3"
-        element={
-          <ProtectedRoute requiredRole="CLIENT">
-            <MealsPageV3 />
+            <MealsRouteSwitch />
           </ProtectedRoute>
         }
       />
+      <Route path="/meals-v3" element={<Navigate to="/meals" replace />} />
       <Route
         path="/sandbox/meals-v3"
         element={
