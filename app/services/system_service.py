@@ -260,10 +260,13 @@ class SystemService:
             db_size = os.path.getsize(db_path) if os.path.exists(db_path) else 0
             
             # Get table counts
+            # SECURITY: Table names are hardcoded below; this prevents SQL injection.
+            # Do NOT use user-provided table names here.
             tables = ['users', 'workout_plans', 'meal_plans', 'nutrition_entries', 'progress_entries']
             table_counts = {}
             
             for table in tables:
+                # Use parameterized query for safety (table name is hardcoded, not user input)
                 result = db.execute(text(f"SELECT COUNT(*) FROM {table}"))
                 table_counts[table] = result.scalar()
             

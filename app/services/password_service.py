@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from jose import jwt
@@ -9,6 +9,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+import logging
+logger = logging.getLogger(__name__)
 
 # Environment variables for email configuration
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
@@ -67,12 +69,12 @@ async def send_password_reset_email(email: str, reset_token: str, base_url: str)
             server.send_message(message)
         return True
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        logger.error(f"Failed to send email: {e}")
         return False
 
 async def create_password_reset_token(email: str) -> str:
     """Create a password reset token."""
-    expire = datetime.utcnow() + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
     data = {
         "sub": email,
         "exp": expire,

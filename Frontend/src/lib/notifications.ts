@@ -34,7 +34,6 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
   // Request permission
   try {
     const permission = await Notification.requestPermission();
-    console.log('Notification permission result:', permission);
     return permission;
   } catch (error) {
     console.error('Error requesting notification permission:', error);
@@ -60,7 +59,6 @@ export const showNotification = (
   options: NotificationOptions = {}
 ): void => {
   if (!hasNotificationPermission()) {
-    console.log('Notification permission not granted, skipping notification');
     return;
   }
 

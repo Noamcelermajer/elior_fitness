@@ -18,12 +18,6 @@ from app.auth.utils import get_current_user
 
 router = APIRouter()
 
-# Test endpoint
-@router.get("/test")
-async def test_nutrition_router():
-    """Test endpoint for nutrition router."""
-    return {"message": "Nutrition router working"}
-
 # Helper function to get nutrition service
 def get_nutrition_service(db: Session = Depends(get_db)) -> NutritionService:
     return NutritionService(db)

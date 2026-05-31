@@ -17,7 +17,7 @@ import { API_BASE_URL } from '../config/api';
 const UsersPage = () => {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -321,10 +321,10 @@ const UsersPage = () => {
                           </Select>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditDialog(u)}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditDialog(u)} aria-label={t("common.edit")}>
                             <Pencil className="w-4 h-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDelete(u.id)} disabled={actionLoading}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDelete(u.id)} disabled={actionLoading} aria-label={t("common.delete")}>
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>
@@ -376,10 +376,10 @@ const UsersPage = () => {
                               <Badge className="bg-red-500/20 text-red-700 border-red-500/30">{t('admin.inactive')}</Badge>
                             )}
                           </TableCell>
-                          <TableCell>{u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell>{u.created_at ? new Date(u.created_at).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US') : '-'}</TableCell>
                           <TableCell className="space-x-2">
-                            <Button size="icon" variant="ghost" onClick={() => openEditDialog(u)}><Pencil className="w-4 h-4" /></Button>
-                            <Button size="icon" variant="ghost" onClick={() => handleDelete(u.id)} disabled={actionLoading}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                            <Button size="icon" variant="ghost" onClick={() => openEditDialog(u)} aria-label={t("common.edit")}><Pencil className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" onClick={() => handleDelete(u.id)} disabled={actionLoading} aria-label={t("common.delete")}><Trash2 className="w-4 h-4 text-red-500" /></Button>
                           </TableCell>
                         </TableRow>
                       ))}

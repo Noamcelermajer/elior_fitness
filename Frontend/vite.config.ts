@@ -30,7 +30,7 @@ export default defineConfig({
           // Split vendor libraries
           vendor: ['react', 'react-dom'],
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
-          utils: ['date-fns', 'clsx', 'class-variance-authority'],
+          utils: ['date-fns', 'class-variance-authority'],
         },
         // Optimize chunk size
         chunkFileNames: 'assets/[name]-[hash].js',
@@ -56,7 +56,7 @@ export default defineConfig({
     // Proxy API requests to backend (optional - can use direct URL instead)
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8001',
         changeOrigin: true,
         secure: false,
       }

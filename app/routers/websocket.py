@@ -2,7 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPExce
 import logging
 from typing import Optional
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.auth.utils import get_current_user_websocket
 from app.services.websocket_service import websocket_service, NotificationType
@@ -64,7 +64,7 @@ async def websocket_endpoint(
             "user_id": user_id,
             "user_role": user.role,
             "message": "Connected to Elior Fitness real-time notifications",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         await websocket.send_text(json.dumps(welcome_message))
         
@@ -80,11 +80,11 @@ async def websocket_endpoint(
         except WebSocketDisconnect:
             websocket_service.disconnect(websocket, user_id)
         except Exception as e:
-            print(f"WebSocket error for user {user_id}: {e}")
+            logger.error(f"WebSocket error for user {user_id}: {e}")
             websocket_service.disconnect(websocket, user_id)
             
     except Exception as e:
-        print(f"WebSocket connection error: {e}")
+        logger.error(f"WebSocket connection error: {e}")
         try:
             await websocket.close(code=4000, reason="Connection error")
         except:
@@ -99,7 +99,7 @@ async def handle_websocket_message(user_id: int, message: dict, websocket: WebSo
         # Respond to ping
         pong_message = {
             "type": "pong",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         await websocket.send_text(json.dumps(pong_message))
     
@@ -116,7 +116,7 @@ async def handle_websocket_message(user_id: int, message: dict, websocket: WebSo
         confirmation = {
             "type": "subscription_confirmed",
             "subscription_types": subscription_types,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         await websocket.send_text(json.dumps(confirmation))
     
@@ -131,7 +131,7 @@ async def handle_websocket_message(user_id: int, message: dict, websocket: WebSo
         confirmation = {
             "type": "unsubscription_confirmed",
             "subscription_types": subscription_types,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         await websocket.send_text(json.dumps(confirmation))
     
@@ -144,7 +144,7 @@ async def handle_websocket_message(user_id: int, message: dict, websocket: WebSo
             error_message = {
                 "type": "error",
                 "message": "Missing required fields: to_user_id and message",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             await websocket.send_text(json.dumps(error_message))
             return
@@ -157,7 +157,7 @@ async def handle_websocket_message(user_id: int, message: dict, websocket: WebSo
         stats_message = {
             "type": "connection_stats",
             "stats": stats,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         await websocket.send_text(json.dumps(stats_message))
     
@@ -166,7 +166,7 @@ async def handle_websocket_message(user_id: int, message: dict, websocket: WebSo
         error_message = {
             "type": "error",
             "message": f"Unknown message type: {message_type}",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         await websocket.send_text(json.dumps(error_message))
 

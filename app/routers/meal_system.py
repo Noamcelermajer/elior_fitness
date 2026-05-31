@@ -1045,7 +1045,7 @@ def get_meal_completions(
         if not plan_exists:
             raise HTTPException(status_code=403, detail="Not authorized")
 
-    target_date = datetime.utcnow()
+    target_date = datetime.now(timezone.utc)
     if date:
         try:
             target_date = datetime.fromisoformat(date)
@@ -1108,7 +1108,7 @@ def upsert_meal_completion(
         .first()
     )
 
-    completed_at = datetime.utcnow() if completion_data.is_completed else None
+    completed_at = datetime.now(timezone.utc) if completion_data.is_completed else None
     background_tasks = BackgroundTasks()
 
     if existing_status:

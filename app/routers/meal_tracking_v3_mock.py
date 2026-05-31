@@ -9,7 +9,7 @@ Purpose:
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter
@@ -368,7 +368,7 @@ def get_mock_day_view(date: str):
                 photo_path=log.photo_path,
                 is_approved=None,
                 trainer_comment=None,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
                 custom_food_name=log.custom_food_name,
                 custom_calories=log.custom_calories,
                 custom_protein=log.custom_protein,

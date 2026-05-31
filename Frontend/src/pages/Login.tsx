@@ -149,15 +149,15 @@ const Login = () => {
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-foreground font-medium">{t('auth.password')}</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
+                    <Lock className="absolute start-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className={`pl-12 pr-3 text-right border-border/50 focus:border-primary transition-colors ${
-                        theme === 'dark' 
-                          ? 'bg-muted/80 text-foreground' 
+                      className={`ps-12 pe-3 text-start border-border/50 focus:border-primary transition-colors ${
+                        theme === 'dark'
+                          ? 'bg-muted/80 text-foreground'
                           : 'bg-secondary text-foreground'
                       }`}
                       placeholder={t('auth.enterPassword')}
@@ -167,7 +167,7 @@ const Login = () => {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute left-10 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-transparent z-10 flex items-center justify-center"
+                      className="absolute start-10 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-transparent z-10 flex items-center justify-center"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     >

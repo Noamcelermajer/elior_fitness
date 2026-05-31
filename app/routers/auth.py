@@ -10,6 +10,12 @@ from app.services import auth_service, password_service, user_service
 from app.auth.utils import get_current_user, create_access_token
 from app.services.notification_triggers import NotificationTriggers
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from fastapi import Request
+
+# Import limiter from main module to apply rate limits
+from app.limiter import limiter
 
 router = APIRouter()
 
@@ -49,11 +55,19 @@ async def get_current_user_optional(
         return None
 
 @router.get("/registered-users")
-async def get_registered_users(db: Session = Depends(get_db)):
+async def get_registered_users(
+    db: Session = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user)
+):
     """
-    Get all registered users for login page display.
-    This endpoint is public and doesn't require authentication.
+    Get all registered users. Requires authentication.
+    Only admins can access the full user list.
     """
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can access the user list"
+        )
     users = user_service.get_users(db)
     return [
         {
@@ -66,18 +80,11 @@ async def get_registered_users(db: Session = Depends(get_db)):
         for user in users
     ]
 
-# Test-specific registration endpoint (bypasses role restrictions)
-@router.post("/register/test", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register_user_test(user: UserCreate, db: Session = Depends(get_db)):
-    """
-    Test-specific registration endpoint that bypasses role restrictions.
-    This should only be used in testing environments.
-    """
-    return auth_service.create_user(db, user)
-
 # General registration endpoint (for tests and public registration)
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("3/minute")
 async def register_user(
+    request: Request,
     user: UserCreate, 
     db: Session = Depends(get_db),
     current_user: Optional[UserResponse] = Depends(get_current_user_optional)
@@ -237,7 +244,9 @@ async def register_client(
     return created_user
 
 @router.post("/token", response_model=Token)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db)
 ):
@@ -254,8 +263,8 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     # Update last login timestamp
-    from datetime import datetime
-    user.last_login = datetime.utcnow()
+    from datetime import datetime, timezone
+    user.last_login = datetime.now(timezone.utc)
     db.commit()
     # Normalize role before adding to token
     from app.auth.utils import normalize_role
@@ -264,7 +273,8 @@ async def login(
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=Token)
-async def login_json(user_data: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login_json(request: Request, user_data: UserLogin, db: Session = Depends(get_db)):
     """
     JSON compatible login, get an access token for future requests
     """
@@ -278,8 +288,8 @@ async def login_json(user_data: UserLogin, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     # Update last login timestamp
-    from datetime import datetime
-    user.last_login = datetime.utcnow()
+    from datetime import datetime, timezone
+    user.last_login = datetime.now(timezone.utc)
     db.commit()
     # Normalize role before adding to token
     from app.auth.utils import normalize_role
@@ -310,6 +320,7 @@ async def refresh_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/password-reset/request")
+@limiter.limit("3/minute")
 async def request_password_reset(
     reset_request: PasswordResetRequest,
     request: Request,

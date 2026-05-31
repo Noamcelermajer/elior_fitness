@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ interface User {
 
 const SecretUsersPage = () => {
   const { user } = useAuth();
+  const { i18n } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPasswords, setShowPasswords] = useState(false);
@@ -316,7 +318,7 @@ const SecretUsersPage = () => {
                         </TableCell>
                       )}
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(user.created_at).toLocaleDateString()}
+                        {new Date(user.created_at).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US')}
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-1">

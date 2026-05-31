@@ -389,10 +389,6 @@ def delete_exercise(
             detail=f"Failed to delete exercise: {error_detail}"
         )
 
-@router.get("/test")
-async def test_exercises():
-    return {"message": "Exercises router working"}
-
 @router.get("/export/excel")
 def export_exercises_excel(
     current_user: UserResponse = Depends(get_current_user),

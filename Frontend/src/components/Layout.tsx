@@ -99,6 +99,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
               size="icon"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0"
+              aria-label={mobileMenuOpen ? t('common.close') : t('navigation.menu')}
             >
               {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
             </Button>
@@ -157,6 +158,7 @@ const Layout = ({ children, currentPage = 'dashboard' }: LayoutProps) => {
                 size="icon"
                 onClick={logout}
                 className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0 w-10 h-10 xl:w-12 xl:h-12"
+                aria-label={t('auth.logout')}
               >
                 <LogOut className="w-5 h-5 xl:w-6 xl:h-6" />
               </Button>

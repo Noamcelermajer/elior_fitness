@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from app.models.user import User
 from app.models.notification import Notification
 from app.schemas.notification import NotificationCreate, NotificationResponse, NotificationUpdate
@@ -23,7 +23,7 @@ class NotificationService:
             client_id=notification_data.client_id,
             event_type=notification_data.event_type,
             is_read=False,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         db.add(db_notification)
         db.commit()
@@ -63,7 +63,7 @@ class NotificationService:
         
         if notification:
             notification.is_read = True
-            notification.read_at = datetime.utcnow()
+            notification.read_at = datetime.now(timezone.utc)
             db.commit()
             db.refresh(notification)
         
@@ -82,7 +82,7 @@ class NotificationService:
             )
         ).update({
             "is_read": True,
-            "read_at": datetime.utcnow()
+            "read_at": datetime.now(timezone.utc)
         })
         db.commit()
         return result
@@ -143,7 +143,7 @@ class NotificationService:
                 client_id=None,
                 event_type="system",
                 is_read=False,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
             db.add(notification)
             notifications.append(notification)
@@ -157,7 +157,7 @@ class NotificationService:
     @staticmethod
     def cleanup_old_notifications(db: Session, days: int = 30) -> int:
         """Clean up notifications older than specified days"""
-        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
         result = db.query(Notification).filter(
             Notification.created_at < cutoff_date
         ).delete()

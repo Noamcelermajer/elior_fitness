@@ -14,6 +14,8 @@ from sqlalchemy import distinct
 from app.services.notification_service import notification_service
 from app.services.client_notification_setting_service import client_notification_setting_service
 from app.schemas.notification import NotificationCreate
+import logging
+logger = logging.getLogger(__name__)
 
 class NotificationTriggers:
     @staticmethod
@@ -318,7 +320,7 @@ def run_weekly_notification_checks(db: Session):
     try:
         run_weekly_digest_for_trainers(db)
     except Exception as e:
-        print(f"Error in weekly digest: {e}")
+        logger.error(f"Error in weekly digest: {e}")
 
 # Create a function to check goal achievements for a specific client
 def check_client_goals(db: Session, client_id: int):
@@ -326,4 +328,4 @@ def check_client_goals(db: Session, client_id: int):
     try:
         NotificationTriggers.check_goal_achievements(db, client_id)
     except Exception as e:
-        print(f"Error checking goals for client {client_id}: {e}") 
+        logger.error(f"Error checking goals for client {client_id}: {e}") 

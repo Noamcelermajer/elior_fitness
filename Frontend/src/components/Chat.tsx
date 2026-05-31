@@ -144,7 +144,6 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('Chat WebSocket connected');
       };
 
       ws.onmessage = (event) => {
@@ -219,7 +218,6 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       };
 
       ws.onclose = () => {
-        console.log('WebSocket disconnected, reconnecting...');
         setTimeout(connectWebSocket, 5000);
       };
     } catch (error) {
@@ -323,12 +321,6 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       // API endpoint: /api/files/media/{file_type}/{filename}
       // API_BASE already includes /api, so we use /files/media/...
       const photoUrl = `${API_BASE}/files/media/progress_photos/${encodeURIComponent(filename)}`;
-      console.log('Loading photo:', { 
-        originalPath: photoPath, 
-        extractedFilename: filename, 
-        photoUrl,
-        apiBase: API_BASE
-      });
       
       const response = await fetch(photoUrl, {
         headers: {
@@ -340,7 +332,6 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         setPhotoUrls(prev => ({ ...prev, [photoPath]: url }));
-        console.log('Photo loaded successfully:', filename);
       } else {
         const errorText = await response.text().catch(() => '');
         console.error('Failed to load photo:', {
@@ -446,9 +437,6 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
   };
 
   const handleLinkEntryToChat = (entryId: number) => {
-    console.log('Linking entry to chat:', entryId);
-    console.log('Available progress entries:', progressEntries);
-    console.log('Progress entries map:', progressEntriesMap);
     
     // Find the entry in progressEntries or progressEntriesMap
     let entry = progressEntries.find(e => e.id === entryId);
@@ -456,11 +444,8 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
       entry = progressEntriesMap[entryId];
     }
     
-    console.log('Found entry:', entry);
-    
     if (entry) {
       setLinkedProgressEntry(entry);
-      console.log('Linked progress entry set:', entry);
       // Focus on message input
       setTimeout(() => {
         const input = document.querySelector('input[placeholder*="הקלד הודעה"]') as HTMLInputElement;
@@ -478,7 +463,6 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
           const fetchedEntry = progressEntries.find(e => e.id === entryId) || progressEntriesMap[entryId];
           if (fetchedEntry) {
             setLinkedProgressEntry(fetchedEntry);
-            console.log('Linked progress entry set after fetch:', fetchedEntry);
           } else {
             console.error('Still could not find entry after fetch');
           }
@@ -993,10 +977,32 @@ const Chat: React.FC<ChatProps> = ({ selectedClientId, progressEntryId, onClose 
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              <div className="text-center p-8">
-                <MessageSquare className="h-16 w-16 md:h-20 md:w-20 mx-auto mb-4 opacity-50" />
-                <p className="text-base md:text-lg">{t('chat.selectClient', 'Select a client to start chatting')}</p>
+            <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center p-8">
+                  <MessageSquare className="h-16 w-16 md:h-20 md:w-20 mx-auto mb-4 opacity-50" />
+                  <p className="text-base md:text-lg">{t('chat.selectClient', 'Select a client to start chatting')}</p>
+                </div>
+              </div>
+              {/* Disabled input area when no client selected */}
+              <div className="p-4 md:p-6 border-t border-border bg-card/80 backdrop-blur-sm shrink-0 z-10">
+                <div className="flex gap-2 md:gap-3 items-end max-w-4xl mx-auto">
+                  <div className="flex-1 relative">
+                    <Input
+                      placeholder={t('chat.selectClientToType', 'Select a client to start typing...')}
+                      className="rounded-full pr-12 h-11 md:h-12 bg-muted/50 border-border"
+                      disabled
+                    />
+                  </div>
+                  <Button
+                    size="icon"
+                    className="h-11 w-11 md:h-12 md:w-12 rounded-full shrink-0"
+                    disabled
+                    aria-label={t('chat.send', 'Send message')}
+                  >
+                    <Send className="h-4 w-4 md:h-5 md:w-5" />
+                  </Button>
+                </div>
               </div>
             </div>
           )}

@@ -369,8 +369,71 @@ async def delete_media_file(
     if not file_path:
         raise HTTPException(status_code=404, detail="File not found")
     
-    # Apply the same access control logic as serve_media_file
-    # (This is a simplified version - you might want to extract this logic into a shared function)
+    # Ownership / access control check before deletion
+    # Admins can delete any file; trainers can delete files related to their clients;
+    # clients can only delete their own files.
+    can_delete = False
+    
+    if current_user.role == UserRole.ADMIN:
+        can_delete = True
+    elif file_type == "profile_photos":
+        try:
+            parts = filename.split('_')
+            if len(parts) >= 3:
+                user_id = int(parts[2])  # profile_photo_{user_id}_{uuid}
+                if current_user.id == user_id:
+                    can_delete = True
+        except (ValueError, IndexError):
+            pass
+    elif file_type == "progress_photos":
+        try:
+            parts = filename.split('_')
+            if len(parts) >= 3:
+                client_id = int(parts[2])  # progress_photo_{client_id}_{uuid}
+                if current_user.id == client_id:
+                    can_delete = True
+                elif current_user.role == UserRole.TRAINER:
+                    from app.models.user import User
+                    client = db.query(User).filter(User.id == client_id).first()
+                    if client and client.trainer_id == current_user.id:
+                        can_delete = True
+        except (ValueError, IndexError):
+            pass
+    elif file_type == "meal_photos":
+        try:
+            parts = filename.split('_')
+            if len(parts) >= 3:
+                entity_id = int(parts[2])  # meal_photo_{entity_id}_{uuid}
+                from app.services.nutrition_service import NutritionService
+                nutrition_service = NutritionService(db)
+                meal_completion = nutrition_service.get_meal_completion(entity_id)
+                if meal_completion:
+                    if current_user.id == meal_completion.client_id:
+                        can_delete = True
+                    elif current_user.role == UserRole.TRAINER:
+                        from app.models.user import User
+                        client = db.query(User).filter(User.id == meal_completion.client_id).first()
+                        if client and client.trainer_id == current_user.id:
+                            can_delete = True
+        except (ValueError, IndexError):
+            pass
+    elif file_type == "documents":
+        try:
+            parts = filename.split('_')
+            if len(parts) >= 3:
+                entity_id = int(parts[2])  # document_{entity_id}_{uuid}
+                if str(current_user.id) in filename:
+                    can_delete = True
+                elif current_user.role == UserRole.TRAINER:
+                    can_delete = True
+        except (ValueError, IndexError):
+            pass
+    elif file_type == "exercise_images":
+        if current_user.role in [UserRole.TRAINER, UserRole.ADMIN]:
+            can_delete = True
+    
+    if not can_delete:
+        raise HTTPException(status_code=403, detail="Access denied: you do not have permission to delete this file")
     
     try:
         # Delete file and all its processed versions

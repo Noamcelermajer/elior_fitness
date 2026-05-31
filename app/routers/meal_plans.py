@@ -20,12 +20,6 @@ router = APIRouter()
 def get_meal_plan_service(db: Session = Depends(get_db)) -> MealPlanService:
     return MealPlanService(db)
 
-# Test endpoint
-@router.get("/test")
-async def test_meal_plans_router():
-    """Test endpoint for meal plans router."""
-    return {"message": "Meal Plans router working"}
-
 # Meal Plans Endpoints
 @router.post("/", response_model=MealPlanResponse)
 async def create_meal_plan(

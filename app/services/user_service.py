@@ -3,6 +3,8 @@ from typing import List, Optional
 from app.models.user import User, TrainerProfile, ClientProfile
 from app.models.notification import Notification
 from app.schemas.auth import UserRole, UserResponse, UserUpdate
+import logging
+logger = logging.getLogger(__name__)
 
 def get_users(db: Session) -> List[User]:
     """Get all users"""
@@ -87,7 +89,7 @@ def delete_user(db: Session, user_id: int) -> bool:
         return True
     except Exception as e:
         db.rollback()
-        print(f"Error deleting user {user_id}: {str(e)}")
+        logger.error(f"Error deleting user {user_id}: {str(e)}")
         raise
 
 def get_trainer_clients(db: Session, trainer_id: int) -> List[User]:

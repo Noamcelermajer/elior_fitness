@@ -628,7 +628,7 @@ def get_v3_meal_completions(
             if not plan_exists:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
-    target_date = _parse_v3_date_to_day(date) if date else datetime.utcnow()
+    target_date = _parse_v3_date_to_day(date) if date else datetime.now(timezone.utc)
     normalized_date = _normalize_completion_datetime_to_day(target_date)
 
     return [
@@ -687,7 +687,7 @@ def upsert_v3_meal_completion(
         .first()
     )
 
-    completed_at = datetime.utcnow() if completion_data.is_completed else None
+    completed_at = datetime.now(timezone.utc) if completion_data.is_completed else None
 
     if existing_status:
         existing_status.is_completed = completion_data.is_completed

@@ -141,7 +141,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         wsRef.current = ws;
 
         ws.onopen = () => {
-          console.log('WebSocket connected for notifications');
           if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current);
             reconnectTimeoutRef.current = null;
@@ -154,7 +153,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
             
             // Handle different notification types
             if (data.type === 'welcome' || data.type === 'connection_established') {
-              console.log('WebSocket connection established');
               return;
             }
             if (data.type === 'new_notification') {
@@ -189,7 +187,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         };
 
         ws.onclose = () => {
-          console.log('WebSocket disconnected, attempting to reconnect...');
           wsRef.current = null;
           
           // Reconnect after 5 seconds

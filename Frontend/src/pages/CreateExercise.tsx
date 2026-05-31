@@ -407,7 +407,7 @@ const CreateExercise = () => {
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="e.g., Push-ups, Deadlift, Squats"
+                    placeholder={t("exercise.create.placeholders.exerciseName")}
                     className="h-9 text-sm"
                     required
                   />
@@ -561,7 +561,7 @@ const CreateExercise = () => {
                   </div>
                   <Select value={formData.muscle_group} onValueChange={(value) => handleInputChange('muscle_group', value)}>
                     <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Select muscle group" />
+                      <SelectValue placeholder={t("exercise.create.selectMuscleGroup")} />
                     </SelectTrigger>
                     <SelectContent>
                       {muscleGroups.map((group) => (
@@ -580,7 +580,7 @@ const CreateExercise = () => {
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Describe the exercise, what muscles it targets, and its benefits..."
+                  placeholder={t("exercise.create.placeholders.description")}
                   rows={2}
                   className="text-sm resize-none"
                   required
@@ -589,42 +589,67 @@ const CreateExercise = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="equipment" className="text-sm">Equipment Needed</Label>
+                  <Label htmlFor="equipment" className="text-sm">{t("exercise.create.equipmentNeeded")}</Label>
                   <Select value={formData.equipment_needed} onValueChange={(value) => handleInputChange('equipment_needed', value)}>
                     <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Select equipment" />
+                      <SelectValue placeholder={t("exercise.create.selectEquipment")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {EQUIPMENT_OPTIONS.map(equipment => (
-                        <SelectItem key={equipment} value={equipment}>{equipment}</SelectItem>
-                      ))}
+                      {EQUIPMENT_OPTIONS.map(equipment => {
+                        const equipKeyMap: Record<string, string> = {
+                          "None (Bodyweight)": "none",
+                          "Dumbbells": "dumbbells",
+                          "Barbell": "barbell",
+                          "Kettlebell": "kettlebell",
+                          "Resistance Bands": "resistance_bands",
+                          "Cable Machine": "cable_machine",
+                          "Smith Machine": "smith_machine",
+                          "Pull-up Bar": "pull_up_bar",
+                          "Bench": "bench",
+                          "Incline Bench": "incline_bench",
+                          "Decline Bench": "decline_bench",
+                          "Leg Press Machine": "leg_press_machine",
+                          "Lat Pulldown Machine": "lat_pulldown_machine",
+                          "Treadmill": "treadmill",
+                          "Stationary Bike": "stationary_bike",
+                          "Rowing Machine": "rowing_machine",
+                          "Elliptical": "elliptical",
+                          "Other": "other"
+                        };
+                        const equipKey = equipKeyMap[equipment] || equipment.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                        return (
+                          <SelectItem key={equipment} value={equipment}>
+                            {t(`exercise.create.equipment.${equipKey}`, equipment)}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="difficulty" className="text-sm">Difficulty Level</Label>
+                  <Label htmlFor="difficulty" className="text-sm">{t("exercise.create.difficultyLevel")}</Label>
                   <Select value={formData.difficulty_level} onValueChange={(value) => handleInputChange('difficulty_level', value)}>
                     <SelectTrigger className="h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
-                      <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="advanced">Advanced</SelectItem>
+                      <SelectItem value="beginner">{t("exercise.create.beginner")}</SelectItem>
+                      <SelectItem value="intermediate">{t("exercise.create.intermediate")}</SelectItem>
+                      <SelectItem value="advanced">{t("exercise.create.advanced")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="category" className="text-sm">Category</Label>
+                <Label htmlFor="category" className="text-sm">{t("exercise.create.category")}</Label>
                 <Input
                   id="category"
                   list="exercise-category-options"
                   value={formData.category}
                   onChange={(e) => handleInputChange('category', e.target.value)}
-                  placeholder="e.g., Strength, Mobility, Hypertrophy"
+                  placeholder={t("exercise.create.placeholders.category")}
                   className="h-9 text-sm"
                 />
                 <datalist id="exercise-category-options">
@@ -648,7 +673,7 @@ const CreateExercise = () => {
                   id="instructions"
                   value={formData.instructions}
                   onChange={(e) => handleInputChange('instructions', e.target.value)}
-                  placeholder="Provide detailed step-by-step instructions on how to perform the exercise correctly..."
+                  placeholder={t("exercise.create.placeholders.instructions")}
                   rows={4}
                   className="text-sm resize-none"
                 />
@@ -660,7 +685,7 @@ const CreateExercise = () => {
                   id="tips"
                   value={formData.tips}
                   onChange={(e) => handleInputChange('tips', e.target.value)}
-                  placeholder="Add any important tips, common mistakes to avoid, or safety considerations..."
+                  placeholder={t("exercise.create.placeholders.tips")}
                   rows={2}
                   className="text-sm resize-none"
                 />
@@ -682,7 +707,7 @@ const CreateExercise = () => {
                     type="number"
                     value={formData.estimated_duration}
                     onChange={(e) => handleInputChange('estimated_duration', e.target.value)}
-                    placeholder="e.g., 5"
+                    placeholder={t("exercise.create.placeholders.duration")}
                     min="1"
                     className="h-9 text-sm"
                   />
@@ -695,7 +720,7 @@ const CreateExercise = () => {
                     type="number"
                     value={formData.calories_burned}
                     onChange={(e) => handleInputChange('calories_burned', e.target.value)}
-                    placeholder="e.g., 10"
+                    placeholder={t("exercise.create.placeholders.calories")}
                     min="1"
                     className="h-9 text-sm"
                   />
@@ -723,10 +748,10 @@ const CreateExercise = () => {
                       }}
                       className="flex-shrink-0"
                     >
-                      <ToggleGroupItem value="video" aria-label="Video URL" size="sm">
+                      <ToggleGroupItem value="video" aria-label={t("exercise.create.videoUrl")} size="sm">
                         <Video className="w-4 h-4" />
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="image" aria-label="Upload Image" size="sm">
+                      <ToggleGroupItem value="image" aria-label={t("exercise.create.uploadImage")} size="sm">
                         <ImageIcon className="w-4 h-4" />
                       </ToggleGroupItem>
                     </ToggleGroup>
@@ -736,7 +761,7 @@ const CreateExercise = () => {
                         type="url"
                         value={formData.video_url}
                         onChange={(e) => handleInputChange('video_url', e.target.value)}
-                        placeholder="https://youtube.com/..."
+                        placeholder={t("exercise.create.placeholders.videoUrl")}
                         className="flex-1 h-9 text-sm"
                       />
                     ) : (
@@ -752,7 +777,7 @@ const CreateExercise = () => {
                           <div className="relative flex-shrink-0">
                             <img
                               src={imagePreview}
-                              alt="Exercise preview"
+                              alt={t("exercise.create.exercisePreview")}
                               className="w-16 h-16 object-cover rounded-lg border"
                             />
                             <button

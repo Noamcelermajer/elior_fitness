@@ -11,6 +11,8 @@ from app.models.chat import ChatMessage
 from app.models.user import User
 from app.models.progress import ProgressEntry
 from app.services.websocket_service import websocket_service
+import logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v2/chat", tags=["chat"])
 
@@ -58,13 +60,13 @@ async def get_conversations(
         # Client sees their trainer conversation
         if not current_user.trainer_id:
             # Log for debugging
-            print(f"CLIENT CHAT ERROR: Client {current_user.id} ({current_user.username}) has no trainer_id assigned")
+            logger.error(f"CLIENT CHAT ERROR: Client {current_user.id} ({current_user.username}) has no trainer_id assigned")
             return []
         
         trainer = db.query(User).filter(User.id == current_user.trainer_id).first()
         if not trainer:
             # Log for debugging
-            print(f"CLIENT CHAT ERROR: Client {current_user.id} has trainer_id={current_user.trainer_id} but trainer not found in database")
+            logger.error(f"CLIENT CHAT ERROR: Client {current_user.id} has trainer_id={current_user.trainer_id} but trainer not found in database")
             return []
         
         # Get last message
@@ -137,12 +139,12 @@ async def get_messages(
     elif current_user.role == UserRole.CLIENT:
         # Client gets messages with their trainer
         if not current_user.trainer_id:
-            print(f"CLIENT MESSAGES ERROR: Client {current_user.id} has no trainer_id")
+            logger.error(f"CLIENT MESSAGES ERROR: Client {current_user.id} has no trainer_id")
             return []
         
         trainer = db.query(User).filter(User.id == current_user.trainer_id).first()
         if not trainer:
-            print(f"CLIENT MESSAGES ERROR: Trainer {current_user.trainer_id} not found for client {current_user.id}")
+            logger.error(f"CLIENT MESSAGES ERROR: Trainer {current_user.trainer_id} not found for client {current_user.id}")
             return []
         
         messages = db.query(ChatMessage).filter(
@@ -194,7 +196,7 @@ async def send_message(
     elif current_user.role == UserRole.CLIENT:
         # Client sends to their trainer
         if not current_user.trainer_id:
-            print(f"CLIENT SEND ERROR: Client {current_user.id} has no trainer_id")
+            logger.error(f"CLIENT SEND ERROR: Client {current_user.id} has no trainer_id")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No trainer assigned. Please contact support."
@@ -202,7 +204,7 @@ async def send_message(
         
         trainer = db.query(User).filter(User.id == current_user.trainer_id).first()
         if not trainer:
-            print(f"CLIENT SEND ERROR: Trainer {current_user.trainer_id} not found for client {current_user.id}")
+            logger.error(f"CLIENT SEND ERROR: Trainer {current_user.trainer_id} not found for client {current_user.id}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Trainer not found. Please contact support."
@@ -268,7 +270,7 @@ async def send_message(
         )
     except Exception as e:
         # Log but don't fail if WebSocket fails
-        print(f"Failed to send WebSocket notification: {e}")
+        logger.error(f"Failed to send WebSocket notification: {e}")
     
     return ChatMessageResponse.model_validate(chat_message)
 

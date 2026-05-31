@@ -110,7 +110,6 @@ const ExerciseBank = () => {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched exercises:', data);
         setExercises(Array.isArray(data) ? data : []);
       } else {
         const errorText = await response.text();

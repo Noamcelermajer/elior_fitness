@@ -2,13 +2,15 @@ import os
 import uuid
 import hashlib
 from typing import Optional, List, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import UploadFile, HTTPException
 # Lazy load heavy libraries to reduce startup memory
 # from PIL import Image  # Lazy loaded when needed
 import magic
 import aiofiles
 from pathlib import Path
+import logging
+logger = logging.getLogger(__name__)
 
 class FileService:
     """Comprehensive file management service for Sprint 5."""
@@ -180,7 +182,7 @@ class FileService:
                 "filename": os.path.basename(compressed_path),
                 "file_size": compressed_size,
                 "mime_type": "image/jpeg",  # Always JPEG for compressed
-                "uploaded_at": datetime.utcnow().isoformat(),
+                "uploaded_at": datetime.now(timezone.utc).isoformat(),
                 "compressed": True
             }
         else:
@@ -195,7 +197,7 @@ class FileService:
                 "filename": filename,
                 "file_size": len(content),
                 "mime_type": magic.from_buffer(content, mime=True),
-                "uploaded_at": datetime.utcnow().isoformat()
+                "uploaded_at": datetime.now(timezone.utc).isoformat()
             }
             
             # Process image if needed (thumbnails, etc.)
@@ -258,7 +260,7 @@ class FileService:
             
         except Exception as e:
             # If compression fails, save original but log error
-            print(f"Error compressing progress photo: {e}")
+            logger.error(f"Error compressing progress photo: {e}")
             # Fallback: save original file
             original_path = os.path.join(directory, filename)
             with open(original_path, 'wb') as f:
@@ -354,7 +356,7 @@ class FileService:
             return True
             
         except Exception as e:
-            print(f"Error deleting file {file_path}: {e}")
+            logger.error(f"Error deleting file {file_path}: {e}")
             return False
     
     async def cleanup_orphaned_files(self, max_age_hours: int = 24) -> int:
@@ -364,7 +366,7 @@ class FileService:
             return 0
         
         deleted_count = 0
-        current_time = datetime.utcnow()
+        current_time = datetime.now(timezone.utc)
         
         for filename in os.listdir(temp_dir):
             file_path = os.path.join(temp_dir, filename)
@@ -377,7 +379,7 @@ class FileService:
                         os.remove(file_path)
                         deleted_count += 1
                     except Exception as e:
-                        print(f"Error deleting orphaned file {file_path}: {e}")
+                        logger.error(f"Error deleting orphaned file {file_path}: {e}")
         
         return deleted_count
     

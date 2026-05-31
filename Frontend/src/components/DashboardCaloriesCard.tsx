@@ -71,10 +71,10 @@ export const DashboardCaloriesCard: React.FC<DashboardCaloriesCardProps> = ({
             
             {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="text-2xl font-bold text-foreground">
+              <div className="text-2xl font-bold text-foreground" dir="ltr">
                 {roundedConsumed}
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground" dir="ltr">
                 /{roundedTarget} {t('meals.kcal', 'kcal')}
               </div>
             </div>

@@ -113,7 +113,11 @@
     "viewAll": "View All",
     "noData": "No data to display",
     "loading": "Loading data...",
-    "error": "Error loading data"
+    "error": "Error loading data",
+    "hiThere": "Hi there",
+    "caloriesTracker": "CALORIES TRACKER",
+    "today": "Today",
+    "weight": "WEIGHT"
   },
   "client": {
     "client": "Client",
@@ -287,7 +291,6 @@
     "addFood": "Add Food",
     "hide": "Hide",
     "show": "Show",
-    "remainingAmount": "Remaining Amount",
     "per": "per",
     "over": "over",
     "customFoodNamePlaceholder": "e.g., snack, pizza slice, etc.",
@@ -296,7 +299,6 @@
     "nextDay": "Next day",
     "qty": "Qty",
     "custom": "Custom",
-    "addFood": "Add Food",
     "complete": "Complete",
     "completeMockTitle": "Marked complete (mock)",
     "completeMockDesc": "Sandbox mode does not persist completion.",
@@ -381,7 +383,6 @@
     "completionRate": "Completion Rate",
     "completionCalendar": "Training Completion Calendar",
     "trainingDays": "Training Days",
-    "workouts": "Workouts",
     "myWorkouts": "My Workouts",
     "noActiveWorkoutPlan": "No Active Workout Plan",
     "noWorkoutPlanAssigned": "You don't have an active workout plan yet. Contact your trainer to get started!",
@@ -491,7 +492,7 @@
     "weightGained": "Weight Gained",
     "logWeight": "Log Weight",
     "weightEntry": "Weight Entry",
-    "measurements": "Measurements",
+    "measurements": "Body Measurements (cm)",
     "chest": "Chest",
     "waist": "Waist",
     "hips": "Hips",
@@ -531,13 +532,11 @@
     "latestEntry": "Latest Entry",
     "totalChange": "Total Change",
     "averageChange": "Average Change",
-    "progressPhotos": "Progress Photos",
     "photo": "Photo",
     "photoNotAvailable": "Photo not available",
     "noPhotosTitle": "No Progress Photos Yet",
     "noPhotosSubtitle": "Add photos to your weigh-ins to track your visual progress!",
-    "cm": "cm",
-    "measurements": "Body Measurements (cm)"
+    "cm": "cm"
   },
   "admin": {
     "admin": "Admin",
@@ -612,19 +611,12 @@
     "enterPassword": "Enter password",
     "reEnterPassword": "Re-enter password",
     "passwordsDoNotMatch": "Passwords do not match",
-    "users": "Users",
     "searchUsersPlaceholder": "Search by username or email...",
     "accessDenied": "Access denied. Admins only.",
-    "username": "Username",
-    "email": "Email",
-    "fullName": "Full Name",
     "status": "Status",
     "created": "Created",
     "actions": "Actions",
-    "editUser": "Edit User",
     "updateUserDetails": "Update user details and role.",
-    "role": "Role",
-    "cancel": "Cancel",
     "saveChanges": "Save Changes",
     "saving": "Saving...",
     "cannotDeleteSelf": "You cannot delete your own account. Please ask another administrator to delete your account if needed.",
@@ -710,33 +702,14 @@
       "saved": "Saved successfully",
       "updated": "Updated successfully",
       "deleted": "Deleted successfully",
-      "created": "Created successfully",
-      "uploaded": "Uploaded successfully",
-      "sent": "Sent successfully",
-      "completed": "Completed successfully"
+      "created": "Created successfully"
     },
     "error": {
       "general": "An error occurred",
       "saveFailed": "Save failed",
       "updateFailed": "Update failed",
       "deleteFailed": "Delete failed",
-      "uploadFailed": "Upload failed",
-      "loadFailed": "Load failed",
-      "networkError": "Network error",
-      "serverError": "Server error",
-      "notFound": "Not found",
-      "unauthorized": "Unauthorized",
-      "forbidden": "Forbidden",
-      "timeout": "Timeout",
-      "invalidData": "Invalid data"
-    },
-    "confirm": {
-      "delete": "Are you sure you want to delete?",
-      "cancel": "Are you sure you want to cancel?",
-      "logout": "Are you sure you want to logout?",
-      "discard": "Are you sure you want to discard changes?",
-      "overwrite": "Are you sure you want to overwrite?",
-      "proceed": "Are you sure you want to proceed?"
+      "loadFailed": "Load failed"
     }
   },
   "dates": {
@@ -796,7 +769,6 @@
     "newMuscleGroupNameHePlaceholder": "e.g. חזה",
     "createNewMuscleGroup": "Create New Muscle Group",
     "editMuscleGroup": "Edit Muscle Group",
-    "allMuscleGroups": "All Muscle Groups",
     "muscleGroupCreated": "Muscle group created successfully",
     "muscleGroupUpdated": "Muscle group updated successfully",
     "muscleGroupDeleted": "Muscle group deleted successfully",
@@ -822,13 +794,14 @@
       "chest": "Chest",
       "back": "Back",
       "shoulders": "Shoulders",
-      "biceps": "Front Arm",
-      "triceps": "Back Arm",
+      "biceps": "Biceps",
+      "triceps": "Triceps",
       "legs": "Legs",
-      "glutes": "Pelvis",
+      "glutes": "Glutes",
       "core": "Core",
       "cardio": "Cardio",
-      "full body": "Full Body"
+      "full_body": "Full Body",
+      "other": "Other"
     },
     "importReviewTitle": "Review Import",
     "importReviewDescription": "Review each row and choose: Skip, Add as new, or Replace an existing exercise. Excel files are often in Hebrew.",
@@ -846,9 +819,9 @@
     "addFoodItem": "Add Food Item",
     "searchPlaceholder": "Search food items...",
     "allMacros": "All",
-    "protein": "Protein",
+    "protein": "Protein (g)",
     "carb": "Carb",
-    "fat": "Fat",
+    "fat": "Fat (g)",
     "noItems": "No food items found",
     "noItemsDescription": "Create your first food item to get started",
     "editFoodItem": "Edit Food Item",
@@ -863,11 +836,9 @@
     "selectMacroType": "Select macro type",
     "calories": "Calories",
     "caloriesPlaceholder": "per 100g",
-    "protein": "Protein (g)",
     "proteinPlaceholder": "per 100g",
     "carbs": "Carbs (g)",
     "carbsPlaceholder": "per 100g",
-    "fat": "Fat (g)",
     "fatPlaceholder": "per 100g",
     "isPublic": "Share with other trainers",
     "cancel": "Cancel",
@@ -960,21 +931,6 @@
     "adminSubtitle": "Administrative Control Panel",
     "trainerSubtitle": "Client Management System",
     "clientSubtitle": "Personal Fitness Portal"
-  },
-  "messages": {
-    "success": {
-      "saved": "Saved successfully",
-      "updated": "Updated successfully",
-      "deleted": "Deleted successfully",
-      "created": "Created successfully"
-    },
-    "error": {
-      "general": "An error occurred",
-      "saveFailed": "Save failed",
-      "updateFailed": "Update failed",
-      "deleteFailed": "Delete failed",
-      "loadFailed": "Load failed"
-    }
   },
   "trainerDashboard": {
     "checkInCompletion": "Check-In Completion Rate",
@@ -1236,9 +1192,9 @@
     "addFoodOption": "Add Food Option",
     "optionName": "Option Name",
     "calories": "Calories",
-    "protein": "Protein (g)",
-    "carbs": "Carbs (g)",
-    "fats": "Fats (g)",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fats": "Fats",
     "isOptional": "Is Optional",
     "removeMeal": "Remove Meal",
     "removeOption": "Remove Option",
@@ -1281,10 +1237,6 @@
     "addToMealBank": "Add to Meal Bank",
     "addFromMealBank": "Add from Meal Bank",
     "notAvailable": "N/A",
-    "protein": "Protein",
-    "carbs": "Carbs",
-    "fats": "Fats",
-    "addFood": "Add Food",
     "importExcel": "Import from Excel",
     "importSuccess": "Meal plan imported successfully!",
     "importError": "Failed to import meal plan"
@@ -1334,7 +1286,9 @@
       "history": "Check-In History",
       "todayStatus": "Today's Status",
       "viewDetails": "View Details"
-    }
+    },
+    "checkIn": "Check-In",
+    "checkInCompleted": "Check-in completed today"
   },
   "chat": {
     "conversations": "Conversations",
@@ -1358,7 +1312,176 @@
     "viewProfile": "View Profile",
     "enableNotifications": "Enable Notifications",
     "enableNotificationsDesc": "Get notified about new messages",
-    "enable": "Enable"
+    "enable": "Enable",
+    "selectClientToType": "Select a client to start typing..."
+  },
+  "system": {
+    "pageTitle": "System Management",
+    "subtitle": "Monitor and manage system health and performance",
+    "refresh": "Refresh",
+    "tabs": {
+      "overview": "Overview",
+      "logs": "System Logs",
+      "tests": "Test Suite",
+      "actions": "Quick Actions"
+    },
+    "cards": {
+      "systemHealth": "System Health",
+      "activeUsers": "Active Users",
+      "memoryUsage": "Memory Usage",
+      "cpuUsage": "CPU Usage",
+      "databaseStatus": "Database Status",
+      "databaseDesc": "Connection pool and performance metrics",
+      "systemInfo": "System Information",
+      "systemInfoDesc": "Current system configuration",
+      "dockerStatus": "Docker Container Status",
+      "systemResources": "System Resources",
+      "systemResourcesDesc": "Detailed resource utilization metrics",
+      "recentLogs": "Recent System Logs",
+      "recentLogsDesc": "Latest system events and activities",
+      "testSuite": "Test Suite",
+      "testSuiteDesc": "Run automated tests and view results",
+      "quickActions": "Quick Actions",
+      "quickActionsDesc": "Common system maintenance tasks"
+    },
+    "labels": {
+      "uptime": "Uptime",
+      "ofTotalUsers": "of {{total}} total users",
+      "activeConnections": "Active Connections",
+      "databaseSize": "Database Size",
+      "lastBackup": "Last Backup",
+      "totalRecords": "Total Records",
+      "apiVersion": "API Version",
+      "environment": "Environment",
+      "platform": "Platform",
+      "pythonVersion": "Python Version",
+      "containers": "Containers",
+      "images": "Images",
+      "volumes": "Volumes",
+      "dockerVersion": "Docker Version",
+      "runningContainers": "Running Containers",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "cpuCores": "CPU Cores",
+      "totalMemory": "Total Memory",
+      "availableMemory": "Available Memory",
+      "diskUsage": "Disk Usage",
+      "totalDisk": "Total Disk",
+      "freeDisk": "Free Disk",
+      "networkSent": "Network Sent",
+      "networkReceived": "Network Received",
+      "applicationProcesses": "Application Processes"
+    },
+    "status": {
+      "healthy": "healthy",
+      "warning": "warning",
+      "critical": "critical",
+      "unknown": "Unknown",
+      "never": "Never",
+      "dockerNotAvailable": "Docker is not available",
+      "dockerNotAvailableDesc": "Docker is not available on this system",
+      "installDocker": "Install Docker Desktop to monitor containers"
+    },
+    "buttons": {
+      "runTests": "Run Tests",
+      "runningTests": "Running Tests...",
+      "restartServices": "Restart Services",
+      "createBackup": "Create Backup",
+      "optimizeDatabase": "Optimize Database",
+      "toggleMaintenance": "Toggle Maintenance"
+    },
+    "test": {
+      "passed": "Passed",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "coverage": "Coverage",
+      "testDetails": "Test Details"
+    },
+    "toast": {
+      "testsCompleted": "Tests Completed",
+      "testsCompletedDesc": "{{passed}} passed, {{failed}} failed, {{skipped}} skipped",
+      "error": "Error",
+      "failedToLoad": "Failed to load system data",
+      "failedToRunTests": "Failed to run tests",
+      "success": "Success",
+      "actionFailed": "Action failed"
+    },
+    "accessDenied": "Access denied. Admin privileges required to view system information."
+  },
+  "exercise": {
+    "create": {
+      "pageTitle": "Create New Exercise",
+      "subtitle": "Add a new exercise to your database",
+      "basicInfo": "Basic Information",
+      "category": "Category",
+      "instructions": "Instructions",
+      "stepByStepInstructions": "Step-by-Step Instructions",
+      "tipsAndSafety": "Tips & Safety Notes",
+      "difficultyLevel": "Difficulty Level",
+      "equipmentNeeded": "Equipment Needed",
+      "estimatedDuration": "Estimated Duration (minutes)",
+      "caloriesBurned": "Calories Burned (per set)",
+      "videoUrl": "Video URL",
+      "uploadImage": "Upload Image",
+      "exercisePreview": "Exercise preview",
+      "createExercise": "Create Exercise",
+      "back": "Back",
+      "save": "Save",
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "selectMuscleGroup": "Select muscle group",
+      "selectEquipment": "Select equipment",
+      "placeholders": {
+        "exerciseName": "e.g., Push-ups, Deadlift, Squats",
+        "description": "Describe the exercise, what muscles it targets, and its benefits...",
+        "category": "e.g., Strength, Mobility, Hypertrophy",
+        "instructions": "Provide detailed step-by-step instructions on how to perform the exercise correctly...",
+        "tips": "Add any important tips, common mistakes to avoid, or safety considerations...",
+        "videoUrl": "https://youtube.com/...",
+        "duration": "e.g., 5",
+        "calories": "e.g., 10"
+      },
+      "errors": {
+        "imageSize": "Image file size must be less than 10MB",
+        "selectImage": "Please select an image file",
+        "createFailed": "Failed to create exercise",
+        "deleteMuscleGroupFailed": "Failed to delete muscle group",
+        "networkError": "Network error occurred"
+      },
+      "muscleGroups": {
+        "chest": "Chest",
+        "back": "Back",
+        "shoulders": "Shoulders",
+        "biceps": "Biceps",
+        "triceps": "Triceps",
+        "legs": "Legs",
+        "glutes": "Glutes",
+        "core": "Core",
+        "cardio": "Cardio",
+        "full_body": "Full Body",
+        "other": "Other"
+      },
+      "equipment": {
+        "none": "None (Bodyweight)",
+        "dumbbells": "Dumbbells",
+        "barbell": "Barbell",
+        "kettlebell": "Kettlebell",
+        "resistance_bands": "Resistance Bands",
+        "cable_machine": "Cable Machine",
+        "smith_machine": "Smith Machine",
+        "pull_up_bar": "Pull-up Bar",
+        "bench": "Bench",
+        "incline_bench": "Incline Bench",
+        "decline_bench": "Decline Bench",
+        "leg_press_machine": "Leg Press Machine",
+        "lat_pulldown_machine": "Lat Pulldown Machine",
+        "treadmill": "Treadmill",
+        "stationary_bike": "Stationary Bike",
+        "rowing_machine": "Rowing Machine",
+        "elliptical": "Elliptical",
+        "other": "Other"
+      }
+    }
   }
 }
-

@@ -4,6 +4,8 @@ from typing import Dict, Set, Optional, Any
 from datetime import datetime, timezone
 from fastapi import WebSocket, WebSocketDisconnect
 from enum import Enum
+import logging
+logger = logging.getLogger(__name__)
 
 class NotificationType(str, Enum):
     """Types of real-time notifications."""
@@ -73,7 +75,7 @@ class WebSocketService:
                 except WebSocketDisconnect:
                     disconnected_websockets.add(websocket)
                 except Exception as e:
-                    print(f"Error sending message to user {user_id}: {e}")
+                    logger.error(f"Error sending message to user {user_id}: {e}")
                     disconnected_websockets.add(websocket)
             
             # Clean up disconnected websockets

@@ -14,6 +14,11 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import re
 
+# Rate limiting
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.limiter import limiter
+
 # Universal environment configuration that works with any reverse proxy
 def detect_environment():
     """Universal environment detection that works with any deployment method."""
@@ -85,8 +90,8 @@ ENVIRONMENT = detect_environment()
 DOMAIN = detect_domain()
 CORS_ORIGINS = detect_cors_origins()
 
-# Debug output
-print(f"=== UNIVERSAL ENVIRONMENT DETECTION ===")
+# Debug output (using print since logger is not yet configured)
+print("=== UNIVERSAL ENVIRONMENT DETECTION ===")
 print(f"Detected ENVIRONMENT: {ENVIRONMENT}")
 print(f"Detected DOMAIN: {DOMAIN}")
 print(f"Detected CORS_ORIGINS: {CORS_ORIGINS}")
@@ -276,16 +281,6 @@ async def lifespan(app: FastAPI):
     pool_stats = get_db_pool_stats()
     logger.info(f"📊 Database pool initialized: {pool_stats}")
     
-    # REMOVED: Notification scheduler for minimal resource usage
-    # logger.info("Starting notification scheduler...")
-    # try:
-    #     from app.services.scheduler_service import start_notification_scheduler
-    #     await start_notification_scheduler()
-    #     logger.info("✅ Notification scheduler started successfully")
-    # except Exception as e:
-    #     logger.error(f"❌ Failed to start notification scheduler: {e}")
-    #     logger.error(f"Stack trace: {e.__traceback__}")
-    
     logger.info("=" * 40)
     logger.info("✅ APPLICATION STARTUP COMPLETED SUCCESSFULLY")
     logger.info("=" * 40)
@@ -295,15 +290,6 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 40)
     logger.info("APPLICATION SHUTDOWN INITIATED")
     logger.info("=" * 40)
-    
-    # REMOVED: Notification scheduler shutdown for minimal resource usage
-    # logger.info("Stopping notification scheduler...")
-    # try:
-    #     from app.services.scheduler_service import stop_notification_scheduler
-    #     await stop_notification_scheduler()
-    #     logger.info("✅ Notification scheduler stopped successfully")
-    # except Exception as e:
-    #     logger.error(f"❌ Failed to stop notification scheduler: {e}")
     
     # Close database connections gracefully
     logger.info("Closing database connections...")
@@ -326,6 +312,11 @@ app = FastAPI(
 )
 
 logger.info("FastAPI application created with performance optimizations")
+
+# Rate limiting setup
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+logger.info("✅ Rate limiter initialized")
 
 # Add security middleware
 try:
@@ -374,17 +365,20 @@ def is_allowed_origin(origin: str) -> bool:
     if re.match(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", origin):
         return True
     
-    # Allow any subdomain of duckdns.org
-    if re.match(r"^https?://([a-zA-Z0-9-]+\.)*duckdns\.org(:\d+)?$", origin):
-        return True
-    
-    # Allow any subdomain of up.railway.app
-    if re.match(r"^https?://([a-zA-Z0-9-]+\.)*up\.railway\.app(:\d+)?$", origin):
-        return True
-    
-    # Allow ecshape.org and its subdomains
-    if re.match(r"^https?://([a-zA-Z0-9-]+\.)*ecshape\.org(:\d+)?$", origin):
-        return True
+    # SECURITY: Wildcard subdomain matching is only allowed in development
+    # In production, only exact origins from CORS_ORIGINS are trusted
+    if ENVIRONMENT == "development":
+        # Allow any subdomain of duckdns.org (dev only)
+        if re.match(r"^https?://([a-zA-Z0-9-]+\.)*duckdns\.org(:\d+)?$", origin):
+            return True
+        
+        # Allow any subdomain of up.railway.app (dev only)
+        if re.match(r"^https?://([a-zA-Z0-9-]+\.)*up\.railway\.app(:\d+)?$", origin):
+            return True
+        
+        # Allow ecshape.org and its subdomains (dev only)
+        if re.match(r"^https?://([a-zA-Z0-9-]+\.)*ecshape\.org(:\d+)?$", origin):
+            return True
     
     return False
 
